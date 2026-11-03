@@ -16,9 +16,11 @@
     "typecheck": "tsc -p tsconfig.domain.json && tsc -p tsconfig.json && tsc -p tools/fetch-data/tsconfig.json",
     "test": "vitest run",
     "check": "pnpm lint && pnpm typecheck && pnpm test",
-    "bench": "vitest run --config vitest.bench.config.ts",
+    "bench": "vitest run --config vitest.bench.config.ts physics",
     "bench:browser": "node tools/browser-bench/run.mjs",
-    "smoke": "node tools/browser-bench/smoke.mjs"
+    "smoke": "node tools/browser-bench/smoke.mjs",
+    "bench:balance": "vitest run --config vitest.bench.config.ts balance",
+    "bench:run": "vitest run --config vitest.bench.config.ts run.bench"
   },
   "devDependencies": {
     "@babel/parser": "^8.1.0",

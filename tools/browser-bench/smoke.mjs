@@ -77,10 +77,53 @@ try {
   const rate = (after.tick - before.tick) / seconds;
   check('simulation runs at ~60 ticks/s', rate > 54 && rate < 66, `${rate.toFixed(1)} ticks/s`);
   check('enemies spawn and balls fly', after.enemies > 0 || after.balls > 0, JSON.stringify(after));
-  check('no page or console errors', errors.length === 0, errors.join(' | '));
-
   await page.screenshot({ path: outFile });
   console.log(`screenshot: ${outFile}`);
+
+  // Card choice: start with enough xp to level up at once, then pick with the keyboard and
+  // with the mouse, in two fresh pages.
+  const cardsPage = async (query) => {
+    const p = await browser.newPage({ viewport: { width: 540, height: 820 } });
+    p.on('pageerror', (e) => errors.push(e.message));
+    p.on('console', (m) => m.type() === 'error' && errors.push(m.text()));
+    await p.goto(`http://127.0.0.1:4174/?debug&xp=10&${query}`);
+    await p.bringToFront();
+    await p.waitForFunction(() => typeof window.__debug === 'function');
+    return p;
+  };
+
+  const byKey = await cardsPage('seed=7');
+  await byKey.waitForSelector('button[data-card]');
+  const offered = await byKey.locator('button[data-card]').count();
+  check('level-up shows 3 cards', offered === 3, `${offered} buttons`);
+  const pausedTick = (await byKey.evaluate(() => window.__debug())).tick;
+  await byKey.waitForTimeout(600);
+  const stillPaused = (await byKey.evaluate(() => window.__debug())).tick === pausedTick;
+  check('the game waits while the cards are shown', stillPaused);
+  await byKey.screenshot({ path: outFile.replace('.png', '-cards.png') });
+  await byKey.keyboard.press('Digit2');
+  await byKey.waitForFunction(() => window.__debug().phase === 'playing');
+  const afterKey = await byKey.evaluate(() => window.__debug());
+  check(
+    'key 2 picks a card and play resumes at level 2',
+    afterKey.level === 2,
+    JSON.stringify(afterKey),
+  );
+  check(
+    'the card buttons disappear after picking',
+    (await byKey.locator('button[data-card]').count()) === 0,
+  );
+
+  const byClick = await cardsPage('seed=8');
+  await byClick.waitForSelector('button[data-card]');
+  await byClick.locator('button[data-card]').first().click();
+  await byClick.waitForFunction(() => window.__debug().phase === 'playing');
+  check(
+    'clicking a card picks it and play resumes',
+    (await byClick.evaluate(() => window.__debug())).level === 2,
+  );
+
+  check('no page or console errors', errors.length === 0, errors.join(' | '));
 } finally {
   await browser.close();
   await new Promise((resolve) => server.httpServer.close(resolve));

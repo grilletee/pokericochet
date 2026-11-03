@@ -26,7 +26,7 @@ const BUDGET_TICK_P95_MS = 2;
 const benchConfig: GameConfig = {
   ...gameConfig,
   ball: { ...gameConfig.ball, cooldownTicks: 1 },
-  enemy: { ...gameConfig.enemy, spawnIntervalTicks: 0 },
+  waves: [],
 };
 
 function buildRun(seed: number, clustered: boolean): Run {
@@ -48,6 +48,9 @@ function buildRun(seed: number, clustered: boolean): Run {
     speed: 0,
     radius: benchConfig.enemy.radius,
     threat: 1,
+    xp: 1,
+    burnTicks: 0,
+    burnDps: 0,
   }));
   run.nextEnemyId = ENEMIES + 1;
   return run;

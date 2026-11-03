@@ -1,0 +1,100 @@
+import {
+  type Card,
+  type Command,
+  createRng,
+  createRun,
+  type GameConfig,
+  nextInt,
+  type Run,
+  tick,
+} from '../../src/domain';
+
+export interface Policy {
+  readonly name: string;
+  move(run: Run, config: GameConfig): -1 | 0 | 1;
+  pick(run: Run, offers: readonly Card[]): number;
+}
+
+/** Moves at random and takes random cards: a floor for how the game plays with no skill. */
+export function randomPolicy(seed: number): Policy {
+  const rng = createRng(seed ^ 0xb07);
+  return {
+    name: 'random',
+    move: () => (nextInt(rng, 3) - 1) as -1 | 0 | 1,
+    pick: (_run, offers) => nextInt(rng, Math.max(1, offers.length)),
+  };
+}
+
+const PRIORITY: Record<Card['kind'], number> = {
+  newBall: 0,
+  damage: 1,
+  cadence: 2,
+  vitality: 3,
+  token: 4,
+};
+
+/**
+ * A simple competent player: stays under the enemy closest to the defence line and takes cards
+ * in a fixed order of usefulness (more balls, damage, cadence, health, token).
+ */
+export const chaserPolicy: Policy = {
+  name: 'chaser',
+  move(run) {
+    let target: number | null = null;
+    let lowest = Number.NEGATIVE_INFINITY;
+    for (const e of run.enemies) {
+      if (e.hp > 0 && e.y > lowest) {
+        lowest = e.y;
+        target = e.x;
+      }
+    }
+    if (target === null) return 0;
+    const delta = target - run.player.x;
+    return delta > 6 ? 1 : delta < -6 ? -1 : 0;
+  },
+  pick(_run, offers) {
+    let best = 0;
+    offers.forEach((card, i) => {
+      if (PRIORITY[card.kind] < PRIORITY[offers[best]?.kind ?? 'token']) best = i;
+    });
+    return best;
+  },
+};
+
+export interface Outcome {
+  readonly result: Run['phase'];
+  readonly ticks: number;
+  /** 0-based wave in progress when the run ended. */
+  readonly wave: number;
+  readonly level: number;
+  readonly kills: number;
+  readonly balls: number;
+  readonly hp: number;
+}
+
+export function playRun(
+  config: GameConfig,
+  seed: number,
+  starter: string,
+  policy: Policy,
+  maxTicks = 40_000,
+): Outcome {
+  const run = createRun(config, seed, starter);
+  let kills = 0;
+  for (let i = 0; i < maxTicks && run.phase !== 'lost' && run.phase !== 'won'; i++) {
+    const cmd: Command =
+      run.phase === 'levelup'
+        ? { moveX: 0, action: { type: 'pick', index: policy.pick(run, run.offers) } }
+        : { moveX: policy.move(run, config) };
+    for (const e of tick(run, cmd, config).events) if (e.type === 'kill') kills += 1;
+  }
+  return {
+    result: run.phase,
+    ticks: run.tickCount,
+    wave: run.wave.index,
+    level: run.player.level,
+    kills,
+    balls: run.loadout.length,
+    hp: Math.max(0, run.player.hp),
+  };
+}
