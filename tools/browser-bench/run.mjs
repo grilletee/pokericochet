@@ -2,6 +2,7 @@
 // 150 enemies) and prints the numbers the game publishes in window.__benchResult.
 //
 //   pnpm bench:browser                    headed Edge (real GPU path)
+//   pnpm bench:browser -- --real          the real peak load (4 balls, 20 enemies) instead of the stress scene
 //   pnpm bench:browser -- --headless      headless
 //   pnpm bench:browser -- --out result.json
 //
@@ -40,7 +41,8 @@ const server = await preview({
     },
   },
 });
-const url = `http://127.0.0.1:4173/?bench${extraQuery}`;
+const benchParam = args.includes('--real') ? 'bench=real' : 'bench';
+const url = `http://127.0.0.1:4173/?${benchParam}${extraQuery}`;
 
 const browser = await chromium.launch({
   executablePath,

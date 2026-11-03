@@ -40,3 +40,11 @@ export const ENEMY_SPECIES: readonly SpeciesDef[] = [
 
 /** The final boss. */
 export const BOSS_SPECIES: SpeciesDef = sp('gyarados', 'water', 95, 125, 81);
+
+/** The starters offered on the title screen, in order (keys 1-4). */
+export const STARTER_SPECIES: readonly string[] = [
+  'charmander',
+  'squirtle',
+  'bulbasaur',
+  'pikachu',
+];

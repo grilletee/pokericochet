@@ -53,8 +53,12 @@ describe('stat mapping', () => {
     expect(baseConfig.ball.speedMax).toBeLessThan(baseConfig.enemy.radius);
   });
 
-  it('keeps the GDD base damage (typeDamage 1 for every type) until a balance decision changes it', () => {
-    expect(baseConfig.stats.typeDamage).toEqual({ fire: 1, water: 1, grass: 1, electric: 1 });
+  it('documents the only deviation from damage = attack / 10: grass base damage x2 (ADR-015)', () => {
+    expect(baseConfig.stats.typeDamage).toEqual({ fire: 1, water: 1, grass: 2, electric: 1 });
+  });
+
+  it('exposes the enemy hp multiplier as the named, provisional parameter enemy.hpScale', () => {
+    expect(baseConfig.enemy.hpScale).toBe(0.45);
   });
 
   it('maps each type to one effect kind', () => {

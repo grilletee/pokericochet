@@ -27,6 +27,17 @@ export const baseConfig: Omit<GameConfig, 'species' | 'enemySpecies' | 'ballSpec
     // Tuned with the balance harness (pnpm bench:balance); GDD-v0 does not fix enemy hp.
     hpScale: 0.45,
   },
+  // The final boss (ADR-016). Provisional numbers, tuned with the balance harness.
+  boss: {
+    species: 'gyarados',
+    hpScale: 30,
+    speed: 0.12,
+    radius: 40,
+    summonIntervalTicks: 600,
+    summonCount: 4,
+    summonSpeedScale: 1,
+    summonHpScale: 0.8,
+  },
   // 7 waves of 60 s (3600 ticks). Waves 1-3 each bring one type; 4-7 mix all four (GDD-v0).
   waves: [
     {
@@ -84,12 +95,14 @@ export const baseConfig: Omit<GameConfig, 'species' | 'enemySpecies' | 'ballSpec
     levelMultiplier: [1, 1.5, 2.25],
     speedStatMin: 20,
     speedStatMax: 130,
-    // 1 everywhere = GDD-v0. See Balance notes: Planta at 2 would level the four starters.
-    typeDamage: { fire: 1, water: 1, grass: 1, electric: 1 },
+    // Damage = attack / damageDivisor * typeDamage. Grass has no offensive effect (it only
+    // heals), so it gets x2 base damage: the smallest value measured (1.5, 1.75, 2) that puts
+    // Bulbasaur within ~10 points of the other starters (ADR-015).
+    typeDamage: { fire: 1, water: 1, grass: 2, electric: 1 },
   },
   effects: { burnTicks: 180, drainPerHp: 15, chainRadius: 80 },
   progression: {
-    levelCosts: [10, 14, 19, 25, 32, 40, 50, 62, 76, 92],
+    levelCosts: [18, 25, 34, 45, 58, 72, 90, 112, 137, 166],
     hpPerXp: 10,
     lootChance: 0.1,
     lootMultiplier: 3,
