@@ -7,7 +7,7 @@ const speedOf = (b: BallBody) => Math.sqrt(b.vx * b.vx + b.vy * b.vy);
 
 describe('enforceMinVertical', () => {
   it('raises |vy| to ratio x speed while preserving the speed and the horizontal direction', () => {
-    const b: BallBody = { slot: 0, x: 0, y: 0, vx: -5.99, vy: -0.05 };
+    const b: BallBody = { slot: 0, x: 0, y: 0, vx: -5.99, vy: -0.05, pierce: 0, skipId: 0 };
     const before = speedOf(b);
     enforceMinVertical(b, RATIO);
     expect(speedOf(b)).toBeCloseTo(before, 9);
@@ -17,20 +17,20 @@ describe('enforceMinVertical', () => {
   });
 
   it('sends a perfectly horizontal ball downwards', () => {
-    const b: BallBody = { slot: 0, x: 0, y: 0, vx: 6, vy: 0 };
+    const b: BallBody = { slot: 0, x: 0, y: 0, vx: 6, vy: 0, pierce: 0, skipId: 0 };
     enforceMinVertical(b, RATIO);
     expect(b.vy).toBeGreaterThan(0);
     expect(b.vx).toBeGreaterThan(0);
   });
 
   it('leaves a ball that already satisfies the ratio untouched', () => {
-    const b: BallBody = { slot: 0, x: 0, y: 0, vx: 3, vy: -5 };
+    const b: BallBody = { slot: 0, x: 0, y: 0, vx: 3, vy: -5, pierce: 0, skipId: 0 };
     enforceMinVertical(b, RATIO);
     expect(b).toMatchObject({ vx: 3, vy: -5 });
   });
 
   it('does nothing (and makes no NaN) for a stationary ball', () => {
-    const b: BallBody = { slot: 0, x: 0, y: 0, vx: 0, vy: 0 };
+    const b: BallBody = { slot: 0, x: 0, y: 0, vx: 0, vy: 0, pierce: 0, skipId: 0 };
     enforceMinVertical(b, RATIO);
     expect(b).toMatchObject({ vx: 0, vy: 0 });
   });
@@ -48,7 +48,15 @@ function runWithFlyingBall(body: BallBody, enemies: Enemy[] = []) {
 describe('anti-stall inside tick', () => {
   it('a nearly horizontal ball still leaves through the bottom in bounded time', () => {
     // Without the rule: vy = 0.01 px/tick -> over 30 000 ticks to come down.
-    const run = runWithFlyingBall({ slot: 0, x: 240, y: 300, vx: 5.99, vy: 0.01 });
+    const run = runWithFlyingBall({
+      slot: 0,
+      x: 240,
+      y: 300,
+      vx: 5.99,
+      vy: 0.01,
+      pierce: 0,
+      skipId: 0,
+    });
     let ticks = 0;
     while (run.bodies.length > 0 && ticks < 3000) {
       tick(run, { moveX: 0 }, quietConfig);
@@ -70,8 +78,13 @@ describe('anti-stall inside tick', () => {
       speed: 0,
       radius: quietConfig.enemy.radius,
       threat: 1,
+      xp: 1,
+      burnTicks: 0,
+      burnDps: 0,
     };
-    const run = runWithFlyingBall({ slot: 0, x: 275, y: 300, vx: 6, vy: 0 }, [enemy]);
+    const run = runWithFlyingBall({ slot: 0, x: 275, y: 300, vx: 6, vy: 0, pierce: 0, skipId: 0 }, [
+      enemy,
+    ]);
     tick(run, { moveX: 0 }, quietConfig);
     const b = run.bodies[0];
     expect(b).toBeDefined();
@@ -83,7 +96,15 @@ describe('anti-stall inside tick', () => {
   });
 
   it('does not consume random numbers (other streams are untouched)', () => {
-    const run = runWithFlyingBall({ slot: 0, x: 240, y: 300, vx: 5.99, vy: 0.01 });
+    const run = runWithFlyingBall({
+      slot: 0,
+      x: 240,
+      y: 300,
+      vx: 5.99,
+      vy: 0.01,
+      pierce: 0,
+      skipId: 0,
+    });
     const aim = { ...run.rng.aim };
     const spawn = { ...run.rng.spawn };
     for (let i = 0; i < 200; i++) tick(run, { moveX: 0 }, quietConfig);

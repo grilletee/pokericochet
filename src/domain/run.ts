@@ -2,14 +2,37 @@ import { createBall } from './combat';
 import type { GameConfig } from './config';
 import { SpatialGrid } from './grid';
 import { imul32 } from './int32';
+import { xpCost } from './progression';
 import { cloneRng, deriveRng, type RngState } from './rng';
-import type { Ball, BallBody, Enemy, GameEvent } from './types';
+import type { Ball, BallBody, Card, Enemy, GameEvent } from './types';
 
-export type Phase = 'playing' | 'lost';
+export type Phase = 'playing' | 'levelup' | 'won' | 'lost';
 
 export interface Player {
   x: number;
   hp: number;
+  maxHp: number;
+  xp: number;
+  /** xp needed for the next level. */
+  xpNext: number;
+  level: number;
+  /** Multiplies every hit (damage cards). */
+  damageMult: number;
+  /** Multiplies the ball cooldown (cadence cards). */
+  cooldownMult: number;
+  /** Accumulated drain strength, towards healing 1 hp. */
+  drain: number;
+}
+
+export interface RunRng {
+  /** What spawns, where and how fast. Never touched by combat. */
+  spawn: RngState;
+  /** Dispersion of the aim and the chance part of a pierce. */
+  aim: RngState;
+  /** Card offers. */
+  cards: RngState;
+  /** Whether a kill is rich. */
+  loot: RngState;
 }
 
 /**
@@ -20,15 +43,21 @@ export interface Run {
   seed: number;
   tickCount: number;
   phase: Phase;
-  rng: { spawn: RngState; aim: RngState };
+  rng: RunRng;
   player: Player;
   loadout: Ball[];
   /** Per loadout slot: >0 cooling down, 0 ready, -1 in flight. */
   cooldowns: number[];
+  nextBallId: number;
   bodies: BallBody[];
   /** Always ordered by ascending id. */
   enemies: Enemy[];
   nextEnemyId: number;
+  wave: { index: number; tick: number };
+  /** Fusion tokens, earned one per wave (spent in the workshop). */
+  tokens: number;
+  /** Cards on offer while the phase is `levelup`; empty otherwise. */
+  offers: Card[];
   events: GameEvent[];
   grid: SpatialGrid;
 }
@@ -48,13 +77,32 @@ export function createRun(config: GameConfig, seed: number, starterSpecies: stri
     seed: normalizedSeed,
     tickCount: 0,
     phase: 'playing',
-    rng: { spawn: deriveRng(normalizedSeed, 'spawn'), aim: deriveRng(normalizedSeed, 'aim') },
-    player: { x: config.arena.width / 2, hp: config.player.maxHp },
+    rng: {
+      spawn: deriveRng(normalizedSeed, 'spawn'),
+      aim: deriveRng(normalizedSeed, 'aim'),
+      cards: deriveRng(normalizedSeed, 'cards'),
+      loot: deriveRng(normalizedSeed, 'loot'),
+    },
+    player: {
+      x: config.arena.width / 2,
+      hp: config.player.maxHp,
+      maxHp: config.player.maxHp,
+      xp: 0,
+      xpNext: xpCost(config, 1),
+      level: 1,
+      damageMult: 1,
+      cooldownMult: 1,
+      drain: 0,
+    },
     loadout: [createBall(config, starterSpecies, 1)],
     cooldowns: [0],
+    nextBallId: 2,
     bodies: [],
     enemies: [],
     nextEnemyId: 1,
+    wave: { index: 0, tick: 0 },
+    tokens: 0,
+    offers: [],
     events: [],
     grid: newGrid(config),
   };
@@ -65,13 +113,22 @@ export function cloneRun(run: Run): Run {
     seed: run.seed,
     tickCount: run.tickCount,
     phase: run.phase,
-    rng: { spawn: cloneRng(run.rng.spawn), aim: cloneRng(run.rng.aim) },
-    player: { x: run.player.x, hp: run.player.hp },
+    rng: {
+      spawn: cloneRng(run.rng.spawn),
+      aim: cloneRng(run.rng.aim),
+      cards: cloneRng(run.rng.cards),
+      loot: cloneRng(run.rng.loot),
+    },
+    player: { ...run.player },
     loadout: run.loadout.slice(), // balls are immutable values
     cooldowns: run.cooldowns.slice(),
+    nextBallId: run.nextBallId,
     bodies: run.bodies.map((b) => ({ ...b })),
     enemies: run.enemies.map((e) => ({ ...e })),
     nextEnemyId: run.nextEnemyId,
+    wave: { ...run.wave },
+    tokens: run.tokens,
+    offers: run.offers.slice(), // cards are immutable values
     events: run.events.slice(),
     grid: new SpatialGrid(run.grid.width, run.grid.height, run.grid.cellSize, run.grid.pad),
   };
@@ -132,8 +189,18 @@ export function hashRun(run: Run): string {
   h.str(run.phase);
   h.rng(run.rng.spawn);
   h.rng(run.rng.aim);
-  h.num(run.player.x);
-  h.num(run.player.hp);
+  h.rng(run.rng.cards);
+  h.rng(run.rng.loot);
+  const p = run.player;
+  h.num(p.x);
+  h.num(p.hp);
+  h.num(p.maxHp);
+  h.num(p.xp);
+  h.num(p.xpNext);
+  h.int(p.level);
+  h.num(p.damageMult);
+  h.num(p.cooldownMult);
+  h.num(p.drain);
   h.int(run.loadout.length);
   for (const ball of run.loadout) {
     h.int(ball.id);
@@ -149,6 +216,7 @@ export function hashRun(run: Run): string {
   }
   h.int(run.cooldowns.length);
   for (const cooldown of run.cooldowns) h.int(cooldown);
+  h.int(run.nextBallId);
   h.int(run.bodies.length);
   for (const b of run.bodies) {
     h.int(b.slot);
@@ -156,6 +224,8 @@ export function hashRun(run: Run): string {
     h.num(b.y);
     h.num(b.vx);
     h.num(b.vy);
+    h.int(b.pierce);
+    h.int(b.skipId);
   }
   h.int(run.enemies.length);
   for (const e of run.enemies) {
@@ -168,7 +238,18 @@ export function hashRun(run: Run): string {
     h.num(e.speed);
     h.num(e.radius);
     h.num(e.threat);
+    h.num(e.xp);
+    h.int(e.burnTicks);
+    h.num(e.burnDps);
   }
   h.int(run.nextEnemyId);
+  h.int(run.wave.index);
+  h.int(run.wave.tick);
+  h.int(run.tokens);
+  h.int(run.offers.length);
+  for (const card of run.offers) {
+    h.str(card.kind);
+    h.str(card.kind === 'newBall' ? card.species : '');
+  }
   return h.digest();
 }

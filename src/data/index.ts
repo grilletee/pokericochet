@@ -12,4 +12,5 @@ export const gameConfig: GameConfig = {
   ...baseConfig,
   species: Object.fromEntries(allSpecies.map((s) => [s.id, s])),
   enemySpecies: ENEMY_SPECIES.map((s) => s.id),
+  ballSpecies: BALL_SPECIES.map((s) => s.id),
 };

@@ -25,11 +25,14 @@ function enemy(id: number, x: number, y: number): Enemy {
     speed: 0,
     radius: R_ENEMY,
     threat: 1,
+    xp: 1,
+    burnTicks: 0,
+    burnDps: 0,
   };
 }
 
 function body(x: number, y: number, vx: number, vy: number): BallBody {
-  return { slot: 0, x, y, vx, vy };
+  return { slot: 0, x, y, vx, vy, pierce: 0, skipId: 0 };
 }
 
 function makeGrid(): SpatialGrid {

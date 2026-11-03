@@ -34,6 +34,10 @@ export interface BallBody {
   y: number;
   vx: number;
   vy: number;
+  /** Enemies it can still pass through (type effect "pierce"). */
+  pierce: number;
+  /** Enemy it just passed through and must not hit again while still overlapping; 0 = none. */
+  skipId: number;
 }
 
 export interface Enemy {
@@ -48,11 +52,32 @@ export interface Enemy {
   radius: number;
   /** Damage to the player when it crosses the defence line. */
   threat: number;
+  /** Experience granted when it dies. */
+  xp: number;
+  /** Ticks of burning left, and the damage per second while burning. */
+  burnTicks: number;
+  burnDps: number;
 }
 
-/** One command per tick: the player's only input (ADR-004). Actions come in the next phase. */
+/** A reward offered when the player levels up. */
+export type Card =
+  | { readonly kind: 'newBall'; readonly species: string }
+  | { readonly kind: 'damage' }
+  | { readonly kind: 'cadence' }
+  | { readonly kind: 'vitality' }
+  | { readonly kind: 'token' };
+
+export interface PickAction {
+  readonly type: 'pick';
+  /** Index into the current offers. */
+  readonly index: number;
+}
+
+/** One command per tick: the player's input (ADR-004). */
 export interface Command {
   readonly moveX: -1 | 0 | 1;
+  /** Only meaningful while the run is in the level-up phase. */
+  readonly action?: PickAction;
 }
 
 export type GameEvent =
@@ -69,5 +94,17 @@ export type GameEvent =
       readonly y: number;
     }
   | { readonly type: 'kill'; readonly enemyId: number; readonly x: number; readonly y: number }
+  | {
+      readonly type: 'chain';
+      readonly fromX: number;
+      readonly fromY: number;
+      readonly toX: number;
+      readonly toY: number;
+    }
+  | { readonly type: 'heal'; readonly amount: number }
   | { readonly type: 'leak'; readonly enemyId: number; readonly damage: number }
+  | { readonly type: 'levelup'; readonly level: number }
+  | { readonly type: 'pick'; readonly card: Card }
+  | { readonly type: 'waveStart'; readonly index: number }
+  | { readonly type: 'won' }
   | { readonly type: 'lost' };

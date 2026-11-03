@@ -18,6 +18,19 @@ describe('combat', () => {
     expect(hitDamage(config, { ...charmander, level: 3 }, 'electric')).toBeCloseTo(11.7);
   });
 
+  it('typeDamage scales the base damage of a type', () => {
+    const boosted = {
+      ...config,
+      stats: { ...config.stats, typeDamage: { ...config.stats.typeDamage, fire: 2 } },
+    };
+    const fire = makeBall({ species: 'charmander', type: 'fire' });
+    expect(hitDamage(boosted, fire, 'electric')).toBeCloseTo(
+      2 * hitDamage(config, fire, 'electric'),
+    );
+    const grass = makeBall({ species: 'bulbasaur', type: 'grass' });
+    expect(hitDamage(boosted, grass, 'electric')).toBeCloseTo(hitDamage(config, grass, 'electric'));
+  });
+
   it('a hybrid uses the type of its first ingredient only', () => {
     const hybrid = makeBall({ type: 'fire', hybrid: true, level: 2 });
     expect(hitDamage(config, hybrid, 'grass')).toBeCloseTo(5.2 * 1.5 * 2);

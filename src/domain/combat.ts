@@ -31,6 +31,7 @@ export function hitDamage(config: GameConfig, ball: Ball, defender: GameType): n
   return (
     (attack / config.stats.damageDivisor) *
     levelMultiplier *
+    config.stats.typeDamage[ball.type] *
     effectiveness(config, ball.type, defender)
   );
 }

@@ -4,6 +4,7 @@ import type { BallBody, Enemy } from './types';
 /**
  * Index (into `enemies`) of the living enemy that the ball overlaps most closely, or -1.
  * Ties on distance go to the lower id, so the result never depends on cell or array order.
+ * The enemy with id `skipId` is ignored (a ball that is passing through it).
  * `enemies` must be in the state the grid was last built from (hp may have changed).
  */
 export function findNearestOverlap(
@@ -12,6 +13,7 @@ export function findNearestOverlap(
   x: number,
   y: number,
   radius: number,
+  skipId = 0,
 ): number {
   const col0 = grid.colOf(x - grid.pad);
   const col1 = grid.colOf(x + grid.pad);
@@ -27,7 +29,7 @@ export function findNearestOverlap(
       for (let k = grid.cellStart[cell] ?? 0; k < end; k++) {
         const index = grid.items[k] ?? 0;
         const e = enemies[index];
-        if (e === undefined || e.hp <= 0) continue;
+        if (e === undefined || e.hp <= 0 || e.id === skipId) continue;
         const dx = e.x - x;
         const dy = e.y - y;
         const d2 = dx * dx + dy * dy;

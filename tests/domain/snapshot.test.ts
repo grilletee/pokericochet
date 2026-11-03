@@ -5,15 +5,18 @@ import {
   PHASE_LOST,
   PHASE_PLAYING,
   type Run,
-  tick,
   typeCode,
   writeSnapshot,
 } from '../../src/domain';
-import { config, quietConfig } from './fixtures';
+import { advanceUntil, config, quietConfig } from './fixtures';
 
 function populatedRun(): Run {
   const run = createRun(config, 7, 'charmander');
-  for (let i = 0; i < 400; i++) tick(run, { moveX: i % 80 < 40 ? 1 : -1 }, config);
+  advanceUntil(
+    run,
+    config,
+    (r) => r.tickCount >= 400 && r.enemies.length > 0 && r.bodies.length > 0,
+  );
   return run;
 }
 

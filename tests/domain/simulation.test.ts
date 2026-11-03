@@ -11,7 +11,7 @@ import {
   type Run,
   tick,
 } from '../../src/domain';
-import { config, makeBall, quietConfig } from './fixtures';
+import { advanceUntil, autoCommand, config, makeBall, quietConfig } from './fixtures';
 
 const IDLE: Command = { moveX: 0 };
 
@@ -22,8 +22,50 @@ function randomCommands(seed: number, count: number): Command[] {
 
 function play(seed: number, commands: readonly Command[]): Run {
   const run = createRun(config, seed, 'charmander');
-  for (const cmd of commands) tick(run, cmd, config);
+  for (const cmd of commands) tick(run, autoCommand(run, cmd.moveX), config);
   return run;
+}
+
+interface Recording {
+  readonly run: Run;
+  readonly commands: Command[];
+  readonly hashes: string[];
+  readonly kills: number;
+  readonly picks: number;
+}
+
+/** A bot that moves at random and picks random cards; records every command it sends. */
+function playBot(seed: number, ticks: number): Recording {
+  const run = createRun(config, seed, 'charmander');
+  const bot = createRng(seed ^ 0x5eed);
+  const commands: Command[] = [];
+  const hashes: string[] = [];
+  let kills = 0;
+  let picks = 0;
+  for (let i = 0; i < ticks && run.phase !== 'lost' && run.phase !== 'won'; i++) {
+    const moveX = (nextInt(bot, 3) - 1) as -1 | 0 | 1;
+    const cmd: Command =
+      run.phase === 'levelup'
+        ? { moveX, action: { type: 'pick', index: nextInt(bot, run.offers.length) } }
+        : { moveX };
+    commands.push(cmd);
+    for (const e of tick(run, cmd, config).events) {
+      if (e.type === 'kill') kills += 1;
+      if (e.type === 'pick') picks += 1;
+    }
+    if (i % 100 === 0) hashes.push(hashRun(run));
+  }
+  return { run, commands, hashes, kills, picks };
+}
+
+function replay(seed: number, commands: readonly Command[]): { run: Run; hashes: string[] } {
+  const run = createRun(config, seed, 'charmander');
+  const hashes: string[] = [];
+  commands.forEach((cmd, i) => {
+    tick(run, cmd, config);
+    if (i % 100 === 0) hashes.push(hashRun(run));
+  });
+  return { run, hashes };
 }
 
 describe('createRun', () => {
@@ -64,6 +106,9 @@ describe('auto-aim', () => {
       speed: 0,
       radius: quietConfig.enemy.radius,
       threat: 1,
+      xp: 1,
+      burnTicks: 0,
+      burnDps: 0,
     }));
     run.nextEnemyId = 100;
     return run;
@@ -120,6 +165,9 @@ describe('auto-aim', () => {
         speed: 0,
         radius: 16,
         threat: 1,
+        xp: 1,
+        burnTicks: 0,
+        burnDps: 0,
       },
     ];
     run.nextEnemyId = 2;
@@ -147,6 +195,9 @@ describe('combat in the loop', () => {
         speed: 0,
         radius: 16,
         threat: 1,
+        xp: 1,
+        burnTicks: 0,
+        burnDps: 0,
       },
     ];
     run.nextEnemyId = 2;
@@ -173,6 +224,9 @@ describe('combat in the loop', () => {
         speed: 1,
         radius: 16,
         threat: 3,
+        xp: 1,
+        burnTicks: 0,
+        burnDps: 0,
       },
     ];
     run.nextEnemyId = 2;
@@ -196,6 +250,9 @@ describe('combat in the loop', () => {
         speed: 1,
         radius: 16,
         threat: 1,
+        xp: 1,
+        burnTicks: 0,
+        burnDps: 0,
       },
     ];
     tick(run, IDLE, quietConfig);
@@ -208,7 +265,7 @@ describe('combat in the loop', () => {
   it('keeps every ball inside the arena horizontally and never creates NaN', () => {
     const run = createRun(config, 3, 'pikachu');
     for (let i = 0; i < 3000; i++) {
-      tick(run, { moveX: i % 200 < 100 ? 1 : -1 }, config);
+      tick(run, autoCommand(run, i % 200 < 100 ? 1 : -1), config);
       for (const b of run.bodies) {
         expect(Number.isFinite(b.x + b.y + b.vx + b.vy)).toBe(true);
         expect(b.x).toBeGreaterThanOrEqual(config.ball.radius - 1e-9);
@@ -226,8 +283,8 @@ describe('determinism', () => {
     const a = createRun(config, 42, 'charmander');
     const b = createRun(config, 42, 'charmander');
     for (let i = 0; i < commands.length; i++) {
-      tick(a, commands[i] ?? IDLE, config);
-      tick(b, commands[i] ?? IDLE, config);
+      tick(a, autoCommand(a, commands[i]?.moveX ?? 0), config);
+      tick(b, autoCommand(b, commands[i]?.moveX ?? 0), config);
       if (i % 60 === 0) expect(hashRun(a)).toBe(hashRun(b));
     }
     expect(hashRun(a)).toBe(hashRun(b));
@@ -254,108 +311,170 @@ describe('determinism', () => {
     const run = play(42, commands.slice(0, 600));
     const copy = cloneRun(run);
     expect(hashRun(copy)).toBe(hashRun(run));
-    for (const cmd of commands.slice(600, 900)) tick(run, cmd, config);
+    for (const cmd of commands.slice(600, 900)) tick(run, autoCommand(run, cmd.moveX), config);
     expect(hashRun(copy)).not.toBe(hashRun(run));
-    for (const cmd of commands.slice(600, 900)) tick(copy, cmd, config);
+    for (const cmd of commands.slice(600, 900)) tick(copy, autoCommand(copy, cmd.moveX), config);
     expect(hashRun(copy)).toBe(hashRun(run));
+  });
+});
+
+describe('determinism: replaying a whole run (seed + commands, card picks included)', () => {
+  const recording = playBot(2026, 5000);
+
+  it('the scenario is not vacuous: it levels up, picks cards, kills and spawns', () => {
+    expect(recording.run.player.level).toBeGreaterThanOrEqual(3);
+    expect(recording.picks).toBeGreaterThanOrEqual(2);
+    expect(recording.kills).toBeGreaterThan(5);
+    expect(recording.run.nextEnemyId).toBeGreaterThan(20);
+    expect(recording.run.loadout.length).toBeGreaterThan(1);
+  });
+
+  it('replaying the recorded commands gives the same hashRun at every checkpoint and at the end', () => {
+    const again = replay(2026, recording.commands);
+    expect(again.hashes).toEqual(recording.hashes);
+    expect(hashRun(again.run)).toBe(hashRun(recording.run));
+    expect(again.run.player).toEqual(recording.run.player);
+    expect(again.run.loadout).toEqual(recording.run.loadout);
+  });
+
+  it('a different card pick or a different seed leads to a different run', () => {
+    const altered = recording.commands.slice();
+    const pickAt = altered.findIndex((c) => c.action !== undefined);
+    expect(pickAt).toBeGreaterThanOrEqual(0);
+    const original = altered[pickAt];
+    altered[pickAt] = {
+      moveX: original?.moveX ?? 0,
+      action: { type: 'pick', index: ((original?.action?.index ?? 0) + 1) % 3 },
+    };
+    expect(hashRun(replay(2026, altered).run)).not.toBe(hashRun(recording.run));
+    expect(hashRun(replay(2027, recording.commands).run)).not.toBe(hashRun(recording.run));
+  });
+
+  it('is stable across independent bot runs with the same seed', () => {
+    expect(hashRun(playBot(2026, 5000).run)).toBe(hashRun(recording.run));
   });
 });
 
 describe('hashRun', () => {
   it('changes when any part of the state changes', () => {
-    const base = play(9, randomCommands(1, 400));
+    const base = createRun(config, 9, 'charmander');
+    advanceUntil(
+      base,
+      config,
+      (r) => r.tickCount >= 400 && r.enemies.length > 0 && r.bodies.length > 0,
+    );
     const h = hashRun(base);
     // The scenario must contain enemies and balls in flight, or those mutations would be vacuous.
     expect(base.enemies.length).toBeGreaterThan(0);
     expect(base.bodies.length).toBeGreaterThan(0);
 
-    const mutations: Array<[string, (r: Run) => void]> = [
-      [
-        'seed',
-        (r) => {
-          r.seed += 1;
-        },
-      ],
-      [
-        'tickCount',
-        (r) => {
-          r.tickCount += 1;
-        },
-      ],
-      [
-        'player.x',
-        (r) => {
-          r.player.x += 0.001;
-        },
-      ],
-      [
-        'player.hp',
-        (r) => {
-          r.player.hp -= 1;
-        },
-      ],
-      [
-        'loadout level',
-        (r) => {
-          r.loadout[0] = { ...makeBall(), level: 2 };
-        },
-      ],
-      [
-        'cooldown',
-        (r) => {
-          r.cooldowns[0] = (r.cooldowns[0] ?? 0) + 1;
-        },
-      ],
-      [
-        'rng.spawn',
-        (r) => {
-          r.rng.spawn.a += 1;
-        },
-      ],
-      [
-        'rng.aim',
-        (r) => {
-          r.rng.aim.d += 1;
-        },
-      ],
-      [
-        'nextEnemyId',
-        (r) => {
-          r.nextEnemyId += 1;
-        },
-      ],
-      [
-        'phase',
-        (r) => {
-          r.phase = r.phase === 'playing' ? 'lost' : 'playing';
-        },
-      ],
-      [
-        'enemy hp',
-        (r) => {
-          (r.enemies[0] as Enemy).hp += 0.5;
-        },
-      ],
-      [
-        'enemy x',
-        (r) => {
-          (r.enemies[0] as Enemy).x += 0.001;
-        },
-      ],
-      [
-        'body vy',
-        (r) => {
-          (r.bodies[0] as BallBody).vy += 0.001;
-        },
-      ],
-      [
-        'body slot',
-        (r) => {
-          (r.bodies[0] as BallBody).slot += 1;
-        },
-      ],
-    ];
-    for (const [name, mutate] of mutations) {
+    const enemy = (r: Run): Enemy => r.enemies[0] as Enemy;
+    const body = (r: Run): BallBody => r.bodies[0] as BallBody;
+    const mutations: Record<string, (r: Run) => void> = {
+      seed: (r) => {
+        r.seed += 1;
+      },
+      tickCount: (r) => {
+        r.tickCount += 1;
+      },
+      'player.x': (r) => {
+        r.player.x += 0.001;
+      },
+      'player.hp': (r) => {
+        r.player.hp -= 1;
+      },
+      'player.maxHp': (r) => {
+        r.player.maxHp += 1;
+      },
+      'player.xp': (r) => {
+        r.player.xp += 1;
+      },
+      'player.xpNext': (r) => {
+        r.player.xpNext += 1;
+      },
+      'player.level': (r) => {
+        r.player.level += 1;
+      },
+      'player.damageMult': (r) => {
+        r.player.damageMult += 0.01;
+      },
+      'player.cooldownMult': (r) => {
+        r.player.cooldownMult -= 0.01;
+      },
+      'player.drain': (r) => {
+        r.player.drain += 0.5;
+      },
+      'loadout level': (r) => {
+        r.loadout[0] = { ...makeBall(), level: 2 };
+      },
+      cooldown: (r) => {
+        r.cooldowns[0] = (r.cooldowns[0] ?? 0) + 1;
+      },
+      nextBallId: (r) => {
+        r.nextBallId += 1;
+      },
+      'rng.spawn': (r) => {
+        r.rng.spawn.a += 1;
+      },
+      'rng.aim': (r) => {
+        r.rng.aim.d += 1;
+      },
+      'rng.cards': (r) => {
+        r.rng.cards.b += 1;
+      },
+      'rng.loot': (r) => {
+        r.rng.loot.c += 1;
+      },
+      nextEnemyId: (r) => {
+        r.nextEnemyId += 1;
+      },
+      'wave.index': (r) => {
+        r.wave.index += 1;
+      },
+      'wave.tick': (r) => {
+        r.wave.tick += 1;
+      },
+      tokens: (r) => {
+        r.tokens += 1;
+      },
+      offers: (r) => {
+        r.offers = [{ kind: 'token' }];
+      },
+      'offers species': (r) => {
+        r.offers = [{ kind: 'newBall', species: 'pikachu' }];
+      },
+      phase: (r) => {
+        r.phase = r.phase === 'playing' ? 'lost' : 'playing';
+      },
+      'enemy hp': (r) => {
+        enemy(r).hp += 0.5;
+      },
+      'enemy x': (r) => {
+        enemy(r).x += 0.001;
+      },
+      'enemy xp': (r) => {
+        enemy(r).xp += 1;
+      },
+      'enemy burnTicks': (r) => {
+        enemy(r).burnTicks += 1;
+      },
+      'enemy burnDps': (r) => {
+        enemy(r).burnDps += 0.5;
+      },
+      'body vy': (r) => {
+        body(r).vy += 0.001;
+      },
+      'body slot': (r) => {
+        body(r).slot += 1;
+      },
+      'body pierce': (r) => {
+        body(r).pierce += 1;
+      },
+      'body skipId': (r) => {
+        body(r).skipId += 1;
+      },
+    };
+    for (const [name, mutate] of Object.entries(mutations)) {
       const copy = cloneRun(base);
       mutate(copy);
       expect(hashRun(copy), name).not.toBe(h);

@@ -17,6 +17,21 @@ export function typeCode(type: GameType): number {
 
 export const PHASE_PLAYING = 0;
 export const PHASE_LOST = 1;
+export const PHASE_LEVELUP = 2;
+export const PHASE_WON = 3;
+
+function phaseCode(phase: Run['phase']): number {
+  switch (phase) {
+    case 'playing':
+      return PHASE_PLAYING;
+    case 'lost':
+      return PHASE_LOST;
+    case 'levelup':
+      return PHASE_LEVELUP;
+    case 'won':
+      return PHASE_WON;
+  }
+}
 
 /**
  * What the render sees of a run (ADR-007): flat typed buffers, preallocated and reused. The
@@ -28,6 +43,13 @@ export interface Snapshot {
   phase: number;
   playerX: number;
   playerHp: number;
+  playerMaxHp: number;
+  playerLevel: number;
+  playerXp: number;
+  playerXpNext: number;
+  tokens: number;
+  /** 0-based wave in progress; equals the number of waves once all have been spawned. */
+  waveIndex: number;
 
   slotCount: number;
   ballActive: Uint8Array;
@@ -52,6 +74,12 @@ export function createSnapshot(maxSlots = 64, maxEnemies = 512): Snapshot {
     phase: PHASE_PLAYING,
     playerX: 0,
     playerHp: 0,
+    playerMaxHp: 0,
+    playerLevel: 1,
+    playerXp: 0,
+    playerXpNext: 1,
+    tokens: 0,
+    waveIndex: 0,
     slotCount: 0,
     ballActive: new Uint8Array(maxSlots),
     ballX: new Float32Array(maxSlots),
@@ -70,9 +98,15 @@ export function createSnapshot(maxSlots = 64, maxEnemies = 512): Snapshot {
 /** Copies the render-relevant part of the run into `snap`. Allocates nothing. */
 export function writeSnapshot(run: Run, snap: Snapshot): void {
   snap.tick = run.tickCount;
-  snap.phase = run.phase === 'playing' ? PHASE_PLAYING : PHASE_LOST;
+  snap.phase = phaseCode(run.phase);
   snap.playerX = run.player.x;
   snap.playerHp = run.player.hp;
+  snap.playerMaxHp = run.player.maxHp;
+  snap.playerLevel = run.player.level;
+  snap.playerXp = run.player.xp;
+  snap.playerXpNext = run.player.xpNext;
+  snap.tokens = run.tokens;
+  snap.waveIndex = run.wave.index;
 
   const maxSlots = snap.ballActive.length;
   const slots = Math.min(run.loadout.length, maxSlots);
