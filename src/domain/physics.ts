@@ -45,18 +45,39 @@ export function findNearestOverlap(
 }
 
 /** Left, right and top walls (AABB sides). The bottom is open: balls leave there. */
-export function bounceOffWalls(body: BallBody, radius: number, width: number): void {
+export function bounceOffWalls(body: BallBody, radius: number, width: number): boolean {
+  let bounced = false;
   if (body.x < radius) {
     body.x = radius;
     if (body.vx < 0) body.vx = -body.vx;
+    bounced = true;
   } else if (body.x > width - radius) {
     body.x = width - radius;
     if (body.vx > 0) body.vx = -body.vx;
+    bounced = true;
   }
   if (body.y < radius) {
     body.y = radius;
     if (body.vy < 0) body.vy = -body.vy;
+    bounced = true;
   }
+  return bounced;
+}
+
+/**
+ * Anti-stall rule: keeps the speed but guarantees |vy| >= ratio * speed, so a ball that keeps
+ * bouncing sideways still makes vertical progress and eventually leaves through the bottom.
+ * The sign of vy is kept; a perfectly horizontal ball is sent downwards. Deterministic: it
+ * uses no random numbers, so it cannot disturb any PRNG stream.
+ */
+export function enforceMinVertical(body: BallBody, ratio: number): void {
+  const speed = Math.sqrt(body.vx * body.vx + body.vy * body.vy);
+  if (speed === 0) return;
+  const minVy = speed * ratio;
+  if (Math.abs(body.vy) >= minVy) return;
+  body.vy = body.vy < 0 ? -minVy : minVy;
+  const vx = Math.sqrt(speed * speed - minVy * minVy);
+  body.vx = body.vx < 0 ? -vx : vx;
 }
 
 /** Reflects the ball around the contact normal and pushes it out of the enemy. */

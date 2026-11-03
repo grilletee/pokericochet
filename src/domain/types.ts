@@ -64,7 +64,10 @@ export type GameEvent =
       readonly enemyId: number;
       readonly damage: number;
       readonly effectiveness: number;
+      /** Position of the enemy that was hit, for visual effects. */
+      readonly x: number;
+      readonly y: number;
     }
-  | { readonly type: 'kill'; readonly enemyId: number }
+  | { readonly type: 'kill'; readonly enemyId: number; readonly x: number; readonly y: number }
   | { readonly type: 'leak'; readonly enemyId: number; readonly damage: number }
   | { readonly type: 'lost' };

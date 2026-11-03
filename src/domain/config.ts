@@ -25,6 +25,11 @@ export interface GameConfig {
     /** Pixels per tick; must stay below the smallest enemy radius to avoid tunnelling. */
     readonly speedMin: number;
     readonly speedMax: number;
+    /**
+     * After every bounce, |vy| / speed is at least this, so a ball cannot ricochet between the
+     * walls without ever coming down (anti-stall).
+     */
+    readonly minVerticalRatio: number;
   };
   readonly enemy: {
     readonly radius: number;

@@ -7,7 +7,14 @@ import type { GameConfig } from '../../domain';
 export const baseConfig: Omit<GameConfig, 'species' | 'enemySpecies'> = {
   arena: { width: 480, height: 720, defenseLineY: 640 },
   player: { y: 680, speed: 5, margin: 20, maxHp: 10 },
-  ball: { radius: 6, cooldownTicks: 72, aimJitter: 0.176, speedMin: 6, speedMax: 9 },
+  ball: {
+    radius: 6,
+    cooldownTicks: 72,
+    aimJitter: 0.176,
+    speedMin: 6,
+    speedMax: 9,
+    minVerticalRatio: 0.2,
+  },
   enemy: {
     radius: 16,
     threat: 1,

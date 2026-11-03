@@ -1,6 +1,6 @@
 import { getSpecies, hitDamage, mapStat } from './combat';
 import type { GameConfig } from './config';
-import { bounceOffWalls, findNearestOverlap, reflectOffEnemy } from './physics';
+import { bounceOffWalls, enforceMinVertical, findNearestOverlap, reflectOffEnemy } from './physics';
 import { nextFloat, nextInt } from './rng';
 import type { Run } from './run';
 import type { Command, Enemy, GameEvent } from './types';
@@ -146,7 +146,9 @@ export function tick(run: Run, cmd: Command, config: GameConfig): TickOutput {
   for (const body of run.bodies) {
     body.x += body.vx;
     body.y += body.vy;
-    bounceOffWalls(body, ballConfig.radius, arena.width);
+    if (bounceOffWalls(body, ballConfig.radius, arena.width)) {
+      enforceMinVertical(body, ballConfig.minVerticalRatio);
+    }
     if (body.y - ballConfig.radius > arena.height) {
       run.cooldowns[body.slot] = ballConfig.cooldownTicks;
       continue;
@@ -165,9 +167,14 @@ export function tick(run: Run, cmd: Command, config: GameConfig): TickOutput {
         enemyId: target.id,
         damage,
         effectiveness: config.typeChart[ball.type][target.type],
+        x: target.x,
+        y: target.y,
       });
-      if (target.hp <= 0) run.events.push({ type: 'kill', enemyId: target.id });
+      if (target.hp <= 0) {
+        run.events.push({ type: 'kill', enemyId: target.id, x: target.x, y: target.y });
+      }
       reflectOffEnemy(body, ballConfig.radius, target);
+      enforceMinVertical(body, ballConfig.minVerticalRatio);
     }
     run.bodies[flying] = body;
     flying += 1;
