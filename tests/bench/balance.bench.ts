@@ -38,19 +38,41 @@ const enemySpeed = (mult: number) =>
     ...c,
     waves: c.waves.map((w) => ({ ...w, speedScale: w.speedScale * mult })),
   }));
+const levelCostsScale = (mult: number) =>
+  patch((c) => ({
+    ...c,
+    progression: {
+      ...c.progression,
+      levelCosts: c.progression.levelCosts.map((x) => Math.floor(x * mult + 0.5)),
+    },
+  }));
+const bossHp = (hpScale: number) =>
+  patch((c) => (c.boss ? { ...c, boss: { ...c.boss, hpScale } } : c));
 const all =
   (...fs: Array<(c: GameConfig) => GameConfig>) =>
   (c: GameConfig): GameConfig =>
     fs.reduce((acc, f) => f(acc), c);
 
-const VARIANTS: readonly Variant[] = [
-  ['shipped config (typeDamage all 1, as in the GDD)', (c) => c],
+const ALL_VARIANTS: readonly Variant[] = [
+  // Index 0 on purpose: BALANCE_ONLY=0 is always the shipped configuration.
+  ['shipped config (grass x2, level costs x1.8, enemy hpScale 0.45, boss hpScale 30)', (c) => c],
+  ['  boss hp x20', bossHp(20)],
+  ['  boss hp x30', bossHp(30)],
+  ['  boss hp x40', bossHp(40)],
+  ['  cost x1.3', levelCostsScale(1.3)],
+  ['  cost x1.5', levelCostsScale(1.5)],
+  ['  cost x1.7', levelCostsScale(1.7)],
   ['  + grass typeDamage x1.5', grassDamage(1.5)],
+  ['  + grass typeDamage x1.75', grassDamage(1.75)],
   ['  + grass typeDamage x2', grassDamage(2)],
   ['  + grass typeDamage x2 and drain 1 hp per 8 hits', all(grassDamage(2), drainPerHp(8))],
   ['  sensitivity: spawn 20% more often', spawnEvery(0.8)],
   ['  sensitivity: enemies 20% faster', enemySpeed(1.2)],
 ];
+
+// BALANCE_ONLY=0,2 selects variants by index while tuning.
+const only = process.env.BALANCE_ONLY?.split(',').map(Number);
+const VARIANTS = ALL_VARIANTS.filter((_, i) => !only || only.includes(i));
 
 function evaluate(config: GameConfig, policyFor: (seed: number) => Policy): Outcome[] {
   return Array.from({ length: SEEDS }, (_, i) =>
@@ -69,10 +91,13 @@ function summarize(outcomes: readonly Outcome[]): string {
     `wave med ${median + 1} (mean ${(mean((o) => o.wave) + 1).toFixed(1)})`,
     `time ${(mean((o) => o.ticks) / 60).toFixed(0).padStart(3)}s`,
     `level ${mean((o) => o.level).toFixed(1)}`,
+    `${(mean((o) => o.ticks) / 60 / Math.max(1, mean((o) => o.level) - 1)).toFixed(1)}s/level`,
     `kills ${mean((o) => o.kills)
       .toFixed(0)
       .padStart(3)}`,
     `balls ${mean((o) => o.balls).toFixed(1)}`,
+    `fusions ${mean((o) => o.fusions).toFixed(1)}`,
+    `boss ${((100 * outcomes.filter((o) => o.bossReached).length) / n).toFixed(0)}%`,
   ].join(' | ');
 }
 

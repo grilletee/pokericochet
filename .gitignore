@@ -12,3 +12,6 @@ coverage/
 
 # fetch-data cache (raw PokéAPI responses)
 tools/fetch-data/.cache/
+
+# Screenshots written by pnpm smoke
+smoke*.png

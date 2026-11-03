@@ -3,8 +3,10 @@ import {
   type Command,
   createRng,
   createRun,
+  type FuseAction,
   type GameConfig,
   nextInt,
+  previewFusion,
   type Run,
   tick,
 } from '../../src/domain';
@@ -13,6 +15,18 @@ export interface Policy {
   readonly name: string;
   move(run: Run, config: GameConfig): -1 | 0 | 1;
   pick(run: Run, offers: readonly Card[]): number;
+  /** A fusion to try now, if the policy wants one (checked against the rules before use). */
+  fuse?(run: Run): FuseAction | null;
+}
+
+/** The first valid fusion of the loadout, trying every ordered pair of slots; null if none. */
+export function firstValidFusion(run: Run): FuseAction | null {
+  for (let a = 0; a < run.loadout.length; a++) {
+    for (let b = 0; b < run.loadout.length; b++) {
+      if (a !== b && previewFusion(run, a, b).ok) return { type: 'fuse', a, b };
+    }
+  }
+  return null;
 }
 
 /** Moves at random and takes random cards: a floor for how the game plays with no skill. */
@@ -52,6 +66,7 @@ export const chaserPolicy: Policy = {
     const delta = target - run.player.x;
     return delta > 6 ? 1 : delta < -6 ? -1 : 0;
   },
+  fuse: firstValidFusion,
   pick(_run, offers) {
     let best = 0;
     offers.forEach((card, i) => {
@@ -70,6 +85,8 @@ export interface Outcome {
   readonly kills: number;
   readonly balls: number;
   readonly hp: number;
+  readonly bossReached: boolean;
+  readonly fusions: number;
 }
 
 export function playRun(
@@ -81,12 +98,21 @@ export function playRun(
 ): Outcome {
   const run = createRun(config, seed, starter);
   let kills = 0;
+  let fusions = 0;
   for (let i = 0; i < maxTicks && run.phase !== 'lost' && run.phase !== 'won'; i++) {
-    const cmd: Command =
-      run.phase === 'levelup'
-        ? { moveX: 0, action: { type: 'pick', index: policy.pick(run, run.offers) } }
+    let cmd: Command;
+    if (run.phase === 'levelup') {
+      cmd = { moveX: 0, action: { type: 'pick', index: policy.pick(run, run.offers) } };
+    } else {
+      const fuse = run.tokens > 0 ? policy.fuse?.(run) : null;
+      cmd = fuse
+        ? { moveX: policy.move(run, config), action: fuse }
         : { moveX: policy.move(run, config) };
-    for (const e of tick(run, cmd, config).events) if (e.type === 'kill') kills += 1;
+    }
+    for (const e of tick(run, cmd, config).events) {
+      if (e.type === 'kill') kills += 1;
+      if (e.type === 'fuse') fusions += 1;
+    }
   }
   return {
     result: run.phase,
@@ -96,5 +122,7 @@ export function playRun(
     kills,
     balls: run.loadout.length,
     hp: Math.max(0, run.player.hp),
+    bossReached: run.boss.spawned,
+    fusions,
   };
 }

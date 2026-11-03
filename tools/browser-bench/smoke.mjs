@@ -34,7 +34,7 @@ try {
   const errors = [];
   page.on('pageerror', (e) => errors.push(e.message));
   page.on('console', (m) => m.type() === 'error' && errors.push(m.text()));
-  await page.goto('http://127.0.0.1:4174/?debug&seed=123');
+  await page.goto('http://127.0.0.1:4174/?debug&seed=123&starter=charmander');
   await page.bringToFront();
   await page.waitForFunction(() => typeof window.__debug === 'function');
   const state = () => page.evaluate(() => window.__debug());
@@ -86,7 +86,8 @@ try {
     const p = await browser.newPage({ viewport: { width: 540, height: 820 } });
     p.on('pageerror', (e) => errors.push(e.message));
     p.on('console', (m) => m.type() === 'error' && errors.push(m.text()));
-    await p.goto(`http://127.0.0.1:4174/?debug&xp=10&${query}`);
+    // xp must equal the first entry of progression.levelCosts (18) to trigger exactly one level-up.
+    await p.goto(`http://127.0.0.1:4174/?debug&starter=charmander&xp=18&${query}`);
     await p.bringToFront();
     await p.waitForFunction(() => typeof window.__debug === 'function');
     return p;
@@ -122,6 +123,106 @@ try {
     'clicking a card picks it and play resumes',
     (await byClick.evaluate(() => window.__debug())).level === 2,
   );
+
+  // A page helper for the screens: opens the game with the given query and waits for it.
+  const open = async (query, size = { width: 540, height: 820 }) => {
+    const p = await browser.newPage({ viewport: size });
+    p.on('pageerror', (e) => errors.push(e.message));
+    p.on('console', (m) => m.type() === 'error' && errors.push(m.text()));
+    await p.goto(`http://127.0.0.1:4174/?debug&${query}`);
+    await p.bringToFront();
+    await p.waitForFunction(() => typeof window.__debug === 'function');
+    return p;
+  };
+  const dbg = (p) => p.evaluate(() => window.__debug());
+
+  // Title screen: the game waits, there are four starters, and a key or a click starts the run.
+  const title = await open('seed=5');
+  await title.waitForSelector('button[data-starter]');
+  check(
+    'the title screen offers 4 starters',
+    (await title.locator('button[data-starter]').count()) === 4,
+  );
+  const idleTick = (await dbg(title)).tick;
+  await title.waitForTimeout(500);
+  const idle = await dbg(title);
+  check(
+    'the game does not run on the title screen',
+    idle.tick === idleTick && idle.screen === 'menu',
+  );
+  await title.screenshot({ path: outFile.replace('.png', '-title.png') });
+  await title.keyboard.press('Digit3');
+  await title.waitForFunction(() => window.__debug().screen === 'playing');
+  check('key 3 starts the run with Bulbasaur', (await dbg(title)).starter === 'bulbasaur');
+  check(
+    'the title screen is gone once playing',
+    (await title.locator('button[data-starter]:visible').count()) === 0,
+  );
+  const clicked = await open('seed=6');
+  await clicked.locator('button[data-starter="pikachu"]').click();
+  await clicked.waitForFunction(() => window.__debug().screen === 'playing');
+  check('clicking Pikachu starts the run with Pikachu', (await dbg(clicked)).starter === 'pikachu');
+
+  // Workshop: two equal balls and a token fuse into one of the next level.
+  const f1 = await open('starter=charmander&loadout=charmander,charmander&tokens=1&seed=9');
+  await f1.waitForSelector('[data-fusion-panel] button[data-slot]');
+  await f1.locator('button[data-slot="0"]').click();
+  await f1.locator('button[data-slot="1"]').click();
+  const f1Text = await f1.locator('[data-fusion-text]').textContent();
+  check('the panel says what the fusion gives', (f1Text ?? '').includes('sube a nivel 2'), f1Text);
+  await f1.screenshot({ path: outFile.replace('.png', '-fusion.png') });
+  await f1.locator('[data-fusion-go]').click();
+  await f1.waitForFunction(() => window.__debug().loadout === 1);
+  const afterF1 = await dbg(f1);
+  check('fusing consumed the token and one ball', afterF1.tokens === 0 && afterF1.loadout === 1);
+  check(
+    'the chip now shows level 2',
+    ((await f1.locator('button[data-slot="0"]').textContent()) ?? '').includes('Nv2'),
+  );
+
+  // ... and tells why when they cannot fuse.
+  const f2 = await open('starter=charmander&loadout=charmander,squirtle&tokens=1&seed=9');
+  await f2.waitForSelector('[data-fusion-panel] button[data-slot]');
+  await f2.locator('button[data-slot="0"]').click();
+  await f2.locator('button[data-slot="1"]').click();
+  const f2Text = await f2.locator('[data-fusion-text]').textContent();
+  check('the panel says why it cannot fuse', (f2Text ?? '').includes('nivel 2 o más'), f2Text);
+  check('the fuse button is disabled', await f2.locator('[data-fusion-go]').isDisabled());
+
+  // Boss: jumping to the last wave brings it in, with its health bar.
+  const bossPage = await open('starter=pikachu&wave=7&seed=3');
+  await bossPage.waitForFunction(() => window.__debug().bossMaxHp > 0);
+  check('the boss appears after the last wave', true);
+  await bossPage.waitForTimeout(400);
+  check('the boss bar is visible', await bossPage.locator('[data-boss-bar]').isVisible());
+  await bossPage.screenshot({ path: outFile.replace('.png', '-boss.png') });
+
+  // End of run: results screen, best run in localStorage, and the two ways to go on.
+  const end = await open('starter=charmander&hp=0&seed=2');
+  await end.waitForFunction(() => window.__debug().screen === 'results');
+  const resultsText = await end.locator('[data-screen="results"]').textContent();
+  check(
+    'the results screen shows the defeat, the seed and the starter',
+    (resultsText ?? '').includes('Derrota') &&
+      (resultsText ?? '').includes('Semilla: 2') &&
+      (resultsText ?? '').includes('Charmander'),
+    (resultsText ?? '').replace(/\n/g, ' | '),
+  );
+  const stored = await end.evaluate(() => window.localStorage.getItem('bestRun.v1'));
+  check(
+    'the best run was saved with its seed',
+    stored !== null && JSON.parse(stored).seed === 2,
+    String(stored),
+  );
+  await end.screenshot({ path: outFile.replace('.png', '-results.png') });
+  await end.keyboard.press('KeyR');
+  await end.waitForFunction(() => window.__debug().screen === 'playing');
+  check('R starts a new run with the same starter', (await dbg(end)).starter === 'charmander');
+  const again = await open('starter=charmander&hp=0&seed=2');
+  await again.waitForFunction(() => window.__debug().screen === 'results');
+  await again.locator('button[data-action="menu"]').click();
+  await again.waitForFunction(() => window.__debug().screen === 'menu');
+  check('the menu button goes back to the title screen', true);
 
   check('no page or console errors', errors.length === 0, errors.join(' | '));
 } finally {
