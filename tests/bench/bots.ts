@@ -56,6 +56,14 @@ export function randomPolicy(seed: number): Policy {
   };
 }
 
+/** Same cards and fusions as the chaser, but never moves: how much does moving matter? */
+export const standStillPolicy: Policy = {
+  name: 'still',
+  move: () => 0,
+  pick: (run, offers) => chaserPolicy.pick(run, offers),
+  workshop: workshopPolicy,
+};
+
 const PRIORITY: Record<Card['kind'], number> = {
   newBall: 0,
   damage: 1,
@@ -104,6 +112,10 @@ export interface Outcome {
   readonly hp: number;
   readonly bossReached: boolean;
   readonly fusions: number;
+  /** Fusions that produced a hybrid (F2). */
+  readonly hybrids: number;
+  /** Fusion tokens still unspent when the run ended. */
+  readonly tokensLeft: number;
 }
 
 export function playRun(
@@ -116,6 +128,7 @@ export function playRun(
   const run = createRun(config, seed, starter);
   let kills = 0;
   let fusions = 0;
+  let hybrids = 0;
   for (let i = 0; i < maxTicks && run.phase !== 'lost' && run.phase !== 'won'; i++) {
     let cmd: Command;
     if (run.phase === 'levelup') {
@@ -127,7 +140,10 @@ export function playRun(
     }
     for (const e of tick(run, cmd, config).events) {
       if (e.type === 'kill') kills += 1;
-      if (e.type === 'fuse') fusions += 1;
+      if (e.type === 'fuse') {
+        fusions += 1;
+        if (e.hybrid) hybrids += 1;
+      }
     }
   }
   return {
@@ -140,5 +156,7 @@ export function playRun(
     hp: Math.max(0, run.player.hp),
     bossReached: run.boss.spawned,
     fusions,
+    hybrids,
+    tokensLeft: run.tokens,
   };
 }

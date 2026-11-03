@@ -19,7 +19,9 @@
     "check": "pnpm lint && pnpm typecheck && pnpm test",
     "bench": "vitest run --config vitest.bench.config.ts physics",
     "bench:browser": "node tools/browser-bench/run.mjs",
+    "playtest": "node tools/browser-bench/playtest.mjs",
     "smoke": "node tools/browser-bench/smoke.mjs",
+    "bench:agency": "vitest run --config vitest.bench.config.ts agency",
     "bench:balance": "vitest run --config vitest.bench.config.ts balance",
     "bench:run": "vitest run --config vitest.bench.config.ts run.bench"
   },
