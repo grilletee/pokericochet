@@ -15,7 +15,8 @@
     "format": "biome check --write .",
     "typecheck": "tsc -p tsconfig.domain.json && tsc -p tsconfig.json && tsc -p tools/fetch-data/tsconfig.json",
     "test": "vitest run",
-    "check": "pnpm lint && pnpm typecheck && pnpm test"
+    "check": "pnpm lint && pnpm typecheck && pnpm test",
+    "bench": "vitest run --config vitest.bench.config.ts"
   },
   "devDependencies": {
     "@babel/parser": "^8.1.0",
