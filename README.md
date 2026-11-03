@@ -9,7 +9,9 @@ Este proyecto no tiene ninguna relación con el repositorio homónimo de [papima
 
 ## Estado
 
-En desarrollo, sin versión jugable todavía. Gratis, sin anuncios ni donaciones.
+Vertical slice jugable: una run completa de unos 8 minutos (7 oleadas, jefe, fusión de bolas). Gratis, sin anuncios ni donaciones.
+
+Se publica en GitHub Pages con cada push a `main` (`.github/workflows/pages.yml`; en el repositorio hay que activar Settings → Pages → Source: *GitHub Actions*): <https://grilletee.github.io/pokericochet/>.
 
 ## Desarrollo
 
@@ -17,11 +19,14 @@ Requiere Node 20.19 o superior y pnpm (la versión exacta está en `packageManag
 
 ```sh
 pnpm install
+pnpm fetch-data   # una vez: datos de PokéAPI (JSON) y sprites (carpeta ignorada)
 pnpm dev          # servidor de desarrollo
 pnpm check        # lint + typecheck + tests
 ```
 
-Scripts sueltos: `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm build`.
+Scripts sueltos: `pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm build`. Sin ejecutar `pnpm fetch-data` el juego funciona igual, con marcadores en lugar de sprites.
+
+Mediciones: `pnpm bench:balance` (equilibrio con bots), `pnpm bench:agency`, `pnpm bench:run`, `pnpm bench:browser`, `pnpm smoke` y `pnpm playtest` (sesión observacional en móvil y escritorio).
 
 ## Estructura
 
@@ -39,4 +44,4 @@ El dominio no puede usar DOM, `Date`, `Math.random` ni más funciones de `Math` 
 
 ## Datos y atribución
 
-El juego nunca llama a PokéAPI en ejecución: los datos se generan antes con `tools/fetch-data` y se guardan como JSON. Los sprites proceden de [PokeAPI/sprites](https://github.com/PokeAPI/sprites) o de SpriteCollab (CC BY-NC 4.0); la atribución completa se añadirá cuando se incluyan.
+El juego nunca llama a PokéAPI en ejecución: los datos de las especies se generan antes con `tools/fetch-data` (JSON pequeño y determinista en `src/data/generated`, que sí va al repositorio). Los sprites proceden de [PokeAPI/sprites](https://github.com/PokeAPI/sprites), **no se suben al repositorio**: `pnpm fetch-data` los descarga a `src/assets/sprites/` (ignorada por git) y la CI los obtiene en cada build. Los créditos y el aviso de no afiliación son visibles dentro del juego.

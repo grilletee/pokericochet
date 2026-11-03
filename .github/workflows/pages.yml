@@ -1,0 +1,62 @@
+name: Deploy to GitHub Pages
+
+# One-time setup in the repository: Settings > Pages > Build and deployment > Source: "GitHub Actions".
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Never run two deployments at once; a newer push replaces a queued one.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.x
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      # Do not publish what does not pass.
+      - run: pnpm lint
+      - run: pnpm typecheck
+      - run: pnpm test
+
+      # Sprites are never committed (ADR-018): fetched on every build, cached between builds.
+      - uses: actions/cache@v4
+        with:
+          path: |
+            tools/fetch-data/.cache
+            src/assets/sprites
+          key: fetch-data-${{ hashFiles('tools/fetch-data/roster.json', 'tools/fetch-data/*.ts') }}
+      - run: pnpm fetch-data
+      - run: git diff --exit-code -- src/data/generated
+      # The page must carry the sprites and the affiliation notice: fail if either is missing.
+      - run: test "$(ls src/assets/sprites/*.png | wc -l)" -ge 17
+      - run: pnpm build
+      - run: grep -rq "No está afiliado" dist/assets
+
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
