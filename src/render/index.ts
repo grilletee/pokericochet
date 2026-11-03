@@ -1,2 +1,2 @@
-// Layer "render": see Arquitectura-v0 / ADR-006 for the dependency rules.
-export {};
+export { interpolateBalls, interpolateEnemies } from './interpolate';
+export { Renderer } from './renderer';

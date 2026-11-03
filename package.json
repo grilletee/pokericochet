@@ -16,14 +16,20 @@
     "typecheck": "tsc -p tsconfig.domain.json && tsc -p tsconfig.json && tsc -p tools/fetch-data/tsconfig.json",
     "test": "vitest run",
     "check": "pnpm lint && pnpm typecheck && pnpm test",
-    "bench": "vitest run --config vitest.bench.config.ts"
+    "bench": "vitest run --config vitest.bench.config.ts",
+    "bench:browser": "node tools/browser-bench/run.mjs",
+    "smoke": "node tools/browser-bench/smoke.mjs"
   },
   "devDependencies": {
     "@babel/parser": "^8.1.0",
     "@biomejs/biome": "^2.6.4",
     "@types/node": "^26.6.6",
+    "playwright-core": "^1.64.1",
     "typescript": "^7.0.2",
     "vite": "^8.3.5",
     "vitest": "^5.0.5"
+  },
+  "dependencies": {
+    "pixi.js": "^8.22.0"
   }
 }
