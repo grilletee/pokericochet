@@ -11,9 +11,11 @@ export interface ArenaView {
  */
 export class Input {
   readonly state: InputState = { left: false, right: false, pointerX: null };
-  /** Set when R, Enter or a tap asks for a restart; the game loop consumes it. */
+  /** Set when R or Enter asks to play again; the game loop consumes it. */
   restartRequested = false;
-  /** Card chosen with the keys 1-3 or a click on the card, waiting for the game loop. */
+  /** Set when M or Escape asks for the title screen; the game loop consumes it. */
+  menuRequested = false;
+  /** Card or starter chosen with the keys 1-4 or a click, waiting for the game loop. */
   private pickIndex: number | null = null;
 
   constructor(
@@ -24,7 +26,6 @@ export class Input {
     window.addEventListener('keyup', (e) => this.onKey(e, false));
     host.style.touchAction = 'none';
     host.addEventListener('pointerdown', (e) => {
-      this.restartRequested = true;
       this.state.pointerX = this.toArenaX(e);
     });
     host.addEventListener('pointermove', (e) => {
@@ -41,6 +42,15 @@ export class Input {
       this.state.right = false;
       release();
     });
+  }
+
+  /** For the on-screen buttons of the results screen (same effect as R and M). */
+  requestRestart(): void {
+    this.restartRequested = true;
+  }
+
+  requestMenu(): void {
+    this.menuRequested = true;
   }
 
   requestPick(index: number): void {
@@ -73,6 +83,10 @@ export class Input {
       case 'Enter':
         if (down) this.restartRequested = true;
         break;
+      case 'KeyM':
+      case 'Escape':
+        if (down) this.menuRequested = true;
+        break;
       case 'Digit1':
       case 'Numpad1':
         if (down) this.pickIndex = 0;
@@ -84,6 +98,10 @@ export class Input {
       case 'Digit3':
       case 'Numpad3':
         if (down) this.pickIndex = 2;
+        break;
+      case 'Digit4':
+      case 'Numpad4':
+        if (down) this.pickIndex = 3;
         break;
       default:
         return;

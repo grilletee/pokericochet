@@ -10,6 +10,13 @@ export class Overlay {
   private readonly message: HTMLDivElement;
   private readonly debug: HTMLPreElement;
   private readonly cards: HTMLDivElement;
+  private readonly toast: HTMLDivElement;
+  private readonly bossBar: HTMLDivElement;
+  private readonly bossFill: HTMLDivElement;
+  private readonly bossLabel: HTMLDivElement;
+  private toastUntil = 0;
+  private lastBossName = '';
+  private lastBossPercent = -1;
   private shownOffers: readonly Card[] | null = null;
   private lastHud = '';
   private lastMessage = '';
@@ -19,7 +26,7 @@ export class Overlay {
     const base =
       'position:absolute;pointer-events:none;font-family:system-ui,sans-serif;color:#e8ecf8;';
     this.hud = document.createElement('div');
-    this.hud.style.cssText = `${base}left:12px;top:10px;font-size:18px;font-weight:600;`;
+    this.hud.style.cssText = `${base}left:12px;top:10px;font-size:18px;font-weight:600;white-space:pre;line-height:1.25;`;
     this.message = document.createElement('div');
     this.message.style.cssText =
       `${base}inset:0;display:none;align-items:center;justify-content:center;` +
@@ -33,7 +40,23 @@ export class Overlay {
       'position:absolute;inset:0;display:none;flex-direction:column;align-items:center;' +
       'justify-content:center;gap:10px;background:rgba(5,8,16,0.72);' +
       'font-family:system-ui,sans-serif;color:#e8ecf8;';
-    host.append(this.hud, this.message, this.debug, this.cards);
+    this.toast = document.createElement('div');
+    this.toast.style.cssText =
+      `${base}left:50%;top:30%;transform:translateX(-50%);display:none;padding:6px 14px;` +
+      'border-radius:8px;background:rgba(5,8,16,0.78);font-size:16px;font-weight:600;' +
+      'text-align:center;max-width:80%;';
+    this.bossBar = document.createElement('div');
+    this.bossBar.dataset.bossBar = '';
+    this.bossBar.style.cssText =
+      `${base}left:10%;bottom:8px;display:none;width:80%;height:16px;border-radius:8px;` +
+      'background:rgba(255,255,255,0.18);overflow:hidden;font-size:12px;font-weight:700;' +
+      'line-height:16px;text-align:center;';
+    this.bossFill = document.createElement('div');
+    this.bossFill.style.cssText = 'position:absolute;left:0;top:0;height:100%;background:#e8503a;';
+    this.bossLabel = document.createElement('div');
+    this.bossLabel.style.cssText = 'position:relative;text-shadow:0 0 3px #000;';
+    this.bossBar.append(this.bossFill, this.bossLabel);
+    host.append(this.hud, this.toast, this.bossBar, this.message, this.debug, this.cards);
   }
 
   setHud(text: string): void {
@@ -92,6 +115,33 @@ export class Overlay {
       this.cards.append(button);
     });
     this.cards.style.display = 'flex';
+  }
+
+  /** Shows a short message for `ms` from `now` (a performance.now() reading). */
+  showToast(text: string, now: number, ms = 2500): void {
+    this.toast.textContent = text;
+    this.toast.style.display = 'block';
+    this.toastUntil = now + ms;
+  }
+
+  /** Hides the toast once its time is up; call every frame. */
+  updateToast(now: number): void {
+    if (this.toastUntil !== 0 && now >= this.toastUntil) {
+      this.toastUntil = 0;
+      this.toast.style.display = 'none';
+    }
+  }
+
+  /** Boss health bar; `null` hides it. Writes to the DOM only when the shown percent changes. */
+  setBoss(name: string, hp: number, maxHp: number): void {
+    const visible = maxHp > 0 && hp > 0;
+    const percent = visible ? Math.max(1, Math.ceil((100 * hp) / maxHp)) : 0;
+    if (percent === this.lastBossPercent && name === this.lastBossName) return;
+    this.lastBossPercent = percent;
+    this.lastBossName = name;
+    this.bossBar.style.display = visible ? 'block' : 'none';
+    this.bossLabel.textContent = `${name} ${percent} %`;
+    this.bossFill.style.width = `${percent}%`;
   }
 
   setDebug(text: string | null): void {

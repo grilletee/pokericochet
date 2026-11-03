@@ -1,21 +1,36 @@
-import { gameConfig } from '../data';
+import { gameConfig, STARTER_SPECIES } from '../data';
 import {
+  type Ball,
   type Command,
+  createBall,
   createRun,
   createSnapshot,
+  type FuseAction,
+  type FusionPreview,
   type GameConfig,
   type GameEvent,
   PHASE_LEVELUP,
-  PHASE_LOST,
-  PHASE_WON,
+  previewFusion,
   type Run,
   type Snapshot,
+  summarizeRun,
   tick,
   writeSnapshot,
 } from '../domain';
 import { Renderer } from '../render';
-import { type CardTextContext, Overlay } from '../ui';
-import { BENCH_BALLS, BENCH_ENEMIES, benchScenario } from './benchScenario';
+import {
+  type CardTextContext,
+  describeEvent,
+  FusionPanel,
+  Overlay,
+  ResultsScreen,
+  type StarterOption,
+  StartScreen,
+  speciesName,
+} from '../ui';
+import { BENCH_LOADS, type BenchLoad, benchScenario } from './benchScenario';
+import { type BestRun, browserStore, loadBestRun, saveIfBest } from './bestRun';
+import { GAME_TITLE } from './config';
 import { FixedStepper } from './fixedStepper';
 import { Input } from './input';
 import { commandFromInput } from './inputLogic';
@@ -63,6 +78,12 @@ declare global {
       offers: number;
       loadout: number;
       wave: number;
+      screen: string;
+      tokens: number;
+      kills: number;
+      bossHp: number;
+      bossMaxHp: number;
+      starter: string;
     };
   }
 }
@@ -76,7 +97,7 @@ function benchCommand(tickCount: number): Command {
   return { moveX: tickCount % 240 < 120 ? 1 : -1 };
 }
 
-function finishBench(metrics: FrameMetrics, balls: number, enemies: number): BrowserBenchResult {
+function finishBench(metrics: FrameMetrics, load: BenchLoad): BrowserBenchResult {
   const n = metrics.count;
   const cpu = new Float64Array(n);
   const perTick: number[] = [];
@@ -91,7 +112,7 @@ function finishBench(metrics: FrameMetrics, balls: number, enemies: number): Bro
   }
   const allocation = metrics.allocation();
   return {
-    scenario: `${balls} balls, ${enemies} enemies`,
+    scenario: `${load.balls} balls, ${load.enemies} enemies`,
     frames: n,
     fps: n / (totalFrameMs / 1000),
     frameMs: summarize(metrics.frameMs, n),
@@ -110,59 +131,93 @@ function finishBench(metrics: FrameMetrics, balls: number, enemies: number): Bro
   };
 }
 
-/** One command for the next tick: movement, or the card choice while a level-up is pending. */
-function nextCommand(run: Run, input: Input, deadZone: number): Command {
+/**
+ * One command for the next tick: a card choice while a level-up is pending, otherwise movement
+ * plus a fusion if the workshop panel asked for one.
+ */
+function nextCommand(run: Run, input: Input, deadZone: number, fusion: FuseAction | null): Command {
   if (run.phase === 'levelup') {
     const index = input.takePick();
     return index === null ? { moveX: 0 } : { moveX: 0, action: { type: 'pick', index } };
   }
   input.takePick(); // a number key pressed outside a level-up is not a choice
-  return commandFromInput(input.state, run.player.x, deadZone);
+  const move = commandFromInput(input.state, run.player.x, deadZone);
+  return fusion === null ? move : { moveX: move.moveX, action: fusion };
 }
 
-function hudText(snap: Snapshot, waveCount: number): string {
-  const wave = Math.min(snap.waveIndex + 1, Math.max(1, waveCount));
-  return [
+function hudText(snap: Snapshot, waveCount: number, seed: number): string {
+  const wave =
+    waveCount > 0 && snap.waveIndex >= waveCount
+      ? 'Jefe'
+      : `Oleada ${Math.min(snap.waveIndex + 1, Math.max(1, waveCount))}/${waveCount}`;
+  const first = [
     `PV ${Math.max(0, Math.round(snap.playerHp))}/${snap.playerMaxHp}`,
     `Nv ${snap.playerLevel} (${Math.floor(snap.playerXp)}/${snap.playerXpNext} XP)`,
-    waveCount > 0 ? `Oleada ${wave}/${waveCount}` : '',
+    waveCount > 0 ? wave : '',
     snap.tokens > 0 ? `Fichas ${snap.tokens}` : '',
   ]
     .filter((part) => part !== '')
     .join('   ');
+  return `${first}\nSemilla ${seed}`;
 }
 
-function endMessage(phase: number): string | null {
-  if (phase === PHASE_LOST) return 'Derrota\nPulsa R o toca la pantalla para reiniciar';
-  if (phase === PHASE_WON) return '¡Victoria!\nPulsa R o toca la pantalla para jugar otra vez';
-  return null;
+type Screen = 'menu' | 'playing' | 'results';
+
+/** Debug aids (?debug&…): start from a prepared state to reach a scene quickly. */
+function applyDebugParams(run: Run, config: GameConfig, params: URLSearchParams): void {
+  const number = (name: string): number | null => {
+    const raw = params.get(name);
+    return raw === null || raw === '' || Number.isNaN(Number(raw)) ? null : Number(raw);
+  };
+  const xp = number('xp');
+  if (xp !== null) run.player.xp = xp;
+  const hp = number('hp');
+  if (hp !== null) run.player.hp = hp;
+  const tokens = number('tokens');
+  if (tokens !== null) run.tokens = tokens;
+  const wave = number('wave');
+  if (wave !== null) run.wave.index = wave; // wave=7 jumps straight to the boss
+  const loadout = params.get('loadout');
+  if (loadout !== null) {
+    const species = loadout.split(',').filter((id) => config.species[id] !== undefined);
+    run.loadout = species.map((id) => {
+      const ball = createBall(config, id, run.nextBallId);
+      run.nextBallId += 1;
+      return ball;
+    });
+    run.cooldowns = run.loadout.map(() => 0);
+  }
 }
 
 /**
- * Composition root of the game: wires the domain, the renderer, the input and the overlay, and
- * owns the clock. The domain never sees time; it only receives one command per tick.
+ * Composition root of the game: wires the domain, the renderer, the input, the overlay and the
+ * three screens (title, play, results), and owns the clock. The domain never sees time; it only
+ * receives one command per tick.
  */
 export async function startGame(host: HTMLElement): Promise<void> {
   const params = new URLSearchParams(window.location.search);
   const bench = params.has('bench');
+  // ?bench = stress scene (40 balls, 150 enemies); ?bench=real = the measured real peak load.
+  const benchLoad = params.get('bench') === 'real' ? BENCH_LOADS.real : BENCH_LOADS.stress;
   const showDebug = bench || params.has('debug');
   // Measurement aid: run tick + snapshot but skip drawing, to separate the costs.
   const skipRender = params.has('norender');
+  // ?starter=<species> skips the title screen (used by the browser tests and benchmarks).
+  const starterParam = params.get('starter');
+  const skipTitle = bench || (starterParam !== null && STARTER_SPECIES.includes(starterParam));
 
   let config: GameConfig = gameConfig;
   const newSeed = (): number => Number(params.get('seed')) || Date.now() >>> 0;
+  let starter = skipTitle && starterParam !== null ? starterParam : (STARTER_SPECIES[0] ?? '');
   let run: Run;
   if (bench) {
-    const scenario = benchScenario(gameConfig, 1);
+    const scenario = benchScenario(gameConfig, 1, benchLoad);
     run = scenario.run;
     config = scenario.config;
   } else {
-    run = createRun(config, newSeed(), 'charmander');
+    run = createRun(config, newSeed(), starter);
   }
-
-  // Debug aid (?debug&xp=N): start with N experience to reach the card choice quickly.
-  const grantXp = Number(params.get('xp') ?? 0);
-  if (showDebug && grantXp > 0) run.player.xp = grantXp;
+  if (showDebug && !bench) applyDebugParams(run, config, params);
 
   let prev = createSnapshot(MAX_SLOTS, MAX_ENEMIES);
   let curr = createSnapshot(MAX_SLOTS, MAX_ENEMIES);
@@ -171,10 +226,19 @@ export async function startGame(host: HTMLElement): Promise<void> {
 
   const renderer = await Renderer.create(host, config, MAX_SLOTS, MAX_ENEMIES);
   const overlay = new Overlay(host);
+  const fusionPanel = new FusionPanel(host);
+  const startScreen = new StartScreen(host);
+  const resultsScreen = new ResultsScreen(host);
   const input = new Input(host, () => renderer.view);
   const stepper = new FixedStepper();
   const metrics = bench ? new FrameMetrics(BENCH_MEASURED_FRAMES) : null;
+  const store = browserStore();
   const pending: GameEvent[] = [];
+
+  let screen: Screen = 'playing';
+  let best: BestRun | null = loadBestRun(store);
+  // A fusion chosen in the panel, waiting for the next tick.
+  let pendingFusion: FuseAction | null = null;
 
   let last = performance.now();
   let frameCount = 0;
@@ -197,6 +261,12 @@ export async function startGame(host: HTMLElement): Promise<void> {
       offers: run.offers.length,
       loadout: run.loadout.length,
       wave: run.wave.index,
+      screen,
+      tokens: run.tokens,
+      kills: run.kills,
+      bossHp: curr.bossHp,
+      bossMaxHp: curr.bossMaxHp,
+      starter: run.starter,
     });
   }
 
@@ -206,33 +276,92 @@ export async function startGame(host: HTMLElement): Promise<void> {
     cadenceFactor: config.cards.cadenceFactor,
     vitalityHp: config.cards.vitalityHp,
   };
+  const starters: StarterOption[] = STARTER_SPECIES.flatMap((id) => {
+    const type = config.species[id]?.type;
+    return type === undefined ? [] : [{ id, type }];
+  });
+  const bossName = config.boss ? speciesName(config.boss.species) : '';
 
-  const restart = (): void => {
-    run = createRun(config, newSeed(), 'charmander');
+  const startRun = (species: string): void => {
+    starter = species;
+    run = createRun(config, newSeed(), starter);
     writeSnapshot(run, prev);
     writeSnapshot(run, curr);
     stepper.reset();
     pending.length = 0;
+    pendingFusion = null;
+    startScreen.hide();
+    resultsScreen.hide();
+    fusionPanel.hide();
+    screen = 'playing';
   };
+  const showMenu = (): void => {
+    screen = 'menu';
+    resultsScreen.hide();
+    fusionPanel.hide();
+    startScreen.show(GAME_TITLE, starters, best, (index) => input.requestPick(index));
+  };
+  const finishRun = (): void => {
+    const summary = summarizeRun(run, config);
+    const saved = saveIfBest(store, summary);
+    best = saved.best;
+    screen = 'results';
+    fusionPanel.hide();
+    resultsScreen.show(
+      summary,
+      saved.best,
+      saved.isNewBest,
+      () => input.requestRestart(),
+      () => input.requestMenu(),
+    );
+  };
+
+  // Closures created once: the panel calls them, and they always see the current run.
+  const previewFn = (a: number, b: number): FusionPreview => previewFusion(run, a, b);
+  const fuseFn = (a: number, b: number): void => {
+    pendingFusion = { type: 'fuse', a, b };
+  };
+  const fusionView = { loadout: run.loadout as readonly Ball[], tokens: 0 };
+
+  if (!skipTitle) showMenu();
 
   const frame = (now: number): void => {
     const elapsed = now - last;
     last = now;
 
-    if (input.restartRequested) {
+    if (screen === 'menu') {
+      const index = input.takePick();
+      const id = index === null ? undefined : STARTER_SPECIES[index];
+      if (id !== undefined && config.species[id] !== undefined) startRun(id);
       input.restartRequested = false;
-      if (!bench && (run.phase === 'lost' || run.phase === 'won')) restart();
+      input.menuRequested = false;
+    } else if (screen === 'results') {
+      input.takePick();
+      if (input.restartRequested) startRun(starter);
+      else if (input.menuRequested) showMenu();
+      input.restartRequested = false;
+      input.menuRequested = false;
+    } else {
+      input.restartRequested = false;
+      input.menuRequested = false;
     }
 
-    const steps = stepper.advance(elapsed);
+    const steps = screen === 'playing' ? stepper.advance(elapsed) : 0;
     let tickMs = 0;
     let snapshotMs = 0;
     for (let s = 0; s < steps; s++) {
-      const cmd = bench ? benchCommand(run.tickCount) : nextCommand(run, input, POINTER_DEAD_ZONE);
+      const cmd = bench
+        ? benchCommand(run.tickCount)
+        : nextCommand(run, input, POINTER_DEAD_ZONE, pendingFusion);
+      pendingFusion = null;
       const t0 = performance.now();
       const output = tick(run, cmd, config);
       const t1 = performance.now();
-      for (const event of output.events) pending.push(event);
+      for (const event of output.events) {
+        pending.push(event);
+        const text = describeEvent(event);
+        if (text !== null) overlay.showToast(text, now);
+      }
       const swap = prev;
       prev = curr;
       curr = swap;
@@ -240,6 +369,10 @@ export async function startGame(host: HTMLElement): Promise<void> {
       const t2 = performance.now();
       tickMs += t1 - t0;
       snapshotMs += t2 - t1;
+      if (!bench && (run.phase === 'lost' || run.phase === 'won')) {
+        finishRun();
+        break;
+      }
     }
 
     const r0 = performance.now();
@@ -258,14 +391,24 @@ export async function startGame(host: HTMLElement): Promise<void> {
     }
     if (metrics?.full && !benchDone) {
       benchDone = true;
-      window.__benchResult = finishBench(metrics, BENCH_BALLS, BENCH_ENEMIES);
+      window.__benchResult = finishBench(metrics, benchLoad);
     }
 
-    overlay.setHud(hudText(curr, config.waves.length));
-    overlay.setMessage(endMessage(curr.phase));
-    overlay.setCards(curr.phase === PHASE_LEVELUP ? run.offers : null, cardContext, (index) =>
-      input.requestPick(index),
+    overlay.setHud(screen === 'menu' ? '' : hudText(curr, config.waves.length, run.seed));
+    overlay.updateToast(now);
+    overlay.setBoss(bossName, screen === 'playing' ? curr.bossHp : 0, curr.bossMaxHp);
+    overlay.setCards(
+      screen === 'playing' && curr.phase === PHASE_LEVELUP ? run.offers : null,
+      cardContext,
+      (index) => input.requestPick(index),
     );
+    if (!bench && screen === 'playing' && curr.phase !== PHASE_LEVELUP) {
+      fusionView.loadout = run.loadout;
+      fusionView.tokens = run.tokens;
+      fusionPanel.update(fusionView, previewFn, fuseFn);
+    } else {
+      fusionPanel.hide();
+    }
     if (showDebug && frameCount % 15 === 0) {
       overlay.setDebug(
         [
