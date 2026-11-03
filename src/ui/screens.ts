@@ -1,5 +1,6 @@
 import type { GameType, RunSummary } from '../domain';
 import { speciesName } from './cardText';
+import type { CreditLine } from './creditsText';
 import { TYPE_COLORS } from './fusionPanel';
 import { type BestRunView, describeBest, describeResults, starterBlurb } from './screenText';
 
@@ -41,7 +42,9 @@ export class StartScreen {
     title: string,
     starters: readonly StarterOption[],
     best: BestRunView | null,
+    disclaimer: string,
     onPick: (index: number) => void,
+    onCredits: () => void,
   ): void {
     this.root.replaceChildren(
       el('div', 'font-size:40px;font-weight:800;letter-spacing:0.5px;', title),
@@ -66,6 +69,18 @@ export class StartScreen {
         'font-size:13px;opacity:0.65;max-width:360px;',
         'Muévete con A/D, las flechas o manteniendo pulsado. Las bolas salen solas.',
       ),
+    );
+    const credits = el(
+      'button',
+      `${BUTTON}min-width:0;margin-top:6px;padding:6px 14px;`,
+      'Créditos',
+    );
+    credits.type = 'button';
+    credits.dataset.action = 'credits';
+    credits.addEventListener('click', onCredits);
+    this.root.append(
+      credits,
+      el('div', 'font-size:11px;opacity:0.6;max-width:420px;margin-top:6px;', disclaimer),
     );
     this.root.style.display = 'flex';
   }
@@ -106,6 +121,48 @@ export class ResultsScreen {
     menu.dataset.action = 'menu';
     menu.addEventListener('click', onMenu);
     this.root.append(again, menu);
+    this.root.style.display = 'flex';
+  }
+
+  hide(): void {
+    this.root.style.display = 'none';
+  }
+}
+
+/** Credits and affiliation notice. */
+export class CreditsScreen {
+  private readonly root = el('div', PANEL);
+
+  constructor(host: HTMLElement) {
+    this.root.dataset.screen = 'credits';
+    this.root.addEventListener('pointerdown', (e) => e.stopPropagation());
+    host.append(this.root);
+  }
+
+  show(title: string, lines: readonly CreditLine[], onBack: () => void): void {
+    this.root.replaceChildren(
+      el('div', 'font-size:30px;font-weight:800;margin-bottom:6px;', title),
+    );
+    for (const line of lines) {
+      const row = el('div', 'font-size:14px;max-width:440px;line-height:1.4;');
+      if (line.url === undefined) {
+        row.textContent = line.text;
+      } else {
+        const link = document.createElement('a');
+        link.href = line.url;
+        link.target = '_blank';
+        link.rel = 'noopener noreferrer';
+        link.textContent = line.text;
+        link.style.cssText = 'color:#9db4ff;pointer-events:auto;';
+        row.append(link);
+      }
+      this.root.append(row);
+    }
+    const back = el('button', `${BUTTON}margin-top:12px;text-align:center;`, 'Volver (Esc)');
+    back.type = 'button';
+    back.dataset.action = 'back';
+    back.addEventListener('click', onBack);
+    this.root.append(back);
     this.root.style.display = 'flex';
   }
 

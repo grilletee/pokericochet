@@ -9,14 +9,31 @@ import {
   previewFusion,
   type Run,
   tick,
+  type WorkshopAction,
 } from '../../src/domain';
 
 export interface Policy {
   readonly name: string;
   move(run: Run, config: GameConfig): -1 | 0 | 1;
   pick(run: Run, offers: readonly Card[]): number;
-  /** A fusion to try now, if the policy wants one (checked against the rules before use). */
-  fuse?(run: Run): FuseAction | null;
+  /** A workshop command to send now (open, fuse or close), if the policy wants one. */
+  workshop?(run: Run): WorkshopCommand | null;
+}
+
+type WorkshopCommand = FuseAction | WorkshopAction;
+
+/**
+ * Opens the workshop when a fusion is possible, fuses while any is, then closes it: three kinds of
+ * command, one per tick, as the player's panel would send them.
+ */
+export function workshopPolicy(run: Run): WorkshopCommand | null {
+  if (run.phase === 'workshop') {
+    return firstValidFusion(run) ?? { type: 'workshop', open: false };
+  }
+  if (run.phase === 'playing' && run.tokens > 0 && firstValidFusion(run) !== null) {
+    return { type: 'workshop', open: true };
+  }
+  return null;
 }
 
 /** The first valid fusion of the loadout, trying every ordered pair of slots; null if none. */
@@ -66,7 +83,7 @@ export const chaserPolicy: Policy = {
     const delta = target - run.player.x;
     return delta > 6 ? 1 : delta < -6 ? -1 : 0;
   },
-  fuse: firstValidFusion,
+  workshop: workshopPolicy,
   pick(_run, offers) {
     let best = 0;
     offers.forEach((card, i) => {
@@ -104,10 +121,9 @@ export function playRun(
     if (run.phase === 'levelup') {
       cmd = { moveX: 0, action: { type: 'pick', index: policy.pick(run, run.offers) } };
     } else {
-      const fuse = run.tokens > 0 ? policy.fuse?.(run) : null;
-      cmd = fuse
-        ? { moveX: policy.move(run, config), action: fuse }
-        : { moveX: policy.move(run, config) };
+      const action = policy.workshop?.(run);
+      const moveX = policy.move(run, config);
+      cmd = action ? { moveX, action } : { moveX };
     }
     for (const e of tick(run, cmd, config).events) {
       if (e.type === 'kill') kills += 1;

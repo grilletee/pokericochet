@@ -29,9 +29,9 @@ function record(seed: number, starter: string): Recording {
     if (run.phase === 'levelup') {
       cmd = { moveX: 0, action: { type: 'pick', index: chaserPolicy.pick(run, run.offers) } };
     } else {
-      const fuse = run.tokens > 0 ? (chaserPolicy.fuse?.(run) ?? null) : null;
+      const action = chaserPolicy.workshop?.(run);
       const moveX = chaserPolicy.move(run, gameConfig);
-      cmd = fuse ? { moveX, action: fuse } : { moveX };
+      cmd = action ? { moveX, action } : { moveX };
     }
     commands.push(cmd);
     for (const e of tick(run, cmd, gameConfig).events) {
@@ -68,6 +68,8 @@ describe('a whole run, with fusions and the boss, is a function of (seed, comman
     expect(rec.run.boss.spawned).toBe(true);
     expect(['won', 'lost']).toContain(rec.run.phase);
     expect(rec.commands.some((c) => c.action?.type === 'fuse')).toBe(true);
+    expect(rec.commands.some((c) => c.action?.type === 'workshop' && c.action.open)).toBe(true);
+    expect(rec.commands.some((c) => c.action?.type === 'workshop' && !c.action.open)).toBe(true);
     expect(rec.commands.some((c) => c.action?.type === 'pick')).toBe(true);
     expect(rec.run.kills).toBeGreaterThan(20);
   });

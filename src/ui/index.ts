@@ -1,5 +1,9 @@
+export type { SoundId } from './audio';
+export { SoundFx, SoundToggle, soundFor, Throttle } from './audio';
 export type { CardTextContext } from './cardText';
 export { describeCard, speciesName, typeName } from './cardText';
+export type { CreditLine } from './creditsText';
+export { creditLines, disclaimerShort, POKEAPI_URL, SPRITES_URL } from './creditsText';
 export type { FusionView } from './fusionPanel';
 export { FusionPanel, TYPE_COLORS } from './fusionPanel';
 export {
@@ -10,7 +14,7 @@ export {
 } from './fusionText';
 export { Overlay } from './overlay';
 export type { StarterOption } from './screens';
-export { ResultsScreen, StartScreen } from './screens';
+export { CreditsScreen, ResultsScreen, StartScreen } from './screens';
 export type { BestRunView, ResultsText } from './screenText';
 export {
   describeBest,

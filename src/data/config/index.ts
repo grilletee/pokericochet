@@ -27,7 +27,8 @@ export const baseConfig: Omit<GameConfig, 'species' | 'enemySpecies' | 'ballSpec
     // Tuned with the balance harness (pnpm bench:balance); GDD-v0 does not fix enemy hp.
     hpScale: 0.45,
   },
-  // The final boss (ADR-016). Provisional numbers, tuned with the balance harness.
+  // The final boss (ADR-016). hpScale is PROVISIONAL, like enemy.hpScale: measured with bots,
+  // to be revalidated with a human playtest (3E).
   boss: {
     species: 'gyarados',
     hpScale: 30,

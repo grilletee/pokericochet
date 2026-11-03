@@ -25,10 +25,12 @@ export { cloneRun, createRun, hashRun } from './run';
 export type { Snapshot } from './snapshot';
 export {
   createSnapshot,
+  NO_SPECIES,
   PHASE_LEVELUP,
   PHASE_LOST,
   PHASE_PLAYING,
   PHASE_WON,
+  PHASE_WORKSHOP,
   typeCode,
   writeSnapshot,
 } from './snapshot';
@@ -50,6 +52,7 @@ export type {
   GameType,
   PickAction,
   SpeciesDef,
+  WorkshopAction,
 } from './types';
 export { GAME_TYPES } from './types';
 export { advanceBoss, advanceWave, isBossAlive, laneX } from './waves';

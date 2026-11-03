@@ -22,6 +22,9 @@ export interface FusionView {
  */
 export class FusionPanel {
   private readonly root: HTMLDivElement;
+  private readonly launcher: HTMLButtonElement;
+  private lastLauncher = '';
+  private lastOnClose: (() => void) | null = null;
   private selected: number[] = [];
   /** Balls (immutable values, compared by identity) and tokens the panel currently shows. */
   private shown: Ball[] | null = null;
@@ -39,7 +42,28 @@ export class FusionPanel {
       'font-family:system-ui,sans-serif;font-size:13px;color:#e8ecf8;pointer-events:auto;';
     // Clicks here must not steer the player through the canvas input underneath.
     this.root.addEventListener('pointerdown', (e) => e.stopPropagation());
-    host.append(this.root);
+    this.launcher = document.createElement('button');
+    this.launcher.type = 'button';
+    this.launcher.dataset.fusionOpen = '';
+    this.launcher.style.cssText =
+      'position:absolute;left:12px;top:60px;display:none;padding:6px 10px;border-radius:8px;' +
+      'border:2px solid #5b6aa8;background:rgba(27,37,64,0.85);color:#e8ecf8;font:inherit;' +
+      'font-family:system-ui,sans-serif;font-size:13px;cursor:pointer;pointer-events:auto;';
+    this.launcher.addEventListener('pointerdown', (e) => e.stopPropagation());
+    host.append(this.root, this.launcher);
+  }
+
+  /**
+   * The button that opens the workshop while playing (key F does the same); `null` hides it.
+   * Cheap to call every frame.
+   */
+  setLauncher(tokens: number | null, onOpen: () => void): void {
+    const key = tokens === null ? '' : String(tokens);
+    if (key === this.lastLauncher) return;
+    this.lastLauncher = key;
+    this.launcher.onclick = onOpen;
+    this.launcher.style.display = tokens === null ? 'none' : 'block';
+    this.launcher.textContent = `Fusión (F) · Fichas: ${tokens ?? 0}`;
   }
 
   /** Cheap to call every frame: it only redraws when the loadout, tokens or selection change. */
@@ -47,7 +71,9 @@ export class FusionPanel {
     view: FusionView,
     preview: (a: number, b: number) => FusionPreview,
     onFuse: (a: number, b: number) => void,
+    onClose: () => void,
   ): void {
+    this.lastOnClose = onClose;
     this.lastView = view;
     this.lastPreview = preview;
     this.lastOnFuse = onFuse;
@@ -94,8 +120,16 @@ export class FusionPanel {
     this.root.style.display = 'flex';
 
     const header = document.createElement('div');
-    header.style.cssText = 'font-weight:700;';
-    header.textContent = `Fusión · Fichas: ${view.tokens}`;
+    header.style.cssText = 'display:flex;justify-content:space-between;gap:8px;font-weight:700;';
+    const title = document.createElement('span');
+    title.textContent = `Fusión · Fichas: ${view.tokens} · juego en pausa`;
+    const close = document.createElement('button');
+    close.type = 'button';
+    close.dataset.fusionClose = '';
+    close.textContent = 'Cerrar (F)';
+    close.style.cssText = this.buttonStyle(true);
+    close.addEventListener('click', () => this.lastOnClose?.());
+    header.append(title, close);
     this.root.append(header);
 
     const chips = document.createElement('div');

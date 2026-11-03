@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   createRun,
   createSnapshot,
+  NO_SPECIES,
   PHASE_LOST,
   PHASE_PLAYING,
   type Run,
@@ -98,5 +99,26 @@ describe('writeSnapshot', () => {
     expect(
       new Set(['fire', 'water', 'grass', 'electric'].map((t) => typeCode(t as never))).size,
     ).toBe(4);
+  });
+});
+
+describe('snapshot: species codes for the render', () => {
+  it('writes the code of each ball and enemy species, and NO_SPECIES for unknown ones', () => {
+    const run = populatedRun();
+    const codes = new Map(Object.keys(config.species).map((id, code) => [id, code]));
+    const snap = createSnapshot(8, 64);
+    writeSnapshot(run, snap, codes);
+    expect(snap.enemyCount).toBeGreaterThan(0);
+    for (let i = 0; i < snap.enemyCount; i++) {
+      expect(snap.enemySpecies[i]).toBe(codes.get(run.enemies[i]?.species ?? ''));
+    }
+    const slot = run.bodies[0]?.slot ?? 0;
+    expect(snap.ballSpecies[slot]).toBe(codes.get(run.loadout[slot]?.species ?? ''));
+
+    writeSnapshot(run, snap); // no table
+    expect(snap.enemySpecies[0]).toBe(NO_SPECIES);
+    expect(snap.ballSpecies[slot]).toBe(NO_SPECIES);
+    writeSnapshot(run, snap, new Map());
+    expect(snap.enemySpecies[0]).toBe(NO_SPECIES);
   });
 });

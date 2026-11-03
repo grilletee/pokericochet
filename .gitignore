@@ -15,3 +15,6 @@ tools/fetch-data/.cache/
 
 # Screenshots written by pnpm smoke
 smoke*.png
+
+# Sprites downloaded by fetch-data (PokeAPI/sprites); never committed, fetched per build
+src/assets/sprites/

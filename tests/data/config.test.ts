@@ -61,6 +61,10 @@ describe('stat mapping', () => {
     expect(baseConfig.enemy.hpScale).toBe(0.45);
   });
 
+  it('pins the provisional boss hp multiplier, so changing it is a conscious decision', () => {
+    expect(baseConfig.boss?.hpScale).toBe(30);
+  });
+
   it('maps each type to one effect kind', () => {
     expect(baseConfig.typeEffects.fire.kind).toBe('burn');
     expect(baseConfig.typeEffects.water.kind).toBe('pierce');

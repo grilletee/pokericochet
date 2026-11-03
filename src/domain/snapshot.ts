@@ -15,10 +15,14 @@ export function typeCode(type: GameType): number {
   }
 }
 
+/** Species code of a ball or enemy whose species has no code in the table the app passed. */
+export const NO_SPECIES = 255;
+
 export const PHASE_PLAYING = 0;
 export const PHASE_LOST = 1;
 export const PHASE_LEVELUP = 2;
 export const PHASE_WON = 3;
+export const PHASE_WORKSHOP = 4;
 
 function phaseCode(phase: Run['phase']): number {
   switch (phase) {
@@ -30,6 +34,8 @@ function phaseCode(phase: Run['phase']): number {
       return PHASE_LEVELUP;
     case 'won':
       return PHASE_WON;
+    case 'workshop':
+      return PHASE_WORKSHOP;
   }
 }
 
@@ -59,6 +65,8 @@ export interface Snapshot {
   ballX: Float32Array;
   ballY: Float32Array;
   ballType: Uint8Array;
+  /** Species code (see `writeSnapshot`), or NO_SPECIES. */
+  ballSpecies: Uint8Array;
 
   enemyCount: number;
   enemyId: Int32Array;
@@ -66,6 +74,7 @@ export interface Snapshot {
   enemyY: Float32Array;
   enemyRadius: Float32Array;
   enemyType: Uint8Array;
+  enemySpecies: Uint8Array;
 
   /** True if the run had more slots or enemies than the buffers hold (extras are dropped). */
   truncated: boolean;
@@ -90,18 +99,28 @@ export function createSnapshot(maxSlots = 64, maxEnemies = 512): Snapshot {
     ballX: new Float32Array(maxSlots),
     ballY: new Float32Array(maxSlots),
     ballType: new Uint8Array(maxSlots),
+    ballSpecies: new Uint8Array(maxSlots),
     enemyCount: 0,
     enemyId: new Int32Array(maxEnemies),
     enemyX: new Float32Array(maxEnemies),
     enemyY: new Float32Array(maxEnemies),
     enemyRadius: new Float32Array(maxEnemies),
     enemyType: new Uint8Array(maxEnemies),
+    enemySpecies: new Uint8Array(maxEnemies),
     truncated: false,
   };
 }
 
-/** Copies the render-relevant part of the run into `snap`. Allocates nothing. */
-export function writeSnapshot(run: Run, snap: Snapshot): void {
+/**
+ * Copies the render-relevant part of the run into `snap`. Allocates nothing. `speciesCodes` maps
+ * a species id to the small number the render uses to pick its art (the domain knows no art);
+ * without it, or for an unknown species, the code is NO_SPECIES.
+ */
+export function writeSnapshot(
+  run: Run,
+  snap: Snapshot,
+  speciesCodes?: ReadonlyMap<string, number>,
+): void {
   snap.tick = run.tickCount;
   snap.phase = phaseCode(run.phase);
   snap.playerX = run.player.x;
@@ -135,6 +154,7 @@ export function writeSnapshot(run: Run, snap: Snapshot): void {
     snap.ballX[body.slot] = body.x;
     snap.ballY[body.slot] = body.y;
     snap.ballType[body.slot] = typeCode(ball.type);
+    snap.ballSpecies[body.slot] = speciesCodes?.get(ball.species) ?? NO_SPECIES;
   }
 
   const maxEnemies = snap.enemyId.length;
@@ -149,6 +169,7 @@ export function writeSnapshot(run: Run, snap: Snapshot): void {
     snap.enemyY[i] = e.y;
     snap.enemyRadius[i] = e.radius;
     snap.enemyType[i] = typeCode(e.type);
+    snap.enemySpecies[i] = speciesCodes?.get(e.species) ?? NO_SPECIES;
   }
   snap.truncated = truncated;
 }

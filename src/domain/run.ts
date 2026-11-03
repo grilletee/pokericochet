@@ -6,7 +6,8 @@ import { xpCost } from './progression';
 import { cloneRng, deriveRng, type RngState } from './rng';
 import type { Ball, BallBody, Card, Enemy, GameEvent } from './types';
 
-export type Phase = 'playing' | 'levelup' | 'won' | 'lost';
+/** `workshop` and `levelup` pause the simulation until a command ends them (ADR-014, ADR-016). */
+export type Phase = 'playing' | 'levelup' | 'workshop' | 'won' | 'lost';
 
 export interface Player {
   x: number;

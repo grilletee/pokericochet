@@ -73,7 +73,13 @@ export interface PickAction {
   readonly index: number;
 }
 
-/** Fuses two balls of the loadout (workshop), spending one fusion token. Order matters. */
+/** Opens or closes the workshop. While it is open the simulation is paused (ADR-016). */
+export interface WorkshopAction {
+  readonly type: 'workshop';
+  readonly open: boolean;
+}
+
+/** Fuses two balls of the loadout (workshop phase only), spending one fusion token. Order matters. */
 export interface FuseAction {
   readonly type: 'fuse';
   /** Loadout slot of the first ingredient: the result keeps its id, species and type. */
@@ -96,8 +102,11 @@ export type FuseFailure =
 /** One command per tick: the player's input (ADR-004). */
 export interface Command {
   readonly moveX: -1 | 0 | 1;
-  /** `pick` only means something in the level-up phase, `fuse` only while playing. */
-  readonly action?: PickAction | FuseAction;
+  /**
+   * `pick` only means something in the level-up phase; `workshop` opens it (while playing) or
+   * closes it; `fuse` only in the workshop phase.
+   */
+  readonly action?: PickAction | FuseAction | WorkshopAction;
 }
 
 export type GameEvent =

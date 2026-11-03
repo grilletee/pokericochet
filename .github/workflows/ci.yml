@@ -22,4 +22,17 @@ jobs:
       - run: pnpm lint
       - run: pnpm typecheck
       - run: pnpm test
+
+      # Sprites are never committed (ADR-018): every build fetches them with tools/fetch-data.
+      # The cache keeps raw PokéAPI responses and the sprites between runs, so a warm build makes
+      # no network request at all; the key changes only when the roster or the tool changes.
+      - uses: actions/cache@v4
+        with:
+          path: |
+            tools/fetch-data/.cache
+            src/assets/sprites
+          key: fetch-data-${{ hashFiles('tools/fetch-data/roster.json', 'tools/fetch-data/*.ts') }}
+      - run: pnpm fetch-data
+      # The committed species.json must be exactly what the tool generates.
+      - run: git diff --exit-code -- src/data/generated
       - run: pnpm build

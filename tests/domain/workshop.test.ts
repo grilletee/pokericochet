@@ -10,7 +10,7 @@ import {
   type Run,
   tick,
 } from '../../src/domain';
-import { deepFreeze, makeBall, quietConfig } from './fixtures';
+import { deepFreeze, makeBall, makeEnemy, quietConfig } from './fixtures';
 
 const fuseCmd = (a: number, b: number): Command => ({ moveX: 0, action: { type: 'fuse', a, b } });
 
@@ -20,6 +20,7 @@ function runWith(balls: Ball[], tokens = 1): Run {
   run.cooldowns = balls.map(() => 0);
   run.nextBallId = 100;
   run.tokens = tokens;
+  run.phase = 'workshop'; // fusing happens with the workshop open (ADR-016)
   return run;
 }
 
@@ -32,6 +33,83 @@ const water = (id: number, level = 1) =>
     level,
     effects: [{ kind: 'pierce', strength: 1 }],
   });
+
+describe('workshop: opening and closing (the run pauses)', () => {
+  const open: Command = { moveX: 0, action: { type: 'workshop', open: true } };
+  const close: Command = { moveX: 0, action: { type: 'workshop', open: false } };
+
+  function playingRun(): Run {
+    const run = runWith([fire(1), fire(2)]);
+    run.phase = 'playing';
+    run.enemies = [makeEnemy({ id: 1, y: 100, speed: 1 })];
+    return run;
+  }
+
+  it('opening moves nothing and pauses: no time passes while it is open', () => {
+    const run = playingRun();
+    tick(run, open, quietConfig);
+    expect(run.phase).toBe('workshop');
+    expect(run.tickCount).toBe(0);
+    const before = hashRun(run);
+    for (let i = 0; i < 100; i++) tick(run, { moveX: 1 }, quietConfig);
+    expect(hashRun(run)).toBe(before);
+    expect(run.enemies[0]?.y).toBe(100);
+    expect(run.player.x).toBe(quietConfig.arena.width / 2);
+  });
+
+  it('closing resumes play from exactly where it stopped', () => {
+    const run = playingRun();
+    for (let i = 0; i < 10; i++) tick(run, { moveX: 0 }, quietConfig);
+    const y = run.enemies[0]?.y ?? 0;
+    tick(run, open, quietConfig);
+    tick(run, close, quietConfig);
+    expect(run.phase).toBe('playing');
+    expect(run.enemies[0]?.y).toBe(y);
+    tick(run, { moveX: 0 }, quietConfig);
+    expect(run.enemies[0]?.y).toBe(y + 1);
+  });
+
+  it('opening and closing the workshop with no fusion leaves the run as if it never happened, apart from the phase', () => {
+    const a = playingRun();
+    const b = playingRun();
+    tick(b, open, quietConfig);
+    tick(b, { moveX: 1 }, quietConfig); // ignored while paused
+    tick(b, close, quietConfig);
+    for (const run of [a, b]) for (let i = 0; i < 50; i++) tick(run, { moveX: 1 }, quietConfig);
+    expect(hashRun(a)).toBe(hashRun(b));
+  });
+
+  it('the workshop stays open after a fusion, so several can be done in a row', () => {
+    const run = runWith([fire(1), fire(2), water(3), water(4)], 2);
+    tick(run, fuseCmd(0, 1), quietConfig);
+    expect(run.phase).toBe('workshop');
+    tick(run, fuseCmd(1, 2), quietConfig);
+    expect(run.loadout.map((b) => b.level)).toEqual([2, 2]);
+    expect(run.tokens).toBe(0);
+  });
+
+  it('fusing while playing does nothing, and the workshop cannot be opened from other phases', () => {
+    const run = playingRun();
+    tick(run, fuseCmd(0, 1), quietConfig);
+    expect(run.loadout).toHaveLength(2);
+    expect(run.tokens).toBe(1);
+    for (const phase of ['levelup', 'won', 'lost'] as const) {
+      const other = playingRun();
+      other.phase = phase;
+      tick(other, open, quietConfig);
+      expect(other.phase).toBe(phase);
+    }
+  });
+
+  it('a pick is ignored while the workshop is open', () => {
+    const run = playingRun();
+    tick(run, open, quietConfig);
+    run.offers = [{ kind: 'token' }];
+    tick(run, { moveX: 0, action: { type: 'pick', index: 0 } }, quietConfig);
+    expect(run.tokens).toBe(1);
+    expect(run.offers).toHaveLength(1);
+  });
+});
 
 describe('workshop: fuse command', () => {
   it('F1: fuses two equal balls into the next level, spending one token', () => {
@@ -87,7 +165,7 @@ describe('workshop: fuse command', () => {
     expect(run.loadout.map((b) => b.id)).toEqual([1, 3]);
     expect(run.loadout[1]?.level).toBe(2);
     expect(run.bodies).toHaveLength(0);
-    expect(run.cooldowns[1]).toBe(4); // 5, less the tick that just ran
+    expect(run.cooldowns[1]).toBe(5);
   });
 
   it('the body of the kept ball leaves the arena too, and the result waits the longer cooldown of the two', () => {
@@ -96,7 +174,7 @@ describe('workshop: fuse command', () => {
     run.bodies = [{ slot: 0, x: 100, y: 300, vx: 0, vy: -1, pierce: 0, skipId: 0 }];
     tick(run, fuseCmd(0, 1), quietConfig);
     expect(run.bodies).toHaveLength(0);
-    expect(run.cooldowns).toEqual([8]); // the second ball's 9, less the tick that just ran
+    expect(run.cooldowns).toEqual([9]);
   });
 
   it('a refused fusion costs nothing and says why', () => {
@@ -164,6 +242,7 @@ describe('workshop: fuse command', () => {
     const b = cloneRun(a);
     for (const run of [a, b]) {
       tick(run, fuseCmd(0, 1), quietConfig);
+      tick(run, { moveX: 0, action: { type: 'workshop', open: false } }, quietConfig);
       for (let i = 0; i < 30; i++) tick(run, { moveX: 1 }, quietConfig);
     }
     expect(hashRun(a)).toBe(hashRun(b));

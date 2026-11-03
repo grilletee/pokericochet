@@ -15,6 +15,8 @@ export class Input {
   restartRequested = false;
   /** Set when M or Escape asks for the title screen; the game loop consumes it. */
   menuRequested = false;
+  /** Set when F asks to open or close the workshop; the game loop consumes it. */
+  workshopToggleRequested = false;
   /** Card or starter chosen with the keys 1-4 or a click, waiting for the game loop. */
   private pickIndex: number | null = null;
 
@@ -82,6 +84,9 @@ export class Input {
       case 'KeyR':
       case 'Enter':
         if (down) this.restartRequested = true;
+        break;
+      case 'KeyF':
+        if (down) this.workshopToggleRequested = true;
         break;
       case 'KeyM':
       case 'Escape':

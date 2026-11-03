@@ -7,8 +7,14 @@ const TYPE_COLORS: readonly number[] = [0xff7043, 0x4fc3f7, 0x81c784, 0xffee58];
 const FX_POOL = 48;
 const FX_DURATION_MS = 280;
 
+/** How much bigger than its collision circle a species sprite is drawn (sprites have margins). */
+const BALL_ART_SCALE = 2.4;
+const ENEMY_ART_SCALE = 1.7;
+
 /**
- * Draws a pair of snapshots with simple shapes. It only reads snapshots and events (ADR-007);
+ * Draws a pair of snapshots. Species with art (`art[code]`, supplied by the app) are drawn with
+ * it; everything else is a flat marker in the colour of its type, so the game plays the same
+ * without any franchise art. It only reads snapshots and events (ADR-007);
  * it never touches the run. All sprites come from pools, so a steady frame allocates nothing
  * beyond what PixiJS itself does.
  */
@@ -37,6 +43,7 @@ export class Renderer {
     ring: Texture,
     maxSlots: number,
     maxEnemies: number,
+    private readonly art: readonly (Texture | undefined)[],
   ) {
     this.scratchBallX = new Float32Array(maxSlots);
     this.scratchBallY = new Float32Array(maxSlots);
@@ -73,6 +80,7 @@ export class Renderer {
     config: GameConfig,
     maxSlots: number,
     maxEnemies: number,
+    art: readonly (Texture | undefined)[] = [],
   ): Promise<Renderer> {
     const app = new Application();
     await app.init({
@@ -88,7 +96,7 @@ export class Renderer {
     const ring = app.renderer.generateTexture(
       new Graphics().circle(0, 0, 30).stroke({ width: 4, color: 0xffffff }),
     );
-    return new Renderer(app, config, disc, ring, maxSlots, maxEnemies);
+    return new Renderer(app, config, disc, ring, maxSlots, maxEnemies, art);
   }
 
   /** Arena-to-screen transform, shared with the input layer to convert pointer positions. */
@@ -145,7 +153,14 @@ export class Renderer {
       const sprite = this.spriteAt(this.ballSprites, this.ballLayer, shown);
       sprite.visible = true;
       sprite.position.set(this.scratchBallX[slot] ?? 0, this.scratchBallY[slot] ?? 0);
-      sprite.scale.set(radiusScale);
+      const art = this.art[curr.ballSpecies[slot] ?? 255];
+      if (art === undefined) {
+        sprite.texture = this.disc;
+        sprite.scale.set(radiusScale);
+      } else {
+        sprite.texture = art;
+        sprite.scale.set((this.config.ball.radius * BALL_ART_SCALE) / (art.width / 2));
+      }
       sprite.tint = 0xffffff;
       sprite.alpha = 1;
       shown += 1;
@@ -163,9 +178,19 @@ export class Renderer {
       const sprite = this.spriteAt(this.enemySprites, this.enemyLayer, i);
       sprite.visible = true;
       sprite.position.set(this.scratchEnemyX[i] ?? 0, this.scratchEnemyY[i] ?? 0);
-      sprite.scale.set((curr.enemyRadius[i] ?? 16) / 32);
-      sprite.tint = TYPE_COLORS[curr.enemyType[i] ?? 0] ?? 0xffffff;
-      sprite.alpha = 0.9;
+      const radius = curr.enemyRadius[i] ?? 16;
+      const art = this.art[curr.enemySpecies[i] ?? 255];
+      if (art === undefined) {
+        sprite.texture = this.disc;
+        sprite.scale.set(radius / 32);
+        sprite.tint = TYPE_COLORS[curr.enemyType[i] ?? 0] ?? 0xffffff;
+        sprite.alpha = 0.9;
+      } else {
+        sprite.texture = art;
+        sprite.scale.set((radius * ENEMY_ART_SCALE) / (art.width / 2));
+        sprite.tint = 0xffffff;
+        sprite.alpha = 1;
+      }
     }
     for (let i = curr.enemyCount; i < this.enemiesShown; i++) {
       const sprite = this.enemySprites[i];

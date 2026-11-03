@@ -163,8 +163,41 @@ try {
   await clicked.waitForFunction(() => window.__debug().screen === 'playing');
   check('clicking Pikachu starts the run with Pikachu', (await dbg(clicked)).starter === 'pikachu');
 
+  // Credits: reachable from the title screen, with the affiliation notice and both sources.
+  const creditsPage = await open('seed=11');
+  await creditsPage.waitForSelector('button[data-starter]');
+  const footer = (await creditsPage.locator('[data-screen="start"]').textContent()) ?? '';
+  check('the title screen carries the affiliation notice', footer.includes('No está afiliado'));
+  await creditsPage.locator('button[data-action="credits"]').click();
+  await creditsPage.waitForFunction(() => window.__debug().screen === 'credits');
+  const creditsText = (await creditsPage.locator('[data-screen="credits"]').textContent()) ?? '';
+  check(
+    'the credits name PokéAPI, PokeAPI/sprites and the rights holders',
+    creditsText.includes('PokéAPI') &&
+      creditsText.includes('PokeAPI/sprites') &&
+      creditsText.includes('The Pokémon Company') &&
+      creditsText.includes('sin ánimo de lucro'),
+  );
+  await creditsPage.screenshot({ path: outFile.replace('.png', '-credits.png') });
+  await creditsPage.keyboard.press('Escape');
+  await creditsPage.waitForFunction(() => window.__debug().screen === 'menu');
+  check('Escape goes back from the credits to the title screen', true);
+
+  // Sound switch: present, and the choice is remembered.
+  await creditsPage.locator('[data-sound-toggle]').click();
+  check(
+    'the sound switch saves the choice',
+    (await creditsPage.evaluate(() => window.localStorage.getItem('muted.v1'))) === '1',
+  );
+
   // Workshop: two equal balls and a token fuse into one of the next level.
   const f1 = await open('starter=charmander&loadout=charmander,charmander&tokens=1&seed=9');
+  await f1.waitForSelector('[data-fusion-open]');
+  await f1.locator('[data-fusion-open]').click();
+  await f1.waitForFunction(() => window.__debug().phase === 'workshop');
+  const pausedAt = (await dbg(f1)).tick;
+  await f1.waitForTimeout(600);
+  check('opening the workshop pauses the game', (await dbg(f1)).tick === pausedAt);
   await f1.waitForSelector('[data-fusion-panel] button[data-slot]');
   await f1.locator('button[data-slot="0"]').click();
   await f1.locator('button[data-slot="1"]').click();
@@ -173,8 +206,14 @@ try {
   await f1.screenshot({ path: outFile.replace('.png', '-fusion.png') });
   await f1.locator('[data-fusion-go]').click();
   await f1.waitForFunction(() => window.__debug().loadout === 1);
+  await f1.locator('[data-fusion-close]').click();
+  await f1.waitForFunction(() => window.__debug().phase === 'playing');
+  await f1.waitForTimeout(300);
+  check('closing it resumes the game', (await dbg(f1)).tick > pausedAt);
   const afterF1 = await dbg(f1);
   check('fusing consumed the token and one ball', afterF1.tokens === 0 && afterF1.loadout === 1);
+  await f1.keyboard.press('KeyF');
+  await f1.waitForFunction(() => window.__debug().phase === 'workshop');
   check(
     'the chip now shows level 2',
     ((await f1.locator('button[data-slot="0"]').textContent()) ?? '').includes('Nv2'),
@@ -182,6 +221,8 @@ try {
 
   // ... and tells why when they cannot fuse.
   const f2 = await open('starter=charmander&loadout=charmander,squirtle&tokens=1&seed=9');
+  await f2.waitForSelector('[data-fusion-open]');
+  await f2.keyboard.press('KeyF');
   await f2.waitForSelector('[data-fusion-panel] button[data-slot]');
   await f2.locator('button[data-slot="0"]').click();
   await f2.locator('button[data-slot="1"]').click();

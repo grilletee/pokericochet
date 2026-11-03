@@ -10,20 +10,28 @@ import {
   type GameConfig,
   type GameEvent,
   PHASE_LEVELUP,
+  PHASE_PLAYING,
+  PHASE_WORKSHOP,
   previewFusion,
   type Run,
   type Snapshot,
   summarizeRun,
   tick,
+  type WorkshopAction,
   writeSnapshot,
 } from '../domain';
 import { Renderer } from '../render';
 import {
   type CardTextContext,
+  CreditsScreen,
+  creditLines,
   describeEvent,
+  disclaimerShort,
   FusionPanel,
   Overlay,
   ResultsScreen,
+  SoundFx,
+  SoundToggle,
   type StarterOption,
   StartScreen,
   speciesName,
@@ -35,6 +43,8 @@ import { FixedStepper } from './fixedStepper';
 import { Input } from './input';
 import { commandFromInput } from './inputLogic';
 import { FrameMetrics, type Stats, summarize } from './metrics';
+import { loadMuted, saveMuted } from './settings';
+import { loadSpeciesTextures } from './sprites';
 
 const MAX_SLOTS = 64;
 const MAX_ENEMIES = 512;
@@ -132,18 +142,28 @@ function finishBench(metrics: FrameMetrics, load: BenchLoad): BrowserBenchResult
 }
 
 /**
- * One command for the next tick: a card choice while a level-up is pending, otherwise movement
- * plus a fusion if the workshop panel asked for one.
+ * One command for the next tick: a card choice while a level-up is pending, a workshop command
+ * (open, fuse, close) when the panel asked for one, otherwise movement.
  */
-function nextCommand(run: Run, input: Input, deadZone: number, fusion: FuseAction | null): Command {
+function nextCommand(
+  run: Run,
+  input: Input,
+  deadZone: number,
+  workshop: WorkshopCommand | null,
+): Command {
   if (run.phase === 'levelup') {
     const index = input.takePick();
     return index === null ? { moveX: 0 } : { moveX: 0, action: { type: 'pick', index } };
   }
   input.takePick(); // a number key pressed outside a level-up is not a choice
+  if (run.phase === 'workshop') {
+    return workshop === null ? { moveX: 0 } : { moveX: 0, action: workshop };
+  }
   const move = commandFromInput(input.state, run.player.x, deadZone);
-  return fusion === null ? move : { moveX: move.moveX, action: fusion };
+  return workshop === null ? move : { moveX: move.moveX, action: workshop };
 }
+
+type WorkshopCommand = FuseAction | WorkshopAction;
 
 function hudText(snap: Snapshot, waveCount: number, seed: number): string {
   const wave =
@@ -161,7 +181,7 @@ function hudText(snap: Snapshot, waveCount: number, seed: number): string {
   return `${first}\nSemilla ${seed}`;
 }
 
-type Screen = 'menu' | 'playing' | 'results';
+type Screen = 'menu' | 'credits' | 'playing' | 'results';
 
 /** Debug aids (?debug&…): start from a prepared state to reach a scene quickly. */
 function applyDebugParams(run: Run, config: GameConfig, params: URLSearchParams): void {
@@ -219,26 +239,45 @@ export async function startGame(host: HTMLElement): Promise<void> {
   }
   if (showDebug && !bench) applyDebugParams(run, config, params);
 
+  // Species -> small code the render uses to pick art; the domain never sees art.
+  const speciesIds = Object.keys(config.species);
+  const speciesCodes = new Map(speciesIds.map((id, code) => [id, code]));
   let prev = createSnapshot(MAX_SLOTS, MAX_ENEMIES);
   let curr = createSnapshot(MAX_SLOTS, MAX_ENEMIES);
-  writeSnapshot(run, prev);
-  writeSnapshot(run, curr);
+  writeSnapshot(run, prev, speciesCodes);
+  writeSnapshot(run, curr, speciesCodes);
 
-  const renderer = await Renderer.create(host, config, MAX_SLOTS, MAX_ENEMIES);
+  const renderer = await Renderer.create(
+    host,
+    config,
+    MAX_SLOTS,
+    MAX_ENEMIES,
+    await loadSpeciesTextures(speciesIds),
+  );
   const overlay = new Overlay(host);
   const fusionPanel = new FusionPanel(host);
   const startScreen = new StartScreen(host);
+  const creditsScreen = new CreditsScreen(host);
   const resultsScreen = new ResultsScreen(host);
   const input = new Input(host, () => renderer.view);
+  const store = browserStore();
+  // Sound: starts muted only if the player chose so; the audio context wakes on the first gesture.
+  const sound = new SoundFx(loadMuted(store));
+  new SoundToggle(host, sound.muted, (muted) => {
+    sound.muted = muted;
+    saveMuted(store, muted);
+  });
+  for (const gesture of ['pointerdown', 'keydown'] as const) {
+    window.addEventListener(gesture, () => sound.unlock());
+  }
   const stepper = new FixedStepper();
   const metrics = bench ? new FrameMetrics(BENCH_MEASURED_FRAMES) : null;
-  const store = browserStore();
   const pending: GameEvent[] = [];
 
   let screen: Screen = 'playing';
   let best: BestRun | null = loadBestRun(store);
   // A fusion chosen in the panel, waiting for the next tick.
-  let pendingFusion: FuseAction | null = null;
+  let pendingWorkshop: WorkshopCommand | null = null;
 
   let last = performance.now();
   let frameCount = 0;
@@ -285,12 +324,13 @@ export async function startGame(host: HTMLElement): Promise<void> {
   const startRun = (species: string): void => {
     starter = species;
     run = createRun(config, newSeed(), starter);
-    writeSnapshot(run, prev);
-    writeSnapshot(run, curr);
+    writeSnapshot(run, prev, speciesCodes);
+    writeSnapshot(run, curr, speciesCodes);
     stepper.reset();
     pending.length = 0;
-    pendingFusion = null;
+    pendingWorkshop = null;
     startScreen.hide();
+    creditsScreen.hide();
     resultsScreen.hide();
     fusionPanel.hide();
     screen = 'playing';
@@ -299,8 +339,21 @@ export async function startGame(host: HTMLElement): Promise<void> {
     screen = 'menu';
     resultsScreen.hide();
     fusionPanel.hide();
-    startScreen.show(GAME_TITLE, starters, best, (index) => input.requestPick(index));
+    creditsScreen.hide();
+    startScreen.show(
+      GAME_TITLE,
+      starters,
+      best,
+      disclaimerShort(GAME_TITLE),
+      (index) => input.requestPick(index),
+      showCredits,
+    );
   };
+  function showCredits(): void {
+    screen = 'credits';
+    startScreen.hide();
+    creditsScreen.show(GAME_TITLE, creditLines(GAME_TITLE), showMenu);
+  }
   const finishRun = (): void => {
     const summary = summarizeRun(run, config);
     const saved = saveIfBest(store, summary);
@@ -319,7 +372,13 @@ export async function startGame(host: HTMLElement): Promise<void> {
   // Closures created once: the panel calls them, and they always see the current run.
   const previewFn = (a: number, b: number): FusionPreview => previewFusion(run, a, b);
   const fuseFn = (a: number, b: number): void => {
-    pendingFusion = { type: 'fuse', a, b };
+    pendingWorkshop = { type: 'fuse', a, b };
+  };
+  const openFn = (): void => {
+    pendingWorkshop = { type: 'workshop', open: true };
+  };
+  const closeFn = (): void => {
+    pendingWorkshop = { type: 'workshop', open: false };
   };
   const fusionView = { loadout: run.loadout as readonly Ball[], tokens: 0 };
 
@@ -335,6 +394,11 @@ export async function startGame(host: HTMLElement): Promise<void> {
       if (id !== undefined && config.species[id] !== undefined) startRun(id);
       input.restartRequested = false;
       input.menuRequested = false;
+    } else if (screen === 'credits') {
+      input.takePick();
+      if (input.menuRequested) showMenu();
+      input.restartRequested = false;
+      input.menuRequested = false;
     } else if (screen === 'results') {
       input.takePick();
       if (input.restartRequested) startRun(starter);
@@ -342,6 +406,14 @@ export async function startGame(host: HTMLElement): Promise<void> {
       input.restartRequested = false;
       input.menuRequested = false;
     } else {
+      // F toggles the workshop; Esc or M also close it. They never leave the run from here.
+      if (input.workshopToggleRequested) {
+        if (run.phase === 'playing') openFn();
+        else if (run.phase === 'workshop') closeFn();
+      } else if (input.menuRequested && run.phase === 'workshop') {
+        closeFn();
+      }
+      input.workshopToggleRequested = false;
       input.restartRequested = false;
       input.menuRequested = false;
     }
@@ -352,8 +424,8 @@ export async function startGame(host: HTMLElement): Promise<void> {
     for (let s = 0; s < steps; s++) {
       const cmd = bench
         ? benchCommand(run.tickCount)
-        : nextCommand(run, input, POINTER_DEAD_ZONE, pendingFusion);
-      pendingFusion = null;
+        : nextCommand(run, input, POINTER_DEAD_ZONE, pendingWorkshop);
+      pendingWorkshop = null;
       const t0 = performance.now();
       const output = tick(run, cmd, config);
       const t1 = performance.now();
@@ -361,11 +433,12 @@ export async function startGame(host: HTMLElement): Promise<void> {
         pending.push(event);
         const text = describeEvent(event);
         if (text !== null) overlay.showToast(text, now);
+        sound.playEvent(event, now);
       }
       const swap = prev;
       prev = curr;
       curr = swap;
-      writeSnapshot(run, curr);
+      writeSnapshot(run, curr, speciesCodes);
       const t2 = performance.now();
       tickMs += t1 - t0;
       snapshotMs += t2 - t1;
@@ -394,7 +467,9 @@ export async function startGame(host: HTMLElement): Promise<void> {
       window.__benchResult = finishBench(metrics, benchLoad);
     }
 
-    overlay.setHud(screen === 'menu' ? '' : hudText(curr, config.waves.length, run.seed));
+    overlay.setHud(
+      screen === 'menu' || screen === 'credits' ? '' : hudText(curr, config.waves.length, run.seed),
+    );
     overlay.updateToast(now);
     overlay.setBoss(bossName, screen === 'playing' ? curr.bossHp : 0, curr.bossMaxHp);
     overlay.setCards(
@@ -402,12 +477,17 @@ export async function startGame(host: HTMLElement): Promise<void> {
       cardContext,
       (index) => input.requestPick(index),
     );
-    if (!bench && screen === 'playing' && curr.phase !== PHASE_LEVELUP) {
+    if (!bench && screen === 'playing' && curr.phase === PHASE_WORKSHOP) {
+      fusionPanel.setLauncher(null, openFn);
       fusionView.loadout = run.loadout;
       fusionView.tokens = run.tokens;
-      fusionPanel.update(fusionView, previewFn, fuseFn);
+      fusionPanel.update(fusionView, previewFn, fuseFn, closeFn);
     } else {
       fusionPanel.hide();
+      fusionPanel.setLauncher(
+        !bench && screen === 'playing' && curr.phase === PHASE_PLAYING ? run.tokens : null,
+        openFn,
+      );
     }
     if (showDebug && frameCount % 15 === 0) {
       overlay.setDebug(
