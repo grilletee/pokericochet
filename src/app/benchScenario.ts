@@ -12,7 +12,7 @@ export function benchScenario(config: GameConfig, seed: number): { run: Run; con
   const benchConfig: GameConfig = {
     ...config,
     ball: { ...config.ball, cooldownTicks: 1 },
-    enemy: { ...config.enemy, spawnIntervalTicks: 0 },
+    waves: [],
   };
   const run = createRun(benchConfig, seed, 'charmander');
   const starters = ['charmander', 'squirtle', 'bulbasaur', 'pikachu'];
@@ -32,6 +32,9 @@ export function benchScenario(config: GameConfig, seed: number): { run: Run; con
     speed: 0,
     radius: benchConfig.enemy.radius,
     threat: 1,
+    xp: 1,
+    burnTicks: 0,
+    burnDps: 0,
   }));
   run.nextEnemyId = BENCH_ENEMIES + 1;
   return { run, config: benchConfig };

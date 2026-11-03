@@ -189,6 +189,7 @@ export class Renderer {
     for (const event of events) {
       if (event.type === 'hit') this.startEffect(event.x, event.y, 0xffffff);
       else if (event.type === 'kill') this.startEffect(event.x, event.y, 0xffd54f);
+      else if (event.type === 'chain') this.startEffect(event.toX, event.toY, 0xfff176);
     }
     const decay = elapsedMs / FX_DURATION_MS;
     for (let i = 0; i < FX_POOL; i++) {

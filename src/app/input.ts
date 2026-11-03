@@ -13,6 +13,8 @@ export class Input {
   readonly state: InputState = { left: false, right: false, pointerX: null };
   /** Set when R, Enter or a tap asks for a restart; the game loop consumes it. */
   restartRequested = false;
+  /** Card chosen with the keys 1-3 or a click on the card, waiting for the game loop. */
+  private pickIndex: number | null = null;
 
   constructor(
     host: HTMLElement,
@@ -41,6 +43,17 @@ export class Input {
     });
   }
 
+  requestPick(index: number): void {
+    this.pickIndex = index;
+  }
+
+  /** The card chosen since the last call, if any. */
+  takePick(): number | null {
+    const index = this.pickIndex;
+    this.pickIndex = null;
+    return index;
+  }
+
   private toArenaX(e: PointerEvent): number {
     const { scale, offsetX } = this.view();
     return (e.clientX - offsetX) / scale;
@@ -59,6 +72,18 @@ export class Input {
       case 'KeyR':
       case 'Enter':
         if (down) this.restartRequested = true;
+        break;
+      case 'Digit1':
+      case 'Numpad1':
+        if (down) this.pickIndex = 0;
+        break;
+      case 'Digit2':
+      case 'Numpad2':
+        if (down) this.pickIndex = 1;
+        break;
+      case 'Digit3':
+      case 'Numpad3':
+        if (down) this.pickIndex = 2;
         break;
       default:
         return;

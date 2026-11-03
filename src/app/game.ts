@@ -5,12 +5,16 @@ import {
   createSnapshot,
   type GameConfig,
   type GameEvent,
+  PHASE_LEVELUP,
+  PHASE_LOST,
+  PHASE_WON,
   type Run,
+  type Snapshot,
   tick,
   writeSnapshot,
 } from '../domain';
 import { Renderer } from '../render';
-import { Overlay } from '../ui';
+import { type CardTextContext, Overlay } from '../ui';
 import { BENCH_BALLS, BENCH_ENEMIES, benchScenario } from './benchScenario';
 import { FixedStepper } from './fixedStepper';
 import { Input } from './input';
@@ -48,7 +52,18 @@ declare global {
   interface Window {
     __benchResult?: BrowserBenchResult;
     /** Read-only view of the run for browser smoke tests; only present with ?debug or ?bench. */
-    __debug?: () => { tick: number; playerX: number; hp: number; balls: number; enemies: number };
+    __debug?: () => {
+      tick: number;
+      playerX: number;
+      hp: number;
+      balls: number;
+      enemies: number;
+      phase: string;
+      level: number;
+      offers: number;
+      loadout: number;
+      wave: number;
+    };
   }
 }
 
@@ -95,6 +110,34 @@ function finishBench(metrics: FrameMetrics, balls: number, enemies: number): Bro
   };
 }
 
+/** One command for the next tick: movement, or the card choice while a level-up is pending. */
+function nextCommand(run: Run, input: Input, deadZone: number): Command {
+  if (run.phase === 'levelup') {
+    const index = input.takePick();
+    return index === null ? { moveX: 0 } : { moveX: 0, action: { type: 'pick', index } };
+  }
+  input.takePick(); // a number key pressed outside a level-up is not a choice
+  return commandFromInput(input.state, run.player.x, deadZone);
+}
+
+function hudText(snap: Snapshot, waveCount: number): string {
+  const wave = Math.min(snap.waveIndex + 1, Math.max(1, waveCount));
+  return [
+    `PV ${Math.max(0, Math.round(snap.playerHp))}/${snap.playerMaxHp}`,
+    `Nv ${snap.playerLevel} (${Math.floor(snap.playerXp)}/${snap.playerXpNext} XP)`,
+    waveCount > 0 ? `Oleada ${wave}/${waveCount}` : '',
+    snap.tokens > 0 ? `Fichas ${snap.tokens}` : '',
+  ]
+    .filter((part) => part !== '')
+    .join('   ');
+}
+
+function endMessage(phase: number): string | null {
+  if (phase === PHASE_LOST) return 'Derrota\nPulsa R o toca la pantalla para reiniciar';
+  if (phase === PHASE_WON) return '¡Victoria!\nPulsa R o toca la pantalla para jugar otra vez';
+  return null;
+}
+
 /**
  * Composition root of the game: wires the domain, the renderer, the input and the overlay, and
  * owns the clock. The domain never sees time; it only receives one command per tick.
@@ -116,6 +159,10 @@ export async function startGame(host: HTMLElement): Promise<void> {
   } else {
     run = createRun(config, newSeed(), 'charmander');
   }
+
+  // Debug aid (?debug&xp=N): start with N experience to reach the card choice quickly.
+  const grantXp = Number(params.get('xp') ?? 0);
+  if (showDebug && grantXp > 0) run.player.xp = grantXp;
 
   let prev = createSnapshot(MAX_SLOTS, MAX_ENEMIES);
   let curr = createSnapshot(MAX_SLOTS, MAX_ENEMIES);
@@ -145,8 +192,20 @@ export async function startGame(host: HTMLElement): Promise<void> {
       hp: run.player.hp,
       balls: run.bodies.length,
       enemies: run.enemies.length,
+      phase: run.phase,
+      level: run.player.level,
+      offers: run.offers.length,
+      loadout: run.loadout.length,
+      wave: run.wave.index,
     });
   }
+
+  const cardContext: CardTextContext = {
+    typeOf: (species) => config.species[species]?.type,
+    damageStep: config.cards.damageStep,
+    cadenceFactor: config.cards.cadenceFactor,
+    vitalityHp: config.cards.vitalityHp,
+  };
 
   const restart = (): void => {
     run = createRun(config, newSeed(), 'charmander');
@@ -162,16 +221,14 @@ export async function startGame(host: HTMLElement): Promise<void> {
 
     if (input.restartRequested) {
       input.restartRequested = false;
-      if (!bench && run.phase === 'lost') restart();
+      if (!bench && (run.phase === 'lost' || run.phase === 'won')) restart();
     }
 
     const steps = stepper.advance(elapsed);
     let tickMs = 0;
     let snapshotMs = 0;
     for (let s = 0; s < steps; s++) {
-      const cmd = bench
-        ? benchCommand(run.tickCount)
-        : commandFromInput(input.state, run.player.x, POINTER_DEAD_ZONE);
+      const cmd = bench ? benchCommand(run.tickCount) : nextCommand(run, input, POINTER_DEAD_ZONE);
       const t0 = performance.now();
       const output = tick(run, cmd, config);
       const t1 = performance.now();
@@ -204,9 +261,10 @@ export async function startGame(host: HTMLElement): Promise<void> {
       window.__benchResult = finishBench(metrics, BENCH_BALLS, BENCH_ENEMIES);
     }
 
-    overlay.setHud(`PV ${Math.max(0, Math.round(curr.playerHp))}`);
-    overlay.setMessage(
-      curr.phase === 0 ? null : 'Derrota\nPulsa R o toca la pantalla para reiniciar',
+    overlay.setHud(hudText(curr, config.waves.length));
+    overlay.setMessage(endMessage(curr.phase));
+    overlay.setCards(curr.phase === PHASE_LEVELUP ? run.offers : null, cardContext, (index) =>
+      input.requestPick(index),
     );
     if (showDebug && frameCount % 15 === 0) {
       overlay.setDebug(
