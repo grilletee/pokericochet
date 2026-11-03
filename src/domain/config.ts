@@ -13,6 +13,21 @@ export interface WaveDef {
   readonly types: readonly GameType[];
 }
 
+/** The final boss: it appears when the last wave ends and summons small enemies until it dies. */
+export interface BossDef {
+  readonly species: string;
+  /** Multiplies species hp * enemy.hpScale. */
+  readonly hpScale: number;
+  /** Pixels advanced downwards per tick. */
+  readonly speed: number;
+  readonly radius: number;
+  readonly summonIntervalTicks: number;
+  readonly summonCount: number;
+  /** The summoned enemies are of any type, with these multipliers on their species values. */
+  readonly summonSpeedScale: number;
+  readonly summonHpScale: number;
+}
+
 /**
  * Everything the simulation reads but never owns. It is injected (ADR-006): the domain does not
  * import JSON or game-data files. Numbers are initial values, tuned with the balance harness.
@@ -55,6 +70,8 @@ export interface GameConfig {
     readonly speedVariation: number;
     readonly hpScale: number;
   };
+  /** Without a boss the run is won when the last wave is gone and nothing is left alive. */
+  readonly boss?: BossDef;
   /** Wave table. An empty table means no enemies at all and no way to win (used in tests). */
   readonly waves: readonly WaveDef[];
   readonly stats: {

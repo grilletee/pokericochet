@@ -307,6 +307,21 @@ describe('determinism', () => {
     expect(hashRun(play(42, altered))).not.toBe(base);
   });
 
+  it('hashRun covers the content of the card offers', () => {
+    // Accepted surviving mutant (3B, ADR-015): dropping `h.int(run.offers.length)` from hashRun is
+    // NOT caught, and that is deliberate. It is an equivalent mutant in practice: every offer
+    // still writes its kind (and species) into the hash, so [] and [card] already differ, and the
+    // length prefix only removes a purely theoretical ambiguity between two different lists
+    // that would write the same bytes. What matters, and what this test pins, is the content.
+    const a = play(42, commands.slice(0, 200));
+    const b = cloneRun(a);
+    expect(hashRun(b)).toBe(hashRun(a));
+    b.offers = [{ kind: 'token' }];
+    expect(hashRun(b)).not.toBe(hashRun(a));
+    a.offers = [{ kind: 'damage' }];
+    expect(hashRun(b)).not.toBe(hashRun(a));
+  });
+
   it('cloneRun gives an independent copy with the same hash', () => {
     const run = play(42, commands.slice(0, 600));
     const copy = cloneRun(run);
@@ -319,7 +334,7 @@ describe('determinism', () => {
 });
 
 describe('determinism: replaying a whole run (seed + commands, card picks included)', () => {
-  const recording = playBot(2026, 5000);
+  const recording = playBot(2026, 9000);
 
   it('the scenario is not vacuous: it levels up, picks cards, kills and spawns', () => {
     expect(recording.run.player.level).toBeGreaterThanOrEqual(3);
@@ -341,17 +356,18 @@ describe('determinism: replaying a whole run (seed + commands, card picks includ
     const altered = recording.commands.slice();
     const pickAt = altered.findIndex((c) => c.action !== undefined);
     expect(pickAt).toBeGreaterThanOrEqual(0);
-    const original = altered[pickAt];
+    const original = altered[pickAt]?.action;
+    const index = original?.type === 'pick' ? original.index : 0;
     altered[pickAt] = {
-      moveX: original?.moveX ?? 0,
-      action: { type: 'pick', index: ((original?.action?.index ?? 0) + 1) % 3 },
+      moveX: altered[pickAt]?.moveX ?? 0,
+      action: { type: 'pick', index: (index + 1) % 3 },
     };
     expect(hashRun(replay(2026, altered).run)).not.toBe(hashRun(recording.run));
     expect(hashRun(replay(2027, recording.commands).run)).not.toBe(hashRun(recording.run));
   });
 
   it('is stable across independent bot runs with the same seed', () => {
-    expect(hashRun(playBot(2026, 5000).run)).toBe(hashRun(recording.run));
+    expect(hashRun(playBot(2026, 9000).run)).toBe(hashRun(recording.run));
   });
 });
 

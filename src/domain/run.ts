@@ -24,6 +24,15 @@ export interface Player {
   drain: number;
 }
 
+/** The boss fight (ADR-016). `id` is 0 until the boss has spawned. */
+export interface BossState {
+  spawned: boolean;
+  id: number;
+  maxHp: number;
+  /** Ticks since the boss appeared; the summons follow this clock. */
+  tick: number;
+}
+
 export interface RunRng {
   /** What spawns, where and how fast. Never touched by combat. */
   spawn: RngState;
@@ -41,6 +50,10 @@ export interface RunRng {
  */
 export interface Run {
   seed: number;
+  /** Species of the first ball; only for the results screen, it does not affect the run. */
+  starter: string;
+  /** Enemies killed so far (the boss included). */
+  kills: number;
   tickCount: number;
   phase: Phase;
   rng: RunRng;
@@ -54,6 +67,7 @@ export interface Run {
   enemies: Enemy[];
   nextEnemyId: number;
   wave: { index: number; tick: number };
+  boss: BossState;
   /** Fusion tokens, earned one per wave (spent in the workshop). */
   tokens: number;
   /** Cards on offer while the phase is `levelup`; empty otherwise. */
@@ -67,7 +81,7 @@ function newGrid(config: GameConfig): SpatialGrid {
     config.arena.width,
     config.arena.height,
     config.grid.cellSize,
-    config.ball.radius + config.enemy.radius,
+    config.ball.radius + Math.max(config.enemy.radius, config.boss?.radius ?? 0),
   );
 }
 
@@ -75,6 +89,8 @@ export function createRun(config: GameConfig, seed: number, starterSpecies: stri
   const normalizedSeed = seed >>> 0;
   return {
     seed: normalizedSeed,
+    starter: starterSpecies,
+    kills: 0,
     tickCount: 0,
     phase: 'playing',
     rng: {
@@ -101,6 +117,7 @@ export function createRun(config: GameConfig, seed: number, starterSpecies: stri
     enemies: [],
     nextEnemyId: 1,
     wave: { index: 0, tick: 0 },
+    boss: { spawned: false, id: 0, maxHp: 0, tick: 0 },
     tokens: 0,
     offers: [],
     events: [],
@@ -111,6 +128,8 @@ export function createRun(config: GameConfig, seed: number, starterSpecies: stri
 export function cloneRun(run: Run): Run {
   return {
     seed: run.seed,
+    starter: run.starter,
+    kills: run.kills,
     tickCount: run.tickCount,
     phase: run.phase,
     rng: {
@@ -127,6 +146,7 @@ export function cloneRun(run: Run): Run {
     enemies: run.enemies.map((e) => ({ ...e })),
     nextEnemyId: run.nextEnemyId,
     wave: { ...run.wave },
+    boss: { ...run.boss },
     tokens: run.tokens,
     offers: run.offers.slice(), // cards are immutable values
     events: run.events.slice(),
@@ -245,6 +265,10 @@ export function hashRun(run: Run): string {
   h.int(run.nextEnemyId);
   h.int(run.wave.index);
   h.int(run.wave.tick);
+  h.int(run.boss.spawned ? 1 : 0);
+  h.int(run.boss.id);
+  h.num(run.boss.maxHp);
+  h.int(run.boss.tick);
   h.int(run.tokens);
   h.int(run.offers.length);
   for (const card of run.offers) {

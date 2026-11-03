@@ -48,6 +48,9 @@ export interface Snapshot {
   playerXp: number;
   playerXpNext: number;
   tokens: number;
+  /** Hp and maximum hp of the boss while it is alive; both 0 otherwise. */
+  bossHp: number;
+  bossMaxHp: number;
   /** 0-based wave in progress; equals the number of waves once all have been spawned. */
   waveIndex: number;
 
@@ -79,6 +82,8 @@ export function createSnapshot(maxSlots = 64, maxEnemies = 512): Snapshot {
     playerXp: 0,
     playerXpNext: 1,
     tokens: 0,
+    bossHp: 0,
+    bossMaxHp: 0,
     waveIndex: 0,
     slotCount: 0,
     ballActive: new Uint8Array(maxSlots),
@@ -106,6 +111,15 @@ export function writeSnapshot(run: Run, snap: Snapshot): void {
   snap.playerXp = run.player.xp;
   snap.playerXpNext = run.player.xpNext;
   snap.tokens = run.tokens;
+  snap.bossHp = 0;
+  snap.bossMaxHp = 0;
+  if (run.boss.id !== 0) {
+    for (const e of run.enemies) {
+      if (e.id !== run.boss.id) continue;
+      snap.bossHp = Math.max(0, e.hp);
+      snap.bossMaxHp = run.boss.maxHp;
+    }
+  }
   snap.waveIndex = run.wave.index;
 
   const maxSlots = snap.ballActive.length;

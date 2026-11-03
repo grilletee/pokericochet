@@ -20,6 +20,7 @@ const SPECIES: readonly SpeciesDef[] = [
   { id: 'pikachu', type: 'electric', baseStats: { hp: 35, attack: 55, speed: 90 } },
   { id: 'vulpix', type: 'fire', baseStats: { hp: 38, attack: 41, speed: 65 } },
   { id: 'psyduck', type: 'water', baseStats: { hp: 50, attack: 52, speed: 55 } },
+  { id: 'gyarados', type: 'water', baseStats: { hp: 95, attack: 125, speed: 81 } },
 ];
 
 export const config: GameConfig = {
@@ -29,9 +30,11 @@ export const config: GameConfig = {
   ballSpecies: ['charmander', 'squirtle', 'bulbasaur', 'pikachu', 'vulpix', 'psyduck'],
 };
 
-/** Same config with spawning disabled and no aim jitter, for hand-built scenarios. */
+/** Same config with spawning disabled, no boss and no aim jitter, for hand-built scenarios. */
+const { boss: _boss, ...configWithoutBoss } = config;
+
 export const quietConfig: GameConfig = {
-  ...config,
+  ...configWithoutBoss,
   ball: { ...config.ball, aimJitter: 0 },
   waves: [],
 };

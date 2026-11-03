@@ -73,11 +73,31 @@ export interface PickAction {
   readonly index: number;
 }
 
+/** Fuses two balls of the loadout (workshop), spending one fusion token. Order matters. */
+export interface FuseAction {
+  readonly type: 'fuse';
+  /** Loadout slot of the first ingredient: the result keeps its id, species and type. */
+  readonly a: number;
+  /** Loadout slot of the second ingredient: it disappears. */
+  readonly b: number;
+}
+
+/** Why a fusion was refused: the rules of `fuse` plus the two things only the run knows. */
+export type FuseFailure =
+  | 'same-ball'
+  | 'hybrid-input'
+  | 'max-level'
+  | 'level-mismatch'
+  | 'same-type-different-species'
+  | 'level-too-low'
+  | 'no-token'
+  | 'bad-slot';
+
 /** One command per tick: the player's input (ADR-004). */
 export interface Command {
   readonly moveX: -1 | 0 | 1;
-  /** Only meaningful while the run is in the level-up phase. */
-  readonly action?: PickAction;
+  /** `pick` only means something in the level-up phase, `fuse` only while playing. */
+  readonly action?: PickAction | FuseAction;
 }
 
 export type GameEvent =
@@ -106,5 +126,14 @@ export type GameEvent =
   | { readonly type: 'levelup'; readonly level: number }
   | { readonly type: 'pick'; readonly card: Card }
   | { readonly type: 'waveStart'; readonly index: number }
+  | { readonly type: 'bossSpawn'; readonly enemyId: number }
+  | { readonly type: 'bossSummon'; readonly count: number }
+  | {
+      readonly type: 'fuse';
+      readonly ballId: number;
+      readonly level: number;
+      readonly hybrid: boolean;
+    }
+  | { readonly type: 'fuseFailed'; readonly error: FuseFailure }
   | { readonly type: 'won' }
   | { readonly type: 'lost' };

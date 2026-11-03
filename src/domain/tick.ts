@@ -7,7 +7,8 @@ import { checkLevelUp } from './progression';
 import { nextFloat } from './rng';
 import type { Run } from './run';
 import type { BallBody, Command, Enemy, GameEvent } from './types';
-import { advanceWave } from './waves';
+import { advanceBoss, advanceWave, isBossAlive } from './waves';
+import { applyFusion } from './workshop';
 
 export interface TickOutput {
   /** Valid until the next tick: it is the run's own transient array. */
@@ -104,6 +105,13 @@ function resolveLevelUp(run: Run, cmd: Command, config: GameConfig): void {
   checkLevelUp(run, config); // enough xp for another level straight away
 }
 
+/** Victory: the boss is dead, or, in a run without boss, the last wave is gone and nothing lives. */
+function isWon(run: Run, config: GameConfig, alive: number): boolean {
+  if (config.waves.length === 0 || run.wave.index < config.waves.length) return false;
+  if (config.boss === undefined) return alive === 0;
+  return run.boss.spawned && !isBossAlive(run);
+}
+
 /**
  * Advances the run by one 1/60 s step (ADR-004, ADR-007). Mutates `run` in place and returns the
  * events of this tick. While the run waits for a card choice only a `pick` command does
@@ -119,6 +127,8 @@ export function tick(run: Run, cmd: Command, config: GameConfig): TickOutput {
 
   const { arena, ball: ballConfig } = config;
 
+  if (cmd.action?.type === 'fuse') applyFusion(run, cmd.action.a, cmd.action.b);
+
   run.player.x = clamp(
     run.player.x + cmd.moveX * config.player.speed,
     config.player.margin,
@@ -126,13 +136,15 @@ export function tick(run: Run, cmd: Command, config: GameConfig): TickOutput {
   );
 
   advanceWave(run, config);
+  advanceBoss(run, config);
 
   // Enemies advance; those that reach the defence line hurt the player and are removed.
   let kept = 0;
   for (const e of run.enemies) {
     e.y += e.speed;
     if (e.y >= arena.defenseLineY) {
-      run.player.hp -= e.threat;
+      // The boss reaching the line ends the run whatever the player's health (ADR-016).
+      run.player.hp = e.id === run.boss.id ? 0 : run.player.hp - e.threat;
       run.events.push({ type: 'leak', enemyId: e.id, damage: e.threat });
     } else {
       run.enemies[kept] = e;
@@ -214,7 +226,7 @@ export function tick(run: Run, cmd: Command, config: GameConfig): TickOutput {
   if (run.player.hp <= 0) {
     run.phase = 'lost';
     run.events.push({ type: 'lost' });
-  } else if (config.waves.length > 0 && run.wave.index >= config.waves.length && alive === 0) {
+  } else if (isWon(run, config, alive)) {
     run.phase = 'won';
     run.events.push({ type: 'won' });
   } else {

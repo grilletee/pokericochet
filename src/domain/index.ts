@@ -1,6 +1,6 @@
 export { applyCard, drawOffers } from './cards';
 export { createBall, effectiveness, getSpecies, hitDamage, mapStat } from './combat';
-export type { GameConfig, WaveDef } from './config';
+export type { BossDef, GameConfig, WaveDef } from './config';
 export {
   applyHitEffects,
   damageEnemy,
@@ -20,7 +20,7 @@ export {
 export { awardKill, checkLevelUp, enemyXp, xpCost } from './progression';
 export type { RngState } from './rng';
 export { cloneRng, createRng, deriveRng, nextFloat, nextInt, nextU32 } from './rng';
-export type { Phase, Player, Run, RunRng } from './run';
+export type { BossState, Phase, Player, Run, RunRng } from './run';
 export { cloneRun, createRun, hashRun } from './run';
 export type { Snapshot } from './snapshot';
 export {
@@ -32,6 +32,8 @@ export {
   typeCode,
   writeSnapshot,
 } from './snapshot';
+export type { RunSummary } from './summary';
+export { KILL_SCORE, summarizeRun, WAVE_SCORE, WIN_SCORE } from './summary';
 export type { TickOutput } from './tick';
 export { tick } from './tick';
 export type {
@@ -42,10 +44,14 @@ export type {
   Effect,
   EffectKind,
   Enemy,
+  FuseAction,
+  FuseFailure,
   GameEvent,
   GameType,
   PickAction,
   SpeciesDef,
 } from './types';
 export { GAME_TYPES } from './types';
-export { advanceWave, laneX } from './waves';
+export { advanceBoss, advanceWave, isBossAlive, laneX } from './waves';
+export type { FusionPreview } from './workshop';
+export { applyFusion, previewFusion } from './workshop';

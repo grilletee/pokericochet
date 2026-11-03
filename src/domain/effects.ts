@@ -13,6 +13,7 @@ export function damageEnemy(run: Run, config: GameConfig, enemy: Enemy, amount: 
   if (enemy.hp <= 0) return false;
   enemy.hp -= amount;
   if (enemy.hp > 0) return false;
+  run.kills += 1;
   run.events.push({ type: 'kill', enemyId: enemy.id, x: enemy.x, y: enemy.y });
   awardKill(run, config, enemy);
   return true;
