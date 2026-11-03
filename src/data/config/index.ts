@@ -98,8 +98,10 @@ export const baseConfig: Omit<GameConfig, 'species' | 'enemySpecies' | 'ballSpec
     speedStatMax: 130,
     // Damage = attack / damageDivisor * typeDamage. Grass has no offensive effect (it only
     // heals), so it gets x2 base damage: the smallest value measured (1.5, 1.75, 2) that puts
-    // Bulbasaur within ~10 points of the other starters (ADR-015).
-    typeDamage: { fire: 1, water: 1, grass: 2, electric: 1 },
+    // Bulbasaur within ~10 points of the other starters (ADR-015, measured with n = 25 and later
+    // found noisy). Electric x0.85: with 200 runs per starter Pikachu was clearly above the rest
+    // (81 % vs 47-72 %); x0.85 brings it to 65 % [58-71]. Grass stays at x2 until a human playtest.
+    typeDamage: { fire: 1, water: 1, grass: 2, electric: 0.85 },
   },
   effects: { burnTicks: 180, drainPerHp: 15, chainRadius: 80 },
   progression: {

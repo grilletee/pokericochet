@@ -53,8 +53,8 @@ describe('stat mapping', () => {
     expect(baseConfig.ball.speedMax).toBeLessThan(baseConfig.enemy.radius);
   });
 
-  it('documents the only deviation from damage = attack / 10: grass base damage x2 (ADR-015)', () => {
-    expect(baseConfig.stats.typeDamage).toEqual({ fire: 1, water: 1, grass: 2, electric: 1 });
+  it('documents the deviations from damage = attack / 10: grass x2 and electric x0.85 (ADR-015)', () => {
+    expect(baseConfig.stats.typeDamage).toEqual({ fire: 1, water: 1, grass: 2, electric: 0.85 });
   });
 
   it('exposes the enemy hp multiplier as the named, provisional parameter enemy.hpScale', () => {
