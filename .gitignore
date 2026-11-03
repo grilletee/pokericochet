@@ -2,3 +2,13 @@
 # Claude Code (local)
 CLAUDE.local.md
 .claude/settings.local.json
+
+# Build and tooling
+node_modules/
+dist/
+coverage/
+*.tsbuildinfo
+.vite/
+
+# fetch-data cache (raw PokéAPI responses)
+tools/fetch-data/.cache/
