@@ -1,0 +1,204 @@
+{
+  "source": "https://pokeapi.co",
+  "roster": {
+    "balls": [
+      "charmander",
+      "vulpix",
+      "squirtle",
+      "psyduck",
+      "bulbasaur",
+      "oddish",
+      "pikachu",
+      "magnemite"
+    ],
+    "enemies": [
+      "growlithe",
+      "ponyta",
+      "poliwag",
+      "horsea",
+      "bellsprout",
+      "exeggcute",
+      "voltorb",
+      "electabuzz"
+    ],
+    "boss": "gyarados",
+    "starters": [
+      "charmander",
+      "squirtle",
+      "bulbasaur",
+      "pikachu"
+    ]
+  },
+  "species": [
+    {
+      "id": "charmander",
+      "pokedexId": 4,
+      "type": "fire",
+      "baseStats": {
+        "hp": 39,
+        "attack": 52,
+        "speed": 65
+      }
+    },
+    {
+      "id": "vulpix",
+      "pokedexId": 37,
+      "type": "fire",
+      "baseStats": {
+        "hp": 38,
+        "attack": 41,
+        "speed": 65
+      }
+    },
+    {
+      "id": "squirtle",
+      "pokedexId": 7,
+      "type": "water",
+      "baseStats": {
+        "hp": 44,
+        "attack": 48,
+        "speed": 43
+      }
+    },
+    {
+      "id": "psyduck",
+      "pokedexId": 54,
+      "type": "water",
+      "baseStats": {
+        "hp": 50,
+        "attack": 52,
+        "speed": 55
+      }
+    },
+    {
+      "id": "bulbasaur",
+      "pokedexId": 1,
+      "type": "grass",
+      "baseStats": {
+        "hp": 45,
+        "attack": 49,
+        "speed": 45
+      }
+    },
+    {
+      "id": "oddish",
+      "pokedexId": 43,
+      "type": "grass",
+      "baseStats": {
+        "hp": 45,
+        "attack": 50,
+        "speed": 30
+      }
+    },
+    {
+      "id": "pikachu",
+      "pokedexId": 25,
+      "type": "electric",
+      "baseStats": {
+        "hp": 35,
+        "attack": 55,
+        "speed": 90
+      }
+    },
+    {
+      "id": "magnemite",
+      "pokedexId": 81,
+      "type": "electric",
+      "baseStats": {
+        "hp": 25,
+        "attack": 35,
+        "speed": 45
+      }
+    },
+    {
+      "id": "growlithe",
+      "pokedexId": 58,
+      "type": "fire",
+      "baseStats": {
+        "hp": 55,
+        "attack": 70,
+        "speed": 60
+      }
+    },
+    {
+      "id": "ponyta",
+      "pokedexId": 77,
+      "type": "fire",
+      "baseStats": {
+        "hp": 50,
+        "attack": 85,
+        "speed": 90
+      }
+    },
+    {
+      "id": "poliwag",
+      "pokedexId": 60,
+      "type": "water",
+      "baseStats": {
+        "hp": 40,
+        "attack": 50,
+        "speed": 90
+      }
+    },
+    {
+      "id": "horsea",
+      "pokedexId": 116,
+      "type": "water",
+      "baseStats": {
+        "hp": 30,
+        "attack": 40,
+        "speed": 60
+      }
+    },
+    {
+      "id": "bellsprout",
+      "pokedexId": 69,
+      "type": "grass",
+      "baseStats": {
+        "hp": 50,
+        "attack": 75,
+        "speed": 40
+      }
+    },
+    {
+      "id": "exeggcute",
+      "pokedexId": 102,
+      "type": "grass",
+      "baseStats": {
+        "hp": 60,
+        "attack": 40,
+        "speed": 40
+      }
+    },
+    {
+      "id": "voltorb",
+      "pokedexId": 100,
+      "type": "electric",
+      "baseStats": {
+        "hp": 40,
+        "attack": 30,
+        "speed": 100
+      }
+    },
+    {
+      "id": "electabuzz",
+      "pokedexId": 125,
+      "type": "electric",
+      "baseStats": {
+        "hp": 65,
+        "attack": 83,
+        "speed": 105
+      }
+    },
+    {
+      "id": "gyarados",
+      "pokedexId": 130,
+      "type": "water",
+      "baseStats": {
+        "hp": 95,
+        "attack": 125,
+        "speed": 81
+      }
+    }
+  ]
+}

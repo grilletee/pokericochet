@@ -1,0 +1,24 @@
+{
+  "balls": [
+    "charmander",
+    "vulpix",
+    "squirtle",
+    "psyduck",
+    "bulbasaur",
+    "oddish",
+    "pikachu",
+    "magnemite"
+  ],
+  "enemies": [
+    "growlithe",
+    "ponyta",
+    "poliwag",
+    "horsea",
+    "bellsprout",
+    "exeggcute",
+    "voltorb",
+    "electabuzz"
+  ],
+  "boss": "gyarados",
+  "starters": ["charmander", "squirtle", "bulbasaur", "pikachu"]
+}
