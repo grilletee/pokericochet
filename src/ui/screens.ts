@@ -1,6 +1,6 @@
 import type { GameType, RunSummary } from '../domain';
-import { speciesName } from './cardText';
 import type { CreditLine } from './creditsText';
+import { pokemonName } from './names';
 import { type BestRunView, describeBest, describeResults, starterBlurb } from './screenText';
 import { TYPE_COLORS } from './typeColors';
 
@@ -55,7 +55,7 @@ export class StartScreen {
       button.type = 'button';
       button.dataset.starter = starter.id;
       button.append(
-        el('div', 'font-size:18px;font-weight:700;', `${index + 1}. ${speciesName(starter.id)}`),
+        el('div', 'font-size:18px;font-weight:700;', `${index + 1}. ${pokemonName(starter.id)}`),
         el('div', 'font-size:14px;opacity:0.8;margin-top:2px;', starterBlurb(starter.type)),
       );
       // Not "pointerdown": that would also reach the canvas input underneath.

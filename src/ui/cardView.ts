@@ -1,10 +1,11 @@
 import type { Ball, Card, GameType, Member } from '../domain';
-import { type CardTextContext, speciesName } from './cardText';
+import type { CardTextContext } from './cardText';
+import { pokemonName } from './names';
 import { TYPE_COLORS } from './typeColors';
 
 /** Where the art of a species form lives; undefined = no art, a coloured marker is drawn. */
 export interface ArtLookup {
-  spriteUrl(species: string, level: number): string | undefined;
+  spriteUrl(form: string): string | undefined;
 }
 
 const GLYPHS: Record<'power' | 'cadence' | 'vitality' | 'team' | 'train', string> = {
@@ -22,10 +23,10 @@ function box(css: string, text = ''): HTMLDivElement {
   return node;
 }
 
-/** A framed sprite: the type colour as border, an optional level caption underneath. */
+/** A framed sprite of a form: the type colour as border, an optional level caption underneath. */
 export function spriteTile(
   url: string | undefined,
-  species: string,
+  form: string,
   type: GameType | undefined,
   size: number,
   level?: number,
@@ -39,12 +40,12 @@ export function spriteTile(
       `background:${color}33;display:flex;align-items:center;justify-content:center;overflow:hidden;`,
   );
   if (url === undefined) {
-    frame.textContent = speciesName(species).charAt(0);
+    frame.textContent = pokemonName(form).charAt(0);
     frame.style.fontSize = `${Math.round(size / 2)}px`;
   } else {
     const img = document.createElement('img');
     img.src = url;
-    img.alt = speciesName(species);
+    img.alt = pokemonName(form);
     img.draggable = false;
     img.style.cssText = `width:${size - 6}px;height:${size - 6}px;image-rendering:pixelated;`;
     frame.append(img);
@@ -67,23 +68,12 @@ function memberTile(
   context: CardTextContext & ArtLookup,
   size: number,
 ): HTMLElement {
-  return spriteTile(
-    context.spriteUrl(member.species, context.stageAt(member.level)),
-    member.species,
-    member.type,
-    size,
-    member.level,
-  );
+  const form = context.formOf(member);
+  return spriteTile(context.spriteUrl(form), form, member.type, size, member.level);
 }
 
 function ballTile(ball: Ball, context: ArtLookup, size: number): HTMLElement {
-  return spriteTile(
-    context.spriteUrl(ball.species, ball.level),
-    ball.species,
-    ball.type,
-    size,
-    ball.level,
-  );
+  return spriteTile(context.spriteUrl(ball.species), ball.species, ball.type, size, ball.level);
 }
 
 /**
@@ -98,12 +88,7 @@ export function buildCardArt(card: Card, context: CardTextContext & ArtLookup): 
   switch (card.kind) {
     case 'newBall':
       row.append(
-        spriteTile(
-          context.spriteUrl(card.species, 1),
-          card.species,
-          context.typeOf(card.species),
-          72,
-        ),
+        spriteTile(context.spriteUrl(card.species), card.species, context.typeOf(card.species), 72),
       );
       break;
     case 'train':
@@ -120,7 +105,7 @@ export function buildCardArt(card: Card, context: CardTextContext & ArtLookup): 
       const result = context.previewHybrid(card.a, card.b);
       if (first === undefined || second === undefined || result === null) break;
       const made = spriteTile(
-        context.spriteUrl(result.species, result.level),
+        context.spriteUrl(result.species),
         result.species,
         result.type,
         68,

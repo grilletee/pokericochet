@@ -1,16 +1,27 @@
-import type { GameType, Member } from '../domain';
-import { speciesName } from './cardText';
+import type { GameType, MemberStats } from '../domain';
 import { type ArtLookup, spriteTile } from './cardView';
+import { pokemonName } from './names';
+import { oneDecimal, statBars, statSummary } from './statBars';
 import { TYPE_COLORS } from './typeColors';
 
-/** What the replace screen needs: the team, the capture and the rules that give each its form. */
+/** A Pokémon as the replace screen shows it: its form, its level, its cards and its real stats. */
+export interface ReplaceMember {
+  readonly form: string;
+  readonly type: GameType | undefined;
+  readonly level: number;
+  readonly damageUps: number;
+  readonly cadenceUps: number;
+  readonly stats: MemberStats;
+  /** Guard of the team if this Pokémon were the one replaced (ADR-038). */
+  readonly guardIfReplaced: number;
+}
+
+/** What the replace screen needs: the team, the capture and the guard before the choice. */
 export interface ReplaceView {
-  readonly team: readonly Member[];
-  readonly capture: { readonly species: string; readonly stage: number };
-  readonly captureType: GameType | undefined;
-  /** Level a Pokémon of the captured stage joins with. */
-  readonly captureLevel: number;
-  readonly stageOf: (level: number) => number;
+  readonly team: readonly ReplaceMember[];
+  readonly capture: Omit<ReplaceMember, 'damageUps' | 'cadenceUps' | 'guardIfReplaced'>;
+  /** Guard of the team now, 0..1. */
+  readonly guard: number;
 }
 
 function box(css: string, text = ''): HTMLDivElement {
@@ -20,10 +31,23 @@ function box(css: string, text = ''): HTMLDivElement {
   return node;
 }
 
+/** 0.234 -> "23 %". */
+export function percent(fraction: number): string {
+  return `${Math.round(fraction * 100)} %`;
+}
+
+/** "Guardia 18 % → 23 %" (or just the value when it does not change). */
+export function guardChange(before: number, after: number): string {
+  return percent(before) === percent(after)
+    ? `Guardia ${percent(before)}`
+    : `Guardia ${percent(before)} → ${percent(after)}`;
+}
+
 /**
  * The pause screen of a capture that finds the team full (ADR-030): big and plain. The capture on
- * top, the six Pokémon below with their level and cards (pressing one, or its number 1-6,
- * replaces it) and a button to let the capture go (0 or X). Built once per capture, never per frame.
+ * top with its real stats, the Pokémon of the team below with theirs, their level and cards, and
+ * what each choice does to the guard of the team (ADR-038). Pressing one, or its number 1-6,
+ * replaces it; a button lets the capture go (0 or X). Built once per capture, never per frame.
  */
 export class ReplaceScreen {
   private readonly root: HTMLDivElement;
@@ -34,8 +58,8 @@ export class ReplaceScreen {
     this.root.dataset.replace = '';
     this.root.style.cssText =
       'position:absolute;inset:0;display:none;flex-direction:column;align-items:center;' +
-      'justify-content:center;gap:12px;padding:16px;box-sizing:border-box;z-index:8;' +
-      'background:rgba(5,8,16,0.88);font-family:system-ui,sans-serif;color:#e8ecf8;' +
+      'justify-content:center;gap:10px;padding:16px;box-sizing:border-box;z-index:8;' +
+      'background:rgba(5,8,16,0.92);font-family:system-ui,sans-serif;color:#e8ecf8;' +
       'text-align:center;overflow:auto;';
     host.append(this.root);
   }
@@ -50,8 +74,8 @@ export class ReplaceScreen {
     const key =
       view === null
         ? ''
-        : `${view.capture.species}:${view.capture.stage}|${view.team
-            .map((m) => `${m.species}:${m.level}:${m.damageUps}:${m.cadenceUps}`)
+        : `${view.capture.form}:${view.capture.level}|${view.team
+            .map((m) => `${m.form}:${m.level}:${m.damageUps}:${m.cadenceUps}`)
             .join(',')}`;
     if (key === this.shownKey) return;
     this.shownKey = key;
@@ -60,37 +84,51 @@ export class ReplaceScreen {
       this.root.style.display = 'none';
       return;
     }
-    const name = speciesName(view.capture.species);
-    this.root.append(
-      box('font-size:24px;font-weight:800;', `¡Has capturado a ${name}! Tu equipo está completo`),
-      spriteTile(
-        art.spriteUrl(view.capture.species, view.capture.stage),
-        view.capture.species,
-        view.captureType,
-        96,
-        view.captureLevel,
-      ),
-      box('font-size:16px;opacity:0.9;', 'Elige a quién reemplaza (pierde su nivel y sus mejoras)'),
+    const { capture } = view;
+    const name = pokemonName(capture.form);
+    const captured = box(
+      `display:flex;align-items:center;gap:14px;padding:8px 12px;border-radius:14px;` +
+        `border:2px solid ${capture.type === undefined ? '#5b6aa8' : TYPE_COLORS[capture.type]};` +
+        'background:#1b2540;max-width:420px;width:100%;box-sizing:border-box;',
     );
-    const row = box('display:flex;flex-wrap:wrap;justify-content:center;gap:10px;');
+    const captureInfo = box('flex:1;display:flex;flex-direction:column;gap:4px;');
+    captureInfo.append(
+      box('font-size:18px;font-weight:800;', `${name} Nv${capture.level}`),
+      statBars(capture.stats),
+      box('font-size:12px;opacity:0.85;', statSummary(capture.stats)),
+    );
+    captured.append(
+      spriteTile(art.spriteUrl(capture.form), capture.form, capture.type, 88),
+      captureInfo,
+    );
+    this.root.append(
+      box('font-size:22px;font-weight:800;', `¡Has capturado a ${name}! Tu equipo está completo`),
+      captured,
+      box(
+        'font-size:14px;opacity:0.9;',
+        `Elige a quién reemplaza (pierde su nivel y sus mejoras) · ${guardChange(view.guard, view.guard)} ahora`,
+      ),
+    );
+    const row = box('display:flex;flex-wrap:wrap;justify-content:center;gap:8px;');
     view.team.forEach((member, slot) => {
       const button = document.createElement('button');
       button.type = 'button';
       button.dataset.replaceSlot = String(slot);
       button.style.cssText =
-        'pointer-events:auto;min-width:96px;min-height:44px;padding:8px;border-radius:12px;' +
-        `border:2px solid ${TYPE_COLORS[member.type]};background:#1b2540;color:inherit;` +
-        'font:inherit;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:4px;';
+        'pointer-events:auto;width:158px;min-height:44px;padding:8px;border-radius:12px;' +
+        `border:2px solid ${member.type === undefined ? '#5b6aa8' : TYPE_COLORS[member.type]};` +
+        'background:#1b2540;color:inherit;font:inherit;cursor:pointer;display:flex;' +
+        'flex-direction:column;align-items:center;gap:4px;box-sizing:border-box;';
       button.append(
-        spriteTile(
-          art.spriteUrl(member.species, view.stageOf(member.level)),
-          member.species,
-          member.type,
-          64,
-          member.level,
+        spriteTile(art.spriteUrl(member.form), member.form, member.type, 52, member.level),
+        box('font-size:13px;font-weight:700;', `${slot + 1}. ${pokemonName(member.form)}`),
+        statBars(member.stats, true),
+        box('font-size:11px;opacity:0.85;', statSummary(member.stats)),
+        box('font-size:11px;opacity:0.85;', `⚔${member.damageUps} ⟳${member.cadenceUps}`),
+        box(
+          `font-size:11px;font-weight:700;color:${member.guardIfReplaced >= view.guard ? '#a5d6a7' : '#ef9a9a'};`,
+          guardChange(view.guard, member.guardIfReplaced),
         ),
-        box('font-size:13px;font-weight:700;', `${slot + 1}. ${speciesName(member.species)}`),
-        box('font-size:12px;opacity:0.85;', `⚔${member.damageUps} ⟳${member.cadenceUps}`),
       );
       button.addEventListener('click', () => onReplace(slot));
       row.append(button);
@@ -107,3 +145,5 @@ export class ReplaceScreen {
     this.root.style.display = 'flex';
   }
 }
+
+export { oneDecimal };

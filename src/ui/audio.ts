@@ -5,6 +5,7 @@ export type SoundId =
   | 'bounce'
   | 'kill'
   | 'evolve'
+  | 'move'
   | 'hybrid'
   | 'captureDrop'
   | 'damage'
@@ -20,8 +21,11 @@ export function soundFor(event: GameEvent): SoundId | null {
       return 'bounce';
     case 'kill':
       return 'kill';
+    case 'stage':
     case 'evolve':
       return 'evolve';
+    case 'move':
+      return 'move';
     case 'hybrid':
       return 'hybrid';
     case 'captureDrop':
@@ -48,6 +52,7 @@ const MIN_GAP_MS: Record<SoundId, number> = {
   bounce: 45,
   kill: 70,
   evolve: 0,
+  move: 140,
   hybrid: 0,
   captureDrop: 0,
   damage: 120,
@@ -83,6 +88,8 @@ interface Note {
 const RECIPES: Record<SoundId, readonly Note[]> = {
   bounce: [{ from: 330, to: 220, seconds: 0.06, wave: 'triangle', gain: 0.08 }],
   kill: [{ from: 520, to: 880, seconds: 0.09, wave: 'square', gain: 0.06 }],
+  // A move with a name (ADR-039): a short rising sweep, quieter than a kill so it never drowns the rest.
+  move: [{ from: 300, to: 720, seconds: 0.16, wave: 'sawtooth', gain: 0.07 }],
   // Evolution: a rising run that ends on a held chord.
   evolve: [
     { from: 392, to: 392, seconds: 0.1, wave: 'triangle', gain: 0.12 },

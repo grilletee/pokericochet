@@ -196,4 +196,57 @@ describe('mergeConfig', () => {
     expect(tuned('ballsMax', 5).team.ballsByLevel).toEqual([1, 1, 2, 2, 2, 5, 5, 5]);
     expect(tuned('powerStep', 0.4).team).toEqual(base.team); // nothing else moves
   });
+
+  it('the 4F-C knobs write the stats, guard, stage growth and move rules (ADR-037..039)', () => {
+    expect(tuned('powerMultMax', 2).stats.powerMultMax).toBe(2);
+    expect(tuned('powerMultMax', 2).stats.powerMultMin).toBe(base.stats.powerMultMin);
+    expect(tuned('guardMax', 0.5).stats.guardMax).toBe(0.5);
+    expect(tuned('stageGrowth2', 1.3).team.stageGrowth).toEqual([1, 1.3, base.team.stageGrowth[2]]);
+    expect(tuned('stageGrowth3', 1.6).team.stageGrowth).toEqual([1, base.team.stageGrowth[1], 1.6]);
+    expect(tuned('chargeStage1', 4).moves.chargeByStage).toEqual([
+      4,
+      base.moves.chargeByStage[1],
+      base.moves.chargeByStage[2],
+    ]);
+    expect(tuned('chargeStage2', 5.4).moves.chargeByStage[1]).toBe(5);
+    expect(tuned('chargeStage3', 3).moves.chargeByStage[2]).toBe(3);
+  });
+
+  it('the move strength knobs scale each tier and keep its shape', () => {
+    const out = tuned('moveTier2', 2);
+    expect(out.moves.tiers[1]).toEqual({
+      ...base.moves.tiers[1],
+      power: (base.moves.tiers[1]?.power ?? 0) * 2,
+    });
+    expect(out.moves.tiers[0]).toEqual(base.moves.tiers[0]);
+    expect(out.moves.tiers[2]).toEqual(base.moves.tiers[2]);
+    expect(out.moves.signatures).toEqual(base.moves.signatures);
+    expect(out.moves.byBase).toEqual(base.moves.byBase);
+  });
+
+  it('the speed cap moves with the ball speed knob so the two never fight', () => {
+    expect(tuned('speedCap', 7).ball.speedCap).toBeCloseTo(7, 12);
+    expect(tuned('ballSpeed', 1.5).ball.speedCap).toBeCloseTo(base.ball.speedCap * 1.5, 12);
+    expect(tuned('ballSpeed', 1.5).ball.speedMax).toBeCloseTo(base.ball.speedMax * 1.5, 12);
+  });
+
+  it('has the 11 knobs of the 4F-C on top of the 53 of the 4F-B', () => {
+    const keys = TUNE_DEFS.map((d) => d.key);
+    for (const key of [
+      'powerMultMax',
+      'guardMax',
+      'stageGrowth2',
+      'stageGrowth3',
+      'speedCap',
+      'chargeStage1',
+      'chargeStage2',
+      'chargeStage3',
+      'moveTier1',
+      'moveTier2',
+      'moveTier3',
+    ]) {
+      expect(keys, key).toContain(key);
+    }
+    expect(TUNE_DEFS).toHaveLength(64);
+  });
 });

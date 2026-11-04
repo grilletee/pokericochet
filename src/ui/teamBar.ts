@@ -1,5 +1,6 @@
 import type { GameType, Member } from '../domain';
 import { type ArtLookup, spriteTile } from './cardView';
+import { pokemonName } from './names';
 import { TYPE_COLORS } from './typeColors';
 
 const FLY_MS = 700;
@@ -27,15 +28,21 @@ export class TeamBar {
   private readonly root: HTMLDivElement;
   private shown: readonly string[] = [];
   private readonly tiles = new Map<number, HTMLElement>();
+  /** The charge bar of each tile (ADR-039) and the last width drawn, so it only writes on change. */
+  private readonly bars = new Map<number, HTMLElement>();
+  private readonly barWidths = new Map<number, string>();
   /** Places whose tile waits for the capture sprite to land. */
   private readonly arriving = new Set<number>();
+  private onInspect: (member: number) => void = () => {};
 
   constructor(
     host: HTMLElement,
     private readonly art: ArtLookup,
     private readonly typeOf: (species: string) => GameType | undefined,
-    /** Evolution stage of a Pokémon of this level (the rules of the config). */
-    private readonly stageOf: (level: number) => number,
+    /** The species a Pokémon shows now (ADR-036): what the bar draws and names. */
+    private readonly formOf: (member: Member) => string,
+    /** Hits a Pokémon must land before its move (ADR-039). */
+    private readonly chargeNeed: (member: Member) => number,
   ) {
     this.root = document.createElement('div');
     this.root.dataset.teamBar = '';
@@ -46,38 +53,71 @@ export class TeamBar {
     host.append(this.root);
   }
 
-  /** Cheap to call every frame: it compares a short key per Pokémon. */
+  /** Called with the place of the Pokémon whose tile was pressed (the sheet of ADR-038). */
+  setOnInspect(handler: (member: number) => void): void {
+    this.onInspect = handler;
+  }
+
+  /** Cheap to call every frame: it compares a short key per Pokémon and moves the charge bars. */
   update(team: readonly Member[] | null): void {
     if (team === null) {
       if (this.shown.length === 0 && this.root.style.display === 'none') return;
       this.root.style.display = 'none';
       this.shown = [];
       this.tiles.clear();
+      this.bars.clear();
+      this.barWidths.clear();
       this.arriving.clear();
       return;
     }
     const keys = team.map(memberKey);
-    if (keys.length === this.shown.length && keys.every((key, i) => key === this.shown[i])) return;
-    this.shown = keys;
-    this.root.style.display = 'flex';
-    this.root.replaceChildren();
-    this.tiles.clear();
+    if (keys.length !== this.shown.length || keys.some((key, i) => key !== this.shown[i])) {
+      this.shown = keys;
+      this.root.style.display = 'flex';
+      this.root.replaceChildren();
+      this.tiles.clear();
+      this.bars.clear();
+      this.barWidths.clear();
+      team.forEach((member, index) => {
+        const tile = this.buildTile(member, index);
+        if (this.arriving.has(index)) tile.style.opacity = '0';
+        this.tiles.set(index, tile);
+        this.root.append(tile);
+      });
+    }
     team.forEach((member, index) => {
-      const tile = this.buildTile(member);
-      if (this.arriving.has(index)) tile.style.opacity = '0';
-      this.tiles.set(index, tile);
-      this.root.append(tile);
+      const bar = this.bars.get(index);
+      if (bar === undefined) return;
+      const need = Math.max(1, this.chargeNeed(member));
+      const width = `${Math.min(100, Math.round((member.charge / need) * 100))}%`;
+      if (this.barWidths.get(index) === width) return;
+      this.barWidths.set(index, width);
+      bar.style.width = width;
     });
   }
 
-  private buildTile(member: Member): HTMLElement {
-    const tile = spriteTile(
-      this.art.spriteUrl(member.species, this.stageOf(member.level)),
-      member.species,
-      member.type,
-      44,
-      member.level,
-    );
+  private buildTile(member: Member, index: number): HTMLElement {
+    const form = this.formOf(member);
+    const tile = spriteTile(this.art.spriteUrl(form), form, member.type, 44, member.level);
+    tile.dataset.teamTile = String(index);
+    tile.title = `${pokemonName(form)} Nv${member.level}`;
+    tile.style.cssText += 'pointer-events:auto;cursor:pointer;';
+    tile.addEventListener('click', () => this.onInspect(index));
+    const name = document.createElement('div');
+    name.textContent = pokemonName(form);
+    name.style.cssText =
+      'font-size:10px;font-weight:700;max-width:60px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;';
+    tile.append(name);
+    // The charge towards its move: a thin bar under the tile (ADR-039).
+    const track = document.createElement('div');
+    track.style.cssText =
+      'width:44px;height:4px;border-radius:2px;background:#ffffff22;overflow:hidden;';
+    const fill = document.createElement('div');
+    fill.dataset.charge = '';
+    fill.style.cssText = `width:0%;height:100%;background:${TYPE_COLORS[member.type]};`;
+    track.append(fill);
+    tile.append(track);
+    this.bars.set(index, fill);
     const ups = member.damageUps + member.cadenceUps;
     if (ups > 0) {
       const mark = document.createElement('div');

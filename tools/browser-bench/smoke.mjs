@@ -135,8 +135,8 @@ try {
   );
   await tunePage.locator('[data-tune-toggle]').click();
   check(
-    'the panel opens with 53 sliders (31 general, boss health and 21 for the wave curve)',
-    (await tunePage.locator('input[data-tune]').count()) === 53,
+    'the panel opens with 64 sliders (42 general, boss health and 21 for the wave curve)',
+    (await tunePage.locator('input[data-tune]').count()) === 64,
   );
   await tunePage.locator('input[data-tune="captureChance"]').fill('0.5');
   const tuneStored = await tunePage.evaluate(() => window.localStorage.getItem('tune.v1'));
@@ -249,10 +249,10 @@ try {
   const trainCard = evo.locator('button[data-card="0"]');
   const trainText = (await trainCard.textContent()) ?? '';
   check(
-    'the training card names the Pokémon, the level and the evolution',
+    'the training card names the Pokémon, the level and the form it evolves into',
     trainText.includes('Entrenar a Charmander') &&
       trainText.includes('Nv 2 → 3') &&
-      trainText.includes('evoluciona'),
+      trainText.includes('evoluciona a Charmeleon'),
     trainText,
   );
   check('the training card shows the Pokémon', (await trainCard.locator('img').count()) === 1);
@@ -277,11 +277,37 @@ try {
   const pausedAt = (await dbg(evo)).tick;
   await evo.waitForTimeout(400);
   check('evolving never pauses the game', (await dbg(evo)).tick > pausedAt);
+  const barText = (await evo.locator('[data-team-bar]').textContent()) ?? '';
   check(
-    'the team bar shows one Pokémon, still one, with its level',
+    'the team bar shows one Pokémon, still one, with its level and the name of its CURRENT form',
     (await evo.locator('[data-team-bar] img').count()) === 1 &&
-      ((await evo.locator('[data-team-bar]').textContent()) ?? '').includes('Nv3'),
+      barText.includes('Nv3') &&
+      barText.includes('Charmeleon') &&
+      !barText.includes('Charmander'),
+    barText,
   );
+  check(
+    'the tile has a charge bar under it (ADR-039)',
+    (await evo.locator('[data-team-bar] [data-charge]').count()) === 1,
+  );
+
+  // The sheet of a Pokémon: real stats, its move, and the game waits while it is open.
+  await evo.locator('[data-team-tile="0"]').click();
+  const sheetText = (await evo.locator('[data-sheet]').textContent()) ?? '';
+  check(
+    'clicking a Pokémon of the team opens its sheet with six stat bars and its move',
+    (await evo.locator('[data-sheet]').isVisible()) &&
+      (await evo.locator('[data-sheet] [data-stat]').count()) === 6 &&
+      sheetText.includes('Charmeleon') &&
+      sheetText.includes('Lanzallamas'),
+    sheetText,
+  );
+  const sheetTick = (await dbg(evo)).tick;
+  await evo.waitForTimeout(400);
+  check('the game waits while the sheet is open', (await dbg(evo)).tick === sheetTick);
+  await evo.keyboard.press('Escape');
+  await evo.waitForTimeout(300);
+  check('Escape closes it and the game goes on', (await dbg(evo)).tick > sheetTick);
   await evo.screenshot({ path: outFile.replace('.png', '-evolution.png') });
 
   // Capture with room in the team: the Pokémon joins and flies into the bar.
@@ -313,6 +339,13 @@ try {
     'it offers the six Pokémon and a release button',
     (await rep.locator('[data-replace-slot]').count()) === 6 &&
       (await rep.locator('[data-replace-release]').count()) === 1,
+  );
+  check(
+    'it shows the real stats of the capture and of each Pokémon, and the guard of each choice',
+    (await rep.locator('[data-replace] [data-stat-bars]').count()) === 7 &&
+      repText.includes('Guardia') &&
+      repText.includes('Daño ×'),
+    repText.slice(0, 300),
   );
   const paused = (await dbg(rep)).tick;
   await rep.waitForTimeout(400);
@@ -348,6 +381,43 @@ try {
     'a number key swaps that Pokémon',
     ((await num.locator('body').textContent()) ?? '').includes('reemplaza a Vulpix'),
   );
+
+  // Moves with a real name (ADR-039): with one hit of charge missing, the next hit casts, the
+  // label shows its Spanish name and never more than three labels are on screen at once.
+  const moves = await browser.newPage({ viewport: { width: 540, height: 820 } });
+  moves.on('pageerror', (e) => errors.push(e.message));
+  moves.on('console', (m) => m.type() === 'error' && errors.push(m.text()));
+  await moves.addInitScript(() => window.localStorage.setItem('autoAim.v1', '1'));
+  await moves.goto(
+    'http://127.0.0.1:4174/?debug&starter=charmander&team=charmander,squirtle,bulbasaur,pikachu,vulpix,psyduck&ballLevel=3&charge=9&wave=2&seed=9',
+  );
+  await moves.bringToFront();
+  await moves.waitForFunction(() => typeof window.__debug === 'function');
+  await moves.waitForFunction(() => window.__debug().moveCasts >= 1, undefined, { timeout: 30000 });
+  check('a Pokémon casts its move once its charge is full', true);
+  const labelText = (await moves.locator('[data-move-labels]').textContent()) ?? '';
+  check(
+    'the label names a real move in Spanish',
+    /(Lanzallamas|Surf|Hoja Afilada|Rayo|Rueda Fuego|Hidropulso|Pistola Agua)/.test(labelText),
+    labelText,
+  );
+  let maxLabels = 0;
+  for (let i = 0; i < 40; i++) {
+    maxLabels = Math.max(maxLabels, await moves.locator('[data-move-labels] > div').count());
+    await moves.waitForTimeout(100);
+  }
+  const movesState = await dbg(moves);
+  check('never more than three labels at once', maxLabels <= 3, `max ${maxLabels}`);
+  check(
+    'the labels shown plus the ones left out add up to the casts that were offered',
+    movesState.moveCasts >= movesState.labelsShown,
+    JSON.stringify({
+      casts: movesState.moveCasts,
+      shown: movesState.labelsShown,
+      dropped: movesState.labelsDropped,
+    }),
+  );
+  await moves.screenshot({ path: outFile.replace('.png', '-moves.png') });
 
   // Themed waves: the first wave is announced with its theme, its type and what beats it.
   const themePage = await open('starter=charmander&seed=9');

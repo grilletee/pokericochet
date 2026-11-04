@@ -1,5 +1,5 @@
 import type { Ball, EffectKind } from '../domain';
-import { speciesName } from './cardText';
+import { pokemonName } from './names';
 
 const EFFECT_NAMES: Record<EffectKind, string> = {
   burn: 'Quemar',
@@ -22,7 +22,7 @@ export function describeEffects(ball: Ball): string {
   return ball.effects.map((e) => `${EFFECT_NAMES[e.kind]} ${number(e.strength)}`).join(' · ');
 }
 
-/** "Charmander Nv2", with "híbrida" when it is one. */
-export function describeBall(ball: Ball): string {
-  return `${speciesName(ball.species)} Nv${ball.level}${ball.hybrid ? ' (híbrida)' : ''}`;
+/** "Charizard Nv6", with "híbrida" when it is one; `form` is the species the ball shows now. */
+export function describeBall(ball: Ball, form: string = ball.species): string {
+  return `${pokemonName(form)} Nv${ball.level}${ball.hybrid ? ' (híbrida)' : ''}`;
 }

@@ -1,8 +1,10 @@
-import { describe, expect, it } from 'vitest';
-import { gameConfig } from '../../src/data';
+import { beforeAll, describe, expect, it } from 'vitest';
+import { gameConfig, MOVE_NAMES, POKEMON_NAMES } from '../../src/data';
 import type { Ball, Card, Member } from '../../src/domain';
-import { ballsFor, fuse, stageOf } from '../../src/domain';
-import { describeCard, speciesName, typeName } from '../../src/ui';
+import { ballsFor, formOfMember, fuse, nextStep, stageForLevel } from '../../src/domain';
+import { describeCard, pokemonName, setNames, typeName } from '../../src/ui';
+
+beforeAll(() => setNames(POKEMON_NAMES, MOVE_NAMES));
 
 const ball = (overrides: Partial<Ball>): Ball => ({
   id: 1,
@@ -22,10 +24,16 @@ const water = ball({
   effects: [{ kind: 'pierce', strength: 1 }],
 });
 const balls = [ball({}), water];
-const team: Member[] = [
-  { species: 'charmander', type: 'fire', level: 2, starter: false, damageUps: 0, cadenceUps: 0 },
-  { species: 'squirtle', type: 'water', level: 5, starter: false, damageUps: 1, cadenceUps: 0 },
-];
+const member = (species: string, type: Member['type'], level: number, damageUps = 0): Member => ({
+  species,
+  type,
+  level,
+  starter: false,
+  damageUps,
+  cadenceUps: 0,
+  charge: 0,
+});
+const team: Member[] = [member('charmander', 'fire', 2), member('squirtle', 'water', 5, 1)];
 
 const context = {
   typeOf: (species: string) => gameConfig.species[species]?.type,
@@ -37,8 +45,9 @@ const context = {
     return result?.ok ? result.ball : null;
   },
   memberAt: (index: number) => team[index],
+  formOf: (m: Member) => formOfMember(gameConfig, m),
+  nextStep: (m: Member) => nextStep(gameConfig, m),
   ballsAt: (level: number) => ballsFor(gameConfig, level),
-  stageAt: (level: number) => stageOf(gameConfig, level),
   powerStep: gameConfig.cards.powerStep,
   damageStep: gameConfig.cards.damageStep,
   cadenceFactor: gameConfig.cards.cadenceFactor,
@@ -59,30 +68,60 @@ describe('card text', () => {
     );
   });
 
-  it('says what a level gives: the next level, a new ball, an evolution', () => {
-    // Charmander Nv2 -> Nv3 reaches the second stage (and a second ball) with the real rules.
+  it('says what a level gives: the next level, a new ball, an evolution into a named form', () => {
+    // Charmander Nv2 -> Nv3 reaches the second stage (and a second ball): Charmeleon.
     expect(describeCard({ kind: 'train', member: 0 }, context)).toEqual({
       title: 'Entrenar a Charmander',
-      detail: 'Nv 2 → 3 · +1 bola · ¡evoluciona!',
+      detail: 'Nv 2 → 3 · +1 bola · ¡evoluciona a Charmeleon!',
     });
-    // Squirtle Nv5 -> Nv6: a third ball and the last stage.
-    expect(describeCard({ kind: 'train', member: 1 }, context).detail).toBe(
-      'Nv 5 → 6 · +1 bola · ¡evoluciona!',
-    );
+    // Squirtle Nv5 is Wartortle: Nv6 gives a third ball and the last form, Blastoise.
+    expect(describeCard({ kind: 'train', member: 1 }, context)).toEqual({
+      title: 'Entrenar a Wartortle',
+      detail: 'Nv 5 → 6 · +1 bola · ¡evoluciona a Blastoise!',
+    });
     // Nv3 -> Nv4 only changes the level.
-    const mid = { ...context, memberAt: () => ({ ...(team[0] as Member), level: 3 }) };
+    const mid = { ...context, memberAt: () => member('charmander', 'fire', 3) };
     expect(describeCard({ kind: 'train', member: 0 }, mid).detail).toBe('Nv 3 → 4');
+  });
+
+  it('calls the step of a line that does not change form by what it is (ADR-037)', () => {
+    // Exeggcute evolves at Nv3 and only reaches its maximum power at Nv6: no "Exeggutor into Exeggutor".
+    const egg = (level: number) => ({
+      ...context,
+      memberAt: () => member('exeggcute', 'grass', level),
+    });
+    expect(describeCard({ kind: 'train', member: 0 }, egg(2)).detail).toContain(
+      '¡evoluciona a Exeggutor!',
+    );
+    const peak = describeCard({ kind: 'train', member: 0 }, egg(5));
+    expect(peak.title).toBe('Entrenar a Exeggutor');
+    expect(peak.detail).toContain('¡alcanza su máximo poder!');
+    expect(peak.detail).not.toContain('evoluciona');
+  });
+
+  it('says "awakens" for a species that does not evolve, never "evolves"', () => {
+    const quiet = {
+      ...context,
+      memberAt: () => member('tangela', 'grass', 2),
+      formOf: () => 'tangela',
+      nextStep: () => ({ kind: 'awaken' as const, to: 'tangela' }),
+    };
+    const awaken = describeCard({ kind: 'train', member: 0 }, quiet);
+    expect(awaken.detail).toContain('¡despierta su poder!');
+    expect(awaken.detail).not.toContain('evoluciona');
+    expect(awaken.title).toBe('Entrenar a Tangela');
   });
 
   it('survives a card about a Pokémon that is no longer in the team', () => {
     expect(describeCard({ kind: 'train', member: 9 }, context).detail).toContain('Ya no');
   });
 
-  it('names the Pokémon in the power and cadence cards and reads the numbers from the rules', () => {
+  it('names the CURRENT form in the power and cadence cards and reads the numbers from the rules', () => {
+    // Squirtle at Nv5 shows as Wartortle; Charmander at Nv2 is still Charmander.
     const power = describeCard({ kind: 'power', member: 1 }, context);
-    expect(power.title).toBe('Potencia de Squirtle');
+    expect(power.title).toBe('Potencia de Wartortle');
     expect(power.detail).toBe(
-      `+${Math.round(gameConfig.cards.powerStep * 100)} % de daño de Squirtle`,
+      `+${Math.round(gameConfig.cards.powerStep * 100)} % de daño de Wartortle`,
     );
     const cadence = describeCard({ kind: 'cadence', member: 0 }, context);
     expect(cadence.title).toBe('Cadencia de Charmander');
@@ -94,6 +133,26 @@ describe('card text', () => {
     const other = { ...context, powerStep: 0.3, damageStep: 0.3 };
     expect(describeCard({ kind: 'power', member: 1 }, other).detail).toContain('30 %');
     expect(describeCard({ kind: 'team' }, other).detail).toContain('30 %');
+  });
+
+  it('never names the base species of a Pokémon that has evolved (the "Charmander for Charizard" bug)', () => {
+    // Every species of the roster, at every stage: the cards say the form it shows, not its base.
+    for (const base of Object.keys(gameConfig.lines ?? {})) {
+      const type = gameConfig.species[base]?.type;
+      if (type === undefined) continue;
+      for (const level of [1, 3, 6]) {
+        const m = member(base, type, level);
+        const form = formOfMember(gameConfig, m);
+        const name = pokemonName(form);
+        const ctx = { ...context, memberAt: () => m };
+        for (const kind of ['train', 'power', 'cadence'] as const) {
+          const { title } = describeCard({ kind, member: 0 }, ctx);
+          expect(title, `${base} Nv${level} ${kind}`).toContain(name);
+          if (form !== base) expect(title).not.toContain(pokemonName(base));
+        }
+        expect(stageForLevel(gameConfig, level)).toBeGreaterThan(0);
+      }
+    }
   });
 
   it('names the two ingredients of a hybrid and says what it becomes (hybrids are off, the text stays)', () => {
@@ -129,6 +188,5 @@ describe('card text', () => {
       'Planta',
       'Eléctrico',
     ]);
-    expect(speciesName('charmander')).toBe('Charmander');
   });
 });

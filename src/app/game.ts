@@ -1,22 +1,32 @@
-import { ART_SPECIES_IDS, formOf, gameConfig, STARTER_SPECIES } from '../data';
+import { ART_SPECIES_IDS, gameConfig, MOVE_NAMES, POKEMON_NAMES, STARTER_SPECIES } from '../data';
 import {
   addMember,
   ballsFor,
   type Command,
+  captureForm,
   captureLevel,
+  chargeNeed,
   createRun,
   createSnapshot,
   dropCapture,
+  formAt,
+  formOfMember,
   GAME_TYPES,
   type GameConfig,
   type GameEvent,
+  guardAfterReplace,
+  moveIdOf,
+  nextStep,
   PHASE_LEVELUP,
   previewHybrid,
   type Run,
   type Snapshot,
-  stageOf,
+  stageForLevel,
+  statsOf,
+  statsOfMember,
   summarizeRun,
   syncMember,
+  teamGuard,
   tick,
   writeSnapshot,
 } from '../domain';
@@ -29,15 +39,22 @@ import {
   describeEvent,
   disclaimerShort,
   EvolutionBanner,
+  labelPriority,
+  MemberSheet,
+  MoveLabelPolicy,
+  MoveLabels,
   Overlay,
+  pokemonName,
   ReplaceScreen,
+  type ReplaceView,
   ResultsScreen,
   SoundFx,
   SoundToggle,
   type StarterOption,
   StartScreen,
-  speciesName,
+  setNames,
   spriteTile,
+  stageText,
   TeamBar,
   TunePanel,
   typeName,
@@ -115,6 +132,11 @@ declare global {
       autoAim: boolean;
       aimX: number;
       aimY: number;
+      /** Moves cast so far, and the labels that were shown / left out (ADR-039). */
+      moveCasts: number;
+      labelsShown: number;
+      labelsDropped: number;
+      sheetOpen: boolean;
     };
   }
 }
@@ -246,6 +268,9 @@ function applyDebugParams(run: Run, config: GameConfig, params: URLSearchParams)
       syncMember(run, config, index);
     });
   }
+  // charge=N gives every Pokémon N hits of charge, so a move is one hit away (ADR-039).
+  const charge = number('charge');
+  if (charge !== null) for (const member of run.team) member.charge = Math.max(0, charge);
   // offers=growth opens a level-up with a Pokémon card of each kind for the first Pokémon.
   if (params.get('offers') === 'growth') {
     run.offers = [
@@ -293,19 +318,19 @@ export async function startGame(host: HTMLElement): Promise<void> {
   }
   if (showDebug && !bench) applyDebugParams(run, config, params);
 
+  // The names the screens show come from the data layer once (ADR-036): Pokémon and moves in Spanish.
+  setNames(POKEMON_NAMES, MOVE_NAMES);
   // Species -> small code the render uses to pick art; the domain never sees art.
-  // The art table also holds every evolution form; `forms[code][level - 1]` is the code to draw.
+  // The art table also holds every evolution form; `forms[code][stage - 1]` is the code to draw.
   const speciesIds = [...new Set([...Object.keys(config.species), ...ART_SPECIES_IDS])];
   const speciesCodes = new Map(speciesIds.map((id, code) => [id, code]));
   const forms = speciesIds.map((id) =>
-    [1, 2, 3].map((level) => speciesCodes.get(formOf(id, level)) ?? speciesCodes.get(id) ?? 0),
+    [1, 2, 3].map(
+      (stage) => speciesCodes.get(formAt(config, id, stage)) ?? speciesCodes.get(id) ?? 0,
+    ),
   );
   const urls = spriteUrls();
-  const art = {
-    spriteUrl: (species: string, level: number): string | undefined =>
-      urls.get(formOf(species, level)),
-  };
-  const formName = (species: string, level: number): string => speciesName(formOf(species, level));
+  const art = { spriteUrl: (form: string): string | undefined => urls.get(form) };
   let prev = createSnapshot(MAX_SLOTS, MAX_ENEMIES);
   let curr = createSnapshot(MAX_SLOTS, MAX_ENEMIES);
   writeSnapshot(run, prev, speciesCodes, config);
@@ -324,9 +349,14 @@ export async function startGame(host: HTMLElement): Promise<void> {
     host,
     art,
     (species) => config.species[species]?.type,
-    (level) => stageOf(config, level),
+    (member) => formOfMember(config, member),
+    (member) => chargeNeed(config, stageForLevel(config, member.level)),
   );
   const replaceScreen = new ReplaceScreen(host);
+  const sheet = new MemberSheet(host);
+  const moveLabels = new MoveLabels(host);
+  // At most three move names at once; the starter's move always shows (ADR-039, M11).
+  const labelPolicy = new MoveLabelPolicy(3, 900);
   const banner = new EvolutionBanner(host);
   const startScreen = new StartScreen(host);
   const creditsScreen = new CreditsScreen(host);
@@ -386,6 +416,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
 
   let screen: Screen = 'playing';
   let best: BestRun | null = loadBestRun(store);
+  let moveCasts = 0;
 
   let last = performance.now();
   let frameCount = 0;
@@ -419,6 +450,10 @@ export async function startGame(host: HTMLElement): Promise<void> {
       autoAim: run.autoAim,
       aimX: run.aimX,
       aimY: run.aimY,
+      moveCasts,
+      labelsShown: labelPolicy.shown,
+      labelsDropped: labelPolicy.dropped,
+      sheetOpen: sheet.open,
     });
   }
 
@@ -428,8 +463,9 @@ export async function startGame(host: HTMLElement): Promise<void> {
     ballAt: (slot) => run.loadout[slot],
     previewHybrid: (a, b) => previewHybrid(run, a, b),
     memberAt: (index) => run.team[index],
+    formOf: (member) => formOfMember(config, member),
+    nextStep: (member) => nextStep(config, member),
     ballsAt: (level) => ballsFor(config, level),
-    stageAt: (level) => stageOf(config, level),
     powerStep: config.cards.powerStep,
     damageStep: config.cards.damageStep,
     cadenceFactor: config.cards.cadenceFactor,
@@ -459,6 +495,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
     creditsScreen.hide();
     resultsScreen.hide();
     banner.hide();
+    sheet.hide();
     screen = 'playing';
   };
   const showMenu = (): void => {
@@ -502,51 +539,104 @@ export async function startGame(host: HTMLElement): Promise<void> {
   /** Place in the team of the Pokémon that fires a ball (the last place if it is gone). */
   const memberOfBall = (ballId: number): number =>
     run.loadout.find((ball) => ball.id === ballId)?.owner ?? Math.max(0, run.team.length - 1);
+  /** What the replace screen shows for a pending capture: real stats and the guard of each choice. */
+  const replaceView = (pending: { species: string; stage: number }): ReplaceView => ({
+    guard: teamGuard(config, run.team),
+    capture: {
+      form: captureForm(config, pending.species, pending.stage),
+      type: config.species[pending.species]?.type,
+      level: captureLevel(config, pending.stage),
+      stats: statsOf(config, pending.species, captureLevel(config, pending.stage)),
+    },
+    team: run.team.map((member, slot) => ({
+      form: formOfMember(config, member),
+      type: member.type,
+      level: member.level,
+      damageUps: member.damageUps,
+      cadenceUps: member.cadenceUps,
+      stats: statsOfMember(config, member),
+      guardIfReplaced: guardAfterReplace(config, run.team, slot, pending),
+    })),
+  });
+  /** The sheet of one Pokémon of the team: its real stats and its move (ADR-038, ADR-039). */
+  const openSheet = (index: number): void => {
+    const member = run.team[index];
+    if (member === undefined) return;
+    const stats = statsOfMember(config, member);
+    sheet.show(
+      {
+        form: stats.form,
+        type: member.type,
+        level: member.level,
+        stage: stats.stage,
+        stats,
+        damageUps: member.damageUps,
+        cadenceUps: member.cadenceUps,
+        move: moveIdOf(config, member.species, stats.stage),
+        charge: member.charge,
+        chargeNeed: chargeNeed(config, stats.stage),
+      },
+      art,
+      () => {},
+    );
+  };
+  teamBar.setOnInspect(openSheet);
   /** The DOM feedback of the events of this frame: captures fly to the team bar, evolutions show. */
-  const showEventFeedback = (events: readonly GameEvent[]): void => {
+  const showEventFeedback = (events: readonly GameEvent[], now: number): void => {
     for (const event of events) {
       if (event.type === 'capture') {
         const from = toScreen(event.x, config.player.y);
         teamBar.flyCapture(
           memberOfBall(event.ballId),
-          event.species,
-          art.spriteUrl(event.species, event.level),
+          event.form,
+          art.spriteUrl(event.form),
           from.x,
           from.y,
         );
       } else if (event.type === 'train') {
         teamBar.pulse(event.member);
-      } else if (event.type === 'evolve') {
+      } else if (event.type === 'stage') {
+        // An evolution, an awakening or the maximum power: the banner names what changed (ADR-037).
         const type = config.species[event.species]?.type;
-        teamBar.pulse(memberOfBall(event.ballId));
+        teamBar.pulse(event.member);
         banner.show(
           [
-            spriteTile(art.spriteUrl(event.species, event.level - 1), event.species, type, 64),
-            arrow(),
-            spriteTile(art.spriteUrl(event.species, event.level), event.species, type, 72),
+            spriteTile(art.spriteUrl(event.from), event.from, type, 64),
+            arrow(event.kind === 'evolve' ? '→' : '▲'),
+            spriteTile(art.spriteUrl(event.to), event.to, type, 72),
           ],
-          describeEvent(event, formName) ?? '',
+          stageText(event.kind, event.from, event.to),
           '#ffd54f',
+        );
+      } else if (event.type === 'move') {
+        const at = toScreen(event.x, event.y);
+        labelPolicy.offer(
+          event.member,
+          event.move,
+          labelPriority(event.starter, event.tier),
+          at.x,
+          at.y,
+          now,
         );
       } else if (event.type === 'hybrid') {
         teamBar.pulse(memberOfBall(event.ballId));
         banner.show(
           [
             spriteTile(
-              art.spriteUrl(event.species, event.level),
+              art.spriteUrl(event.species),
               event.species,
               config.species[event.species]?.type,
               60,
             ),
             arrow('+'),
             spriteTile(
-              art.spriteUrl(event.withSpecies, event.level),
+              art.spriteUrl(event.withSpecies),
               event.withSpecies,
               config.species[event.withSpecies]?.type,
               60,
             ),
           ],
-          describeEvent(event, formName) ?? '',
+          describeEvent(event) ?? '',
           '#c792ea',
         );
       }
@@ -587,7 +677,8 @@ export async function startGame(host: HTMLElement): Promise<void> {
       input.menuRequested = false;
     }
 
-    const steps = screen === 'playing' ? stepper.advance(elapsed) : 0;
+    // The Pokémon sheet pauses the game here, in the app: the run takes no command, so it is the same run.
+    const steps = screen === 'playing' && !sheet.open ? stepper.advance(elapsed) : 0;
     let tickMs = 0;
     let snapshotMs = 0;
     for (let s = 0; s < steps; s++) {
@@ -599,9 +690,10 @@ export async function startGame(host: HTMLElement): Promise<void> {
       const t1 = performance.now();
       for (const event of output.events) {
         pending.push(event);
-        const text = describeEvent(event, formName, themeLabel);
-        // Evolutions and hybrids have their own banner with the sprites: no second message.
-        if (text !== null && event.type !== 'evolve' && event.type !== 'hybrid') {
+        if (event.type === 'move') moveCasts += 1;
+        const text = describeEvent(event, themeLabel);
+        // Stage steps and hybrids have their own banner with the sprites: no second message.
+        if (text !== null && event.type !== 'stage' && event.type !== 'hybrid') {
           overlay.showToast(text, now);
         }
         sound.playEvent(event, now);
@@ -622,22 +714,14 @@ export async function startGame(host: HTMLElement): Promise<void> {
     teamBar.update(!bench && screen === 'playing' ? run.team : null);
     replaceScreen.update(
       screen === 'playing' && run.phase === 'replace' && run.pendingCapture !== null
-        ? {
-            team: run.team,
-            capture: {
-              species: run.pendingCapture.species,
-              stage: stageOf(config, captureLevel(config, run.pendingCapture.stage)),
-            },
-            captureType: config.species[run.pendingCapture.species]?.type,
-            captureLevel: captureLevel(config, run.pendingCapture.stage),
-            stageOf: (level) => stageOf(config, level),
-          }
+        ? replaceView(run.pendingCapture)
         : null,
       art,
       (slot) => input.requestPick(slot),
       () => input.requestPick(RELEASE_PICK),
     );
-    showEventFeedback(pending);
+    showEventFeedback(pending, now);
+    moveLabels.update(screen === 'playing' ? labelPolicy.visible(now) : [], toScreen);
     const r0 = performance.now();
     if (!skipRender) renderer.render(prev, curr, stepper.alpha, pending, elapsed);
     const renderMs = performance.now() - r0;
@@ -662,7 +746,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
     );
     overlay.updateToast(now);
     overlay.setBoss(
-      speciesName(speciesIds[curr.bossSpecies] ?? ''),
+      pokemonName(speciesIds[curr.bossSpecies] ?? ''),
       screen === 'playing' ? curr.bossHp : 0,
       curr.bossMaxHp,
     );

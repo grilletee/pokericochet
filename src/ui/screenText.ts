@@ -1,5 +1,6 @@
 import type { GameEvent, GameType, RunSummary } from '../domain';
-import { speciesName, typeName } from './cardText';
+import { typeName } from './cardText';
+import { pokemonName } from './names';
 
 const TYPE_BLURB: Record<GameType, string> = {
   fire: 'Quema al impactar',
@@ -37,7 +38,7 @@ export function describeBest(best: BestRunView | null): string {
     best.result === 'won'
       ? `Victoria en ${formatTime(best.ticks)}`
       : `${best.wavesCleared}/${best.wavesTotal} oleadas`;
-  return `Mejor partida: ${outcome}, ${best.kills} bajas · ${speciesName(best.starter)} · semilla ${best.seed}`;
+  return `Mejor partida: ${outcome}, ${best.kills} bajas · ${pokemonName(best.starter)} · semilla ${best.seed}`;
 }
 
 export interface ResultsText {
@@ -52,7 +53,7 @@ export function describeResults(
   isNewBest: boolean,
 ): ResultsText {
   const won = summary.result === 'won';
-  const team = summary.team.map((m) => `${speciesName(m.species)} Nv${m.level}`).join(', ');
+  const team = summary.team.map((m) => `${pokemonName(m.form)} Nv${m.level}`).join(', ');
   const progress = won
     ? 'Derrotaste al jefe.'
     : summary.bossReached
@@ -64,19 +65,30 @@ export function describeResults(
       progress,
       `Bajas: ${summary.kills} · Nivel ${summary.level} · Tiempo ${formatTime(summary.ticks)}`,
       `Equipo: ${team}`,
-      `Inicial: ${speciesName(summary.starter)} · Semilla: ${summary.seed}`,
+      `Inicial: ${pokemonName(summary.starter)} · Semilla: ${summary.seed}`,
       isNewBest ? '¡Nueva mejor partida!' : describeBest(best),
     ],
   };
 }
 
-/** Name of the form a ball of `species` shows at `level`; the plain species name by default. */
-export type FormNamer = (species: string, level: number) => string;
+/** The announcement of a step: an evolution, an awakening or the maximum power (ADR-037). */
+export function stageText(kind: 'evolve' | 'awaken' | 'peak', from: string, to: string): string {
+  switch (kind) {
+    case 'evolve':
+      return `¡${pokemonName(from)} evoluciona a ${pokemonName(to)}!`;
+    case 'awaken':
+      return `¡${pokemonName(to)} despierta su poder!`;
+    case 'peak':
+      return `¡${pokemonName(to)} alcanza su máximo poder!`;
+  }
+}
 
-/** A short on-screen message for an event, or null if the event needs none. */
+/**
+ * A short on-screen message for an event, or null if the event needs none. Every Pokémon is named
+ * by the form the event carries (ADR-036), never by the base species.
+ */
 export function describeEvent(
   event: GameEvent,
-  formName: FormNamer = (species) => speciesName(species),
   themeLabel: (themeId: string) => string | null = () => null,
 ): string | null {
   switch (event.type) {
@@ -87,25 +99,25 @@ export function describeEvent(
         : `Oleada ${event.index + 1}: ${theme}`;
     }
     case 'bossDefeated':
-      return `¡Jefe derrotado: ${speciesName(event.species)}!`;
+      return `¡Jefe derrotado: ${pokemonName(event.species)}!`;
     case 'bossSpawn':
       return '¡Aparece el jefe!';
     case 'bossSummon':
       return `El jefe invoca ${event.count} refuerzos`;
-    case 'evolve':
-      return `¡${formName(event.species, event.level - 1)} evoluciona a ${formName(event.species, event.level)}!`;
+    case 'stage':
+      return stageText(event.kind, event.from, event.to);
     case 'hybrid':
-      return `¡Híbrida! ${speciesName(event.species)} + ${speciesName(event.withSpecies)}`;
+      return `¡Híbrida! ${pokemonName(event.species)} + ${pokemonName(event.withSpecies)}`;
     case 'captureDrop':
-      return `¡${formName(event.species, event.level)} soltó una bola! Recógela`;
+      return `¡${pokemonName(event.form)} soltó una bola! Recógela`;
     case 'capture':
-      return `¡Capturado: ${formName(event.species, event.level)}!`;
+      return `¡Capturado: ${pokemonName(event.form)}!`;
     case 'train':
-      return `¡${speciesName(event.species)} sube a Nv${event.level}!`;
+      return `¡${pokemonName(event.form)} sube a Nv${event.level}!`;
     case 'replaced':
-      return `${speciesName(event.species)} reemplaza a ${speciesName(event.out)}`;
+      return `${pokemonName(event.form)} reemplaza a ${pokemonName(event.outForm)}`;
     case 'release':
-      return `Soltaste a ${speciesName(event.species)}`;
+      return `Soltaste a ${pokemonName(event.form)}`;
     default:
       return null;
   }

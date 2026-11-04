@@ -5,7 +5,9 @@ import {
   type GameConfig,
   type GameEvent,
   type Snapshot,
+  typeCode,
 } from '../domain';
+import { ballVisualScale, opaqueExtent } from './artBox';
 import { interpolateBalls, interpolateEnemies } from './interpolate';
 
 /** Placeholder colours per type code (fire, water, grass, electric). No franchise art here. */
@@ -17,9 +19,38 @@ const AIM_LENGTH = 300;
 const PICKUP_GOLD = 0xffd54f;
 const FX_DURATION_MS = 280;
 
-/** How much bigger than its collision circle a species sprite is drawn (sprites have margins). */
-const BALL_ART_SCALE = 2.4;
 const ENEMY_ART_SCALE = 1.7;
+/** Moves draw their shape for this long (ADR-039); at most this many at once. */
+const SHAPE_POOL = 12;
+const SHAPE_DURATION_MS = 380;
+/** The aura of a ball by stage - 1 (ADR-037): none, thin, thick; its size relative to the ball. */
+const AURA_ALPHA: readonly number[] = [0, 0.5, 0.95];
+const AURA_SIZE: readonly number[] = [0, 2.0, 2.5];
+
+/**
+ * Side of the box that holds the visible pixels of a texture (ADR-037), measured once. If the
+ * pixels cannot be read, the whole picture counts.
+ */
+function measureExtent(texture: Texture): number {
+  const whole = Math.max(texture.width, texture.height);
+  try {
+    const resource = texture.source.resource as CanvasImageSource;
+    const canvas = document.createElement('canvas');
+    canvas.width = texture.width;
+    canvas.height = texture.height;
+    const context = canvas.getContext('2d', { willReadFrequently: true });
+    if (context === null) return whole;
+    context.drawImage(resource, 0, 0);
+    const { data } = context.getImageData(0, 0, canvas.width, canvas.height);
+    return opaqueExtent(
+      (x, y) => data[(y * canvas.width + x) * 4 + 3] ?? 0,
+      canvas.width,
+      canvas.height,
+    );
+  } catch {
+    return whole;
+  }
+}
 
 /**
  * Draws a pair of snapshots. Species with art (`art[code]`, supplied by the app) are drawn with
@@ -47,6 +78,12 @@ export class Renderer {
   private readonly fxLife = new Float32Array(FX_POOL);
   private readonly fxSize = new Float32Array(FX_POOL);
   private fxNext = 0;
+  /** Opaque box of each art texture, by art code (ADR-037). */
+  private readonly extents: number[];
+  private readonly auras: Sprite[] = [];
+  private readonly shapes: Sprite[] = [];
+  private readonly shapeLife = new Float32Array(SHAPE_POOL);
+  private shapeNext = 0;
   private enemiesShown = 0;
   private ballsShown = 0;
   private readonly player: Graphics;
@@ -60,11 +97,18 @@ export class Renderer {
     private readonly config: GameConfig,
     private readonly disc: Texture,
     private readonly ring: Texture,
+    private readonly bar: Texture,
     maxSlots: number,
     maxEnemies: number,
     private readonly art: readonly (Texture | undefined)[],
     private readonly forms: readonly (readonly number[])[],
   ) {
+    this.extents = art.map((texture) => (texture === undefined ? 1 : measureExtent(texture)));
+    for (let i = 0; i < SHAPE_POOL; i++) {
+      const sprite = new Sprite(bar);
+      sprite.visible = false;
+      this.shapes.push(sprite);
+    }
     this.scratchBallX = new Float32Array(maxSlots);
     this.scratchBallY = new Float32Array(maxSlots);
     this.scratchEnemyX = new Float32Array(maxEnemies);
@@ -103,11 +147,14 @@ export class Renderer {
       this.aimDots.push(dot);
       this.aimLayer.addChild(dot);
     }
+    const shapeLayer = new Container();
+    for (const sprite of this.shapes) shapeLayer.addChild(sprite);
     this.world.addChild(
       background,
       this.aimLayer,
       this.enemyLayer,
       this.pickupLayer,
+      shapeLayer,
       this.ballLayer,
       this.fxLayer,
       this.reachRing,
@@ -138,7 +185,8 @@ export class Renderer {
     const ring = app.renderer.generateTexture(
       new Graphics().circle(0, 0, 30).stroke({ width: 4, color: 0xffffff }),
     );
-    return new Renderer(app, config, disc, ring, maxSlots, maxEnemies, art, forms);
+    const bar = app.renderer.generateTexture(new Graphics().rect(0, 0, 4, 4).fill(0xffffff));
+    return new Renderer(app, config, disc, ring, bar, maxSlots, maxEnemies, art, forms);
   }
 
   /** Arena-to-screen transform, shared with the input layer to convert pointer positions. */
@@ -179,9 +227,9 @@ export class Renderer {
     this.app.render();
   }
 
-  /** Art of the evolution form a ball of `level` shows: `forms[species code][level - 1]`. */
-  private artFor(code: number, level: number): Texture | undefined {
-    return this.art[this.forms[code]?.[level - 1] ?? code];
+  /** Art code of the form a ball of `stage` shows: `forms[species code][stage - 1]`. */
+  private artCode(code: number, stage: number): number {
+    return this.forms[code]?.[stage - 1] ?? code;
   }
 
   private spriteAt(pool: Sprite[], layer: Container, index: number): Sprite {
@@ -203,25 +251,56 @@ export class Renderer {
       const sprite = this.spriteAt(this.ballSprites, this.ballLayer, shown);
       sprite.visible = true;
       sprite.position.set(this.scratchBallX[slot] ?? 0, this.scratchBallY[slot] ?? 0);
-      // The ball grows with the stage of its Pokémon (ADR-031): the bigger, the further along.
+      // The ball grows with the stage of its Pokémon (ADR-031) and the visible pixels of every
+      // sprite, not the whole picture, have the size of the ball (ADR-037): the same growth for all.
       const radius = curr.ballRadius[slot] || this.config.ball.radius;
-      const art = this.artFor(curr.ballSpecies[slot] ?? 255, curr.ballLevel[slot] ?? 1);
+      const stage = curr.ballLevel[slot] ?? 1;
+      const code = this.artCode(curr.ballSpecies[slot] ?? 255, stage);
+      const art = this.art[code];
       if (art === undefined) {
         sprite.texture = this.disc;
         sprite.scale.set(radius / 32);
       } else {
         sprite.texture = art;
-        sprite.scale.set((radius * BALL_ART_SCALE) / (art.width / 2));
+        sprite.scale.set(ballVisualScale(this.extents[code] ?? art.width, radius));
       }
       sprite.tint = 0xffffff;
       sprite.alpha = 1;
+      this.drawAura(shown, sprite.x, sprite.y, radius, stage, curr.ballType[slot] ?? 0);
       shown += 1;
     }
     for (let i = shown; i < this.ballsShown; i++) {
       const sprite = this.ballSprites[i];
       if (sprite) sprite.visible = false;
+      const aura = this.auras[i];
+      if (aura) aura.visible = false;
     }
     this.ballsShown = shown;
+  }
+
+  /** A ring in the colour of the type around balls of stage 2 and 3, so a stage always shows. */
+  private drawAura(
+    index: number,
+    x: number,
+    y: number,
+    radius: number,
+    stage: number,
+    type: number,
+  ): void {
+    let aura = this.auras[index];
+    if (aura === undefined) {
+      aura = new Sprite(this.ring);
+      aura.anchor.set(0.5);
+      this.auras[index] = aura;
+      this.ballLayer.addChild(aura);
+    }
+    const alpha = AURA_ALPHA[stage - 1] ?? 0;
+    aura.visible = alpha > 0;
+    if (alpha === 0) return;
+    aura.position.set(x, y);
+    aura.tint = TYPE_COLORS[type] ?? 0xffffff;
+    aura.alpha = alpha;
+    aura.scale.set((radius * (AURA_SIZE[stage - 1] ?? 2)) / 30);
   }
 
   private drawEnemies(prev: Snapshot, curr: Snapshot, alpha: number): void {
@@ -274,14 +353,15 @@ export class Renderer {
       halo.visible = true;
       sprite.position.set(x, y);
       halo.position.set(x, y);
-      const art = this.artFor(curr.pickupSpecies[i] ?? 255, curr.pickupLevel[i] ?? 1);
+      const code = this.artCode(curr.pickupSpecies[i] ?? 255, curr.pickupLevel[i] ?? 1);
+      const art = this.art[code];
       if (art === undefined) {
         sprite.texture = this.disc;
         sprite.scale.set(radius / 32);
         sprite.tint = TYPE_COLORS[curr.pickupType[i] ?? 0] ?? 0xffffff;
       } else {
         sprite.texture = art;
-        sprite.scale.set((radius * BALL_ART_SCALE * 1.1) / (art.width / 2));
+        sprite.scale.set(ballVisualScale(this.extents[code] ?? art.width, radius) * 1.1);
         sprite.tint = 0xffffff;
       }
       sprite.alpha = urgent ? 0.35 : 1;
@@ -339,9 +419,70 @@ export class Renderer {
     this.fxSize[index] = size;
   }
 
+  /** One sprite of a move's shape, faded out by `drawEffects`. */
+  private startShape(
+    texture: Texture,
+    x: number,
+    y: number,
+    width: number,
+    height: number,
+    centred: boolean,
+    color: number,
+  ): void {
+    const index = this.shapeNext;
+    this.shapeNext = (this.shapeNext + 1) % SHAPE_POOL;
+    const sprite = this.shapes[index];
+    if (sprite === undefined) return;
+    sprite.texture = texture;
+    sprite.anchor.set(centred ? 0.5 : 0);
+    sprite.position.set(x, y);
+    // `disc` is 64 px wide and `bar` 4 px: scale each to the size asked.
+    sprite.scale.set(width / texture.width, height / texture.height);
+    sprite.tint = color;
+    sprite.visible = true;
+    this.shapeLife[index] = 1;
+  }
+
+  /** The shape of a move (ADR-039): a circle, a column up to the top, a row or a cross. */
+  private startMove(event: Extract<GameEvent, { type: 'move' }>): void {
+    const color = TYPE_COLORS[typeCode(event.element)] ?? 0xffffff;
+    const { width } = this.config.arena;
+    const size = event.size;
+    switch (event.shape) {
+      case 'burst':
+      case 'nova':
+        this.startShape(this.disc, event.x, event.y, size * 2, size * 2, true, color);
+        break;
+      case 'beam':
+        this.startShape(this.bar, event.x - size / 2, 0, size, event.y, false, color);
+        break;
+      case 'wave':
+        this.startShape(this.bar, 0, event.y - size / 2, width, size, false, color);
+        break;
+      case 'cross':
+        this.startShape(
+          this.bar,
+          event.x - size / 2,
+          0,
+          size,
+          this.config.arena.height,
+          false,
+          color,
+        );
+        this.startShape(this.bar, 0, event.y - size / 2, width, size, false, color);
+        break;
+      case 'chain':
+        this.startShape(this.disc, event.x, event.y, 40, 40, true, color);
+        break;
+    }
+    // A bigger ring marks the move of a late stage, so it reads at a glance.
+    if (event.tier >= 3) this.startEffect(event.x, event.y, color, 3.2);
+  }
+
   private drawEffects(events: readonly GameEvent[], elapsedMs: number): void {
     for (const event of events) {
-      if (event.type === 'hit') this.startEffect(event.x, event.y, 0xffffff);
+      if (event.type === 'move') this.startMove(event);
+      else if (event.type === 'hit') this.startEffect(event.x, event.y, 0xffffff);
       else if (event.type === 'kill') this.startEffect(event.x, event.y, 0xffd54f);
       else if (event.type === 'chain') this.startEffect(event.toX, event.toY, 0xfff176);
       else if (event.type === 'collect') this.startEffect(event.x, this.config.player.y, 0x81d4fa);
@@ -351,6 +492,20 @@ export class Renderer {
         // Two staggered rings, big and gold: a drop must be seen from across the field.
         this.startEffect(event.x, event.y, PICKUP_GOLD, 2.6);
         this.startEffect(event.x, event.y, 0xffffff, 1.6);
+      }
+    }
+    const shapeDecay = elapsedMs / SHAPE_DURATION_MS;
+    for (let i = 0; i < SHAPE_POOL; i++) {
+      const life = this.shapeLife[i] ?? 0;
+      const sprite = this.shapes[i];
+      if (life <= 0 || sprite === undefined) continue;
+      const next = life - shapeDecay;
+      if (next <= 0) {
+        this.shapeLife[i] = 0;
+        sprite.visible = false;
+      } else {
+        this.shapeLife[i] = next;
+        sprite.alpha = next * 0.5;
       }
     }
     const decay = elapsedMs / FX_DURATION_MS;
