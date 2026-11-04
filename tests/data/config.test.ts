@@ -57,17 +57,59 @@ describe('stat mapping', () => {
     expect(baseConfig.ball.speedMax).toBeLessThan(baseConfig.enemy.radius);
   });
 
-  it('documents the deviations from damage = attack / 10: grass x2.5, water x0.9 and electric x0.85 (ADR-015, 4F-B)', () => {
+  it('documents the deviations from damage = attack / 10: fire x1.05, water x0.9, grass x2.3, electric x1.35 (ADR-015, 4F-B, 4F-C)', () => {
     expect(baseConfig.stats.typeDamage).toEqual({
-      fire: 1,
+      fire: 1.05,
       water: 0.9,
-      grass: 2.5,
-      electric: 0.85,
+      grass: 2.3,
+      electric: 1.35,
     });
   });
 
   it('exposes the enemy hp multiplier as the named, provisional parameter enemy.hpScale', () => {
-    expect(baseConfig.enemy.hpScale).toBe(0.88);
+    expect(baseConfig.enemy.hpScale).toBe(1.72);
+  });
+
+  it('keeps the assisted aim a weaker aid than the manual one, but a usable one (ADR-021, M4)', () => {
+    expect(baseConfig.ball.autoCooldownMult).toBeGreaterThan(1);
+    expect(baseConfig.ball.aimJitter).toBeGreaterThan(baseConfig.ball.manualAimJitter);
+    expect(baseConfig.ball.autoCooldownMult).toBe(1.25);
+    expect(baseConfig.ball.aimJitter).toBe(0.2);
+  });
+
+  it('maps the real stats of the form onto the damage, the guard and the stage growth (ADR-037, ADR-038)', () => {
+    const { stats, team, ball } = baseConfig;
+    // Charmander (best attack 60) must hit as it did before the stats (attack 52 / 10 = 5.2).
+    const charmander =
+      (stats.powerRef / stats.damageDivisor) *
+      (stats.powerMultMin +
+        ((60 - stats.powerStatMin) / (stats.powerStatMax - stats.powerStatMin)) *
+          (stats.powerMultMax - stats.powerMultMin));
+    expect(charmander).toBeGreaterThan(5);
+    expect(charmander).toBeLessThan(5.6);
+    expect(stats.powerMultMin).toBeLessThan(1);
+    expect(stats.powerMultMax).toBeGreaterThan(1);
+    expect(stats.guardMax).toBeGreaterThan(0);
+    expect(stats.guardMax).toBeLessThan(0.5);
+    expect(team.stageGrowth[0]).toBe(1);
+    expect(team.stageGrowth).toHaveLength(3);
+    expect(team.stageGrowth[1] ?? 0).toBeGreaterThan(1);
+    expect(team.stageGrowth[2] ?? 0).toBeGreaterThan(team.stageGrowth[1] ?? 0);
+    expect(ball.speedCap).toBeLessThanOrEqual(ball.speedMax);
+    expect(ball.speedCap).toBeGreaterThan(ball.speedMin);
+  });
+
+  it('pins the moves: three tiers that grow, a charge that falls with the stage (ADR-039)', () => {
+    const { moves } = baseConfig;
+    expect(moves.tiers).toHaveLength(3);
+    const powers = moves.tiers.map((t) => t.power);
+    expect(powers[1] ?? 0).toBeGreaterThan(powers[0] ?? 0);
+    expect(powers[2] ?? 0).toBeGreaterThan(powers[1] ?? 0);
+    expect(moves.tiers.map((t) => t.kind)).toEqual(['burst', 'beam', 'nova']);
+    const charge = moves.chargeByStage;
+    expect(charge[0] ?? 0).toBeGreaterThan(charge[1] ?? 0);
+    expect(charge[1] ?? 0).toBeGreaterThan(charge[2] ?? 0);
+    expect(Object.keys(moves.status).sort()).toEqual(['electric', 'fire', 'grass', 'water']);
   });
 
   it('pins the provisional boss hp multiplier, so changing it is a conscious decision', () => {

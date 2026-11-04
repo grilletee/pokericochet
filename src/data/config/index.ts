@@ -1,15 +1,50 @@
-import type { GameConfig, GameType } from '../../domain';
+import type { GameConfig, GameType, MovesDef } from '../../domain';
 
 /**
  * Game rules as data, kept out of the domain (ADR-005, ADR-006). Initial values, not balanced.
- * Species (generated from PokéAPI by tools/fetch-data) are merged in later.
+ * Species and the move of each species (generated from PokéAPI by tools/fetch-data) are merged in
+ * later.
  */
 const ALL_TYPES: readonly GameType[] = ['fire', 'water', 'grass', 'electric'];
 
 export const baseConfig: Omit<
   GameConfig,
-  'species' | 'enemySpecies' | 'ballSpecies' | 'lines' | 'forms'
-> = {
+  'species' | 'enemySpecies' | 'ballSpecies' | 'lines' | 'forms' | 'moves'
+> & { readonly moves: Omit<MovesDef, 'byBase'> } = {
+  // Moves with a real name, cast when a Pokémon has landed enough hits (ADR-039). PROVISIONAL:
+  // the charge, the strength and the sizes are calibrated with the bots (M11-M13) and ?tune.
+  moves: {
+    // Measured with 40 runs per starter (pnpm bench:fun): casts 10/8/6 and strengths 1.5/2.5/4 made
+    // the moves 54 % of the damage and 25 labels a minute; 16/13/11 and 0.7/1.2/1.9 give 29 %
+    // (target 15-35 %), 17 labels a minute (10-25) and the starter's signature 5 times a minute.
+    chargeByStage: [16, 13, 11],
+    tiers: [
+      { kind: 'burst', radius: 56, power: 0.7 },
+      { kind: 'beam', width: 44, power: 1.2 },
+      { kind: 'nova', radius: 110, power: 1.9 },
+    ],
+    // The signatures of the four starters (ADR-039): a cross, a wave, a long beam, a long chain.
+    signatures: {
+      charmander: [null, null, { kind: 'cross', width: 48, power: 4.5 }],
+      squirtle: [
+        null,
+        { kind: 'wave', width: 56, power: 2.5 },
+        { kind: 'wave', width: 72, power: 4 },
+      ],
+      bulbasaur: [null, null, { kind: 'beam', width: 72, power: 4.5 }],
+      pikachu: [
+        { kind: 'chain', count: 1, power: 1.5 },
+        { kind: 'chain', count: 3, power: 2.5 },
+        { kind: 'chain', count: 5, power: 3.5 },
+      ],
+    },
+    status: {
+      fire: { burn: 2 },
+      water: { slow: 0.3 },
+      grass: { slow: 0.4 },
+      electric: { slow: 0.6 },
+    },
+  },
   // Hybrids are off (ADR-033): the code and its tests stay, the card is never offered.
   hybrid: { enabled: false },
   // A team of up to six Pokémon, each firing balls that grow with its level (ADR-030, ADR-031).
@@ -22,6 +57,10 @@ export const baseConfig: Omit<
     captureLevels: [1, 3, 4],
     starterBonus: 0.6,
     ballRadiusByStage: [6, 7, 9],
+    // A stage that keeps the form is worth as much as one that changes it (ADR-037): the damage of
+    // every line grows at least x1.2 at stage 2 and x1.45 at stage 3, which is what the lines of
+    // three forms bring by their stats (measured by M14 of the fun bench).
+    stageGrowth: [1, 1.2, 1.45],
   },
   // What a ball does by type and stage; signatures per species; a generic table for any other
   // type, so a new type works from the first day (ADR-031, ADR-035).
@@ -107,12 +146,17 @@ export const baseConfig: Omit<
   ball: {
     radius: 6,
     cooldownTicks: 72,
-    aimJitter: 0.3,
+    // 4F-C: at the new difficulty the old values (0.3 and x1.8) left the assisted aim at 4 % wins
+    // against 51 % by hand (47 points); the author plays with it when there are many enemies, so it
+    // must stay viable. 0.2 and x1.25 give 26 % against 52 % (M4: 25 points, target >= 15).
+    aimJitter: 0.2,
     manualAimJitter: 0.02,
     // The assisted aim is a weaker aid on purpose: it reloads slower and spreads more (ADR-021).
-    autoCooldownMult: 1.8,
+    autoCooldownMult: 1.25,
     speedMin: 6,
     speedMax: 9,
+    // No form may make the ball faster than this (ADR-038); measured with the bot's pickup rate.
+    speedCap: 8.4,
     minVerticalRatio: 0.2,
   },
   // Provisional values, tuned live with ?tune and measured with the bots (4B).
@@ -135,7 +179,10 @@ export const baseConfig: Omit<
     speedMax: 0.5,
     speedVariation: 0.15,
     // Tuned with the balance harness (pnpm bench:balance); GDD-v0 does not fix enemy hp.
-    hpScale: 0.88,
+    // 4F-C: stats of the form, moves and the stage growth add damage, so 0.88 -> 1.72 (bot win 98 %
+    // with 0.88 and 93 % with the moves; 52 % at 1.6, 52 % at 1.65 and 43 % [38-48] at 1.72, 80 runs
+    // per starter, active bot, with the starter and aim settings of this file).
+    hpScale: 1.72,
   },
   // The final boss (ADR-016, ADR-028): a legendary of the type drawn by the run's seed. hpScale is
   // PROVISIONAL like the rest of the curve (4D-B): measured with bots (time to kill), to be
@@ -348,7 +395,21 @@ export const baseConfig: Omit<
   ],
   stats: {
     damageDivisor: 10,
-    levelMultiplier: [1, 1.3, 1.6, 2, 2.4, 2.9, 3.5, 4.2],
+    // The real stats of the form decide the damage (ADR-038): max(Attack, Special Attack) from 40
+    // to 135 gives x0.75 to x1.75 on top of powerRef / damageDivisor (Charmander: 5.3, as before).
+    powerRef: 55,
+    powerStatMin: 40,
+    powerStatMax: 135,
+    powerMultMin: 0.75,
+    powerMultMax: 1.75,
+    // Mean of HP, Defense and Special Defense of the team: 40 -> no guard, 100 -> 35 %.
+    guardStatMin: 40,
+    guardStatMax: 100,
+    guardMax: 0.35,
+    // The stats of a new form already bring part of the growth, so the table is divided by the
+    // mean form growth (about x1.2 at stage 2 and x1.45 at stage 3) from the 4F-B table
+    // [1, 1.3, 1.6, 2, 2.4, 2.9, 3.5, 4.2]; still strictly growing, so every level matters.
+    levelMultiplier: [1, 1.3, 1.35, 1.7, 2, 2.1, 2.5, 3],
     speedStatMin: 20,
     speedStatMax: 130,
     // Damage = attack / damageDivisor * typeDamage. Grass has no offensive effect (it only
@@ -356,7 +417,10 @@ export const baseConfig: Omit<
     // Bulbasaur within ~10 points of the other starters (ADR-015, measured with n = 25 and later
     // found noisy). Electric x0.85: with 200 runs per starter Pikachu was clearly above the rest
     // (81 % vs 47-72 %); x0.85 brings it to 65 % [58-71]. Grass stays at x2 until a human playtest.
-    typeDamage: { fire: 1, water: 0.9, grass: 2.5, electric: 0.85 },
+    // 4F-C: with the real stats of the forms the four starters moved apart (Pikachu 40 % against
+    // 47-57 %, Bulbasaur above the rest). Electric 0.85 -> 1.35, grass 2.5 -> 2.3, fire 1 -> 1.05:
+    // 46 / 46 / 40 / 39 % (80 runs each), a spread of 8 points (target <= 10, error about 8).
+    typeDamage: { fire: 1.05, water: 0.9, grass: 2.3, electric: 1.35 },
   },
   // Drain heals much less than in 4D: it gave back more than half of the health lost (ADR-032).
   effects: { burnTicks: 180, drainPerHp: 30, chainRadius: 80, slowTicks: 120 },
