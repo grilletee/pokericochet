@@ -62,7 +62,7 @@ describe('stat mapping', () => {
   });
 
   it('pins the provisional boss hp multiplier, so changing it is a conscious decision', () => {
-    expect(baseConfig.boss?.hpScale).toBe(30);
+    expect(baseConfig.boss?.hpScale).toBe(44);
   });
 
   it('maps each type to one effect kind', () => {
@@ -81,10 +81,31 @@ describe('wave table (GDD-v0)', () => {
     expect(waves.every((w) => w.durationTicks === 3600)).toBe(true);
   });
 
-  it('waves 1-3 bring one type each and waves 4-7 mix all four', () => {
-    expect(waves.slice(0, 3).map((w) => w.types.length)).toEqual([1, 1, 1]);
-    expect(new Set(waves.slice(0, 3).map((w) => w.types[0])).size).toBe(3);
-    for (const w of waves.slice(3)) expect(new Set(w.types)).toEqual(new Set(GAME_TYPES));
+  it('every wave has a general pool of all four types and at least three themes to draw from (ADR-027)', () => {
+    for (const w of waves) {
+      expect(new Set(w.types)).toEqual(new Set(GAME_TYPES));
+      expect(w.themes?.length ?? 0).toBeGreaterThanOrEqual(3);
+      for (const id of w.themes ?? []) expect(gameConfig.themes?.[id]).toBeDefined();
+    }
+  });
+
+  it('every theme names real enemy species of its own type, and purity is a share', () => {
+    for (const theme of Object.values(gameConfig.themes ?? {})) {
+      expect(theme.species.length).toBeGreaterThan(0);
+      expect(theme.purity).toBeGreaterThan(0);
+      expect(theme.purity).toBeLessThanOrEqual(1);
+      for (const id of theme.species) {
+        expect(gameConfig.enemySpecies, id).toContain(id);
+        expect(gameConfig.species[id]?.type, id).toBe(theme.type);
+      }
+    }
+  });
+
+  it('the tier never goes down, and only the base form is used in the first waves', () => {
+    const tiers = waves.map((w) => w.tier ?? 1);
+    for (let i = 1; i < tiers.length; i++)
+      expect(tiers[i]).toBeGreaterThanOrEqual(tiers[i - 1] ?? 1);
+    expect(tiers[0]).toBe(1);
   });
 
   it('only gets harder: faster spawns, faster and tougher enemies', () => {
@@ -109,7 +130,14 @@ describe('wave table (GDD-v0)', () => {
   });
 
   it('the species lists are consistent', () => {
-    expect(gameConfig.enemySpecies).toHaveLength(8);
+    expect(gameConfig.enemySpecies).toHaveLength(31);
+    // Every ball and enemy has an evolution line, and every form maps back to it.
+    for (const id of [...gameConfig.enemySpecies, ...gameConfig.ballSpecies]) {
+      expect(gameConfig.lines?.[id]?.length, id).toBeGreaterThanOrEqual(1);
+    }
+    for (const [form, info] of Object.entries(gameConfig.forms ?? {})) {
+      expect(gameConfig.lines?.[info.base]?.[info.level - 2]).toBe(form);
+    }
     expect(gameConfig.ballSpecies).toHaveLength(8);
     for (const id of [...gameConfig.enemySpecies, ...gameConfig.ballSpecies]) {
       expect(gameConfig.species[id]).toBeDefined();
