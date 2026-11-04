@@ -67,7 +67,7 @@ export function describeCard(
       }
       return {
         title: `Híbrida: ${speciesName(first.species)} + ${speciesName(second.species)}`,
-        detail: `Tipo ${typeName(result.type)} · ${describeEffects(result)}`,
+        detail: `Tipo ${typeName(result.type)} · ${describeEffects(result)} · sigue evolucionando como ${speciesName(first.species)}`,
       };
     }
   }

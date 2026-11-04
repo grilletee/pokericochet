@@ -105,6 +105,59 @@ describe('live tuning', () => {
   });
 });
 
+describe('the difficulty curve knobs (ADR-029)', () => {
+  it('has a density, health and speed knob for each of the seven waves and one for the bosses', () => {
+    const keys = TUNE_DEFS.map((d) => d.key);
+    for (let wave = 1; wave <= base.waves.length; wave++) {
+      for (const kind of ['Spawn', 'Hp', 'Speed']) expect(keys).toContain(`w${wave}${kind}`);
+    }
+    expect(keys).toContain('bossHp');
+    expect(base.waves).toHaveLength(7);
+  });
+
+  it('a wave knob changes only that wave', () => {
+    const tuned = applyTune(base, {
+      ...defaultTune(base),
+      w3Hp: 2,
+      w3Spawn: 2,
+      w3Speed: 0.5,
+    });
+    for (let i = 0; i < base.waves.length; i++) {
+      const was = base.waves[i];
+      const now = tuned.waves[i];
+      if (i !== 2) {
+        expect(now?.hpScale).toBe(was?.hpScale);
+        expect(now?.spawnIntervalTicks).toBe(was?.spawnIntervalTicks);
+        expect(now?.speedScale).toBe(was?.speedScale);
+      } else {
+        expect(now?.hpScale).toBeCloseTo((was?.hpScale ?? 0) * 2, 9);
+        expect(now?.spawnIntervalTicks).toBe(Math.round((was?.spawnIntervalTicks ?? 0) / 2));
+        expect(now?.speedScale).toBeCloseTo((was?.speedScale ?? 0) * 0.5, 9);
+      }
+    }
+    // The themes and the form of each wave survive the merge.
+    expect(tuned.waves[2]?.themes).toEqual(base.waves[2]?.themes);
+    expect(tuned.waves[2]?.tier).toBe(base.waves[2]?.tier);
+  });
+
+  it('the global density multiplies with the per-wave one', () => {
+    const tuned = applyTune(base, { ...defaultTune(base), spawnRate: 2, w1Spawn: 2 });
+    expect(tuned.waves[0]?.spawnIntervalTicks).toBe(
+      Math.round((base.waves[0]?.spawnIntervalTicks ?? 0) / 4),
+    );
+  });
+
+  it('the boss knob scales every boss between waves and the final one', () => {
+    const tuned = applyTune(base, { ...defaultTune(base), bossHp: 2 });
+    expect(tuned.boss?.hpScale).toBe((base.boss?.hpScale ?? 0) * 2);
+    base.interludes?.forEach((boss, i) => {
+      expect(tuned.interludes?.[i]?.hpScale).toBe(boss.hpScale * 2);
+      expect(tuned.interludes?.[i]?.byType).toEqual(boss.byType);
+    });
+    expect(tuned.interludes).toHaveLength(base.interludes?.length ?? -1);
+  });
+});
+
 describe('mergeConfig', () => {
   it('merges objects, replaces numbers and merges arrays by index', () => {
     const merged = mergeConfig(

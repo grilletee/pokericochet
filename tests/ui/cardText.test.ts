@@ -53,7 +53,7 @@ describe('card text', () => {
   it('names the two ingredients of a hybrid and says what it becomes', () => {
     expect(describeCard({ kind: 'hybrid', a: 0, b: 1 }, context)).toEqual({
       title: 'Híbrida: Charmander + Squirtle',
-      detail: 'Tipo Fuego · Quemar 2 · Atravesar 0,5',
+      detail: 'Tipo Fuego · Quemar 2 · Atravesar 0,5 · sigue evolucionando como Charmander',
     });
     // The first ingredient lends the type.
     expect(describeCard({ kind: 'hybrid', a: 1, b: 0 }, context).detail).toContain('Tipo Agua');

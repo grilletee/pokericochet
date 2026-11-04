@@ -17,6 +17,36 @@ export interface TuneDef {
   readonly hint: string;
 }
 
+/** The seven waves of the curve (ADR-029): each gets its own density, health and speed knob. */
+const WAVE_COUNT = 7;
+
+/** Per-wave multipliers on top of the global ones: the explicit difficulty curve, live. */
+function waveKnobs(): TuneDef[] {
+  const out: TuneDef[] = [];
+  for (let wave = 1; wave <= WAVE_COUNT; wave++) {
+    out.push(
+      {
+        key: `w${wave}Spawn`,
+        label: `Oleada ${wave}: densidad`,
+        min: 0.3,
+        max: 3,
+        step: 0.05,
+        hint: '×',
+      },
+      { key: `w${wave}Hp`, label: `Oleada ${wave}: vida`, min: 0.3, max: 3, step: 0.05, hint: '×' },
+      {
+        key: `w${wave}Speed`,
+        label: `Oleada ${wave}: velocidad`,
+        min: 0.3,
+        max: 3,
+        step: 0.05,
+        hint: '×',
+      },
+    );
+  }
+  return out;
+}
+
 export const TUNE_DEFS: readonly TuneDef[] = [
   {
     key: 'spawnRate',
@@ -121,6 +151,15 @@ export const TUNE_DEFS: readonly TuneDef[] = [
     hint: 'px por tick',
   },
   { key: 'levelCost', label: 'XP por nivel', min: 0.4, max: 2.5, step: 0.05, hint: '×' },
+  {
+    key: 'bossHp',
+    label: 'Vida de los jefes',
+    min: 0.3,
+    max: 3,
+    step: 0.05,
+    hint: '× todos los jefes',
+  },
+  ...waveKnobs(),
 ];
 
 export type TuneValues = Record<string, number>;
@@ -153,9 +192,16 @@ export function tuneToPatch(base: GameConfig, values: TuneValues): Record<string
   const v = { ...defaultTune(base), ...values };
   const get = (key: string): number => v[key] ?? 0;
   const patch: Record<string, unknown> = {
-    waves: base.waves.map((w) => ({
-      spawnIntervalTicks: Math.max(1, Math.round(w.spawnIntervalTicks / get('spawnRate'))),
+    waves: base.waves.map((w, i) => ({
+      spawnIntervalTicks: Math.max(
+        1,
+        Math.round(w.spawnIntervalTicks / (get('spawnRate') * get(`w${i + 1}Spawn`))),
+      ),
+      hpScale: w.hpScale * get(`w${i + 1}Hp`),
+      speedScale: w.speedScale * get(`w${i + 1}Speed`),
     })),
+    ...(base.boss === undefined ? {} : { boss: { hpScale: base.boss.hpScale * get('bossHp') } }),
+    interludes: (base.interludes ?? []).map((b) => ({ hpScale: b.hpScale * get('bossHp') })),
     enemy: {
       speedMin: base.enemy.speedMin * get('enemySpeed'),
       speedMax: base.enemy.speedMax * get('enemySpeed'),

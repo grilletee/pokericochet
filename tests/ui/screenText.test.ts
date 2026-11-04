@@ -22,6 +22,8 @@ const summary: RunSummary = {
     { species: 'squirtle', level: 2, hybrid: false },
     { species: 'charmander', level: 2, hybrid: true },
   ],
+  bossesDefeated: 0,
+  captured: [],
   score: 0,
 };
 
@@ -80,16 +82,16 @@ describe('results and title text', () => {
 
   it('turns the events that matter into messages and ignores the rest', () => {
     const events: GameEvent[] = [
-      { type: 'waveStart', index: 2 },
+      { type: 'waveStart', index: 2, theme: '' },
       { type: 'bossSpawn', enemyId: 9 },
       { type: 'bossSummon', count: 4 },
       { type: 'evolve', ballId: 1, species: 'charmander', level: 2 },
       { type: 'hybrid', ballId: 1, species: 'charmander', withSpecies: 'squirtle', level: 2 },
-      { type: 'captureDrop', species: 'growlithe', x: 1, y: 2 },
+      { type: 'captureDrop', level: 1, species: 'growlithe', x: 1, y: 2 },
       { type: 'launch', ballId: 1 },
       { type: 'won' },
-      { type: 'capture', ballId: 5, species: 'psyduck', x: 1, late: false },
-      { type: 'capture', ballId: 0, species: 'psyduck', x: 1, late: false },
+      { type: 'capture', level: 1, ballId: 5, species: 'psyduck', x: 1, late: false },
+      { type: 'capture', level: 1, ballId: 0, species: 'psyduck', x: 1, late: false },
       { type: 'collect', ballId: 1, x: 1, late: false },
     ];
     const formName = (species: string, level: number) =>
@@ -107,5 +109,34 @@ describe('results and title text', () => {
     expect(texts[8]).toContain('Psyduck');
     expect(texts[9]).toContain('daño');
     expect(texts[10]).toBeNull(); // picking a ball up is silent text: it happens all the time
+  });
+
+  it('names the form of a dropped or captured evolved enemy, and the boss that fell', () => {
+    const formName = (species: string, level: number) => `${species}@${level}`;
+    expect(
+      describeEvent({ type: 'captureDrop', level: 2, species: 'growlithe', x: 1, y: 2 }, formName),
+    ).toBe('¡growlithe@2 soltó una bola! Recógela');
+    expect(
+      describeEvent(
+        { type: 'capture', level: 3, ballId: 4, species: 'growlithe', x: 1, late: false },
+        formName,
+      ),
+    ).toBe('¡Capturado: growlithe@3!');
+    expect(describeEvent({ type: 'bossDefeated', species: 'rapidash', index: 1 })).toBe(
+      '¡Jefe derrotado: Rapidash!',
+    );
+  });
+
+  it('adds the theme to the wave announcement when there is one', () => {
+    const label = (id: string) => (id === 'pack' ? 'Manada (Fuego)' : null);
+    expect(describeEvent({ type: 'waveStart', index: 0, theme: 'pack' }, undefined, label)).toBe(
+      'Oleada 1: Manada (Fuego)',
+    );
+    expect(describeEvent({ type: 'waveStart', index: 0, theme: 'nope' }, undefined, label)).toBe(
+      'Oleada 1',
+    );
+    expect(describeEvent({ type: 'waveStart', index: 0, theme: '' }, undefined, label)).toBe(
+      'Oleada 1',
+    );
   });
 });

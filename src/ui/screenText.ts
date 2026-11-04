@@ -79,10 +79,17 @@ export type FormNamer = (species: string, level: number) => string;
 export function describeEvent(
   event: GameEvent,
   formName: FormNamer = (species) => speciesName(species),
+  themeLabel: (themeId: string) => string | null = () => null,
 ): string | null {
   switch (event.type) {
-    case 'waveStart':
-      return `Oleada ${event.index + 1}`;
+    case 'waveStart': {
+      const theme = event.theme === '' ? null : themeLabel(event.theme);
+      return theme === null || theme === undefined
+        ? `Oleada ${event.index + 1}`
+        : `Oleada ${event.index + 1}: ${theme}`;
+    }
+    case 'bossDefeated':
+      return `¡Jefe derrotado: ${speciesName(event.species)}!`;
     case 'bossSpawn':
       return '¡Aparece el jefe!';
     case 'bossSummon':
@@ -92,11 +99,11 @@ export function describeEvent(
     case 'hybrid':
       return `¡Híbrida! ${speciesName(event.species)} + ${speciesName(event.withSpecies)}`;
     case 'captureDrop':
-      return `¡${speciesName(event.species)} soltó una bola! Recógela`;
+      return `¡${formName(event.species, event.level)} soltó una bola! Recógela`;
     case 'capture':
       return event.ballId === 0
         ? 'Equipo completo: la captura mejora el daño'
-        : `¡Capturado: ${speciesName(event.species)}!`;
+        : `¡Capturado: ${formName(event.species, event.level)}!`;
     default:
       return null;
   }

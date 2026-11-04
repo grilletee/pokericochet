@@ -5,6 +5,7 @@ import {
   createRun,
   createSnapshot,
   dropCapture,
+  GAME_TYPES,
   type GameConfig,
   type GameEvent,
   PHASE_LEVELUP,
@@ -34,6 +35,7 @@ import {
   spriteTile,
   TeamBar,
   TunePanel,
+  typeName,
 } from '../ui';
 import { BENCH_LOADS, type BenchLoad, benchScenario } from './benchScenario';
 import { type BestRun, browserStore, loadBestRun, saveIfBest } from './bestRun';
@@ -202,7 +204,11 @@ function applyDebugParams(run: Run, config: GameConfig, params: URLSearchParams)
   const hp = number('hp');
   if (hp !== null) run.player.hp = hp;
   const wave = number('wave');
-  if (wave !== null) run.wave.index = wave; // wave=7 jumps straight to the boss
+  if (wave !== null) {
+    run.wave.index = wave; // wave=7 jumps straight to the final boss
+    // The bosses between waves that this jump skips must not appear all at once.
+    run.boss.next = (config.interludes ?? []).filter((boss) => boss.after <= wave).length;
+  }
   const loadout = params.get('loadout');
   if (loadout !== null) {
     const species = loadout.split(',').filter((id) => config.species[id] !== undefined);
@@ -400,7 +406,14 @@ export async function startGame(host: HTMLElement): Promise<void> {
     const type = config.species[id]?.type;
     return type === undefined ? [] : [{ id, type }];
   });
-  const bossName = config.boss ? speciesName(config.boss.species) : '';
+  /** Wave announcement: the theme, its type and the types that beat it (ADR-027). */
+  const themeLabel = (id: string): string | null => {
+    const theme = config.themes?.[id];
+    if (theme === undefined) return null;
+    const counters = GAME_TYPES.filter((type) => config.typeChart[type][theme.type] > 1);
+    const hint = counters.length > 0 ? ` · le gana ${counters.map(typeName).join(' / ')}` : '';
+    return `${theme.name} (${typeName(theme.type)})${hint}`;
+  };
 
   const startRun = (species: string): void => {
     starter = species;
@@ -461,7 +474,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
         teamBar.flyCapture(
           event.ballId,
           event.species,
-          art.spriteUrl(event.species, 1),
+          art.spriteUrl(event.species, event.level),
           from.x,
           from.y,
         );
@@ -548,7 +561,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
       const t1 = performance.now();
       for (const event of output.events) {
         pending.push(event);
-        const text = describeEvent(event, formName);
+        const text = describeEvent(event, formName, themeLabel);
         // Evolutions and hybrids have their own banner with the sprites: no second message.
         if (text !== null && event.type !== 'evolve' && event.type !== 'hybrid') {
           overlay.showToast(text, now);
@@ -593,7 +606,11 @@ export async function startGame(host: HTMLElement): Promise<void> {
       screen === 'menu' || screen === 'credits' ? '' : hudText(curr, config.waves.length, run.seed),
     );
     overlay.updateToast(now);
-    overlay.setBoss(bossName, screen === 'playing' ? curr.bossHp : 0, curr.bossMaxHp);
+    overlay.setBoss(
+      speciesName(speciesIds[curr.bossSpecies] ?? ''),
+      screen === 'playing' ? curr.bossHp : 0,
+      curr.bossMaxHp,
+    );
     overlay.setCards(
       screen === 'playing' && curr.phase === PHASE_LEVELUP ? run.offers : null,
       cardContext,
