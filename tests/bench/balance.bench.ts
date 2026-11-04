@@ -58,7 +58,15 @@ const electricDamage = (mult: number) =>
 const chainStrength = (strength: number) =>
   patch((c) => ({
     ...c,
-    typeEffects: { ...c.typeEffects, electric: { ...c.typeEffects.electric, strength } },
+    abilities: {
+      ...c.abilities,
+      byType: {
+        ...c.abilities.byType,
+        electric: (c.abilities.byType.electric ?? []).map((stage, i) =>
+          i === 0 ? stage.map((e) => (e.kind === 'chain' ? { ...e, strength } : e)) : stage,
+        ),
+      },
+    },
   }));
 const all =
   (...fs: Array<(c: GameConfig) => GameConfig>) =>

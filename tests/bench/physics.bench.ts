@@ -51,6 +51,8 @@ function buildRun(seed: number, clustered: boolean): Run {
     xp: 1,
     burnTicks: 0,
     burnDps: 0,
+    slowTicks: 0,
+    slow: 0,
   }));
   run.nextEnemyId = ENEMIES + 1;
   return run;
