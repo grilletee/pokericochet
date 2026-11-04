@@ -8,8 +8,10 @@ import {
   nextInt,
   type ReplaceAction,
   type Run,
+  statsOf,
   tick,
 } from '../../src/domain';
+import { labelPriority, MoveLabelPolicy } from '../../src/ui';
 
 export interface AimPoint {
   readonly x: number;
@@ -253,6 +255,97 @@ const withScores = (name: string, scores: CardScores): Policy => ({
   pick: pickByScores(scores),
 });
 
+/**
+ * M15 (ADR-038): the active bot whose choices use the real stats of the games. `statsReplace`
+ * swaps the Pokémon whose stats and level are worst for the capture, if the capture is better, and
+ * prefers to recruit the offered species with the best stats. `randomReplace` decides the same
+ * screen at random; both release when the capture is not better.
+ */
+function statsWorth(config: GameConfig, species: string, level: number): number {
+  const view = statsOf(config, species, level);
+  // Damage decides most; sturdiness (the guard) adds a little; the level is what it already grew.
+  return view.damage * 10 + view.bulk / 20 + level * 2;
+}
+
+export function chooseReplaceByStats(run: Run, config: GameConfig): ReplaceAction {
+  const pending = run.pendingCapture;
+  if (pending === null) return { type: 'release' };
+  let weakest = 0;
+  let weakestWorth = Number.POSITIVE_INFINITY;
+  run.team.forEach((member, i) => {
+    const worth = statsWorth(config, member.species, member.level) + member.damageUps;
+    if (worth < weakestWorth) {
+      weakestWorth = worth;
+      weakest = i;
+    }
+  });
+  const incoming = statsWorth(config, pending.species, captureLevel(config, pending.stage));
+  return incoming > weakestWorth ? { type: 'replace', slot: weakest } : { type: 'release' };
+}
+
+/** The balanced taste, except that among the species offered to recruit the better stats win. */
+function statsAwarePick(config: GameConfig): Policy['pick'] {
+  const base = pickByScores(BALANCED_SCORES);
+  return (run, offers) => {
+    const chosen = base(run, offers);
+    if (offers[chosen]?.kind !== 'newBall') return chosen;
+    let best = chosen;
+    let bestDamage = Number.NEGATIVE_INFINITY;
+    offers.forEach((card, i) => {
+      if (card.kind !== 'newBall') return;
+      const damage = statsOf(config, card.species, 1).damage;
+      if (damage > bestDamage) {
+        bestDamage = damage;
+        best = i;
+      }
+    });
+    return best;
+  };
+}
+
+export function activeStatsPolicy(config: GameConfig): Policy {
+  return {
+    ...activePolicy,
+    name: 'stats-replace',
+    pick: statsAwarePick(config),
+    replace: (run) => chooseReplaceByStats(run, config),
+  };
+}
+
+export function activeRandomReplacePolicy(seed: number): Policy {
+  const rng = createRng(seed ^ 0x5eed);
+  return {
+    ...activePolicy,
+    name: 'random-replace',
+    replace: (run) =>
+      nextInt(rng, 2) === 0
+        ? { type: 'release' }
+        : { type: 'replace', slot: nextInt(rng, Math.max(1, run.team.length)) },
+  };
+}
+
+/** The same decision made against the stats: it keeps the worst Pokémon (a floor for M15). */
+export function activeAgainstStatsPolicy(config: GameConfig): Policy {
+  return {
+    ...activePolicy,
+    name: 'against-stats',
+    replace: (run) => {
+      const pending = run.pendingCapture;
+      if (pending === null) return { type: 'release' };
+      let best = 0;
+      let bestWorth = Number.NEGATIVE_INFINITY;
+      run.team.forEach((member, i) => {
+        const worth = statsWorth(config, member.species, member.level);
+        if (worth > bestWorth) {
+          bestWorth = worth;
+          best = i;
+        }
+      });
+      return { type: 'replace', slot: best };
+    },
+  };
+}
+
 /** M8: the active bot with a different taste for the level-up cards (ADR-033). */
 export const activeUpgradesPolicy = withScores('upgrades-first', UPGRADES_FIRST_SCORES);
 export const activeTrainPolicy = withScores('train-first', TRAIN_FIRST_SCORES);
@@ -316,6 +409,38 @@ export interface Outcome {
   readonly top2Share: number;
   /** Tick of the first stage change; the run length if there was none (M3). */
   readonly firstEvolveTicks: number;
+
+  // ---- 4F-C (ADR-036..039) ----
+  /** Stage steps by kind: evolutions, awakenings and maximum powers (ADR-037). */
+  readonly steps: Readonly<Record<'evolve' | 'awaken' | 'peak', number>>;
+  /** Moves cast, their damage and the damage of the balls' hits (M13). */
+  readonly moveCasts: number;
+  readonly moveDamage: number;
+  readonly hitDamage: number;
+  /**
+   * What the player would see (M11): move labels shown on screen, merged into another one, and
+   * left out because the screen was full, using the real label policy of the UI.
+   */
+  readonly labelsShown: number;
+  readonly labelsMerged: number;
+  readonly labelsDropped: number;
+  /** Per Pokémon: ticks it was in the team and moves it cast, for "a move every 40 s" (M11). */
+  readonly castCoverage: readonly { readonly ticks: number; readonly casts: number }[];
+  /** The starter's moves after it reached stage 3: casts, ticks until the first, ticks it lasted (M12). */
+  readonly starterCastsLate: number;
+  readonly starterFirstCastDelay: number;
+  readonly starterLateTicks: number;
+  /** Balls that left the arena at the bottom, and captured balls that dropped to the floor (pickups). */
+  readonly drops: number;
+  readonly captureDrops: number;
+  /** Captured balls that came on their own after waiting too long. */
+  readonly lateCaptures: number;
+  /**
+   * Ticks a ball waited on the floor before the player picked it up (mean and the slowest tenth):
+   * what the speed cap of ADR-038 is measured by, since the bot picks up nearly every ball.
+   */
+  readonly pickupLatencyMean: number;
+  readonly pickupLatencyP90: number;
 }
 
 export function playRun(
@@ -349,6 +474,20 @@ export function playRun(
   let minHp = run.player.hp;
   let wave1Loss = 0;
   let firstEvolve = -1;
+  const steps = { evolve: 0, awaken: 0, peak: 0 };
+  let moveCasts = 0;
+  let moveDamage = 0;
+  let hitDamage = 0;
+  const labels = new MoveLabelPolicy(3, 900);
+  const presence = new Map<string, { first: number; last: number; casts: number }>();
+  let starterStage3 = -1;
+  let starterCastsLate = 0;
+  let starterFirstCast = -1;
+  let drops = 0;
+  let captureDrops = 0;
+  let lateCaptures = 0;
+  const droppedAt = new Map<number, number>();
+  const latencies: number[] = [];
   const damageBy = new Map<string, number>();
   const gotBall = (): void => {
     newBalls += 1;
@@ -369,12 +508,44 @@ export function playRun(
         case 'kill':
           kills += 1;
           break;
-        case 'evolve':
+        case 'stage':
           evolutions += 1;
+          steps[e.kind] += 1;
           if (firstEvolve < 0) firstEvolve = run.tickCount;
+          if (e.species === starter && e.stage === 3) starterStage3 = run.tickCount;
+          break;
+        case 'move': {
+          moveCasts += 1;
+          moveDamage += e.damage;
+          // A move is the damage of its Pokémon too (M6): it counts towards the starter's share.
+          damageBy.set(e.species, (damageBy.get(e.species) ?? 0) + e.damage);
+          const seen = presence.get(e.species);
+          if (seen !== undefined) seen.casts += 1;
+          // What the player would see, with the same clock the game uses (60 ticks = 1 s).
+          labels.offer(
+            e.member,
+            e.move,
+            labelPriority(e.starter, e.tier),
+            e.x,
+            e.y,
+            (run.tickCount * 1000) / 60,
+          );
+          if (e.starter && starterStage3 >= 0) {
+            starterCastsLate += 1;
+            if (starterFirstCast < 0) starterFirstCast = run.tickCount;
+          }
+          break;
+        }
+        case 'drop':
+          drops += 1;
+          droppedAt.set(e.ballId, run.tickCount);
+          break;
+        case 'captureDrop':
+          captureDrops += 1;
           break;
         case 'capture':
           captures += 1;
+          if (e.late) lateCaptures += 1;
           gotBall();
           break;
         case 'train':
@@ -395,10 +566,14 @@ export function playRun(
         case 'release':
           released += 1;
           break;
-        case 'collect':
+        case 'collect': {
           if (e.late) recalled += 1;
           else collected += 1;
+          const left = droppedAt.get(e.ballId);
+          if (left !== undefined && !e.late) latencies.push(run.tickCount - left);
+          droppedAt.delete(e.ballId);
           break;
+        }
         case 'leak':
           hpLost += e.damage;
           if (wave === 0) wave1Loss += e.damage;
@@ -408,6 +583,7 @@ export function playRun(
           break;
         case 'hit': {
           const ball = run.loadout.find((b) => b.id === e.ballId);
+          hitDamage += e.damage;
           if (ball !== undefined) {
             damageBy.set(ball.species, (damageBy.get(ball.species) ?? 0) + e.damage);
           }
@@ -415,6 +591,14 @@ export function playRun(
         }
         default:
           break;
+      }
+    }
+    for (const member of run.team) {
+      const seen = presence.get(member.species);
+      if (seen === undefined) {
+        presence.set(member.species, { first: run.tickCount, last: run.tickCount, casts: 0 });
+      } else {
+        seen.last = run.tickCount;
       }
     }
     minHp = Math.min(minHp, run.player.hp);
@@ -456,5 +640,29 @@ export function playRun(
     starterShare: total === 0 ? 0 : (damageBy.get(starter) ?? 0) / total,
     top2Share: total === 0 ? 0 : ((shares[0] ?? 0) + (shares[1] ?? 0)) / total,
     firstEvolveTicks: firstEvolve < 0 ? run.tickCount : firstEvolve,
+    steps,
+    moveCasts,
+    moveDamage,
+    hitDamage,
+    labelsShown: labels.shown,
+    labelsMerged: labels.merged,
+    labelsDropped: labels.dropped,
+    castCoverage: [...presence.values()].map((p) => ({
+      ticks: p.last - p.first + 1,
+      casts: p.casts,
+    })),
+    starterCastsLate,
+    starterFirstCastDelay:
+      starterFirstCast < 0 || starterStage3 < 0 ? -1 : starterFirstCast - starterStage3,
+    starterLateTicks: starterStage3 < 0 ? 0 : run.tickCount - starterStage3,
+    drops,
+    captureDrops,
+    lateCaptures,
+    pickupLatencyMean:
+      latencies.length === 0 ? 0 : latencies.reduce((a, b) => a + b, 0) / latencies.length,
+    pickupLatencyP90:
+      latencies.length === 0
+        ? 0
+        : (latencies.slice().sort((a, b) => a - b)[Math.floor(latencies.length * 0.9)] ?? 0),
   };
 }
