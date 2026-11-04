@@ -1,0 +1,90 @@
+"""Mutants of the 4D-B (waves, themes, bosses, evolution). Paths are relative to the project root; the
+harness `tools/mutation/run.py` applies them to an isolated copy, never to the working tree."""
+W = "src/domain/waves.ts"
+F = "src/domain/fusion.ts"
+C = "src/domain/cards.ts"
+R = "src/domain/run.ts"
+P = "src/domain/pickups.ts"
+E = "src/domain/effects.ts"
+T = "src/domain/tick.ts"
+S = "src/domain/snapshot.ts"
+SU = "src/domain/summary.ts"
+EV = "src/domain/evolution.ts"
+TU = "src/app/tune.ts"
+DS = "src/data/species.ts"
+ST = "src/ui/screenText.ts"
+M = [
+ ("fuse: two hybrids allowed", [(F, "if (a.hybrid && b.hybrid) return fail('hybrid-input');", "")]),
+ ("fuse: hybrid with another species allowed", [(F, "  if (a.hybrid || b.hybrid) return fail('hybrid-input');\n\n  if (a.type", "  if (a.type")]),
+ ("fuse: F1 result is the first ball always", [(F, "const carrier = b.hybrid ? b : a;", "const carrier = a;")]),
+ ("fuse: F1 result is the second ball always", [(F, "const carrier = b.hybrid ? b : a;", "const carrier = b;")]),
+ ("fuse: second ingredient forgotten", [(F, "      secondSpecies: b.species,\n", "")]),
+ ("fuse: second type forgotten", [(F, "      secondType: b.type,\n", "")]),
+ ("run: hash ignores the second ingredient", [(R, "    h.str(ball.secondSpecies ?? '');\n", "")]),
+ ("waves: theme never used", [(W, "themed.length > 0 && (general.length === 0 || mix < (wave.theme?.purity ?? 0));", "false;")]),
+ ("waves: theme always used", [(W, "themed.length > 0 && (general.length === 0 || mix < (wave.theme?.purity ?? 0));", "themed.length > 0;")]),
+ ("waves: purity compared the wrong way", [(W, "mix < (wave.theme?.purity ?? 0)", "mix > (wave.theme?.purity ?? 0)")]),
+ ("waves: mix not drawn", [(W, "const mix = nextFloat(run.rng.spawn);", "const mix = 0;")]),
+ ("waves: unknown theme species kept", [(W, ".filter((id) => config.species[id] !== undefined);", ";")]),
+ ("waves: tier ignored", [(W, "formAt(config, base, wave.tier)", "formAt(config, base, 1)")]),
+ ("waves: tier of the wave not passed", [(W, "tier: wave.tier ?? 1 });", "tier: 1 });")]),
+ ("waves: form fallback missing", [(W, "return form !== undefined && config.species[form] !== undefined ? form : base;", "return form ?? base;")]),
+ ("waves: level 1 shows a form", [(W, "if (line === undefined || level <= 1) return base;", "if (line === undefined) return base;")]),
+ ("waves: line end not capped", [(W, "line[Math.min(level - 2, line.length - 1)]", "line[level - 2]")]),
+ ("waves: baseOf wrong default level", [(W, "?? { base: species, level: 1 };", "?? { base: species, level: 2 };")]),
+ ("waves: first wave not announced", [(W, "if (run.tickCount === 0 && run.wave.index === 0 && run.wave.tick === 0) {", "if (false) {")]),
+ ("waves: wave theme missing in the event", [(W, "theme: run.waveThemes[run.wave.index] ?? '',", "theme: '',")]),
+ ("waves: spawn theme of the wrong wave", [(W, "config.themes?.[run.waveThemes[run.wave.index] ?? '']", "config.themes?.[run.waveThemes[0] ?? '']")]),
+ ("waves: boss alive does not need a gap", [(W, "    !isBossAlive(run) &&" + chr(10) + "    next !== undefined &&", "    next !== undefined &&")]),
+ ("waves: boss appears one wave early", [(W, "run.wave.index >= next.after", "run.wave.index >= next.after - 1")]),
+ ("waves: boss counter not advanced", [(W, "run.boss.next += 1;", "")]),
+ ("waves: boss type not stored", [(W, "    run.boss.type = type;\n    return;\n  }\n\n  const final", "    return;\n  }\n\n  const final")]),
+ ("waves: boss type ignores the wave theme", [(W, "if (themed !== undefined && table[themed] !== undefined) return themed;", "")]),
+ ("waves: boss type wave off by one", [(W, "bossType(run, config, next.byType, next.after - 1)", "bossType(run, config, next.byType, next.after)")]),
+ ("waves: final boss never drawn by type", [(W, "const type = final.byType === undefined ? undefined : bossType(run, config, final.byType, -1);", "const type = undefined;")]),
+ ("waves: final flag not set", [(W, "    run.boss.spawned = true;\n", "")]),
+ ("waves: summons always any type", [(W, "types: run.boss.type === '' ? GAME_TYPES : [run.boss.type as GameType],", "types: GAME_TYPES,")]),
+ ("waves: summons of the boss stop", [(W, "if (def === undefined || !isBossAlive(run)) return;", "if (def === undefined) return;")]),
+ ("waves: boss hp ignores its scale", [(W, "species.baseStats.hp * config.enemy.hpScale * shape.hpScale;", "species.baseStats.hp * config.enemy.hpScale;")]),
+ ("waves: defeat not counted", [(W, "  run.boss.defeated += 1;\n", "")]),
+ ("waves: defeat event missing", [(W, "run.events.push({ type: 'bossDefeated', species: boss.species, index: run.boss.defeated });", "")]),
+ ("waves: final boss heals too", [(W, "if (run.boss.spawned) return; // the final boss: the run is won", "")]),
+ ("waves: heal ignores the maximum", [(W, "const healed = Math.min(def.healHp, run.player.maxHp - run.player.hp);", "const healed = def.healHp;")]),
+ ("waves: healed at full health", [(W, "if (def.healHp > 0 && run.player.hp < run.player.maxHp) {", "if (def.healHp > 0) {")]),
+ ("waves: reward capture level lost", [(W, "dropCapture(run, config, base, boss.type, boss.x, boss.y, level);", "dropCapture(run, config, base, boss.type, boss.x, boss.y, 1);")]),
+ ("waves: reward capture missing", [(W, "dropCapture(run, config, base, boss.type, boss.x, boss.y, level);", "")]),
+ ("tick: waves run during a boss", [(T, "if (!isBossAlive(run)) advanceWave(run, config);", "advanceWave(run, config);")]),
+ ("effects: boss reward missing", [(E, "onBossDefeated(run, config, enemy); // a boss has its own reward, not the capture roll", "")]),
+ ("effects: capture level lost", [(E, "dropCapture(run, config, base, enemy.type, enemy.x, enemy.y, level);", "dropCapture(run, config, base, enemy.type, enemy.x, enemy.y);")]),
+ ("effects: capture of the form itself", [(E, "dropCapture(run, config, base, enemy.type", "dropCapture(run, config, enemy.species, enemy.type")]),
+ ("pickups: captured ball level lost", [(P, "{ ...createBall(config, pickup.species, run.nextBallId), level: pickup.level }", "createBall(config, pickup.species, run.nextBallId)")]),
+ ("pickups: captures not recorded", [(P, "    run.captured.push({ species: pickup.species, level: pickup.level });\n", "")]),
+ ("pickups: drop level lost", [(P, "    level: ball.level,\n    ticks: config.pickup.returnTicks,", "    level: 1,\n    ticks: config.pickup.returnTicks,")]),
+ ("run: hash ignores boss counter", [(R, "  h.int(run.boss.next);\n", "")]),
+ ("run: hash ignores boss defeats", [(R, "  h.int(run.boss.defeated);\n", "")]),
+ ("run: hash ignores boss type", [(R, "  h.str(run.boss.type);\n", "")]),
+ ("run: hash ignores pickup level", [(R, "    h.int(p.level);\n", "")]),
+ ("run: themes not cloned independently", [(R, "waveThemes: run.waveThemes.slice(),", "waveThemes: run.waveThemes,")]),
+ ("run: theme draw uses the spawn stream", [(R, "const themesRng = deriveRng(normalizedSeed, 'themes');", "const themesRng = deriveRng(normalizedSeed, 'spawn');")]),
+ ("cards: guarantee never applied", [(C, "let answers = answersToNextWave(run, config);", "let answers: readonly string[] | null = null;")]),
+ ("cards: guarantee kept after the first", [(C, "if (card.kind === 'newBall') answers = null;", "")]),
+ ("cards: guarantee even when the team answers", [(C, "if (run.loadout.some((ball) => beats(ball.type))) return null;", "")]),
+ ("cards: ties count as answers", [(C, "config.typeChart[type][target] > 1;", "config.typeChart[type][target] >= 1;")]),
+ ("cards: always the current wave", [(C, "const index = run.wave.index + 1 < waves.length ? run.wave.index + 1 : run.wave.index;", "const index = run.wave.index;")]),
+ ("cards: next wave past the end", [(C, "const index = run.wave.index + 1 < waves.length ? run.wave.index + 1 : run.wave.index;", "const index = run.wave.index + 1;")]),
+ ("summary: bosses not counted", [(SU, "bossesDefeated: run.boss.defeated,", "bossesDefeated: 0,")]),
+ ("summary: captures dropped", [(SU, "captured: run.captured.map((c) => ({ ...c })),", "captured: [],")]),
+ ("snapshot: boss species not written", [(S, "snap.bossSpecies = speciesCodes?.get(e.species) ?? 0;", "")]),
+ ("snapshot: captured pickup level", [(S, "snap.pickupLevel[i] = ball?.level ?? p.level;", "snap.pickupLevel[i] = ball?.level ?? 1;")]),
+ ("tune: wave hp knob ignored", [(TU, "hpScale: w.hpScale * get(`w${i + 1}Hp`),", "hpScale: w.hpScale,")]),
+ ("tune: wave speed knob ignored", [(TU, "speedScale: w.speedScale * get(`w${i + 1}Speed`),", "speedScale: w.speedScale,")]),
+ ("tune: wave density knob ignored", [(TU, "(get('spawnRate') * get(`w${i + 1}Spawn`))", "get('spawnRate')")]),
+ ("tune: wave knob off by one", [(TU, "get(`w${i + 1}Hp`)", "get(`w${i}Hp`)")]),
+ ("tune: final boss knob ignored", [(TU, "boss: { hpScale: base.boss.hpScale * get('bossHp') }", "boss: { hpScale: base.boss.hpScale }")]),
+ ("tune: mid boss knob ignored", [(TU, "interludes: (base.interludes ?? []).map((b) => ({ hpScale: b.hpScale * get('bossHp') })),", "interludes: (base.interludes ?? []).map((b) => ({ hpScale: b.hpScale })),")]),
+ ("data: forms start at level 1", [(DS, "forms.map((form, index) => [form, { base, level: index + 2 }] as const),", "forms.map((form, index) => [form, { base, level: index + 1 }] as const),")]),
+ ("text: wave without theme says the theme", [(ST, "theme === null || theme === undefined", "false")]),
+ ("text: boss defeated names no one", [(ST, "`¡Jefe derrotado: ${speciesName(event.species)}!`", "`¡Jefe derrotado!`")]),
+ ("text: capture drop ignores the form", [(ST, "`¡${formName(event.species, event.level)} soltó una bola! Recógela`", "`¡${speciesName(event.species)} soltó una bola! Recógela`")]),
+ ("text: capture ignores the form", [(ST, ": `¡Capturado: ${formName(event.species, event.level)}!`", ": `¡Capturado: ${speciesName(event.species)}!`")]),
+]
