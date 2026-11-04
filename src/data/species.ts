@@ -11,6 +11,7 @@ interface GeneratedFile {
     readonly balls: readonly string[];
     readonly enemies: readonly string[];
     readonly boss: string;
+    readonly legendaries: readonly string[];
     readonly starters: readonly string[];
     readonly lines: Readonly<Record<string, readonly string[]>>;
   };
@@ -33,6 +34,12 @@ export const BALL_SPECIES: readonly SpeciesDef[] = file.roster.balls.map(species
 /** The 8 wild species that spawn as enemies. */
 export const ENEMY_SPECIES: readonly SpeciesDef[] = file.roster.enemies.map(species);
 
+/** Every species of the generated file: bases, evolution forms, the boss and the legendaries. */
+export const ALL_SPECIES: readonly SpeciesDef[] = file.species.map((s) => species(s.id));
+
+/** The legendaries, one per type: the final boss is one of them and nothing else drops them. */
+export const LEGENDARY_SPECIES: readonly string[] = file.roster.legendaries;
+
 /** The final boss. */
 export const BOSS_SPECIES: SpeciesDef = species(file.roster.boss);
 
@@ -54,3 +61,11 @@ export function formOf(species: string, level: number): string {
   if (line === undefined || level <= 1) return species;
   return line[Math.min(level - 2, line.length - 1)] ?? species;
 }
+
+/** Reverse of the evolution lines: a form -> its base species and the level it stands for. */
+export const EVOLUTION_FORMS: Readonly<Record<string, { base: string; level: number }>> =
+  Object.fromEntries(
+    Object.entries(EVOLUTION_LINES).flatMap(([base, forms]) =>
+      forms.map((form, index) => [form, { base, level: index + 2 }] as const),
+    ),
+  );

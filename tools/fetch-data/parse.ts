@@ -8,6 +8,8 @@ export interface Roster {
   readonly balls: readonly string[];
   readonly enemies: readonly string[];
   readonly boss: string;
+  /** Final bosses, one per game type (ADR-028). They only ever come from bosses, never from captures. */
+  readonly legendaries: readonly string[];
   readonly starters: readonly string[];
   /**
    * Evolution line of every ball and enemy species: the forms after the base one, in order
@@ -84,7 +86,14 @@ export function parsePokemon(name: string, raw: unknown): ParsedPokemon {
 export function rosterIds(roster: Roster): string[] {
   const forms = Object.values(roster.lines).flat();
   return [
-    ...new Set([...roster.balls, ...roster.enemies, roster.boss, ...roster.starters, ...forms]),
+    ...new Set([
+      ...roster.balls,
+      ...roster.enemies,
+      roster.boss,
+      ...roster.legendaries,
+      ...roster.starters,
+      ...forms,
+    ]),
   ];
 }
 
@@ -102,7 +111,15 @@ export function validateRoster(roster: Roster): void {
   for (const id of roster.starters) {
     if (!roster.balls.includes(id)) throw new Error(`starter "${id}" is not in roster.balls`);
   }
-  const base = new Set([...roster.balls, ...roster.enemies, roster.boss]);
+  if (new Set(roster.legendaries).size !== roster.legendaries.length) {
+    throw new Error('roster.legendaries has duplicates');
+  }
+  for (const id of roster.legendaries) {
+    if (roster.balls.includes(id) || roster.enemies.includes(id) || id === roster.boss) {
+      throw new Error(`legendary "${id}" is also a ball, an enemy or the boss`);
+    }
+  }
+  const base = new Set([...roster.balls, ...roster.enemies, roster.boss, ...roster.legendaries]);
   for (const id of [...roster.balls, ...roster.enemies]) {
     const line = roster.lines[id];
     if (line === undefined || line.length < 1 || line.length > 2) {

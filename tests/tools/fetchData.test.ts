@@ -75,6 +75,7 @@ describe('fetch-data: roster and output file', () => {
     balls: ['a', 'b'],
     enemies: ['c', 'a'],
     boss: 'd',
+    legendaries: ['l'],
     starters: ['a'],
     lines: { a: ['a1', 'a2'], b: ['b1'], c: ['c1'] },
   };
@@ -86,7 +87,15 @@ describe('fetch-data: roster and output file', () => {
   });
 
   it('lists every species once, in a stable order', () => {
-    expect(rosterIds(roster)).toEqual(['a', 'b', 'c', 'd', 'a1', 'a2', 'b1', 'c1']);
+    expect(rosterIds(roster)).toEqual(['a', 'b', 'c', 'd', 'l', 'a1', 'a2', 'b1', 'c1']);
+  });
+
+  it('keeps the legendaries apart from every other role and from each other', () => {
+    expect(() => validateRoster({ ...roster, legendaries: ['l', 'l'] })).toThrow(
+      /legendaries has dup/,
+    );
+    expect(() => validateRoster({ ...roster, legendaries: ['a'] })).toThrow(/legendary "a"/);
+    expect(() => validateRoster({ ...roster, legendaries: ['d'] })).toThrow(/legendary "d"/);
   });
 
   it('requires an evolution line of one or two forms for every ball and enemy', () => {
@@ -114,14 +123,14 @@ describe('fetch-data: roster and output file', () => {
   });
 
   it('builds the file in roster order and fails loudly on a missing species', () => {
-    const all = ['a', 'b', 'c', 'd', 'a1', 'a2', 'b1', 'c1'];
+    const all = ['a', 'b', 'c', 'd', 'l', 'a1', 'a2', 'b1', 'c1'];
     const file = buildFile(roster, [...all].reverse().map(species));
     expect(file.species.map((s) => s.id)).toEqual(all);
     expect(() => buildFile(roster, [species('a')])).toThrow(/no data for "b"/);
   });
 
   it('serializes deterministically, with no dates, ending in a newline', () => {
-    const file = buildFile(roster, ['a', 'b', 'c', 'd', 'a1', 'a2', 'b1', 'c1'].map(species));
+    const file = buildFile(roster, ['a', 'b', 'c', 'd', 'l', 'a1', 'a2', 'b1', 'c1'].map(species));
     const text = serialize(file);
     expect(serialize(file)).toBe(text);
     expect(text.endsWith('\n')).toBe(true);

@@ -19,9 +19,38 @@
       "bellsprout",
       "exeggcute",
       "voltorb",
-      "electabuzz"
+      "electabuzz",
+      "magmar",
+      "slugma",
+      "numel",
+      "cyndaquil",
+      "torchic",
+      "chimchar",
+      "krabby",
+      "staryu",
+      "goldeen",
+      "shellder",
+      "wooper",
+      "lotad",
+      "tangela",
+      "hoppip",
+      "seedot",
+      "shroomish",
+      "sunkern",
+      "chikorita",
+      "mareep",
+      "shinx",
+      "blitzle",
+      "tynamo",
+      "helioptile"
     ],
     "boss": "gyarados",
+    "legendaries": [
+      "moltres",
+      "kyogre",
+      "virizion",
+      "zapdos"
+    ],
     "starters": [
       "charmander",
       "squirtle",
@@ -84,6 +113,85 @@
       ],
       "electabuzz": [
         "electivire"
+      ],
+      "magmar": [
+        "magmortar"
+      ],
+      "slugma": [
+        "magcargo"
+      ],
+      "numel": [
+        "camerupt"
+      ],
+      "cyndaquil": [
+        "quilava",
+        "typhlosion"
+      ],
+      "torchic": [
+        "combusken",
+        "blaziken"
+      ],
+      "chimchar": [
+        "monferno",
+        "infernape"
+      ],
+      "krabby": [
+        "kingler"
+      ],
+      "staryu": [
+        "starmie"
+      ],
+      "goldeen": [
+        "seaking"
+      ],
+      "shellder": [
+        "cloyster"
+      ],
+      "wooper": [
+        "quagsire"
+      ],
+      "lotad": [
+        "lombre",
+        "ludicolo"
+      ],
+      "tangela": [
+        "tangrowth"
+      ],
+      "hoppip": [
+        "skiploom",
+        "jumpluff"
+      ],
+      "seedot": [
+        "nuzleaf",
+        "shiftry"
+      ],
+      "shroomish": [
+        "breloom"
+      ],
+      "sunkern": [
+        "sunflora"
+      ],
+      "chikorita": [
+        "bayleef",
+        "meganium"
+      ],
+      "mareep": [
+        "flaaffy",
+        "ampharos"
+      ],
+      "shinx": [
+        "luxio",
+        "luxray"
+      ],
+      "blitzle": [
+        "zebstrika"
+      ],
+      "tynamo": [
+        "eelektrik",
+        "eelektross"
+      ],
+      "helioptile": [
+        "heliolisk"
       ]
     }
   },
@@ -249,6 +357,236 @@
       }
     },
     {
+      "id": "magmar",
+      "pokedexId": 126,
+      "type": "fire",
+      "baseStats": {
+        "hp": 65,
+        "attack": 95,
+        "speed": 93
+      }
+    },
+    {
+      "id": "slugma",
+      "pokedexId": 218,
+      "type": "fire",
+      "baseStats": {
+        "hp": 40,
+        "attack": 40,
+        "speed": 20
+      }
+    },
+    {
+      "id": "numel",
+      "pokedexId": 322,
+      "type": "fire",
+      "baseStats": {
+        "hp": 60,
+        "attack": 60,
+        "speed": 35
+      }
+    },
+    {
+      "id": "cyndaquil",
+      "pokedexId": 155,
+      "type": "fire",
+      "baseStats": {
+        "hp": 39,
+        "attack": 52,
+        "speed": 65
+      }
+    },
+    {
+      "id": "torchic",
+      "pokedexId": 255,
+      "type": "fire",
+      "baseStats": {
+        "hp": 45,
+        "attack": 60,
+        "speed": 45
+      }
+    },
+    {
+      "id": "chimchar",
+      "pokedexId": 390,
+      "type": "fire",
+      "baseStats": {
+        "hp": 44,
+        "attack": 58,
+        "speed": 61
+      }
+    },
+    {
+      "id": "krabby",
+      "pokedexId": 98,
+      "type": "water",
+      "baseStats": {
+        "hp": 30,
+        "attack": 105,
+        "speed": 50
+      }
+    },
+    {
+      "id": "staryu",
+      "pokedexId": 120,
+      "type": "water",
+      "baseStats": {
+        "hp": 30,
+        "attack": 45,
+        "speed": 85
+      }
+    },
+    {
+      "id": "goldeen",
+      "pokedexId": 118,
+      "type": "water",
+      "baseStats": {
+        "hp": 45,
+        "attack": 67,
+        "speed": 63
+      }
+    },
+    {
+      "id": "shellder",
+      "pokedexId": 90,
+      "type": "water",
+      "baseStats": {
+        "hp": 30,
+        "attack": 65,
+        "speed": 40
+      }
+    },
+    {
+      "id": "wooper",
+      "pokedexId": 194,
+      "type": "water",
+      "baseStats": {
+        "hp": 55,
+        "attack": 45,
+        "speed": 15
+      }
+    },
+    {
+      "id": "lotad",
+      "pokedexId": 270,
+      "type": "water",
+      "baseStats": {
+        "hp": 40,
+        "attack": 30,
+        "speed": 30
+      }
+    },
+    {
+      "id": "tangela",
+      "pokedexId": 114,
+      "type": "grass",
+      "baseStats": {
+        "hp": 65,
+        "attack": 55,
+        "speed": 60
+      }
+    },
+    {
+      "id": "hoppip",
+      "pokedexId": 187,
+      "type": "grass",
+      "baseStats": {
+        "hp": 35,
+        "attack": 35,
+        "speed": 50
+      }
+    },
+    {
+      "id": "seedot",
+      "pokedexId": 273,
+      "type": "grass",
+      "baseStats": {
+        "hp": 40,
+        "attack": 40,
+        "speed": 30
+      }
+    },
+    {
+      "id": "shroomish",
+      "pokedexId": 285,
+      "type": "grass",
+      "baseStats": {
+        "hp": 60,
+        "attack": 40,
+        "speed": 35
+      }
+    },
+    {
+      "id": "sunkern",
+      "pokedexId": 191,
+      "type": "grass",
+      "baseStats": {
+        "hp": 30,
+        "attack": 30,
+        "speed": 30
+      }
+    },
+    {
+      "id": "chikorita",
+      "pokedexId": 152,
+      "type": "grass",
+      "baseStats": {
+        "hp": 45,
+        "attack": 49,
+        "speed": 45
+      }
+    },
+    {
+      "id": "mareep",
+      "pokedexId": 179,
+      "type": "electric",
+      "baseStats": {
+        "hp": 55,
+        "attack": 40,
+        "speed": 35
+      }
+    },
+    {
+      "id": "shinx",
+      "pokedexId": 403,
+      "type": "electric",
+      "baseStats": {
+        "hp": 45,
+        "attack": 65,
+        "speed": 45
+      }
+    },
+    {
+      "id": "blitzle",
+      "pokedexId": 522,
+      "type": "electric",
+      "baseStats": {
+        "hp": 45,
+        "attack": 60,
+        "speed": 76
+      }
+    },
+    {
+      "id": "tynamo",
+      "pokedexId": 602,
+      "type": "electric",
+      "baseStats": {
+        "hp": 35,
+        "attack": 55,
+        "speed": 60
+      }
+    },
+    {
+      "id": "helioptile",
+      "pokedexId": 694,
+      "type": "electric",
+      "baseStats": {
+        "hp": 44,
+        "attack": 38,
+        "speed": 70
+      }
+    },
+    {
       "id": "gyarados",
       "pokedexId": 130,
       "type": "water",
@@ -256,6 +594,46 @@
         "hp": 95,
         "attack": 125,
         "speed": 81
+      }
+    },
+    {
+      "id": "moltres",
+      "pokedexId": 146,
+      "type": "fire",
+      "baseStats": {
+        "hp": 90,
+        "attack": 100,
+        "speed": 90
+      }
+    },
+    {
+      "id": "kyogre",
+      "pokedexId": 382,
+      "type": "water",
+      "baseStats": {
+        "hp": 100,
+        "attack": 100,
+        "speed": 90
+      }
+    },
+    {
+      "id": "virizion",
+      "pokedexId": 640,
+      "type": "grass",
+      "baseStats": {
+        "hp": 91,
+        "attack": 90,
+        "speed": 108
+      }
+    },
+    {
+      "id": "zapdos",
+      "pokedexId": 145,
+      "type": "electric",
+      "baseStats": {
+        "hp": 90,
+        "attack": 90,
+        "speed": 100
       }
     },
     {
@@ -496,6 +874,336 @@
         "hp": 75,
         "attack": 123,
         "speed": 95
+      }
+    },
+    {
+      "id": "magmortar",
+      "pokedexId": 467,
+      "type": "fire",
+      "baseStats": {
+        "hp": 75,
+        "attack": 95,
+        "speed": 83
+      }
+    },
+    {
+      "id": "magcargo",
+      "pokedexId": 219,
+      "type": "fire",
+      "baseStats": {
+        "hp": 60,
+        "attack": 50,
+        "speed": 30
+      }
+    },
+    {
+      "id": "camerupt",
+      "pokedexId": 323,
+      "type": "fire",
+      "baseStats": {
+        "hp": 70,
+        "attack": 100,
+        "speed": 40
+      }
+    },
+    {
+      "id": "quilava",
+      "pokedexId": 156,
+      "type": "fire",
+      "baseStats": {
+        "hp": 58,
+        "attack": 64,
+        "speed": 80
+      }
+    },
+    {
+      "id": "typhlosion",
+      "pokedexId": 157,
+      "type": "fire",
+      "baseStats": {
+        "hp": 78,
+        "attack": 84,
+        "speed": 100
+      }
+    },
+    {
+      "id": "combusken",
+      "pokedexId": 256,
+      "type": "fire",
+      "baseStats": {
+        "hp": 60,
+        "attack": 85,
+        "speed": 55
+      }
+    },
+    {
+      "id": "blaziken",
+      "pokedexId": 257,
+      "type": "fire",
+      "baseStats": {
+        "hp": 80,
+        "attack": 120,
+        "speed": 80
+      }
+    },
+    {
+      "id": "monferno",
+      "pokedexId": 391,
+      "type": "fire",
+      "baseStats": {
+        "hp": 64,
+        "attack": 78,
+        "speed": 81
+      }
+    },
+    {
+      "id": "infernape",
+      "pokedexId": 392,
+      "type": "fire",
+      "baseStats": {
+        "hp": 76,
+        "attack": 104,
+        "speed": 108
+      }
+    },
+    {
+      "id": "kingler",
+      "pokedexId": 99,
+      "type": "water",
+      "baseStats": {
+        "hp": 55,
+        "attack": 130,
+        "speed": 75
+      }
+    },
+    {
+      "id": "starmie",
+      "pokedexId": 121,
+      "type": "water",
+      "baseStats": {
+        "hp": 60,
+        "attack": 75,
+        "speed": 115
+      }
+    },
+    {
+      "id": "seaking",
+      "pokedexId": 119,
+      "type": "water",
+      "baseStats": {
+        "hp": 80,
+        "attack": 92,
+        "speed": 68
+      }
+    },
+    {
+      "id": "cloyster",
+      "pokedexId": 91,
+      "type": "water",
+      "baseStats": {
+        "hp": 50,
+        "attack": 95,
+        "speed": 70
+      }
+    },
+    {
+      "id": "quagsire",
+      "pokedexId": 195,
+      "type": "water",
+      "baseStats": {
+        "hp": 95,
+        "attack": 85,
+        "speed": 35
+      }
+    },
+    {
+      "id": "lombre",
+      "pokedexId": 271,
+      "type": "water",
+      "baseStats": {
+        "hp": 60,
+        "attack": 50,
+        "speed": 50
+      }
+    },
+    {
+      "id": "ludicolo",
+      "pokedexId": 272,
+      "type": "water",
+      "baseStats": {
+        "hp": 80,
+        "attack": 70,
+        "speed": 70
+      }
+    },
+    {
+      "id": "tangrowth",
+      "pokedexId": 465,
+      "type": "grass",
+      "baseStats": {
+        "hp": 100,
+        "attack": 100,
+        "speed": 50
+      }
+    },
+    {
+      "id": "skiploom",
+      "pokedexId": 188,
+      "type": "grass",
+      "baseStats": {
+        "hp": 55,
+        "attack": 45,
+        "speed": 80
+      }
+    },
+    {
+      "id": "jumpluff",
+      "pokedexId": 189,
+      "type": "grass",
+      "baseStats": {
+        "hp": 75,
+        "attack": 55,
+        "speed": 110
+      }
+    },
+    {
+      "id": "nuzleaf",
+      "pokedexId": 274,
+      "type": "grass",
+      "baseStats": {
+        "hp": 70,
+        "attack": 70,
+        "speed": 60
+      }
+    },
+    {
+      "id": "shiftry",
+      "pokedexId": 275,
+      "type": "grass",
+      "baseStats": {
+        "hp": 90,
+        "attack": 100,
+        "speed": 80
+      }
+    },
+    {
+      "id": "breloom",
+      "pokedexId": 286,
+      "type": "grass",
+      "baseStats": {
+        "hp": 60,
+        "attack": 130,
+        "speed": 70
+      }
+    },
+    {
+      "id": "sunflora",
+      "pokedexId": 192,
+      "type": "grass",
+      "baseStats": {
+        "hp": 75,
+        "attack": 75,
+        "speed": 30
+      }
+    },
+    {
+      "id": "bayleef",
+      "pokedexId": 153,
+      "type": "grass",
+      "baseStats": {
+        "hp": 60,
+        "attack": 62,
+        "speed": 60
+      }
+    },
+    {
+      "id": "meganium",
+      "pokedexId": 154,
+      "type": "grass",
+      "baseStats": {
+        "hp": 80,
+        "attack": 82,
+        "speed": 80
+      }
+    },
+    {
+      "id": "flaaffy",
+      "pokedexId": 180,
+      "type": "electric",
+      "baseStats": {
+        "hp": 70,
+        "attack": 55,
+        "speed": 45
+      }
+    },
+    {
+      "id": "ampharos",
+      "pokedexId": 181,
+      "type": "electric",
+      "baseStats": {
+        "hp": 90,
+        "attack": 75,
+        "speed": 55
+      }
+    },
+    {
+      "id": "luxio",
+      "pokedexId": 404,
+      "type": "electric",
+      "baseStats": {
+        "hp": 60,
+        "attack": 85,
+        "speed": 60
+      }
+    },
+    {
+      "id": "luxray",
+      "pokedexId": 405,
+      "type": "electric",
+      "baseStats": {
+        "hp": 80,
+        "attack": 120,
+        "speed": 70
+      }
+    },
+    {
+      "id": "zebstrika",
+      "pokedexId": 523,
+      "type": "electric",
+      "baseStats": {
+        "hp": 75,
+        "attack": 100,
+        "speed": 116
+      }
+    },
+    {
+      "id": "eelektrik",
+      "pokedexId": 603,
+      "type": "electric",
+      "baseStats": {
+        "hp": 65,
+        "attack": 85,
+        "speed": 40
+      }
+    },
+    {
+      "id": "eelektross",
+      "pokedexId": 604,
+      "type": "electric",
+      "baseStats": {
+        "hp": 85,
+        "attack": 115,
+        "speed": 50
+      }
+    },
+    {
+      "id": "heliolisk",
+      "pokedexId": 695,
+      "type": "electric",
+      "baseStats": {
+        "hp": 62,
+        "attack": 55,
+        "speed": 109
       }
     }
   ]
