@@ -12,11 +12,23 @@ export const baseConfig: Omit<GameConfig, 'species' | 'enemySpecies' | 'ballSpec
   ball: {
     radius: 6,
     cooldownTicks: 72,
-    aimJitter: 0.176,
+    aimJitter: 0.2,
+    manualAimJitter: 0.02,
+    // The assisted aim is a weaker aid on purpose: it reloads slower and spreads more (ADR-021).
+    autoCooldownMult: 1.15,
     speedMin: 6,
     speedMax: 9,
     minVerticalRatio: 0.2,
   },
+  // Provisional values, tuned live with ?tune and measured with the bots (4B).
+  pickup: {
+    radius: 36,
+    returnTicks: 300,
+    returnPenaltyTicks: 60,
+    dropSpeed: 2,
+    captureTtlTicks: 480,
+  },
+  capture: { chance: 0.05, pityStep: 0.02, startMisses: 6, overflowDamageStep: 0.05 },
   enemy: {
     radius: 16,
     threat: 1,
@@ -25,7 +37,7 @@ export const baseConfig: Omit<GameConfig, 'species' | 'enemySpecies' | 'ballSpec
     speedMax: 0.5,
     speedVariation: 0.15,
     // Tuned with the balance harness (pnpm bench:balance); GDD-v0 does not fix enemy hp.
-    hpScale: 0.45,
+    hpScale: 0.68,
   },
   // The final boss (ADR-016). hpScale is PROVISIONAL, like enemy.hpScale: measured with bots,
   // to be revalidated with a human playtest (3E).
@@ -43,49 +55,49 @@ export const baseConfig: Omit<GameConfig, 'species' | 'enemySpecies' | 'ballSpec
   waves: [
     {
       durationTicks: 3600,
-      spawnIntervalTicks: 150,
+      spawnIntervalTicks: 140,
       speedScale: 0.8,
       hpScale: 0.6,
       types: ['fire'],
     },
     {
       durationTicks: 3600,
-      spawnIntervalTicks: 130,
+      spawnIntervalTicks: 110,
       speedScale: 0.9,
       hpScale: 0.7,
       types: ['water'],
     },
     {
       durationTicks: 3600,
-      spawnIntervalTicks: 115,
+      spawnIntervalTicks: 90,
       speedScale: 1.0,
       hpScale: 0.8,
       types: ['grass'],
     },
     {
       durationTicks: 3600,
-      spawnIntervalTicks: 100,
+      spawnIntervalTicks: 70,
       speedScale: 1.05,
       hpScale: 0.9,
       types: ALL_TYPES,
     },
     {
       durationTicks: 3600,
-      spawnIntervalTicks: 90,
+      spawnIntervalTicks: 58,
       speedScale: 1.1,
       hpScale: 1.0,
       types: ALL_TYPES,
     },
     {
       durationTicks: 3600,
-      spawnIntervalTicks: 80,
+      spawnIntervalTicks: 50,
       speedScale: 1.2,
       hpScale: 1.15,
       types: ALL_TYPES,
     },
     {
       durationTicks: 3600,
-      spawnIntervalTicks: 70,
+      spawnIntervalTicks: 44,
       speedScale: 1.3,
       hpScale: 1.3,
       types: ALL_TYPES,
@@ -113,7 +125,8 @@ export const baseConfig: Omit<GameConfig, 'species' | 'enemySpecies' | 'ballSpec
   },
   cards: {
     offerCount: 3,
-    maxBalls: 4,
+    // Safety valve for the frame budget (ADR-023), not the old limit of 4 that cut the entry.
+    maxBalls: 24,
     weights: { newBall: 4, upgrade: 4, token: 2 },
     damageStep: 0.15,
     cadenceFactor: 0.9,

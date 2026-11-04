@@ -58,7 +58,7 @@ describe('stat mapping', () => {
   });
 
   it('exposes the enemy hp multiplier as the named, provisional parameter enemy.hpScale', () => {
-    expect(baseConfig.enemy.hpScale).toBe(0.45);
+    expect(baseConfig.enemy.hpScale).toBe(0.68);
   });
 
   it('pins the provisional boss hp multiplier, so changing it is a conscious decision', () => {
@@ -130,7 +130,7 @@ describe('progression and card tables', () => {
 
   it('has sane card settings', () => {
     const c = gameConfig.cards;
-    expect(c.maxBalls).toBe(4);
+    expect(c.maxBalls).toBe(24); // a safety valve for the frame budget, not a rule (ADR-023)
     expect(c.offerCount).toBe(3);
     expect(c.cadenceFactor).toBeLessThan(1);
     expect(c.cadenceFloor).toBeGreaterThan(0);
