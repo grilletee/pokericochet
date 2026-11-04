@@ -134,7 +134,7 @@ describe('progression and card tables', () => {
     expect(c.offerCount).toBe(3);
     expect(c.cadenceFactor).toBeLessThan(1);
     expect(c.cadenceFloor).toBeGreaterThan(0);
-    expect(c.weights.newBall + c.weights.upgrade + c.weights.token).toBeGreaterThan(0);
+    expect(c.weights.newBall + c.weights.upgrade + c.weights.hybrid).toBeGreaterThan(0);
   });
 
   it('effects match GDD-v0: burn 2/s for 3 s, drain 1 hp per 15, chain at 80 px for 50 %', () => {
