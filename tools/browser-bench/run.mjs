@@ -2,7 +2,7 @@
 // 150 enemies) and prints the numbers the game publishes in window.__benchResult.
 //
 //   pnpm bench:browser                    headed Edge (real GPU path)
-//   pnpm bench:browser -- --real          the real peak load (4 balls, 20 enemies) instead of the stress scene
+//   pnpm bench:browser -- --real          the real peak load (24 balls, 30 enemies) instead of the stress scene
 //   pnpm bench:browser -- --headless      headless
 //   pnpm bench:browser -- --out result.json
 //

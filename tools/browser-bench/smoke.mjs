@@ -58,16 +58,42 @@ try {
   check('A moves the player left', s2.playerX < s1.playerX - 20, `${s1.playerX} -> ${s2.playerX}`);
 
   const box = await page.locator('canvas').boundingBox();
-  await page.mouse.move(box.x + box.width * 0.9, box.y + box.height * 0.5);
+  // A press on the floor strip (below the defence line) steers; anywhere above it aims (ADR-021).
+  await page.mouse.move(box.x + box.width * 0.9, box.y + box.height * 0.94);
   await page.mouse.down();
   await page.waitForTimeout(1200);
   const s3 = await state();
   await page.mouse.up();
   check(
-    'holding the pointer on the right steers right',
+    'holding the pointer on the floor on the right steers right',
     s3.playerX > s2.playerX + 20,
     `${s2.playerX} -> ${s3.playerX}`,
   );
+
+  await page.mouse.move(box.x + box.width * 0.2, box.y + box.height * 0.3);
+  await page.waitForTimeout(150);
+  const aimed = await state();
+  check(
+    'pointing the mouse above the floor sets the aim point',
+    aimed.aimX < 140 && aimed.aimY > 150 && aimed.aimY < 300,
+    `aim ${aimed.aimX},${aimed.aimY}`,
+  );
+  check('the assisted aim is off by default', aimed.autoAim === false);
+  await page.keyboard.press('KeyT');
+  await page.waitForTimeout(150);
+  check('T switches the assisted aim on', (await state()).autoAim === true);
+  await page.keyboard.press('KeyT');
+  await page.waitForTimeout(150);
+  check('T switches it off again', (await state()).autoAim === false);
+  await page.mouse.move(box.x + box.width * 0.7, box.y + box.height * 0.3);
+
+  // Balls leave through the bottom, wait on the floor and come back when collected.
+  let sawPickup = false;
+  for (let i = 0; i < 80 && !sawPickup; i++) {
+    sawPickup = (await state()).pickups > 0;
+    if (!sawPickup) await page.waitForTimeout(250);
+  }
+  check('a ball that leaves the arena waits on the floor as a pickup', sawPickup);
 
   const t0 = Date.now();
   const before = await state();
@@ -92,6 +118,33 @@ try {
     await p.waitForFunction(() => typeof window.__debug === 'function');
     return p;
   };
+
+  // ?tune: the live panel opens, a slider changes the game and the choice is remembered.
+  const tunePage = await browser.newPage({ viewport: { width: 540, height: 820 } });
+  tunePage.on('pageerror', (e) => errors.push(e.message));
+  tunePage.on('console', (m) => m.type() === 'error' && errors.push(m.text()));
+  await tunePage.goto('http://127.0.0.1:4174/?debug&tune&starter=charmander&seed=3');
+  await tunePage.waitForFunction(() => typeof window.__debug === 'function');
+  check(
+    '?tune shows the Ajustes button',
+    (await tunePage.locator('[data-tune-toggle]').count()) === 1,
+  );
+  check(
+    'without ?tune there is no panel',
+    (await page.locator('[data-tune-toggle]').count()) === 0,
+  );
+  await tunePage.locator('[data-tune-toggle]').click();
+  check(
+    'the panel opens with 16 sliders',
+    (await tunePage.locator('input[data-tune]').count()) === 16,
+  );
+  await tunePage.locator('input[data-tune="captureChance"]').fill('0.5');
+  const tuneStored = await tunePage.evaluate(() => window.localStorage.getItem('tune.v1'));
+  check(
+    'a changed knob is remembered',
+    tuneStored !== null && JSON.parse(tuneStored).captureChance === 0.5,
+  );
+  await tunePage.close();
 
   const byKey = await cardsPage('seed=7');
   await byKey.waitForSelector('button[data-card]');

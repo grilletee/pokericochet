@@ -1,8 +1,8 @@
 import { performance } from 'node:perf_hooks';
 import { describe, expect, it } from 'vitest';
 import { gameConfig } from '../../src/data';
-import { type Command, createRun, tick } from '../../src/domain';
-import { chaserPolicy } from './bots';
+import { createRun, tick } from '../../src/domain';
+import { activePolicy, commandFor } from './bots';
 
 /**
  * Cost of a tick during complete, realistic runs (waves, all four type effects, XP, cards),
@@ -25,13 +25,7 @@ describe('complete runs', () => {
     for (let i = 0; i < SEEDS; i++) {
       const run = createRun(gameConfig, 500 + i, STARTERS[i % STARTERS.length] ?? 'charmander');
       while (run.phase !== 'lost' && run.phase !== 'won' && run.tickCount < 40_000) {
-        const cmd: Command =
-          run.phase === 'levelup'
-            ? {
-                moveX: 0,
-                action: { type: 'pick', index: chaserPolicy.pick(run, run.offers) },
-              }
-            : { moveX: chaserPolicy.move(run, gameConfig) };
+        const cmd = commandFor(activePolicy, run, gameConfig);
         const t0 = performance.now();
         tick(run, cmd, gameConfig);
         times.push(performance.now() - t0);
@@ -46,7 +40,7 @@ describe('complete runs', () => {
     console.log(
       [
         '',
-        `COMPLETE RUNS  ${SEEDS} runs, ${ticks} ticks (${wins} won) with the chaser bot`,
+        `COMPLETE RUNS  ${SEEDS} runs, ${ticks} ticks (${wins} won) with the active bot`,
         `node ${process.version}, ${process.platform}/${process.arch}`,
         `tick mean ${mean.toFixed(4)} ms | p50 ${percentile(sorted, 0.5).toFixed(4)} | p95 ${percentile(sorted, 0.95).toFixed(4)} | p99 ${percentile(sorted, 0.99).toFixed(4)} | max ${(sorted[sorted.length - 1] ?? 0).toFixed(4)}`,
         `peak enemies alive ${peakEnemies} | peak balls in flight ${peakBodies}`,
