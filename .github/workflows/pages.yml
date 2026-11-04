@@ -42,7 +42,7 @@ jobs:
       - run: pnpm fetch-data
       - run: git diff --exit-code -- src/data/generated
       # The page must carry the sprites and the affiliation notice: fail if either is missing.
-      - run: test "$(ls src/assets/sprites/*.png | wc -l)" -ge 17
+      - run: test "$(ls src/assets/sprites/*.png | wc -l)" -ge 41
       - run: pnpm build
       - run: grep -rq "No está afiliado" dist/assets
 

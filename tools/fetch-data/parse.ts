@@ -9,6 +9,12 @@ export interface Roster {
   readonly enemies: readonly string[];
   readonly boss: string;
   readonly starters: readonly string[];
+  /**
+   * Evolution line of every ball and enemy species: the forms after the base one, in order
+   * (ADR-024). A ball of level 2 shows the first form, level 3 the last; a one-form line keeps
+   * its form at level 3.
+   */
+  readonly lines: Readonly<Record<string, readonly string[]>>;
 }
 
 export interface GeneratedSpecies {
@@ -76,10 +82,16 @@ export function parsePokemon(name: string, raw: unknown): ParsedPokemon {
 
 /** Every species id the roster mentions, once, in a stable order. */
 export function rosterIds(roster: Roster): string[] {
-  return [...new Set([...roster.balls, ...roster.enemies, roster.boss, ...roster.starters])];
+  const forms = Object.values(roster.lines).flat();
+  return [
+    ...new Set([...roster.balls, ...roster.enemies, roster.boss, ...roster.starters, ...forms]),
+  ];
 }
 
-/** Checks that the starters are balls and nothing is listed twice within a role. */
+/**
+ * Checks that the starters are balls, nothing is listed twice within a role and every ball and
+ * enemy species has an evolution line of one or two forms that are not roster species themselves.
+ */
 export function validateRoster(roster: Roster): void {
   for (const [role, ids] of [
     ['balls', roster.balls],
@@ -89,6 +101,21 @@ export function validateRoster(roster: Roster): void {
   }
   for (const id of roster.starters) {
     if (!roster.balls.includes(id)) throw new Error(`starter "${id}" is not in roster.balls`);
+  }
+  const base = new Set([...roster.balls, ...roster.enemies, roster.boss]);
+  for (const id of [...roster.balls, ...roster.enemies]) {
+    const line = roster.lines[id];
+    if (line === undefined || line.length < 1 || line.length > 2) {
+      throw new Error(`roster.lines["${id}"] needs one or two forms`);
+    }
+    for (const form of line) {
+      if (base.has(form)) throw new Error(`form "${form}" of "${id}" is also a base species`);
+    }
+  }
+  for (const id of Object.keys(roster.lines)) {
+    if (!roster.balls.includes(id) && !roster.enemies.includes(id)) {
+      throw new Error(`roster.lines has "${id}", which is not a ball or an enemy`);
+    }
   }
 }
 

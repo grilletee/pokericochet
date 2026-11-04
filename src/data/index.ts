@@ -3,7 +3,15 @@ import { baseConfig } from './config';
 import { BALL_SPECIES, BOSS_SPECIES, ENEMY_SPECIES } from './species';
 
 export { baseConfig } from './config';
-export { BALL_SPECIES, BOSS_SPECIES, ENEMY_SPECIES, STARTER_SPECIES } from './species';
+export {
+  ART_SPECIES_IDS,
+  BALL_SPECIES,
+  BOSS_SPECIES,
+  ENEMY_SPECIES,
+  EVOLUTION_LINES,
+  formOf,
+  STARTER_SPECIES,
+} from './species';
 
 const allSpecies: readonly SpeciesDef[] = [...BALL_SPECIES, ...ENEMY_SPECIES, BOSS_SPECIES];
 

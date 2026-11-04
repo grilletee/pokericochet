@@ -76,6 +76,7 @@ describe('fetch-data: roster and output file', () => {
     enemies: ['c', 'a'],
     boss: 'd',
     starters: ['a'],
+    lines: { a: ['a1', 'a2'], b: ['b1'], c: ['c1'] },
   };
   const species = (id: string): GeneratedSpecies => ({
     id,
@@ -85,7 +86,24 @@ describe('fetch-data: roster and output file', () => {
   });
 
   it('lists every species once, in a stable order', () => {
-    expect(rosterIds(roster)).toEqual(['a', 'b', 'c', 'd']);
+    expect(rosterIds(roster)).toEqual(['a', 'b', 'c', 'd', 'a1', 'a2', 'b1', 'c1']);
+  });
+
+  it('requires an evolution line of one or two forms for every ball and enemy', () => {
+    const lines = roster.lines;
+    expect(() => validateRoster({ ...roster, lines: { ...lines, b: [] } })).toThrow(/"b"\] needs/);
+    expect(() => validateRoster({ ...roster, lines: { ...lines, b: ['x', 'y', 'z'] } })).toThrow(
+      /"b"\] needs/,
+    );
+    expect(() => validateRoster({ ...roster, lines: { a: ['a1'], c: ['c1'] } })).toThrow(
+      /"b"\] needs/,
+    );
+    expect(() => validateRoster({ ...roster, lines: { ...lines, a: ['b'] } })).toThrow(
+      /also a base species/,
+    );
+    expect(() => validateRoster({ ...roster, lines: { ...lines, d: ['d1'] } })).toThrow(
+      /not a ball or an enemy/,
+    );
   });
 
   it('rejects duplicate roles and starters that are not balls', () => {
@@ -96,13 +114,14 @@ describe('fetch-data: roster and output file', () => {
   });
 
   it('builds the file in roster order and fails loudly on a missing species', () => {
-    const file = buildFile(roster, ['d', 'c', 'b', 'a'].map(species));
-    expect(file.species.map((s) => s.id)).toEqual(['a', 'b', 'c', 'd']);
+    const all = ['a', 'b', 'c', 'd', 'a1', 'a2', 'b1', 'c1'];
+    const file = buildFile(roster, [...all].reverse().map(species));
+    expect(file.species.map((s) => s.id)).toEqual(all);
     expect(() => buildFile(roster, [species('a')])).toThrow(/no data for "b"/);
   });
 
   it('serializes deterministically, with no dates, ending in a newline', () => {
-    const file = buildFile(roster, ['a', 'b', 'c', 'd'].map(species));
+    const file = buildFile(roster, ['a', 'b', 'c', 'd', 'a1', 'a2', 'b1', 'c1'].map(species));
     const text = serialize(file);
     expect(serialize(file)).toBe(text);
     expect(text.endsWith('\n')).toBe(true);

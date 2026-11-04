@@ -27,7 +27,65 @@
       "squirtle",
       "bulbasaur",
       "pikachu"
-    ]
+    ],
+    "lines": {
+      "charmander": [
+        "charmeleon",
+        "charizard"
+      ],
+      "vulpix": [
+        "ninetales"
+      ],
+      "squirtle": [
+        "wartortle",
+        "blastoise"
+      ],
+      "psyduck": [
+        "golduck"
+      ],
+      "bulbasaur": [
+        "ivysaur",
+        "venusaur"
+      ],
+      "oddish": [
+        "gloom",
+        "vileplume"
+      ],
+      "pikachu": [
+        "raichu"
+      ],
+      "magnemite": [
+        "magneton",
+        "magnezone"
+      ],
+      "growlithe": [
+        "arcanine"
+      ],
+      "ponyta": [
+        "rapidash"
+      ],
+      "poliwag": [
+        "poliwhirl",
+        "poliwrath"
+      ],
+      "horsea": [
+        "seadra",
+        "kingdra"
+      ],
+      "bellsprout": [
+        "weepinbell",
+        "victreebel"
+      ],
+      "exeggcute": [
+        "exeggutor"
+      ],
+      "voltorb": [
+        "electrode"
+      ],
+      "electabuzz": [
+        "electivire"
+      ]
+    }
   },
   "species": [
     {
@@ -198,6 +256,246 @@
         "hp": 95,
         "attack": 125,
         "speed": 81
+      }
+    },
+    {
+      "id": "charmeleon",
+      "pokedexId": 5,
+      "type": "fire",
+      "baseStats": {
+        "hp": 58,
+        "attack": 64,
+        "speed": 80
+      }
+    },
+    {
+      "id": "charizard",
+      "pokedexId": 6,
+      "type": "fire",
+      "baseStats": {
+        "hp": 78,
+        "attack": 84,
+        "speed": 100
+      }
+    },
+    {
+      "id": "ninetales",
+      "pokedexId": 38,
+      "type": "fire",
+      "baseStats": {
+        "hp": 73,
+        "attack": 76,
+        "speed": 100
+      }
+    },
+    {
+      "id": "wartortle",
+      "pokedexId": 8,
+      "type": "water",
+      "baseStats": {
+        "hp": 59,
+        "attack": 63,
+        "speed": 58
+      }
+    },
+    {
+      "id": "blastoise",
+      "pokedexId": 9,
+      "type": "water",
+      "baseStats": {
+        "hp": 79,
+        "attack": 83,
+        "speed": 78
+      }
+    },
+    {
+      "id": "golduck",
+      "pokedexId": 55,
+      "type": "water",
+      "baseStats": {
+        "hp": 80,
+        "attack": 82,
+        "speed": 85
+      }
+    },
+    {
+      "id": "ivysaur",
+      "pokedexId": 2,
+      "type": "grass",
+      "baseStats": {
+        "hp": 60,
+        "attack": 62,
+        "speed": 60
+      }
+    },
+    {
+      "id": "venusaur",
+      "pokedexId": 3,
+      "type": "grass",
+      "baseStats": {
+        "hp": 80,
+        "attack": 82,
+        "speed": 80
+      }
+    },
+    {
+      "id": "gloom",
+      "pokedexId": 44,
+      "type": "grass",
+      "baseStats": {
+        "hp": 60,
+        "attack": 65,
+        "speed": 40
+      }
+    },
+    {
+      "id": "vileplume",
+      "pokedexId": 45,
+      "type": "grass",
+      "baseStats": {
+        "hp": 75,
+        "attack": 80,
+        "speed": 50
+      }
+    },
+    {
+      "id": "raichu",
+      "pokedexId": 26,
+      "type": "electric",
+      "baseStats": {
+        "hp": 60,
+        "attack": 90,
+        "speed": 110
+      }
+    },
+    {
+      "id": "magneton",
+      "pokedexId": 82,
+      "type": "electric",
+      "baseStats": {
+        "hp": 50,
+        "attack": 60,
+        "speed": 70
+      }
+    },
+    {
+      "id": "magnezone",
+      "pokedexId": 462,
+      "type": "electric",
+      "baseStats": {
+        "hp": 70,
+        "attack": 70,
+        "speed": 60
+      }
+    },
+    {
+      "id": "arcanine",
+      "pokedexId": 59,
+      "type": "fire",
+      "baseStats": {
+        "hp": 90,
+        "attack": 110,
+        "speed": 95
+      }
+    },
+    {
+      "id": "rapidash",
+      "pokedexId": 78,
+      "type": "fire",
+      "baseStats": {
+        "hp": 65,
+        "attack": 100,
+        "speed": 105
+      }
+    },
+    {
+      "id": "poliwhirl",
+      "pokedexId": 61,
+      "type": "water",
+      "baseStats": {
+        "hp": 65,
+        "attack": 65,
+        "speed": 90
+      }
+    },
+    {
+      "id": "poliwrath",
+      "pokedexId": 62,
+      "type": "water",
+      "baseStats": {
+        "hp": 90,
+        "attack": 95,
+        "speed": 70
+      }
+    },
+    {
+      "id": "seadra",
+      "pokedexId": 117,
+      "type": "water",
+      "baseStats": {
+        "hp": 55,
+        "attack": 65,
+        "speed": 85
+      }
+    },
+    {
+      "id": "kingdra",
+      "pokedexId": 230,
+      "type": "water",
+      "baseStats": {
+        "hp": 75,
+        "attack": 95,
+        "speed": 85
+      }
+    },
+    {
+      "id": "weepinbell",
+      "pokedexId": 70,
+      "type": "grass",
+      "baseStats": {
+        "hp": 65,
+        "attack": 90,
+        "speed": 55
+      }
+    },
+    {
+      "id": "victreebel",
+      "pokedexId": 71,
+      "type": "grass",
+      "baseStats": {
+        "hp": 80,
+        "attack": 105,
+        "speed": 70
+      }
+    },
+    {
+      "id": "exeggutor",
+      "pokedexId": 103,
+      "type": "grass",
+      "baseStats": {
+        "hp": 95,
+        "attack": 95,
+        "speed": 55
+      }
+    },
+    {
+      "id": "electrode",
+      "pokedexId": 101,
+      "type": "electric",
+      "baseStats": {
+        "hp": 60,
+        "attack": 50,
+        "speed": 150
+      }
+    },
+    {
+      "id": "electivire",
+      "pokedexId": 466,
+      "type": "electric",
+      "baseStats": {
+        "hp": 75,
+        "attack": 123,
+        "speed": 95
       }
     }
   ]

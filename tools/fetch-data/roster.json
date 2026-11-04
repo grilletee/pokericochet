@@ -20,5 +20,23 @@
     "electabuzz"
   ],
   "boss": "gyarados",
-  "starters": ["charmander", "squirtle", "bulbasaur", "pikachu"]
+  "starters": ["charmander", "squirtle", "bulbasaur", "pikachu"],
+  "lines": {
+    "charmander": ["charmeleon", "charizard"],
+    "vulpix": ["ninetales"],
+    "squirtle": ["wartortle", "blastoise"],
+    "psyduck": ["golduck"],
+    "bulbasaur": ["ivysaur", "venusaur"],
+    "oddish": ["gloom", "vileplume"],
+    "pikachu": ["raichu"],
+    "magnemite": ["magneton", "magnezone"],
+    "growlithe": ["arcanine"],
+    "ponyta": ["rapidash"],
+    "poliwag": ["poliwhirl", "poliwrath"],
+    "horsea": ["seadra", "kingdra"],
+    "bellsprout": ["weepinbell", "victreebel"],
+    "exeggcute": ["exeggutor"],
+    "voltorb": ["electrode"],
+    "electabuzz": ["electivire"]
+  }
 }
