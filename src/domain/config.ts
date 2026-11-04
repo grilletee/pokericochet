@@ -11,11 +11,31 @@ export interface WaveDef {
   readonly hpScale: number;
   /** Only species of these types spawn in this wave. */
   readonly types: readonly GameType[];
+  /** Ids of the themes this wave may get; the run draws one at its start (ADR-027). */
+  readonly themes?: readonly string[];
+  /** Evolution form of the enemies: 1 = base species, 2 = first form, 3 = last form. Default 1. */
+  readonly tier?: number;
+}
+
+/** A themed wave (ADR-027): most of its enemies come from `species`, the rest from the wave's types. */
+export interface ThemeDef {
+  readonly id: string;
+  readonly name: string;
+  readonly type: GameType;
+  /** Base species ids; unknown ones are ignored. */
+  readonly species: readonly string[];
+  /** Share of the wave's enemies drawn from `species`, 0..1. */
+  readonly purity: number;
 }
 
 /** The final boss: it appears when the last wave ends and summons small enemies until it dies. */
 export interface BossDef {
   readonly species: string;
+  /**
+   * If present, the species is drawn from this table by the `themes` stream (one legendary per
+   * type, ADR-028) and the summons are of that type; `species` is then only the fallback.
+   */
+  readonly byType?: Readonly<Partial<Record<GameType, string>>>;
   /** Multiplies species hp * enemy.hpScale. */
   readonly hpScale: number;
   /** Pixels advanced downwards per tick. */
@@ -26,6 +46,17 @@ export interface BossDef {
   /** The summoned enemies are of any type, with these multipliers on their species values. */
   readonly summonSpeedScale: number;
   readonly summonHpScale: number;
+}
+
+/**
+ * A boss between waves (ADR-028): it appears when `after` waves are over, the wave clock stops while
+ * it lives, and its death heals the player and drops a guaranteed capture of its own species. The
+ * species is the one of the type of the wave that just ended.
+ */
+export interface InterludeDef extends Omit<BossDef, 'species' | 'byType'> {
+  readonly after: number;
+  readonly byType: Readonly<Record<GameType, string>>;
+  readonly healHp: number;
 }
 
 /**
@@ -104,6 +135,14 @@ export interface GameConfig {
   };
   /** Without a boss the run is won when the last wave is gone and nothing is left alive. */
   readonly boss?: BossDef;
+  /** Bosses between waves, in order of `after` (ADR-028). */
+  readonly interludes?: readonly InterludeDef[];
+  /** Wave themes by id (ADR-027). */
+  readonly themes?: Readonly<Record<string, ThemeDef>>;
+  /** Evolution forms after the base species, in order, for every ball and enemy line. */
+  readonly lines?: Readonly<Record<string, readonly string[]>>;
+  /** Reverse of `lines`: which base species and level an evolved form stands for. */
+  readonly forms?: Readonly<Record<string, { readonly base: string; readonly level: number }>>;
   /** Wave table. An empty table means no enemies at all and no way to win (used in tests). */
   readonly waves: readonly WaveDef[];
   readonly stats: {

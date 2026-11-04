@@ -133,8 +133,8 @@ describe('snapshot: ball levels for the evolution forms', () => {
     run.cooldowns = [-1, -1];
     run.bodies = [{ slot: 0, x: 10, y: 300, vx: 0, vy: -1, pierce: 0, skipId: 0 }];
     run.pickups = [
-      { slot: 1, species: '', type: 'water', x: 50, y: 680, ticks: 100 },
-      { slot: -1, species: 'psyduck', type: 'water', x: 90, y: 200, ticks: 100 },
+      { slot: 1, species: '', type: 'water', x: 50, y: 680, level: 1, ticks: 100 },
+      { slot: -1, species: 'psyduck', type: 'water', x: 90, y: 200, level: 1, ticks: 100 },
     ];
     const snap = createSnapshot();
     writeSnapshot(run, snap);

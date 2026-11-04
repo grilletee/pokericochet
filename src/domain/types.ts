@@ -24,6 +24,9 @@ export interface Ball {
   /** 1..3. */
   readonly level: number;
   readonly hybrid: boolean;
+  /** Hybrids only: the second ingredient, kept for the card, the run summary and (later) synergies. */
+  readonly secondSpecies?: string;
+  readonly secondType?: GameType;
   readonly effects: readonly Effect[];
 }
 
@@ -91,6 +94,8 @@ export interface Pickup {
   type: GameType;
   x: number;
   y: number;
+  /** Level of the ball it carries: a captured enemy of a higher tier gives a higher level (ADR-027). */
+  level: number;
   /** Ticks left on the floor before it joins the loadout on its own (counts only once landed). */
   ticks: number;
 }
@@ -126,6 +131,7 @@ export type GameEvent =
   | {
       readonly type: 'captureDrop';
       readonly species: string;
+      readonly level: number;
       readonly x: number;
       readonly y: number;
     }
@@ -134,6 +140,7 @@ export type GameEvent =
       readonly type: 'capture';
       readonly ballId: number;
       readonly species: string;
+      readonly level: number;
       readonly x: number;
       readonly late: boolean;
     }
@@ -159,9 +166,12 @@ export type GameEvent =
   | { readonly type: 'leak'; readonly enemyId: number; readonly damage: number }
   | { readonly type: 'levelup'; readonly level: number }
   | { readonly type: 'pick'; readonly card: Card }
-  | { readonly type: 'waveStart'; readonly index: number }
+  /** `theme` is the id of the wave's theme, or '' for a wave without one (ADR-027). */
+  | { readonly type: 'waveStart'; readonly index: number; readonly theme: string }
   | { readonly type: 'bossSpawn'; readonly enemyId: number }
   | { readonly type: 'bossSummon'; readonly count: number }
+  /** A boss died; `index` counts the bosses defeated so far, this one included (ADR-028). */
+  | { readonly type: 'bossDefeated'; readonly species: string; readonly index: number }
   /** Two equal balls merged on their own into one of the next level (ADR-024). */
   | {
       readonly type: 'evolve';

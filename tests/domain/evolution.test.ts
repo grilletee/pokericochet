@@ -79,7 +79,7 @@ describe('automatic evolution (ADR-024)', () => {
     expect(run.loadout).toHaveLength(1);
   });
 
-  it('does nothing with different levels, different species, the maximum level or hybrids', () => {
+  it('does nothing with different levels, different species, the maximum level or two hybrids', () => {
     const hybrid = (id: number) => makeBall({ id, level: 2, hybrid: true });
     const cases: Ball[][] = [
       [fire(1), fire(2, 2)],
@@ -87,7 +87,6 @@ describe('automatic evolution (ADR-024)', () => {
       [fire(1, 3), fire(2, 3)],
       [fire(1, 2), water(2, 2)], // same level, other species: only a hybrid card may merge them
       [hybrid(1), hybrid(2)],
-      [fire(1, 2), hybrid(2)],
     ];
     for (const balls of cases) {
       const run = runWith(balls);
@@ -106,13 +105,45 @@ describe('automatic evolution (ADR-024)', () => {
     ]);
   });
 
-  it('a hybrid between two equal balls does not block the evolution of a normal pair', () => {
-    const run = runWith([fire(1, 2), makeBall({ id: 2, level: 2, hybrid: true }), fire(3, 2)]);
+  it('a hybrid keeps evolving with a normal ball of its line (ADR-026) and stays a hybrid', () => {
+    const hybrid = {
+      ...makeBall({ id: 1, level: 2, hybrid: true }),
+      secondSpecies: 'squirtle',
+      secondType: 'water' as const,
+      effects: [
+        { kind: 'burn' as const, strength: 2 },
+        { kind: 'pierce' as const, strength: 0.5 },
+      ],
+    };
+    for (const balls of [
+      [hybrid, fire(2, 2)],
+      [fire(2, 2), hybrid],
+    ]) {
+      const run = runWith([...balls]);
+      const out = tick(run, still, quietConfig);
+      expect(run.loadout).toHaveLength(1);
+      const result = run.loadout[0];
+      expect(result).toMatchObject({
+        id: 1,
+        level: 3,
+        hybrid: true,
+        secondSpecies: 'squirtle',
+        effects: hybrid.effects,
+      });
+      expect(out.events).toContainEqual({
+        type: 'evolve',
+        ballId: 1,
+        species: 'charmander',
+        level: 3,
+      });
+    }
+  });
+
+  it('two hybrids do not evolve, and a hybrid does not evolve with another species', () => {
+    const hybrid = (id: number) => makeBall({ id, level: 2, hybrid: true });
+    const run = runWith([hybrid(1), hybrid(2), water(3, 2)]);
     tick(run, still, quietConfig);
-    expect(run.loadout.map((b) => [b.id, b.level, b.hybrid])).toEqual([
-      [1, 3, false],
-      [2, 2, true],
-    ]);
+    expect(run.loadout).toHaveLength(3);
   });
 
   it('waits while the run waits for a card, then happens on the next playing tick', () => {
@@ -134,7 +165,7 @@ describe('automatic evolution (ADR-024)', () => {
       { slot: 2, x: 100, y: 300, vx: 0, vy: -1, pierce: 0, skipId: 0 },
       { slot: 3, x: 200, y: 300, vx: 0, vy: -1, pierce: 0, skipId: 0 },
     ];
-    run.pickups = [{ slot: 1, species: '', type: 'water', x: 60, y: 680, ticks: 100 }];
+    run.pickups = [{ slot: 1, species: '', type: 'water', x: 60, y: 680, level: 1, ticks: 100 }];
     evolveTeam(run); // slots 0 and 2 merge
     expect(run.loadout.map((b) => b.id)).toEqual([1, 2, 4]);
     expect(run.loadout[0]?.level).toBe(2);
@@ -148,9 +179,9 @@ describe('automatic evolution (ADR-024)', () => {
   it('removes the floor pickups of both merged balls and shifts the later ones', () => {
     const run = runWith([fire(1), fire(2), water(3)]);
     run.pickups = [
-      { slot: 0, species: '', type: 'fire', x: 50, y: 680, ticks: 100 },
-      { slot: 1, species: '', type: 'fire', x: 100, y: 680, ticks: 100 },
-      { slot: 2, species: '', type: 'water', x: 150, y: 680, ticks: 100 },
+      { slot: 0, species: '', type: 'fire', x: 50, y: 680, level: 1, ticks: 100 },
+      { slot: 1, species: '', type: 'fire', x: 100, y: 680, level: 1, ticks: 100 },
+      { slot: 2, species: '', type: 'water', x: 150, y: 680, level: 1, ticks: 100 },
     ];
     evolveTeam(run);
     expect(run.pickups.map((p) => [p.slot, p.x])).toEqual([[1, 150]]);

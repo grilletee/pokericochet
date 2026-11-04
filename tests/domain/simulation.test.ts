@@ -475,6 +475,21 @@ describe('hashRun', () => {
       'wave.tick': (r) => {
         r.wave.tick += 1;
       },
+      'boss.next': (r) => {
+        r.boss.next += 1;
+      },
+      'boss.defeated': (r) => {
+        r.boss.defeated += 1;
+      },
+      'boss.type': (r) => {
+        r.boss.type = 'fire';
+      },
+      'rng.themes': (r) => {
+        r.rng.themes.b += 1;
+      },
+      'loadout second ingredient': (r) => {
+        r.loadout[0] = { ...makeBall(), hybrid: true, secondSpecies: 'squirtle' };
+      },
       offers: (r) => {
         r.offers = [{ kind: 'vitality' }];
       },

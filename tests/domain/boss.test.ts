@@ -99,7 +99,7 @@ describe('boss: summons', () => {
     expect(summons[1]).toBe((summons[0] ?? 0) + 50);
   });
 
-  it('each summoned enemy draws exactly three numbers from the spawn stream', () => {
+  it('each summoned enemy draws exactly four numbers from the spawn stream', () => {
     const run = runWithBoss();
     const reference = deriveRng(7, 'spawn');
     let summoned = 0;
@@ -109,7 +109,7 @@ describe('boss: summons', () => {
       }
     }
     expect(summoned).toBe(16);
-    for (let i = 0; i < 16 * 3; i++) nextU32(reference);
+    for (let i = 0; i < 16 * 4; i++) nextU32(reference);
     expect(nextU32(run.rng.spawn)).toBe(nextU32(reference));
   });
 

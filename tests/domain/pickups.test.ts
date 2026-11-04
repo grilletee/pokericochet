@@ -46,7 +46,15 @@ describe('a ball that leaves the arena', () => {
     expect(run.bodies).toEqual([]);
     expect(run.cooldowns[0]).toBe(-1);
     expect(run.pickups).toEqual([
-      { slot: 0, species: '', type: 'fire', x: 100, y: floorY, ticks: pickup.returnTicks - 1 },
+      {
+        slot: 0,
+        species: '',
+        type: 'fire',
+        x: 100,
+        y: floorY,
+        level: 1,
+        ticks: pickup.returnTicks - 1,
+      },
     ]);
     expect(run.events).toContainEqual({ type: 'drop', ballId: 7, x: 100 });
   });
@@ -225,6 +233,7 @@ describe('captured balls', () => {
       type: 'capture',
       ballId: 2,
       species: 'psyduck',
+      level: 1,
       x: 240,
       late: false,
     });
@@ -252,6 +261,7 @@ describe('captured balls', () => {
       type: 'capture',
       ballId: 0,
       species: 'psyduck',
+      level: 1,
       x: 240,
       late: false,
     });
@@ -292,6 +302,7 @@ describe('capture on a kill', () => {
         type: 'fire',
         x: 200,
         y: 300,
+        level: 1,
         ticks: quietConfig.pickup.captureTtlTicks,
       },
     ]);
@@ -325,7 +336,7 @@ describe('capture on a kill', () => {
     const run = createRun(cfg, 1, 'charmander');
     const boss = makeEnemy({ id: 9, species: 'gyarados', hp: 1 });
     run.enemies = [boss];
-    run.boss = { spawned: true, id: 9, maxHp: 100, tick: 0 };
+    run.boss = { spawned: true, id: 9, maxHp: 100, tick: 0, next: 0, defeated: 0, type: '' };
     run.captureMisses = 3;
     damageEnemy(run, cfg, boss, 5);
     expect(run.pickups).toEqual([]);
@@ -433,7 +444,13 @@ describe('capture drop event', () => {
     dropCapture(run, quietConfig, 'psyduck', 'water', -50, 900);
     const margin = quietConfig.player.margin;
     expect(run.events).toEqual([
-      { type: 'captureDrop', species: 'psyduck', x: margin, y: quietConfig.player.y },
+      {
+        type: 'captureDrop',
+        species: 'psyduck',
+        level: 1,
+        x: margin,
+        y: quietConfig.player.y,
+      },
     ]);
     expect(run.pickups[0]?.x).toBe(margin);
   });

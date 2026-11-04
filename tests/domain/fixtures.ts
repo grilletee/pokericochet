@@ -23,8 +23,14 @@ const SPECIES: readonly SpeciesDef[] = [
   { id: 'gyarados', type: 'water', baseStats: { hp: 95, attack: 125, speed: 81 } },
 ];
 
+// The test species list is small: the final boss is a plain species (no legendary table) and there
+// are no bosses between waves unless a test adds them.
+const { byType: _legendaries, ...plainBoss } = baseConfig.boss ?? { species: 'gyarados' };
+
 export const config: GameConfig = {
   ...baseConfig,
+  ...(baseConfig.boss === undefined ? {} : { boss: plainBoss as NonNullable<GameConfig['boss']> }),
+  interludes: [],
   species: Object.fromEntries(SPECIES.map((s) => [s.id, s])),
   enemySpecies: ['vulpix', 'psyduck', 'bulbasaur', 'pikachu'],
   ballSpecies: ['charmander', 'squirtle', 'bulbasaur', 'pikachu', 'vulpix', 'psyduck'],

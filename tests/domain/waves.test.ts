@@ -72,7 +72,7 @@ describe('waves: schedule', () => {
     expect(run.wave).toEqual({ index: 0, tick: 49 });
     const out = tick(run, { moveX: 0 }, cfg);
     expect(run.wave).toEqual({ index: 1, tick: 0 });
-    expect(out.events).toContainEqual({ type: 'waveStart', index: 1 });
+    expect(out.events).toContainEqual({ type: 'waveStart', index: 1, theme: '' });
   });
 
   it('uses the interval and the types of the wave in progress', () => {
@@ -201,12 +201,12 @@ describe('waves: lanes, species and speeds', () => {
 });
 
 describe('waves: the spawn stream', () => {
-  it('draws exactly three numbers per spawn (species, lane, speed)', () => {
+  it('draws exactly four numbers per spawn (theme mix, species, lane, speed)', () => {
     const cfg = withConfig({ waves: [wave({ spawnIntervalTicks: 1 })] });
     const run = createRun(cfg, 21, 'charmander');
     tick(run, { moveX: 0 }, cfg);
     const reference = deriveRng(21, 'spawn');
-    for (let i = 0; i < 3; i++) nextU32(reference);
+    for (let i = 0; i < 4; i++) nextU32(reference);
     expect(run.rng.spawn).toEqual(reference);
   });
 

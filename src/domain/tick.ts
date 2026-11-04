@@ -171,7 +171,8 @@ export function tick(run: Run, cmd: Command, config: GameConfig): TickOutput {
   if (cmd.aimY !== undefined) run.aimY = clamp(Math.floor(cmd.aimY + 0.5), 0, arena.height);
   if (cmd.autoAim !== undefined) run.autoAim = cmd.autoAim;
 
-  advanceWave(run, config);
+  // The wave clock stops while a boss lives (ADR-028).
+  if (!isBossAlive(run)) advanceWave(run, config);
   advanceBoss(run, config);
 
   // Enemies advance; those that reach the defence line hurt the player and are removed.

@@ -12,16 +12,16 @@ describe('sound: which event makes which sound', () => {
       { type: 'hybrid', ballId: 1, species: 'charmander', withSpecies: 'squirtle', level: 2 },
       'hybrid',
     ],
-    [{ type: 'captureDrop', species: 'psyduck', x: 10, y: 50 }, 'captureDrop'],
+    [{ type: 'captureDrop', level: 1, species: 'psyduck', x: 10, y: 50 }, 'captureDrop'],
     [{ type: 'leak', enemyId: 1, damage: 1 }, 'damage'],
     [{ type: 'won' }, 'win'],
     [{ type: 'lost' }, 'lose'],
     [{ type: 'collect', ballId: 1, x: 10, late: false }, 'collect'],
-    [{ type: 'capture', ballId: 2, species: 'psyduck', x: 10, late: false }, 'capture'],
+    [{ type: 'capture', level: 1, ballId: 2, species: 'psyduck', x: 10, late: false }, 'capture'],
     [{ type: 'drop', ballId: 1, x: 10 }, null],
     [{ type: 'launch', ballId: 1 }, null],
     [{ type: 'spawn', enemyId: 1 }, null],
-    [{ type: 'waveStart', index: 1 }, null],
+    [{ type: 'waveStart', index: 1, theme: '' }, null],
   ];
   it.each(events)('%j -> %s', (event, expected) => {
     expect(soundFor(event)).toBe(expected);

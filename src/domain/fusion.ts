@@ -36,22 +36,27 @@ function mergeEffects(primary: readonly Effect[], secondary: readonly Effect[]):
  * Pure fusion of two balls (ADR-003, rules in GDD-v0). The order matters: `a` is the first
  * ingredient and the result keeps its id, species and type. Inputs are never modified.
  *
- * F1, same species and same level: level + 1, up to MAX_BALL_LEVEL.
+ * F1, same species and same level: level + 1, up to MAX_BALL_LEVEL. At most one of the two may
+ * be a hybrid (ADR-026): the result is that hybrid, one level higher, so a hybrid keeps evolving
+ * along the line of its first ingredient.
  * F2, different types, both at least HYBRID_MIN_LEVEL: a hybrid with the effects of `a` plus
- * those of `b` at half strength and the lower of the two levels. A hybrid is never fused again.
+ * those of `b` at half strength and the lower of the two levels. Two hybrids are never fused.
  */
 export function fuse(a: Ball, b: Ball): FuseResult {
   if (a.id === b.id) return fail('same-ball');
-  if (a.hybrid || b.hybrid) return fail('hybrid-input');
+  if (a.hybrid && b.hybrid) return fail('hybrid-input');
 
   if (a.species === b.species) {
     if (a.level !== b.level) return fail('level-mismatch');
     if (a.level >= MAX_BALL_LEVEL) return fail('max-level');
+    const carrier = b.hybrid ? b : a;
     return {
       ok: true,
-      ball: { ...a, level: a.level + 1, effects: mergeEffects(a.effects, []) },
+      ball: { ...carrier, level: a.level + 1, effects: mergeEffects(carrier.effects, []) },
     };
   }
+
+  if (a.hybrid || b.hybrid) return fail('hybrid-input');
 
   if (a.type === b.type) return fail('same-type-different-species');
   if (a.level < HYBRID_MIN_LEVEL || b.level < HYBRID_MIN_LEVEL) return fail('level-too-low');
@@ -62,6 +67,8 @@ export function fuse(a: Ball, b: Ball): FuseResult {
       ...a,
       level: Math.min(a.level, b.level),
       hybrid: true,
+      secondSpecies: b.species,
+      secondType: b.type,
       effects: mergeEffects(a.effects, b.effects),
     },
   };

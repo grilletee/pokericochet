@@ -123,12 +123,41 @@ describe('fuse F2 (hybrid: different types, both level >= 2)', () => {
 });
 
 describe('fuse limits', () => {
-  it('never fuses a hybrid again, in either position', () => {
+  it('never fuses two hybrids, and never a hybrid with another species', () => {
     const hybrid = okBall(fuse(fire({ level: 2 }), water({ level: 2 })));
     expect(hybrid.hybrid).toBe(true);
     expect(fuse(hybrid, grass({ level: 2 }))).toEqual({ ok: false, error: 'hybrid-input' });
     expect(fuse(grass({ level: 2 }), hybrid)).toEqual({ ok: false, error: 'hybrid-input' });
     expect(fuse(hybrid, { ...hybrid, id: 9 })).toEqual({ ok: false, error: 'hybrid-input' });
+  });
+
+  it('remembers the second ingredient of a hybrid (ADR-026)', () => {
+    const hybrid = okBall(fuse(fire({ level: 2 }), water({ level: 2 })));
+    expect(hybrid.secondSpecies).toBe('squirtle');
+    expect(hybrid.secondType).toBe('water');
+  });
+
+  it('a hybrid evolves with a normal ball of its own species and keeps its effects and ingredient', () => {
+    const hybrid = okBall(fuse(fire({ level: 2 }), water({ level: 2 })));
+    for (const [x, y] of [
+      [hybrid, fire({ id: 7, level: 2 })],
+      [fire({ id: 7, level: 2 }), hybrid],
+    ] as const) {
+      const evolved = okBall(fuse(x, y));
+      expect(evolved).toMatchObject({
+        id: hybrid.id,
+        level: 3,
+        hybrid: true,
+        secondSpecies: 'squirtle',
+        species: 'charmander',
+      });
+      expect(evolved.effects).toEqual(hybrid.effects);
+    }
+    expect(fuse(hybrid, fire({ id: 7, level: 1 }))).toEqual({ ok: false, error: 'level-mismatch' });
+    expect(fuse({ ...hybrid, level: 3 }, fire({ id: 7, level: 3 }))).toEqual({
+      ok: false,
+      error: 'max-level',
+    });
   });
 
   it('refuses to fuse a ball with itself', () => {

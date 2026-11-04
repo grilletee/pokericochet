@@ -53,6 +53,8 @@ export interface Snapshot {
   /** Hp and maximum hp of the boss while it is alive; both 0 otherwise. */
   bossHp: number;
   bossMaxHp: number;
+  /** Species code of the boss that is on the field (0 when none: check `bossMaxHp`). */
+  bossSpecies: number;
   /** 0-based wave in progress; equals the number of waves once all have been spawned. */
   waveIndex: number;
   /** Where the player aims (arena pixels) and whether the assisted aim is on. */
@@ -107,6 +109,7 @@ export function createSnapshot(maxSlots = 64, maxEnemies = 512, maxPickups = 64)
     playerXpNext: 1,
     bossHp: 0,
     bossMaxHp: 0,
+    bossSpecies: 0,
     waveIndex: 0,
     aimX: 0,
     aimY: 0,
@@ -157,11 +160,13 @@ export function writeSnapshot(
   snap.playerXpNext = run.player.xpNext;
   snap.bossHp = 0;
   snap.bossMaxHp = 0;
+  snap.bossSpecies = 0;
   if (run.boss.id !== 0) {
     for (const e of run.enemies) {
       if (e.id !== run.boss.id) continue;
       snap.bossHp = Math.max(0, e.hp);
       snap.bossMaxHp = run.boss.maxHp;
+      snap.bossSpecies = speciesCodes?.get(e.species) ?? 0;
     }
   }
   snap.waveIndex = run.wave.index;
@@ -201,7 +206,7 @@ export function writeSnapshot(
     const ball = p.slot < 0 ? undefined : run.loadout[p.slot];
     const species = ball?.species ?? p.species;
     snap.pickupSpecies[i] = speciesCodes?.get(species) ?? NO_SPECIES;
-    snap.pickupLevel[i] = ball?.level ?? 1;
+    snap.pickupLevel[i] = ball?.level ?? p.level;
   }
 
   const maxEnemies = snap.enemyId.length;

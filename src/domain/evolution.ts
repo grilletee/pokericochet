@@ -33,8 +33,9 @@ export function mergeBalls(run: Run, a: number, b: number, ball: Ball): void {
 }
 
 /**
- * Automatic evolution (ADR-024, rule F1 of `fuse`): if two balls of the team have the same species
- * and level, below the maximum, they merge into one of the next level. The pair is the one with
+ * Automatic evolution (ADR-024, ADR-026, rule F1 of `fuse`): if two balls of the team have the same
+ * species and level, below the maximum, and at most one is a hybrid, they merge into one of the
+ * next level (a hybrid stays a hybrid). The pair is the one with
  * the lowest first slot and then the lowest second slot, so the choice is deterministic. One
  * evolution per tick: a chain (two level-2 balls appearing together) resolves on the next ticks.
  * Allocates nothing when there is nothing to evolve.
@@ -43,7 +44,7 @@ export function evolveTeam(run: Run): void {
   const team = run.loadout;
   for (let a = 0; a < team.length; a++) {
     const first = team[a];
-    if (first === undefined || first.hybrid || first.level >= MAX_BALL_LEVEL) continue;
+    if (first === undefined || first.level >= MAX_BALL_LEVEL) continue;
     for (let b = a + 1; b < team.length; b++) {
       const second = team[b];
       if (
@@ -54,7 +55,7 @@ export function evolveTeam(run: Run): void {
         continue;
       }
       const result = fuse(first, second);
-      if (!result.ok) continue; // the partner is a hybrid
+      if (!result.ok) continue; // two hybrids
       mergeBalls(run, a, b, result.ball);
       run.events.push({
         type: 'evolve',

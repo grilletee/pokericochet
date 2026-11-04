@@ -16,7 +16,13 @@ export interface RunSummary {
     readonly species: string;
     readonly level: number;
     readonly hybrid: boolean;
+    /** Hybrids only: the second ingredient (ADR-026). */
+    readonly secondSpecies?: string;
   }[];
+  /** Bosses defeated, the final one included. */
+  readonly bossesDefeated: number;
+  /** Balls captured during the run (line species and level): the input of the rewards (ADR-025). */
+  readonly captured: readonly { readonly species: string; readonly level: number }[];
   /** Orders runs: a win beats any defeat, then more waves, then more kills. */
   readonly score: number;
 }
@@ -40,7 +46,14 @@ export function summarizeRun(run: Run, config: GameConfig): RunSummary {
     kills: run.kills,
     level: run.player.level,
     ticks: run.tickCount,
-    balls: run.loadout.map((b) => ({ species: b.species, level: b.level, hybrid: b.hybrid })),
+    balls: run.loadout.map((b) => ({
+      species: b.species,
+      level: b.level,
+      hybrid: b.hybrid,
+      ...(b.secondSpecies === undefined ? {} : { secondSpecies: b.secondSpecies }),
+    })),
+    bossesDefeated: run.boss.defeated,
+    captured: run.captured.map((c) => ({ ...c })),
     score: (result === 'won' ? WIN_SCORE : 0) + wavesCleared * WAVE_SCORE + run.kills * KILL_SCORE,
   };
 }

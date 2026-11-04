@@ -3,7 +3,7 @@ import type { GameConfig } from './config';
 import { applyHybrid, previewHybrid } from './evolution';
 import { nextFloat, nextInt } from './rng';
 import type { Run } from './run';
-import type { Card } from './types';
+import type { Card, GameType } from './types';
 
 const UPGRADES: readonly Card[] = [{ kind: 'damage' }, { kind: 'cadence' }, { kind: 'vitality' }];
 const MAX_ATTEMPTS = 40;
@@ -25,7 +25,12 @@ function cardKey(card: Card): string {
 }
 
 /** One random card, drawing only from the `cards` stream. */
-function drawCard(run: Run, config: GameConfig, pairs: readonly number[]): Card {
+function drawCard(
+  run: Run,
+  config: GameConfig,
+  pairs: readonly number[],
+  answers: readonly string[] | null,
+): Card {
   const { weights, maxBalls } = config.cards;
   const newBall =
     run.loadout.length < maxBalls && config.ballSpecies.length > 0 ? weights.newBall : 0;
@@ -33,7 +38,8 @@ function drawCard(run: Run, config: GameConfig, pairs: readonly number[]): Card 
   const total = newBall + weights.upgrade + hybrid;
   const roll = nextFloat(run.rng.cards) * total;
   if (roll < newBall) {
-    const species = config.ballSpecies[nextInt(run.rng.cards, config.ballSpecies.length)];
+    const pool = answers ?? config.ballSpecies;
+    const species = pool[nextInt(run.rng.cards, pool.length)];
     if (species !== undefined) return { kind: 'newBall', species };
   }
   if (roll >= newBall + weights.upgrade && pairs.length > 0) {
@@ -47,20 +53,41 @@ function drawCard(run: Run, config: GameConfig, pairs: readonly number[]): Card 
 }
 
 /**
+ * Species the player may be offered that beat the type of the next wave (ADR-027), when the team
+ * has no ball that does; null when the team already answers it or nothing can.
+ */
+function answersToNextWave(run: Run, config: GameConfig): readonly string[] | null {
+  const waves = config.waves;
+  const index = run.wave.index + 1 < waves.length ? run.wave.index + 1 : run.wave.index;
+  const target = config.themes?.[run.waveThemes[index] ?? '']?.type;
+  if (target === undefined) return null;
+  const beats = (type: GameType): boolean => config.typeChart[type][target] > 1;
+  if (run.loadout.some((ball) => beats(ball.type))) return null;
+  const answers = config.ballSpecies.filter((id) => {
+    const species = config.species[id];
+    return species !== undefined && beats(species.type);
+  });
+  return answers.length > 0 ? answers : null;
+}
+
+/**
  * The cards offered at a level-up: `offerCount` different ones, drawn from the `cards` stream
  * only. A new ball is never offered when the loadout is full, and a hybrid only when two balls of
- * different types and level 2 or more exist.
+ * different types and level 2 or more exist. If no ball of the team beats the type of the next
+ * wave, the first new-ball card is drawn among the species that do (ADR-027).
  */
 export function drawOffers(run: Run, config: GameConfig): Card[] {
   const offers: Card[] = [];
   const pairs = hybridPairs(run);
+  let answers = answersToNextWave(run, config);
   const seen = new Set<string>();
   for (
     let attempt = 0;
     attempt < MAX_ATTEMPTS && offers.length < config.cards.offerCount;
     attempt++
   ) {
-    const card = drawCard(run, config, pairs);
+    const card = drawCard(run, config, pairs, answers);
+    if (card.kind === 'newBall') answers = null;
     const key = cardKey(card);
     if (seen.has(key)) continue;
     seen.add(key);

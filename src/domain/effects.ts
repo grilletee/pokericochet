@@ -5,6 +5,7 @@ import { awardKill } from './progression';
 import { nextFloat } from './rng';
 import type { Run } from './run';
 import type { Ball, Enemy } from './types';
+import { baseOf, onBossDefeated } from './waves';
 
 /**
  * Damages an enemy and, if that kills it, emits the kill and grants the experience. A dead
@@ -19,11 +20,16 @@ export function damageEnemy(run: Run, config: GameConfig, enemy: Enemy, amount: 
   awardKill(run, config, enemy);
   // The `capture` stream is drawn on every kill, so it advances the same whatever the chance is.
   const roll = nextFloat(run.rng.capture);
-  if (enemy.id === run.boss.id) return true; // the boss drops nothing
+  if (enemy.id === run.boss.id) {
+    onBossDefeated(run, config, enemy); // a boss has its own reward, not the capture roll
+    return true;
+  }
   const chance = config.capture.chance + run.captureMisses * config.capture.pityStep;
   if (roll < chance && run.pickups.length < MAX_PICKUPS) {
     run.captureMisses = 0;
-    dropCapture(run, config, enemy.species, enemy.type, enemy.x, enemy.y);
+    // A tougher form drops the ball of its line at the level of that form (ADR-027).
+    const { base, level } = baseOf(config, enemy.species);
+    dropCapture(run, config, base, enemy.type, enemy.x, enemy.y, level);
   } else {
     run.captureMisses += 1;
   }

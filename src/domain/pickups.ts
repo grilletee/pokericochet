@@ -27,6 +27,7 @@ export function dropBall(run: Run, config: GameConfig, slot: number, x: number):
     type: ball.type,
     x: at,
     y: config.player.y,
+    level: ball.level,
     ticks: config.pickup.returnTicks,
   });
   run.events.push({ type: 'drop', ballId: ball.id, x: at });
@@ -40,6 +41,7 @@ export function dropCapture(
   type: Pickup['type'],
   x: number,
   y: number,
+  level = 1,
 ): void {
   if (run.pickups.length >= MAX_PICKUPS) return;
   const at = clamp(x, config.player.margin, config.arena.width - config.player.margin);
@@ -50,9 +52,10 @@ export function dropCapture(
     type,
     x: at,
     y: from,
+    level,
     ticks: config.pickup.captureTtlTicks,
   });
-  run.events.push({ type: 'captureDrop', species, x: at, y: from });
+  run.events.push({ type: 'captureDrop', species, level, x: at, y: from });
 }
 
 function collect(run: Run, config: GameConfig, pickup: Pickup, late: boolean): void {
@@ -65,21 +68,30 @@ function collect(run: Run, config: GameConfig, pickup: Pickup, late: boolean): v
     return;
   }
   if (run.loadout.length < config.cards.maxBalls) {
-    const ball = createBall(config, pickup.species, run.nextBallId);
+    const ball = { ...createBall(config, pickup.species, run.nextBallId), level: pickup.level };
     run.nextBallId += 1;
+    run.captured.push({ species: pickup.species, level: pickup.level });
     run.loadout.push(ball);
     run.cooldowns.push(penalty);
     run.events.push({
       type: 'capture',
       ballId: ball.id,
       species: pickup.species,
+      level: pickup.level,
       x: pickup.x,
       late,
     });
   } else {
     // The team is at the safety valve: the capture is not lost, it makes everyone hit harder.
     run.player.damageMult += config.capture.overflowDamageStep;
-    run.events.push({ type: 'capture', ballId: 0, species: pickup.species, x: pickup.x, late });
+    run.events.push({
+      type: 'capture',
+      ballId: 0,
+      species: pickup.species,
+      level: pickup.level,
+      x: pickup.x,
+      late,
+    });
   }
 }
 

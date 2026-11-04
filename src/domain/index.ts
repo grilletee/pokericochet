@@ -2,7 +2,7 @@ export type { AimDirection } from './aim';
 export { aimDirection } from './aim';
 export { applyCard, drawOffers } from './cards';
 export { createBall, effectiveness, getSpecies, hitDamage, mapStat } from './combat';
-export type { BossDef, GameConfig, WaveDef } from './config';
+export type { BossDef, GameConfig, InterludeDef, ThemeDef, WaveDef } from './config';
 export {
   applyHitEffects,
   damageEnemy,
@@ -56,4 +56,12 @@ export type {
   SpeciesDef,
 } from './types';
 export { GAME_TYPES } from './types';
-export { advanceBoss, advanceWave, isBossAlive, laneX } from './waves';
+export {
+  advanceBoss,
+  advanceWave,
+  baseOf,
+  formAt,
+  isBossAlive,
+  laneX,
+  onBossDefeated,
+} from './waves';
