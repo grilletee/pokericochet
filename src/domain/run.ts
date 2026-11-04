@@ -4,7 +4,7 @@ import { SpatialGrid } from './grid';
 import { imul32 } from './int32';
 import { xpCost } from './progression';
 import { cloneRng, deriveRng, type RngState } from './rng';
-import type { Ball, BallBody, Card, Enemy, GameEvent } from './types';
+import type { Ball, BallBody, Card, Enemy, GameEvent, Pickup } from './types';
 
 /** `workshop` and `levelup` pause the simulation until a command ends them (ADR-014, ADR-016). */
 export type Phase = 'playing' | 'levelup' | 'workshop' | 'won' | 'lost';
@@ -41,6 +41,8 @@ export interface RunRng {
   aim: RngState;
   /** Card offers. */
   cards: RngState;
+  /** Whether a kill drops its ball (ADR-023). */
+  capture: RngState;
   /** Whether a kill is rich. */
   loot: RngState;
 }
@@ -60,8 +62,17 @@ export interface Run {
   rng: RunRng;
   player: Player;
   loadout: Ball[];
-  /** Per loadout slot: >0 cooling down, 0 ready, -1 in flight. */
+  /** Per loadout slot: >0 cooling down, 0 ready, -1 in flight or waiting on the floor. */
   cooldowns: number[];
+  /** Kills since the last captured ball dropped (bad-luck protection of the capture chance). */
+  captureMisses: number;
+  /** Balls waiting to be collected, in the order they appeared (ADR-022, ADR-023). */
+  pickups: Pickup[];
+  /** Where the player aims, in arena pixels (ADR-021). */
+  aimX: number;
+  aimY: number;
+  /** Assisted aim: the launcher targets the nearest enemy by itself. */
+  autoAim: boolean;
   nextBallId: number;
   bodies: BallBody[];
   /** Always ordered by ascending id. */
@@ -98,6 +109,7 @@ export function createRun(config: GameConfig, seed: number, starterSpecies: stri
       spawn: deriveRng(normalizedSeed, 'spawn'),
       aim: deriveRng(normalizedSeed, 'aim'),
       cards: deriveRng(normalizedSeed, 'cards'),
+      capture: deriveRng(normalizedSeed, 'capture'),
       loot: deriveRng(normalizedSeed, 'loot'),
     },
     player: {
@@ -113,6 +125,11 @@ export function createRun(config: GameConfig, seed: number, starterSpecies: stri
     },
     loadout: [createBall(config, starterSpecies, 1)],
     cooldowns: [0],
+    pickups: [],
+    captureMisses: config.capture.startMisses,
+    aimX: config.arena.width / 2,
+    aimY: 0,
+    autoAim: false,
     nextBallId: 2,
     bodies: [],
     enemies: [],
@@ -137,11 +154,17 @@ export function cloneRun(run: Run): Run {
       spawn: cloneRng(run.rng.spawn),
       aim: cloneRng(run.rng.aim),
       cards: cloneRng(run.rng.cards),
+      capture: cloneRng(run.rng.capture),
       loot: cloneRng(run.rng.loot),
     },
     player: { ...run.player },
     loadout: run.loadout.slice(), // balls are immutable values
     cooldowns: run.cooldowns.slice(),
+    pickups: run.pickups.map((p) => ({ ...p })),
+    captureMisses: run.captureMisses,
+    aimX: run.aimX,
+    aimY: run.aimY,
+    autoAim: run.autoAim,
     nextBallId: run.nextBallId,
     bodies: run.bodies.map((b) => ({ ...b })),
     enemies: run.enemies.map((e) => ({ ...e })),
@@ -211,6 +234,7 @@ export function hashRun(run: Run): string {
   h.rng(run.rng.spawn);
   h.rng(run.rng.aim);
   h.rng(run.rng.cards);
+  h.rng(run.rng.capture);
   h.rng(run.rng.loot);
   const p = run.player;
   h.num(p.x);
@@ -237,6 +261,19 @@ export function hashRun(run: Run): string {
   }
   h.int(run.cooldowns.length);
   for (const cooldown of run.cooldowns) h.int(cooldown);
+  h.int(run.captureMisses);
+  h.int(run.pickups.length);
+  for (const p of run.pickups) {
+    h.int(p.slot);
+    h.str(p.species);
+    h.str(p.type);
+    h.num(p.x);
+    h.num(p.y);
+    h.int(p.ticks);
+  }
+  h.num(run.aimX);
+  h.num(run.aimY);
+  h.int(run.autoAim ? 1 : 0);
   h.int(run.nextBallId);
   h.int(run.bodies.length);
   for (const b of run.bodies) {

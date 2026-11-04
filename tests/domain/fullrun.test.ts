@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { gameConfig } from '../../src/data';
 import { type Command, cloneRun, createRun, hashRun, type Run, tick } from '../../src/domain';
-import { chaserPolicy } from '../bench/bots';
+import { activePolicy, commandFor } from '../bench/bots';
 
 /**
  * A whole run with the real game data: waves, cards, fusions, the boss and the end. The bot
@@ -25,20 +25,16 @@ function record(seed: number, starter: string): Recording {
   let fusions = 0;
   let summons = 0;
   while (run.phase !== 'won' && run.phase !== 'lost' && run.tickCount < MAX_TICKS) {
-    let cmd: Command;
-    if (run.phase === 'levelup') {
-      cmd = { moveX: 0, action: { type: 'pick', index: chaserPolicy.pick(run, run.offers) } };
-    } else {
-      const action = chaserPolicy.workshop?.(run);
-      const moveX = chaserPolicy.move(run, gameConfig);
-      cmd = action ? { moveX, action } : { moveX };
-    }
+    const cmd: Command = commandFor(activePolicy, run, gameConfig);
     commands.push(cmd);
     for (const e of tick(run, cmd, gameConfig).events) {
       if (e.type === 'fuse') fusions += 1;
       if (e.type === 'bossSummon') summons += 1;
     }
-    if (run.tickCount % CHECKPOINT_EVERY === 0) checkpoints.set(run.tickCount, hashRun(run));
+    // Paused ticks do not advance the clock: only the first tick that reaches a count is a checkpoint.
+    if (run.tickCount % CHECKPOINT_EVERY === 0 && !checkpoints.has(run.tickCount)) {
+      checkpoints.set(run.tickCount, hashRun(run));
+    }
   }
   return { commands, checkpoints, run, fusions, summons };
 }
@@ -76,11 +72,16 @@ describe('a whole run, with fusions and the boss, is a function of (seed, comman
 
   it('replaying only the seed and the commands reproduces every checkpoint and the end', () => {
     const run = createRun(gameConfig, seed, starter);
+    const checked = new Set<number>();
     for (const cmd of rec.commands) {
       tick(run, cmd, gameConfig);
       const expected = rec.checkpoints.get(run.tickCount);
-      if (expected !== undefined) expect(hashRun(run)).toBe(expected);
+      if (expected !== undefined && !checked.has(run.tickCount)) {
+        checked.add(run.tickCount);
+        expect(hashRun(run)).toBe(expected);
+      }
     }
+    expect(checked.size).toBe(rec.checkpoints.size);
     expect(hashRun(run)).toBe(hashRun(rec.run));
     expect(run.phase).toBe(rec.run.phase);
     expect(run.kills).toBe(rec.run.kills);

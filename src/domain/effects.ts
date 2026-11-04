@@ -1,5 +1,6 @@
 import { effectiveness } from './combat';
 import type { GameConfig } from './config';
+import { dropCapture, MAX_PICKUPS } from './pickups';
 import { awardKill } from './progression';
 import { nextFloat } from './rng';
 import type { Run } from './run';
@@ -16,6 +17,16 @@ export function damageEnemy(run: Run, config: GameConfig, enemy: Enemy, amount: 
   run.kills += 1;
   run.events.push({ type: 'kill', enemyId: enemy.id, x: enemy.x, y: enemy.y });
   awardKill(run, config, enemy);
+  // The `capture` stream is drawn on every kill, so it advances the same whatever the chance is.
+  const roll = nextFloat(run.rng.capture);
+  if (enemy.id === run.boss.id) return true; // the boss drops nothing
+  const chance = config.capture.chance + run.captureMisses * config.capture.pityStep;
+  if (roll < chance && run.pickups.length < MAX_PICKUPS) {
+    run.captureMisses = 0;
+    dropCapture(run, config, enemy.species, enemy.type, enemy.x, enemy.y);
+  } else {
+    run.captureMisses += 1;
+  }
   return true;
 }
 

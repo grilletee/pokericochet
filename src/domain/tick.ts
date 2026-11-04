@@ -1,8 +1,10 @@
+import { type AimDirection, aimDirection } from './aim';
 import { applyCard } from './cards';
 import { getSpecies, hitDamage, mapStat } from './combat';
 import type { GameConfig } from './config';
 import { applyHitEffects, damageEnemy, pierceCount, tickBurning } from './effects';
 import { bounceOffWalls, enforceMinVertical, findNearestOverlap, reflectOffEnemy } from './physics';
+import { advancePickups, dropBall } from './pickups';
 import { checkLevelUp } from './progression';
 import { nextFloat } from './rng';
 import type { Run } from './run';
@@ -34,10 +36,43 @@ function nearestEnemy(enemies: readonly Enemy[], x: number, y: number): Enemy | 
   return best;
 }
 
+const scratchDirection: AimDirection = { x: 0, y: -1 };
+
+/**
+ * Launches every ball that is ready. Manual aim (the default) goes towards the point the player
+ * aims at and fires even with nothing to shoot at; the assisted aim picks the nearest enemy and
+ * waits while there is none (ADR-021). Either way each launch draws exactly one number from the
+ * `aim` stream, so the stream advances the same whatever the mode.
+ */
 function launchBalls(run: Run, config: GameConfig): void {
   const originX = run.player.x;
   const originY = config.player.y;
-  const target = nearestEnemy(run.enemies, originX, originY);
+  let ux = 0;
+  let uy = -1;
+  let canAim = true;
+  if (run.autoAim) {
+    const target = nearestEnemy(run.enemies, originX, originY);
+    canAim = target !== null;
+    if (target !== null) {
+      const dx = target.x - originX;
+      const dy = target.y - originY;
+      const length = Math.sqrt(dx * dx + dy * dy);
+      ux = length === 0 ? 0 : dx / length;
+      uy = length === 0 ? -1 : dy / length;
+    }
+  } else {
+    aimDirection(
+      originX,
+      originY,
+      run.aimX,
+      run.aimY,
+      config.ball.minVerticalRatio,
+      scratchDirection,
+    );
+    ux = scratchDirection.x;
+    uy = scratchDirection.y;
+  }
+  const spread = run.autoAim ? config.ball.aimJitter : config.ball.manualAimJitter;
   for (let slot = 0; slot < run.loadout.length; slot++) {
     let cooldown = run.cooldowns[slot] ?? 0;
     if (cooldown > 0) {
@@ -45,16 +80,11 @@ function launchBalls(run: Run, config: GameConfig): void {
       run.cooldowns[slot] = cooldown;
     }
     const ball = run.loadout[slot];
-    if (cooldown !== 0 || ball === undefined || target === null) continue;
+    if (cooldown !== 0 || ball === undefined || !canAim) continue;
 
-    // Direction to the target, deviated sideways by a seeded amount. No trigonometry: the
-    // deviation is added along the perpendicular and the vector is renormalised.
-    const dx = target.x - originX;
-    const dy = target.y - originY;
-    const length = Math.sqrt(dx * dx + dy * dy);
-    const ux = length === 0 ? 0 : dx / length;
-    const uy = length === 0 ? -1 : dy / length;
-    const jitter = (nextFloat(run.rng.aim) * 2 - 1) * config.ball.aimJitter;
+    // The direction is deviated sideways by a seeded amount. No trigonometry: the deviation is
+    // added along the perpendicular and the vector is renormalised.
+    const jitter = (nextFloat(run.rng.aim) * 2 - 1) * spread;
     const vx = ux - uy * jitter;
     const vy = uy + ux * jitter;
     const norm = Math.sqrt(vx * vx + vy * vy);
@@ -150,6 +180,11 @@ export function tick(run: Run, cmd: Command, config: GameConfig): TickOutput {
     config.player.margin,
     arena.width - config.player.margin,
   );
+  // The aim is part of the command (ADR-021): whole pixels inside the arena, so two recordings
+  // that mean the same aim hash the same.
+  if (cmd.aimX !== undefined) run.aimX = clamp(Math.floor(cmd.aimX + 0.5), 0, arena.width);
+  if (cmd.aimY !== undefined) run.aimY = clamp(Math.floor(cmd.aimY + 0.5), 0, arena.height);
+  if (cmd.autoAim !== undefined) run.autoAim = cmd.autoAim;
 
   advanceWave(run, config);
   advanceBoss(run, config);
@@ -181,10 +216,8 @@ export function tick(run: Run, cmd: Command, config: GameConfig): TickOutput {
       enforceMinVertical(body, ballConfig.minVerticalRatio);
     }
     if (body.y - ballConfig.radius > arena.height) {
-      run.cooldowns[body.slot] = Math.max(
-        1,
-        Math.floor(ballConfig.cooldownTicks * run.player.cooldownMult + 0.5),
-      );
+      // The ball does not come back by itself: it waits on the floor for the player (ADR-022).
+      dropBall(run, config, body.slot, body.x);
       continue;
     }
     const ball = run.loadout[body.slot];
@@ -225,6 +258,8 @@ export function tick(run: Run, cmd: Command, config: GameConfig): TickOutput {
     flying += 1;
   }
   run.bodies.length = flying;
+  // After the balls: a ball that dropped or an enemy that died this tick is already on the floor.
+  advancePickups(run, config);
 
   tickBurning(run, config);
 

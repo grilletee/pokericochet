@@ -1,3 +1,5 @@
+export type { AimDirection } from './aim';
+export { aimDirection } from './aim';
 export { applyCard, drawOffers } from './cards';
 export { createBall, effectiveness, getSpecies, hitDamage, mapStat } from './combat';
 export type { BossDef, GameConfig, WaveDef } from './config';
@@ -17,6 +19,7 @@ export {
   findNearestOverlap,
   reflectOffEnemy,
 } from './physics';
+export { advancePickups, dropBall, dropCapture, MAX_PICKUPS, reloadTicks } from './pickups';
 export { awardKill, checkLevelUp, enemyXp, xpCost } from './progression';
 export type { RngState } from './rng';
 export { cloneRng, createRng, deriveRng, nextFloat, nextInt, nextU32 } from './rng';
@@ -51,6 +54,7 @@ export type {
   GameEvent,
   GameType,
   PickAction,
+  Pickup,
   SpeciesDef,
   WorkshopAction,
 } from './types';

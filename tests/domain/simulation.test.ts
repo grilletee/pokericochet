@@ -35,21 +35,44 @@ interface Recording {
 }
 
 /** A bot that moves at random and picks random cards; records every command it sends. */
+/** Gentler enemies than the shipped ones, so a clumsy random bot lives long enough to level up. */
+const playConfig = { ...config, enemy: { ...config.enemy, hpScale: 0.3 } };
+
 function playBot(seed: number, ticks: number): Recording {
-  const run = createRun(config, seed, 'charmander');
+  const run = createRun(playConfig, seed, 'charmander');
   const bot = createRng(seed ^ 0x5eed);
   const commands: Command[] = [];
   const hashes: string[] = [];
   let kills = 0;
   let picks = 0;
   for (let i = 0; i < ticks && run.phase !== 'lost' && run.phase !== 'won'; i++) {
-    const moveX = (nextInt(bot, 3) - 1) as -1 | 0 | 1;
+    // Wanders at random, but walks to a ball on the floor when there is one.
+    const wander = (nextInt(bot, 3) - 1) as -1 | 0 | 1;
+    const floorBall = run.pickups[0];
+    const moveX: -1 | 0 | 1 =
+      floorBall === undefined
+        ? wander
+        : floorBall.x > run.player.x + 4
+          ? 1
+          : floorBall.x < run.player.x - 4
+            ? -1
+            : 0;
+    // The assisted aim is on for the first two thirds of each 3000 ticks and off for the rest,
+    // so the recording exercises both.
+    const autoAim = i % 3000 < 2000;
+    // Aims by hand at the lowest enemy (or straight up), so the recording carries aim commands.
+    const target = run.enemies.reduce<Enemy | undefined>(
+      (low, e) => (low === undefined || e.y > low.y ? e : low),
+      undefined,
+    );
     const cmd: Command =
       run.phase === 'levelup'
         ? { moveX, action: { type: 'pick', index: nextInt(bot, run.offers.length) } }
-        : { moveX };
+        : target === undefined
+          ? { moveX, autoAim }
+          : { moveX, autoAim, aimX: target.x, aimY: target.y };
     commands.push(cmd);
-    for (const e of tick(run, cmd, config).events) {
+    for (const e of tick(run, cmd, playConfig).events) {
       if (e.type === 'kill') kills += 1;
       if (e.type === 'pick') picks += 1;
     }
@@ -59,10 +82,10 @@ function playBot(seed: number, ticks: number): Recording {
 }
 
 function replay(seed: number, commands: readonly Command[]): { run: Run; hashes: string[] } {
-  const run = createRun(config, seed, 'charmander');
+  const run = createRun(playConfig, seed, 'charmander');
   const hashes: string[] = [];
   commands.forEach((cmd, i) => {
-    tick(run, cmd, config);
+    tick(run, cmd, playConfig);
     if (i % 100 === 0) hashes.push(hashRun(run));
   });
   return { run, hashes };
@@ -111,6 +134,7 @@ describe('auto-aim', () => {
       burnDps: 0,
     }));
     run.nextEnemyId = 100;
+    run.autoAim = true;
     return run;
   }
 
@@ -146,6 +170,7 @@ describe('auto-aim', () => {
 
   it('does not fire when there is no enemy, and keeps the ball ready', () => {
     const run = createRun(quietConfig, 1, 'charmander');
+    run.autoAim = true;
     tick(run, IDLE, quietConfig);
     expect(run.bodies).toEqual([]);
     expect(run.cooldowns).toEqual([0]);

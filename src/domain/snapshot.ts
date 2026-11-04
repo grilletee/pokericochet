@@ -59,6 +59,10 @@ export interface Snapshot {
   bossMaxHp: number;
   /** 0-based wave in progress; equals the number of waves once all have been spawned. */
   waveIndex: number;
+  /** Where the player aims (arena pixels) and whether the assisted aim is on. */
+  aimX: number;
+  aimY: number;
+  autoAim: boolean;
 
   slotCount: number;
   ballActive: Uint8Array;
@@ -67,6 +71,18 @@ export interface Snapshot {
   ballType: Uint8Array;
   /** Species code (see `writeSnapshot`), or NO_SPECIES. */
   ballSpecies: Uint8Array;
+
+  /** Balls waiting on the floor or falling to it (ADR-022, ADR-023). */
+  pickupCount: number;
+  pickupX: Float32Array;
+  pickupY: Float32Array;
+  pickupType: Uint8Array;
+  /** Species code of the ball the pickup carries (see `writeSnapshot`), or NO_SPECIES. */
+  pickupSpecies: Uint8Array;
+  /** 1 = a captured ball, 0 = a returning ball of the team. */
+  pickupCaptured: Uint8Array;
+  /** Ticks left before it joins by itself. */
+  pickupTicks: Int32Array;
 
   enemyCount: number;
   enemyId: Int32Array;
@@ -80,7 +96,7 @@ export interface Snapshot {
   truncated: boolean;
 }
 
-export function createSnapshot(maxSlots = 64, maxEnemies = 512): Snapshot {
+export function createSnapshot(maxSlots = 64, maxEnemies = 512, maxPickups = 64): Snapshot {
   return {
     tick: 0,
     phase: PHASE_PLAYING,
@@ -94,12 +110,22 @@ export function createSnapshot(maxSlots = 64, maxEnemies = 512): Snapshot {
     bossHp: 0,
     bossMaxHp: 0,
     waveIndex: 0,
+    aimX: 0,
+    aimY: 0,
+    autoAim: false,
     slotCount: 0,
     ballActive: new Uint8Array(maxSlots),
     ballX: new Float32Array(maxSlots),
     ballY: new Float32Array(maxSlots),
     ballType: new Uint8Array(maxSlots),
     ballSpecies: new Uint8Array(maxSlots),
+    pickupCount: 0,
+    pickupX: new Float32Array(maxPickups),
+    pickupY: new Float32Array(maxPickups),
+    pickupType: new Uint8Array(maxPickups),
+    pickupSpecies: new Uint8Array(maxPickups),
+    pickupCaptured: new Uint8Array(maxPickups),
+    pickupTicks: new Int32Array(maxPickups),
     enemyCount: 0,
     enemyId: new Int32Array(maxEnemies),
     enemyX: new Float32Array(maxEnemies),
@@ -140,6 +166,9 @@ export function writeSnapshot(
     }
   }
   snap.waveIndex = run.wave.index;
+  snap.aimX = run.aimX;
+  snap.aimY = run.aimY;
+  snap.autoAim = run.autoAim;
 
   const maxSlots = snap.ballActive.length;
   const slots = Math.min(run.loadout.length, maxSlots);
@@ -155,6 +184,22 @@ export function writeSnapshot(
     snap.ballY[body.slot] = body.y;
     snap.ballType[body.slot] = typeCode(ball.type);
     snap.ballSpecies[body.slot] = speciesCodes?.get(ball.species) ?? NO_SPECIES;
+  }
+
+  const maxPickups = snap.pickupX.length;
+  const pickups = Math.min(run.pickups.length, maxPickups);
+  snap.pickupCount = pickups;
+  truncated = truncated || run.pickups.length > maxPickups;
+  for (let i = 0; i < pickups; i++) {
+    const p = run.pickups[i];
+    if (p === undefined) continue;
+    snap.pickupX[i] = p.x;
+    snap.pickupY[i] = p.y;
+    snap.pickupType[i] = typeCode(p.type);
+    snap.pickupCaptured[i] = p.slot < 0 ? 1 : 0;
+    snap.pickupTicks[i] = p.ticks;
+    const species = p.slot < 0 ? p.species : (run.loadout[p.slot]?.species ?? '');
+    snap.pickupSpecies[i] = speciesCodes?.get(species) ?? NO_SPECIES;
   }
 
   const maxEnemies = snap.enemyId.length;

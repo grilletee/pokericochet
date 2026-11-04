@@ -64,7 +64,20 @@ describe('anti-stall inside tick', () => {
     }
     expect(run.bodies.length).toBe(0);
     expect(ticks).toBeLessThan(1000);
-    expect(run.cooldowns[0]).toBe(quietConfig.ball.cooldownTicks); // it re-arms after leaving
+    // It does not re-arm by itself: it waits on the floor for the player (ADR-022), or has just
+    // been picked up because it left right above the launcher.
+    expect(run.pickups.length + (run.cooldowns[0] === quietConfig.ball.cooldownTicks ? 1 : 0)).toBe(
+      1,
+    );
+    const waiting = run.pickups[0];
+    if (waiting !== undefined) {
+      expect(waiting.slot).toBe(0);
+      expect(run.cooldowns[0]).toBe(-1);
+      run.player.x = waiting.x;
+      tick(run, { moveX: 0 }, quietConfig);
+    }
+    expect(run.pickups).toEqual([]);
+    expect(run.cooldowns[0]).toBe(quietConfig.ball.cooldownTicks); // picked up: it re-arms
   });
 
   it('after bouncing off the side of an enemy the ball cannot stay horizontal', () => {

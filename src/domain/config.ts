@@ -48,8 +48,14 @@ export interface GameConfig {
   readonly ball: {
     readonly radius: number;
     readonly cooldownTicks: number;
-    /** Max sideways deviation of the aim, as tan(angle). 0.176 is about 10 degrees. */
+    /**
+     * Max sideways deviation of the assisted (auto) aim, as tan(angle). 0.176 is about 10 degrees.
+     */
     readonly aimJitter: number;
+    /** Same for the manual aim: the player's precision is the player's. */
+    readonly manualAimJitter: number;
+    /** The assisted aim reloads this many times slower (>= 1): an accessibility aid (ADR-021). */
+    readonly autoCooldownMult: number;
     /** Pixels per tick; must stay below the smallest enemy radius to avoid tunnelling. */
     readonly speedMin: number;
     readonly speedMax: number;
@@ -58,6 +64,32 @@ export interface GameConfig {
      * walls without ever coming down (anti-stall).
      */
     readonly minVerticalRatio: number;
+  };
+  /** Pickups on the floor (ADR-022, ADR-023). */
+  readonly pickup: {
+    /** The launcher collects what lies within this distance. */
+    readonly radius: number;
+    /** A dropped ball that nobody picks up comes back after this many ticks... */
+    readonly returnTicks: number;
+    /** ...with this extra reload. */
+    readonly returnPenaltyTicks: number;
+    /** Pixels per tick of a captured ball falling to the floor. */
+    readonly dropSpeed: number;
+    /** A captured ball joins on its own after this many ticks on the floor. */
+    readonly captureTtlTicks: number;
+  };
+  readonly capture: {
+    /** Chance that a defeated enemy (not the boss) drops its ball. */
+    readonly chance: number;
+    /**
+     * Bad-luck protection: every kill without a drop adds this to the chance of the next one, and
+     * a drop resets it. It is what keeps the entry of balls from drying up (the playtest).
+     */
+    readonly pityStep: number;
+    /** The run starts as if this many kills had already missed: the first ball comes early. */
+    readonly startMisses: number;
+    /** Damage multiplier gained when a capture arrives with the team at `cards.maxBalls`. */
+    readonly overflowDamageStep: number;
   };
   readonly enemy: {
     readonly radius: number;
@@ -106,6 +138,7 @@ export interface GameConfig {
   };
   readonly cards: {
     readonly offerCount: number;
+    /** Safety valve of the team size for the frame budget, not a rule to play against (ADR-023). */
     readonly maxBalls: number;
     /** Relative odds of each kind of offer. */
     readonly weights: {

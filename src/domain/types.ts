@@ -99,9 +99,34 @@ export type FuseFailure =
   | 'no-token'
   | 'bad-slot';
 
+/**
+ * Something lying on the floor (or falling to it) that the player picks up by moving over it
+ * (ADR-022, ADR-023): a ball of the loadout that left the arena (`slot` >= 0), or the ball a
+ * defeated enemy dropped (`slot` -1, `species` set).
+ */
+export interface Pickup {
+  /** Loadout slot of the returning ball, or -1 for a captured species. */
+  slot: number;
+  /** Species of a captured ball; empty for a returning one. */
+  species: string;
+  type: GameType;
+  x: number;
+  y: number;
+  /** Ticks left on the floor before it joins the loadout on its own (counts only once landed). */
+  ticks: number;
+}
+
 /** One command per tick: the player's input (ADR-004). */
 export interface Command {
   readonly moveX: -1 | 0 | 1;
+  /**
+   * Point of the arena the player aims at; the balls leave the launcher towards it (ADR-021).
+   * Omitted = keep the last one. Rounded to whole pixels and clamped to the arena.
+   */
+  readonly aimX?: number;
+  readonly aimY?: number;
+  /** Switches the assisted aim on or off; omitted = keep. */
+  readonly autoAim?: boolean;
   /**
    * `pick` only means something in the level-up phase; `workshop` opens it (while playing) or
    * closes it; `fuse` only in the workshop phase.
@@ -112,6 +137,23 @@ export interface Command {
 export type GameEvent =
   | { readonly type: 'spawn'; readonly enemyId: number }
   | { readonly type: 'launch'; readonly ballId: number }
+  /** A ball left the arena at the bottom and now waits on the floor at `x`. */
+  | { readonly type: 'drop'; readonly ballId: number; readonly x: number }
+  /** The player picked a ball up; `late` = it came back on its own after waiting too long. */
+  | {
+      readonly type: 'collect';
+      readonly ballId: number;
+      readonly x: number;
+      readonly late: boolean;
+    }
+  /** A captured ball joined the team (`ballId` 0: the team was full and it became damage). */
+  | {
+      readonly type: 'capture';
+      readonly ballId: number;
+      readonly species: string;
+      readonly x: number;
+      readonly late: boolean;
+    }
   | {
       readonly type: 'hit';
       readonly ballId: number;

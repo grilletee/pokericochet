@@ -244,7 +244,7 @@ describe('applying cards', () => {
 
   it('newBall is ignored when the loadout is full', () => {
     const run = fresh();
-    for (let i = 0; i < 6; i++)
+    for (let i = 0; i < quietConfig.cards.maxBalls + 6; i++)
       applyCard(run, quietConfig, { kind: 'newBall', species: 'pikachu' });
     expect(run.loadout).toHaveLength(quietConfig.cards.maxBalls);
     expect(run.cooldowns).toHaveLength(quietConfig.cards.maxBalls);
@@ -285,6 +285,7 @@ describe('applying cards', () => {
       skipId: 0,
     });
     applyCard(run, quietConfig, { kind: 'cadence' });
+    // The ball leaves at x = 240, right on the launcher: it is picked up in the same tick.
     tick(run, { moveX: 0 }, quietConfig);
     expect(run.cooldowns[0]).toBe(
       Math.floor(quietConfig.ball.cooldownTicks * quietConfig.cards.cadenceFactor + 0.5),

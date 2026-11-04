@@ -47,6 +47,15 @@ export function applyFusion(run: Run, a: number, b: number): void {
     kept += 1;
   }
   run.bodies.length = kept;
+  // A returning ball of either slot disappears with the fusion; the later slots shift down.
+  let waiting = 0;
+  for (const pickup of run.pickups) {
+    if (pickup.slot === a || pickup.slot === b) continue;
+    if (pickup.slot > b) pickup.slot -= 1;
+    run.pickups[waiting] = pickup;
+    waiting += 1;
+  }
+  run.pickups.length = waiting;
   run.loadout.splice(b, 1);
   run.cooldowns.splice(b, 1);
   run.events.push({

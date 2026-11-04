@@ -35,7 +35,9 @@ const { boss: _boss, ...configWithoutBoss } = config;
 
 export const quietConfig: GameConfig = {
   ...configWithoutBoss,
-  ball: { ...config.ball, aimJitter: 0 },
+  ball: { ...config.ball, aimJitter: 0, manualAimJitter: 0 },
+  // No drops: the unit tests that kill enemies are about something else (captures have their own).
+  capture: { ...config.capture, chance: 0 },
   waves: [],
 };
 
@@ -60,9 +62,14 @@ export function deepFreeze<T>(value: T): T {
   return value;
 }
 
-/** Command that moves and, if the run waits for a card, picks the first offer. */
+/**
+ * Command that moves with the assisted aim on (so scenarios fight without an aim input) and, if
+ * the run waits for a card, picks the first offer.
+ */
 export function autoCommand(run: Run, moveX: -1 | 0 | 1 = 0): Command {
-  return run.phase === 'levelup' ? { moveX, action: { type: 'pick', index: 0 } } : { moveX };
+  return run.phase === 'levelup'
+    ? { moveX, autoAim: true, action: { type: 'pick', index: 0 } }
+    : { moveX, autoAim: true };
 }
 
 /** Advances a run (picking cards as needed) until `done` holds; fails loudly if it never does. */
