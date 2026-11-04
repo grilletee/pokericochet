@@ -1,4 +1,4 @@
-import type { Effect, GameType, SpeciesDef } from './types';
+import type { Effect, GameType, MoveShapeKind, SpeciesDef } from './types';
 
 /** One wave of the run (7 of them, ~60 s each). */
 export interface WaveDef {
@@ -79,6 +79,42 @@ export interface TeamDef {
   readonly starterBonus: number;
   /** Collision radius of a ball by stage - 1; missing values use `ball.radius`. */
   readonly ballRadiusByStage: readonly number[];
+  /**
+   * Least growth of the damage from stage 1 by stage - 1 (ADR-037), e.g. [1, 1.2, 1.45]. A new form
+   * brings part of it through its stats; a stage that keeps the form (an awakening, the maximum
+   * power) makes up the rest, so a line without a form does not grow less than one with it.
+   */
+  readonly stageGrowth: readonly number[];
+}
+
+/** One shape of a move (ADR-039); sizes are arena pixels. */
+export interface MoveShapeDef {
+  readonly kind: MoveShapeKind;
+  /** `burst`, `nova`: radius of the circle. */
+  readonly radius?: number;
+  /** `beam`, `cross`, `wave`: width of the column or the row. */
+  readonly width?: number;
+  /** `chain`: jumps after the first enemy. */
+  readonly count?: number;
+  /** Multiplier of the Pokémon's hit; replaces the one of the tier when set. */
+  readonly power?: number;
+}
+
+/** Moves with a name, cast when a Pokémon's charge is full (ADR-039). */
+export interface MovesDef {
+  /** Hits to land before the move, by stage - 1. */
+  readonly chargeByStage: readonly number[];
+  /** Shape and strength of the generic move of tier 1, 2 and 3. */
+  readonly tiers: readonly (MoveShapeDef & { readonly power: number })[];
+  /** Per base species: the move id of stage 1, 2 and 3 (generated from PokéAPI, then reviewed). */
+  readonly byBase: Readonly<Record<string, readonly string[]>>;
+  /** Per base species and stage: a hand-made shape instead of the tier's; null keeps the tier's. */
+  readonly signatures: Readonly<Record<string, readonly (MoveShapeDef | null)[]>>;
+  /**
+   * What a move does besides damage, by type of the Pokémon: burn (damage per second, as the burn
+   * effect) and slow (fraction of speed lost). A type without an entry adds nothing.
+   */
+  readonly status: Readonly<Record<string, { readonly burn?: number; readonly slow?: number }>>;
 }
 
 /** What a ball does, by type and stage, with signatures per species (ADR-031). */
@@ -106,6 +142,7 @@ export interface GameConfig {
   readonly hybrid: { readonly enabled: boolean };
   readonly team: TeamDef;
   readonly abilities: AbilitiesDef;
+  readonly moves: MovesDef;
   readonly player: {
     readonly y: number;
     readonly speed: number;
@@ -126,6 +163,11 @@ export interface GameConfig {
     /** Pixels per tick; must stay below the smallest enemy radius to avoid tunnelling. */
     readonly speedMin: number;
     readonly speedMax: number;
+    /**
+     * Fastest a ball may go whatever the Speed of its form (ADR-038): a very fast Pokémon must not
+     * make balls impossible to follow or to pick up. Measured with the bot's pickup rate.
+     */
+    readonly speedCap: number;
     /**
      * After every bounce, |vy| / speed is at least this, so a ball cannot ricochet between the
      * walls without ever coming down (anti-stall).
@@ -188,6 +230,23 @@ export interface GameConfig {
   readonly waves: readonly WaveDef[];
   readonly stats: {
     readonly damageDivisor: number;
+    /**
+     * Damage of a hit = powerRef / damageDivisor x the power multiplier of the form x ..., where the
+     * multiplier maps the form's max(Attack, Special Attack) from [powerStatMin, powerStatMax] to
+     * [powerMultMin, powerMultMax] (ADR-038): stats matter without one species dominating.
+     */
+    readonly powerRef: number;
+    readonly powerStatMin: number;
+    readonly powerStatMax: number;
+    readonly powerMultMin: number;
+    readonly powerMultMax: number;
+    /**
+     * Guard of the team (ADR-038): the mean of HP, Defense and Special Defense over the Pokémon,
+     * mapped from [guardStatMin, guardStatMax] to [0, guardMax], cuts the damage of a leak.
+     */
+    readonly guardStatMin: number;
+    readonly guardStatMax: number;
+    readonly guardMax: number;
     /** Damage multiplier indexed by level - 1. */
     readonly levelMultiplier: readonly number[];
     readonly speedStatMin: number;

@@ -1,12 +1,13 @@
 import { effectiveness } from './combat';
 import type { GameConfig } from './config';
+import { baseOf } from './forms';
 import { dropCapture, MAX_PICKUPS } from './pickups';
 import { awardKill } from './progression';
 import { nextFloat } from './rng';
 import type { Run } from './run';
 import { memberIndexOf, powerMult, teamIsFull } from './team';
 import type { Ball, Enemy } from './types';
-import { baseOf, onBossDefeated } from './waves';
+import { onBossDefeated } from './waves';
 
 /**
  * Damages an enemy and, if that kills it, emits the kill and grants the experience. A dead
@@ -54,7 +55,7 @@ export function pierceCount(run: Run, ball: Ball): number {
 }
 
 /** Nearest living enemy to `from` within `maxDistance` that is not in `seen`; ties go to the lower id. */
-function nearestOther(
+export function nearestOther(
   enemies: readonly Enemy[],
   from: Enemy,
   maxDistance: number,

@@ -1,4 +1,5 @@
 import type { GameConfig } from './config';
+import { formOfMember } from './forms';
 import type { Run } from './run';
 import { stageOf } from './team';
 
@@ -13,9 +14,13 @@ export interface RunSummary {
   readonly kills: number;
   readonly level: number;
   readonly ticks: number;
-  /** The Pokémon of the team at the end (ADR-030): species of the line, level and evolution stage. */
+  /**
+   * The Pokémon of the team at the end (ADR-030): species of the line, the form it shows (what to
+   * call it, ADR-036), level and evolution stage.
+   */
   readonly team: readonly {
     readonly species: string;
+    readonly form: string;
     readonly level: number;
     readonly stage: number;
   }[];
@@ -48,6 +53,7 @@ export function summarizeRun(run: Run, config: GameConfig): RunSummary {
     ticks: run.tickCount,
     team: run.team.map((m) => ({
       species: m.species,
+      form: formOfMember(config, m),
       level: m.level,
       stage: stageOf(config, m.level),
     })),

@@ -1,4 +1,5 @@
 import type { GameConfig } from './config';
+import { formAt } from './forms';
 import type { Run } from './run';
 import { cadenceMult, joinTeam } from './team';
 import type { Pickup } from './types';
@@ -60,7 +61,14 @@ export function dropCapture(
     level,
     ticks: config.pickup.captureTtlTicks,
   });
-  run.events.push({ type: 'captureDrop', species, level, x: at, y: from });
+  run.events.push({
+    type: 'captureDrop',
+    species,
+    level,
+    form: formAt(config, species, level),
+    x: at,
+    y: from,
+  });
 }
 
 function collect(run: Run, config: GameConfig, pickup: Pickup, late: boolean): void {

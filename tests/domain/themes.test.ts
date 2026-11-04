@@ -27,7 +27,7 @@ import { makeBall, makeEnemy, quietConfig } from './fixtures';
 const sp = (id: string, type: SpeciesDef['type'], hp = 40): SpeciesDef => ({
   id,
   type,
-  baseStats: { hp, attack: 50, speed: 60 },
+  baseStats: { hp, attack: 50, defense: 50, specialAttack: 45, specialDefense: 50, speed: 60 },
 });
 
 const species: Record<string, SpeciesDef> = {
@@ -495,6 +495,7 @@ describe('cards that answer the next wave (ADR-027)', () => {
           starter: false,
           damageUps: 0,
           cadenceUps: 0,
+          charge: 0,
         },
       ];
       for (const s of newBalls(drawOffers(run, answerConfig))) seen.add(s);
@@ -515,6 +516,7 @@ describe('cards that answer the next wave (ADR-027)', () => {
           starter: false,
           damageUps: 0,
           cadenceUps: 0,
+          charge: 0,
         },
       ];
       const species = newBalls(drawOffers(run, answerConfig))[0];
@@ -539,6 +541,7 @@ describe('cards that answer the next wave (ADR-027)', () => {
           starter: false,
           damageUps: 0,
           cadenceUps: 0,
+          charge: 0,
         },
       ];
       expect(newBalls(drawOffers(run, fireWave))[0]).toBe('squirtle');

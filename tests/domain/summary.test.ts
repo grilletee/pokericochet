@@ -39,9 +39,12 @@ describe('run summary and score', () => {
       ticks: 0,
     });
     expect(lost.score).toBe(3 * WAVE_SCORE + 12 * KILL_SCORE);
-    expect(lost.team).toEqual([{ species: 'bulbasaur', level: 1, stage: 1 }]);
+    expect(lost.team).toEqual([{ species: 'bulbasaur', form: 'bulbasaur', level: 1, stage: 1 }]);
     run.team[0] = { ...(run.team[0] as NonNullable<(typeof run.team)[number]>), level: 6 };
-    expect(summarizeRun(run, config).team).toEqual([{ species: 'bulbasaur', level: 6, stage: 3 }]);
+    // The form is what the screens name (ADR-036): the fixture has no lines, so it is the base.
+    expect(summarizeRun(run, config).team).toEqual([
+      { species: 'bulbasaur', form: 'bulbasaur', level: 6, stage: 3 },
+    ]);
 
     run.phase = 'won';
     run.wave.index = 7;

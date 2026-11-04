@@ -28,7 +28,7 @@ function record(seed: number, starter: string): Recording {
     const cmd: Command = commandFor(activePolicy, run, gameConfig);
     commands.push(cmd);
     for (const e of tick(run, cmd, gameConfig).events) {
-      if (e.type === 'evolve') evolutions += 1;
+      if (e.type === 'stage') evolutions += 1;
       if (e.type === 'bossSummon') summons += 1;
     }
     // Paused ticks do not advance the clock: only the first tick that reaches a count is a checkpoint.

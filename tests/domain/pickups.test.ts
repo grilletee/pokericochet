@@ -243,6 +243,7 @@ describe('captured balls', () => {
       ballId: 2,
       species: 'psyduck',
       level: 1,
+      form: 'psyduck',
       x: 240,
       late: false,
     });
@@ -267,7 +268,12 @@ describe('captured balls', () => {
     expect(run.team).toHaveLength(1);
     expect(run.phase).toBe('replace');
     expect(run.pendingCapture).toEqual({ species: 'psyduck', stage: 1 });
-    expect(run.events).toContainEqual({ type: 'replaceOpen', species: 'psyduck', stage: 1 });
+    expect(run.events).toContainEqual({
+      type: 'replaceOpen',
+      species: 'psyduck',
+      stage: 1,
+      form: 'psyduck',
+    });
   });
 
   it('with the team full, a capture that waited too long is let go without pausing', () => {
@@ -279,7 +285,7 @@ describe('captured balls', () => {
     expect(run.pickups).toEqual([]);
     expect(run.phase).toBe('playing');
     expect(run.pendingCapture).toBeNull();
-    expect(run.events.at(-1)).toEqual({ type: 'release', species: 'psyduck' });
+    expect(run.events.at(-1)).toEqual({ type: 'release', species: 'psyduck', form: 'psyduck' });
   });
 
   it('a species the team already has gains a level at once, with no pause, even if the team is full', () => {
@@ -485,6 +491,7 @@ describe('capture drop event', () => {
         type: 'captureDrop',
         species: 'psyduck',
         level: 1,
+        form: 'psyduck',
         x: margin,
         y: quietConfig.player.y,
       },

@@ -3,18 +3,27 @@ export type { AimDirection } from './aim';
 export { aimDirection } from './aim';
 export { applyCard, drawOffers } from './cards';
 export {
+  ballForm,
+  ballSpeed,
+  bulkOf,
   createBall,
   damagePlayer,
   effectiveness,
+  formPower,
   getSpecies,
   hitDamage,
+  leakDamage,
   mapStat,
+  stageBoost,
+  teamGuard,
 } from './combat';
 export type {
   AbilitiesDef,
   BossDef,
   GameConfig,
   InterludeDef,
+  MoveShapeDef,
+  MovesDef,
   TeamDef,
   ThemeDef,
   WaveDef,
@@ -27,10 +36,22 @@ export {
   tickBurning,
 } from './effects';
 export { applyHybrid, evolveTeam, mergeBalls, previewHybrid } from './evolution';
+export {
+  baseOf,
+  formAt,
+  formOfMember,
+  nextStep,
+  type StageKind,
+  stageForLevel,
+  stageKind,
+} from './forms';
 export type { FuseError, FuseResult } from './fusion';
 export { fuse, HYBRID_MIN_LEVEL, MAX_BALL_LEVEL, SECONDARY_EFFECT_SCALE } from './fusion';
 export { SpatialGrid } from './grid';
+export type { MemberStats } from './inspect';
+export { guardAfterReplace, statsOf, statsOfMember } from './inspect';
 export { imul32 } from './int32';
+export { chargeNeed, landHit, moveIdOf, moveShape } from './moves';
 export {
   bounceOffWalls,
   enforceMinVertical,
@@ -62,6 +83,7 @@ export {
   ballRadius,
   ballsFor,
   cadenceMult,
+  captureForm,
   captureLevel,
   joinTeam,
   memberIndexOf,
@@ -77,6 +99,7 @@ export { tick } from './tick';
 export type {
   Ball,
   BallBody,
+  BaseStats,
   Card,
   Command,
   Effect,
@@ -85,6 +108,7 @@ export type {
   GameEvent,
   GameType,
   Member,
+  MoveShapeKind,
   PickAction,
   Pickup,
   ReplaceAction,
@@ -94,8 +118,6 @@ export { GAME_TYPES } from './types';
 export {
   advanceBoss,
   advanceWave,
-  baseOf,
-  formAt,
   isBossAlive,
   laneX,
   onBossDefeated,

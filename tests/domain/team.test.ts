@@ -11,6 +11,7 @@ import {
   createRun,
   damageEnemy,
   dropCapture,
+  type GameConfig,
   hashRun,
   joinTeam,
   type Member,
@@ -18,6 +19,8 @@ import {
   powerMult,
   type Run,
   resolveReplace,
+  type SpeciesDef,
+  stageKind,
   stageOf,
   syncMember,
   teamIsFull,
@@ -97,7 +100,15 @@ describe('the run starts with its starter', () => {
   it('has one Pokémon, flagged as the starter, with one ready ball that belongs to it', () => {
     const run = createRun(quietConfig, 5, 'bulbasaur');
     expect(run.team).toEqual([
-      { species: 'bulbasaur', type: 'grass', level: 1, starter: true, damageUps: 0, cadenceUps: 0 },
+      {
+        species: 'bulbasaur',
+        type: 'grass',
+        level: 1,
+        starter: true,
+        damageUps: 0,
+        cadenceUps: 0,
+        charge: 0,
+      },
     ]);
     expect(run.loadout).toHaveLength(1);
     expect(run.loadout[0]).toMatchObject({
@@ -169,27 +180,73 @@ describe('levels give balls, stages and effects (syncMember, trainMember)', () =
       types.push(run.events.map((e) => e.type).join('+'));
     }
     // levels 2, 3 (stage 2), 4, 5, 6 (stage 3), 7
-    expect(types).toEqual(['train', 'train+evolve', 'train', 'train', 'train+evolve', 'train']);
+    expect(types).toEqual(['train', 'train+stage', 'train', 'train', 'train+stage', 'train']);
     run.events.length = 0;
     trainMember(run, quietConfig, 0, 'card');
     expect(run.events).toEqual([
-      { type: 'train', member: 0, species: 'charmander', level: 8, source: 'card' },
+      {
+        type: 'train',
+        member: 0,
+        species: 'charmander',
+        level: 8,
+        form: 'charmander', // the fixture has no evolution lines
+        source: 'card',
+      },
     ]);
     expect(trainMember(run, quietConfig, 0, 'card')).toBe(false); // the maximum
     expect(run.events).toHaveLength(1);
   });
 
-  it('the evolve event carries the stage reached and a ball of that Pokémon', () => {
+  it('the stage event carries the stage reached, its kind, both forms and a ball of that Pokémon', () => {
     const run = teamRun();
     trainMember(run, quietConfig, 0, 'card');
     run.events.length = 0;
     trainMember(run, quietConfig, 0, 'card');
+    // The fixture config has no lines: the form does not change, so level 3 is an awakening.
     expect(run.events).toContainEqual({
-      type: 'evolve',
+      type: 'stage',
       ballId: run.loadout[0]?.id,
+      member: 0,
       species: 'charmander',
-      level: 2,
+      kind: 'awaken',
+      stage: 2,
+      from: 'charmander',
+      to: 'charmander',
     });
+  });
+
+  it('names what each step is for a line with three, two and no forms (ADR-037)', () => {
+    const lines = {
+      three: ['three1', 'three2'],
+      two: ['two1'],
+    };
+    const species = Object.fromEntries(
+      ['charmander', 'three', 'three1', 'three2', 'two', 'two1', 'none'].map((id) => [
+        id,
+        { ...(quietConfig.species.charmander as SpeciesDef), id },
+      ]),
+    );
+    const cfg: GameConfig = { ...quietConfig, species, lines };
+    expect([2, 3].map((stage) => stageKind(cfg, 'three', stage))).toEqual(['evolve', 'evolve']);
+    expect([2, 3].map((stage) => stageKind(cfg, 'two', stage))).toEqual(['evolve', 'peak']);
+    expect([2, 3].map((stage) => stageKind(cfg, 'none', stage))).toEqual(['awaken', 'peak']);
+    expect(stageKind(cfg, 'three', 1)).toBeNull();
+    // The forms the events carry: never "evolves into itself" for a step that is not an evolution.
+    const run = createRun(cfg, 1, 'charmander');
+    run.team = [];
+    run.loadout = [];
+    run.cooldowns = [];
+    addMember(run, cfg, 'two', 2);
+    run.events.length = 0;
+    trainMember(run, cfg, 0, 'card'); // level 3: stage 2
+    trainMember(run, cfg, 0, 'card');
+    trainMember(run, cfg, 0, 'card');
+    trainMember(run, cfg, 0, 'card'); // level 6: stage 3
+    const steps = run.events.filter((e) => e.type === 'stage');
+    expect(steps.map((e) => (e.type === 'stage' ? [e.kind, e.from, e.to] : []))).toEqual([
+      ['evolve', 'two', 'two1'],
+      ['peak', 'two1', 'two1'],
+    ]);
   });
 
   it('trainMember does nothing for a Pokémon that is not there', () => {
@@ -222,6 +279,7 @@ describe('a capture reaches the team (joinTeam)', () => {
       ballId: run.loadout.find((b) => b.owner === 1)?.id,
       species: 'psyduck',
       level: stageOf(quietConfig, captureLevel(quietConfig, 2)),
+      form: 'psyduck',
       x: 240,
       late: false,
     });
@@ -263,12 +321,14 @@ describe('a capture reaches the team (joinTeam)', () => {
     const run = teamRun(quietConfig, 'squirtle', 'bulbasaur', 'pikachu', 'vulpix', 'psyduck');
     joinTeam(run, quietConfig, 'gyarados', 2, 10, true);
     expect(run.phase).toBe('playing');
-    expect(run.events).toEqual([{ type: 'release', species: 'gyarados' }]);
+    expect(run.events).toEqual([{ type: 'release', species: 'gyarados', form: 'gyarados' }]);
     run.events.length = 0;
     joinTeam(run, quietConfig, 'gyarados', 2, 10, false);
     expect(run.phase).toBe('replace');
     expect(run.pendingCapture).toEqual({ species: 'gyarados', stage: 2 });
-    expect(run.events).toEqual([{ type: 'replaceOpen', species: 'gyarados', stage: 2 }]);
+    expect(run.events).toEqual([
+      { type: 'replaceOpen', species: 'gyarados', stage: 2, form: 'gyarados' },
+    ]);
     expect(run.team).toHaveLength(6);
     expect(run.captured).toEqual([]); // nothing was caught yet: it waits for the answer
   });
@@ -312,13 +372,21 @@ describe('the replace screen (ADR-030)', () => {
       starter: false,
       damageUps: 0,
       cadenceUps: 0,
+      charge: 0,
     });
     expect(run.team).toHaveLength(6);
     expect(run.loadout.filter((b) => b.owner === 2).every((b) => b.species === 'gyarados')).toBe(
       true,
     );
     expect(run.events).toEqual([
-      { type: 'replaced', slot: 2, out: 'pikachu', species: 'gyarados' },
+      {
+        type: 'replaced',
+        slot: 2,
+        out: 'pikachu',
+        species: 'gyarados',
+        outForm: 'pikachu',
+        form: 'gyarados',
+      },
     ]);
     expect(run.captured).toEqual([{ species: 'gyarados', level: 3 }]);
   });
@@ -371,7 +439,7 @@ describe('the replace screen (ADR-030)', () => {
     expect(run.phase).toBe('playing');
     expect(run.pendingCapture).toBeNull();
     expect(JSON.stringify(run.team)).toBe(team);
-    expect(run.events).toEqual([{ type: 'release', species: 'gyarados' }]);
+    expect(run.events).toEqual([{ type: 'release', species: 'gyarados', form: 'gyarados' }]);
     expect(run.captured).toEqual([]);
   });
 

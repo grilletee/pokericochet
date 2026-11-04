@@ -1,5 +1,6 @@
 import { abilitiesFor } from './abilities';
 import type { GameConfig } from './config';
+import { formAt, formOfMember, stageForLevel, stageKind } from './forms';
 import type { Run } from './run';
 import type { Ball, Member, ReplaceAction, SpeciesDef } from './types';
 
@@ -10,11 +11,7 @@ function speciesOf(config: GameConfig, id: string): SpeciesDef {
 }
 
 /** Evolution stage (1..3) of a Pokémon of this level: one more for each threshold reached. */
-export function stageOf(config: GameConfig, level: number): number {
-  let stage = 1;
-  for (const from of config.team.stageLevels) if (level >= from) stage += 1;
-  return stage;
-}
+export const stageOf = stageForLevel;
 
 /** Level a captured Pokémon joins with, by the stage of the enemy it came from. */
 export function captureLevel(config: GameConfig, stage: number): number {
@@ -137,7 +134,15 @@ export function addMember(
   starter = false,
 ): number {
   const def = speciesOf(config, species);
-  run.team.push({ species: def.id, type: def.type, level, starter, damageUps: 0, cadenceUps: 0 });
+  run.team.push({
+    species: def.id,
+    type: def.type,
+    level,
+    starter,
+    damageUps: 0,
+    cadenceUps: 0,
+    charge: 0,
+  });
   syncMember(run, config, run.team.length - 1);
   return run.team.length - 1;
 }
@@ -154,20 +159,26 @@ export function trainMember(
   const before = stageOf(config, member.level);
   member.level += 1;
   syncMember(run, config, index);
+  const after = stageOf(config, member.level);
   run.events.push({
     type: 'train',
     member: index,
     species: member.species,
     level: member.level,
+    form: formAt(config, member.species, after),
     source,
   });
-  const after = stageOf(config, member.level);
-  if (after > before) {
+  const kind = after > before ? stageKind(config, member.species, after) : null;
+  if (kind !== null) {
     run.events.push({
-      type: 'evolve',
+      type: 'stage',
       ballId: firstBallId(run, index),
+      member: index,
       species: member.species,
-      level: after,
+      kind,
+      stage: after,
+      from: formAt(config, member.species, before),
+      to: formAt(config, member.species, after),
     });
   }
   return true;
@@ -207,18 +218,25 @@ export function joinTeam(
       species,
       // The form it shows is the one of the level it joins with, whatever the enemy was.
       level: stageOf(config, captureLevel(config, stage)),
+      form: captureForm(config, species, stage),
       x,
       late,
     });
     return;
   }
+  const form = captureForm(config, species, stage);
   if (late) {
-    run.events.push({ type: 'release', species });
+    run.events.push({ type: 'release', species, form });
     return;
   }
   run.pendingCapture = { species, stage };
   run.phase = 'replace';
-  run.events.push({ type: 'replaceOpen', species, stage });
+  run.events.push({ type: 'replaceOpen', species, stage, form });
+}
+
+/** The form a capture of this stage shows once it joins (it joins at `captureLevel`, ADR-036). */
+export function captureForm(config: GameConfig, species: string, stage: number): string {
+  return formAt(config, species, stageOf(config, captureLevel(config, stage)));
 }
 
 /** Answers the replace screen (ADR-030): swap a Pokémon for the capture, or let the capture go. */
@@ -226,7 +244,11 @@ export function resolveReplace(run: Run, config: GameConfig, action: ReplaceActi
   const pending = run.pendingCapture;
   if (pending === null) return;
   if (action.type === 'release') {
-    run.events.push({ type: 'release', species: pending.species });
+    run.events.push({
+      type: 'release',
+      species: pending.species,
+      form: captureForm(config, pending.species, pending.stage),
+    });
   } else {
     const out = run.team[action.slot];
     if (out === undefined) return; // not a valid choice: keep waiting
@@ -243,10 +265,18 @@ export function resolveReplace(run: Run, config: GameConfig, action: ReplaceActi
       starter: false,
       damageUps: 0,
       cadenceUps: 0,
+      charge: 0,
     };
     syncMember(run, config, action.slot);
     run.captured.push({ species: def.id, level: pending.stage });
-    run.events.push({ type: 'replaced', slot: action.slot, out: out.species, species: def.id });
+    run.events.push({
+      type: 'replaced',
+      slot: action.slot,
+      out: out.species,
+      species: def.id,
+      outForm: formOfMember(config, out),
+      form: formOfMember(config, run.team[action.slot] ?? out),
+    });
   }
   run.pendingCapture = null;
   run.phase = 'playing';

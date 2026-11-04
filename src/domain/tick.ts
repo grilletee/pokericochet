@@ -1,8 +1,9 @@
 import { type AimDirection, aimDirection } from './aim';
 import { applyCard } from './cards';
-import { damagePlayer, getSpecies, hitDamage, mapStat } from './combat';
+import { ballSpeed, damagePlayer, hitDamage, leakDamage } from './combat';
 import type { GameConfig } from './config';
 import { applyHitEffects, ballPower, damageEnemy, pierceCount, tickBurning } from './effects';
+import { landHit } from './moves';
 import { bounceOffWalls, enforceMinVertical, findNearestOverlap, reflectOffEnemy } from './physics';
 import { advancePickups, dropBall } from './pickups';
 import { checkLevelUp } from './progression';
@@ -88,14 +89,7 @@ function launchBalls(run: Run, config: GameConfig): void {
     const vx = ux - uy * jitter;
     const vy = uy + ux * jitter;
     const norm = Math.sqrt(vx * vx + vy * vy);
-    const stats = config.stats;
-    const speed = mapStat(
-      getSpecies(config, ball.species).baseStats.speed,
-      stats.speedStatMin,
-      stats.speedStatMax,
-      config.ball.speedMin,
-      config.ball.speedMax,
-    );
+    const speed = ballSpeed(config, ball);
     run.bodies.push({
       slot,
       x: originX,
@@ -189,9 +183,11 @@ export function tick(run: Run, cmd: Command, config: GameConfig): TickOutput {
     e.y += e.speed * (e.slowTicks > 0 ? 1 - e.slow : 1);
     if (e.slowTicks > 0) e.slowTicks -= 1;
     if (e.y >= arena.defenseLineY) {
-      // The boss reaching the line ends the run whatever the player's health (ADR-016).
-      damagePlayer(run, e.id === run.boss.id ? run.player.hp : e.threat);
-      run.events.push({ type: 'leak', enemyId: e.id, damage: e.threat });
+      // The boss reaching the line ends the run whatever the player's health (ADR-016); any other
+      // leak costs what the guard of the team lets through (ADR-038).
+      const cost = e.id === run.boss.id ? run.player.hp : leakDamage(config, run.team, e.threat);
+      damagePlayer(run, cost);
+      run.events.push({ type: 'leak', enemyId: e.id, damage: cost });
     } else {
       run.enemies[kept] = e;
       kept += 1;
@@ -235,6 +231,7 @@ export function tick(run: Run, cmd: Command, config: GameConfig): TickOutput {
       });
       const killed = damageEnemy(run, config, target, damage);
       applyHitEffects(run, config, ball, target, damage, killed);
+      landHit(run, config, ball, target);
       if (body.pierce > 0) {
         body.pierce -= 1;
         body.skipId = target.id;

@@ -15,6 +15,9 @@ export type EffectKind =
   | 'slow'
   | 'blast';
 
+/** Shapes a move can take (ADR-039). */
+export type MoveShapeKind = 'burst' | 'beam' | 'nova' | 'cross' | 'wave' | 'chain';
+
 export interface Effect {
   readonly kind: EffectKind;
   readonly strength: number;
@@ -24,11 +27,21 @@ export interface Effect {
   readonly count?: number;
 }
 
+/** The six base stats of the games (ADR-038). */
+export interface BaseStats {
+  readonly hp: number;
+  readonly attack: number;
+  readonly defense: number;
+  readonly specialAttack: number;
+  readonly specialDefense: number;
+  readonly speed: number;
+}
+
 /** Base data of a species. In the game it is generated from PokéAPI by tools/fetch-data. */
 export interface SpeciesDef {
   readonly id: string;
   readonly type: GameType;
-  readonly baseStats: { readonly hp: number; readonly attack: number; readonly speed: number };
+  readonly baseStats: BaseStats;
 }
 
 /**
@@ -46,6 +59,8 @@ export interface Member {
   /** Damage and cadence cards taken for this Pokémon (ADR-032): they are lost if it is replaced. */
   damageUps: number;
   cadenceUps: number;
+  /** Hits its balls have landed since its last move (ADR-039); it casts when it reaches the need. */
+  charge: number;
 }
 
 /** A ball of the loadout. Immutable value: a level or stage change produces a new one (ADR-003). */
@@ -187,6 +202,8 @@ export type GameEvent =
       readonly type: 'captureDrop';
       readonly species: string;
       readonly level: number;
+      /** The form of the enemy that dropped it, as drawn on the floor (ADR-036). */
+      readonly form: string;
       readonly x: number;
       readonly y: number;
     }
@@ -196,6 +213,8 @@ export type GameEvent =
       readonly ballId: number;
       readonly species: string;
       readonly level: number;
+      /** The form it joins as: what to call and draw it (ADR-036). */
+      readonly form: string;
       readonly x: number;
       readonly late: boolean;
     }
@@ -227,26 +246,71 @@ export type GameEvent =
       readonly member: number;
       readonly species: string;
       readonly level: number;
+      /** The form it shows after the level (ADR-036). */
+      readonly form: string;
       readonly source: 'card' | 'capture';
     }
   /** The team is full and the player picked a capture up: the run waits for an answer (ADR-030). */
-  | { readonly type: 'replaceOpen'; readonly species: string; readonly stage: number }
-  /** The Pokémon at `slot` left the team for `species`. */
+  | {
+      readonly type: 'replaceOpen';
+      readonly species: string;
+      readonly stage: number;
+      readonly form: string;
+    }
+  /** The Pokémon at `slot` left the team for `species`; the forms are what they are called now. */
   | {
       readonly type: 'replaced';
       readonly slot: number;
       readonly out: string;
       readonly species: string;
+      readonly outForm: string;
+      readonly form: string;
     }
   /** A capture was let go (the answer, or it expired with the team full). */
-  | { readonly type: 'release'; readonly species: string }
+  | { readonly type: 'release'; readonly species: string; readonly form: string }
   /** `theme` is the id of the wave's theme, or '' for a wave without one (ADR-027). */
   | { readonly type: 'waveStart'; readonly index: number; readonly theme: string }
   | { readonly type: 'bossSpawn'; readonly enemyId: number }
   | { readonly type: 'bossSummon'; readonly count: number }
   /** A boss died; `index` counts the bosses defeated so far, this one included (ADR-028). */
   | { readonly type: 'bossDefeated'; readonly species: string; readonly index: number }
-  /** A Pokémon reached a new evolution stage (ADR-031); `ballId` is one of its balls. */
+  /**
+   * A Pokémon reached a new stage (ADR-037): it evolved, awoke or reached its maximum power.
+   * `from` and `to` are forms (equal when the form did not change); `ballId` is one of its balls.
+   */
+  | {
+      readonly type: 'stage';
+      readonly ballId: number;
+      readonly member: number;
+      readonly species: string;
+      readonly kind: 'evolve' | 'awaken' | 'peak';
+      /** Stage reached (2 or 3). */
+      readonly stage: number;
+      readonly from: string;
+      readonly to: string;
+    }
+  /** A Pokémon cast its move (ADR-039): `move` is the id, `shape` what the render draws. */
+  | {
+      readonly type: 'move';
+      readonly member: number;
+      readonly species: string;
+      /** True for the Pokémon the run began with: its moves get the label priority (ADR-039). */
+      readonly starter: boolean;
+      readonly move: string;
+      readonly tier: number;
+      /** Type of the Pokémon that cast it (the colour of the shape). */
+      readonly element: GameType;
+      readonly shape: MoveShapeKind;
+      /** Radius of a circle or width of a column or row, in arena pixels (what the render draws). */
+      readonly size: number;
+      readonly x: number;
+      readonly y: number;
+      /** Enemies the move reached. */
+      readonly hits: number;
+      /** Total damage it dealt (before the enemies' remaining health), for the balance harness. */
+      readonly damage: number;
+    }
+  /** Legacy of the fusion rules (ADR-024), no longer emitted by the tick. */
   | {
       readonly type: 'evolve';
       readonly ballId: number;

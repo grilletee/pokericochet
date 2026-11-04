@@ -311,6 +311,7 @@ export function hashRun(run: Run): string {
     h.int(member.starter ? 1 : 0);
     h.int(member.damageUps);
     h.int(member.cadenceUps);
+    h.int(member.charge);
   }
   h.int(run.pendingCapture === null ? 0 : 1);
   h.str(run.pendingCapture?.species ?? '');

@@ -12,15 +12,23 @@ import {
   tick,
 } from '../../src/domain';
 
+/**
+ * The three stats the fixtures care about are real (HP, Attack, Speed); the rest are plausible.
+ * Special Attack is always under Attack, so the damage still reads off Attack (ADR-038).
+ */
+function stats(hp: number, attack: number, speed: number): SpeciesDef['baseStats'] {
+  return { hp, attack, defense: 50, specialAttack: attack - 2, specialDefense: 50, speed };
+}
+
 /** Real base stats of four starters and a few wild species (test fixture, not game data). */
 const SPECIES: readonly SpeciesDef[] = [
-  { id: 'charmander', type: 'fire', baseStats: { hp: 39, attack: 52, speed: 65 } },
-  { id: 'squirtle', type: 'water', baseStats: { hp: 44, attack: 48, speed: 43 } },
-  { id: 'bulbasaur', type: 'grass', baseStats: { hp: 45, attack: 49, speed: 45 } },
-  { id: 'pikachu', type: 'electric', baseStats: { hp: 35, attack: 55, speed: 90 } },
-  { id: 'vulpix', type: 'fire', baseStats: { hp: 38, attack: 41, speed: 65 } },
-  { id: 'psyduck', type: 'water', baseStats: { hp: 50, attack: 52, speed: 55 } },
-  { id: 'gyarados', type: 'water', baseStats: { hp: 95, attack: 125, speed: 81 } },
+  { id: 'charmander', type: 'fire', baseStats: stats(39, 52, 65) },
+  { id: 'squirtle', type: 'water', baseStats: stats(44, 48, 43) },
+  { id: 'bulbasaur', type: 'grass', baseStats: stats(45, 49, 45) },
+  { id: 'pikachu', type: 'electric', baseStats: stats(35, 55, 90) },
+  { id: 'vulpix', type: 'fire', baseStats: stats(38, 41, 65) },
+  { id: 'psyduck', type: 'water', baseStats: stats(50, 52, 55) },
+  { id: 'gyarados', type: 'water', baseStats: stats(95, 125, 81) },
 ];
 
 // The test species list is small: the final boss is a plain species (no legendary table) and there
@@ -29,8 +37,25 @@ const { byType: _legendaries, ...plainBoss } = baseConfig.boss ?? { species: 'gy
 
 export const config: GameConfig = {
   ...baseConfig,
-  // The starter bonus has its own tests; the rest of the damage tests count on exact numbers.
-  team: { ...baseConfig.team, starterBonus: 0 },
+  // The starter bonus, the stage boost, the guard and the moves have their own tests; the rest of
+  // the damage tests count on exact numbers: damage = Attack / 10 x level x type, a leak = its
+  // threat, no move is cast (no species has one) and no ball is capped.
+  team: { ...baseConfig.team, starterBonus: 0, stageGrowth: [1, 1, 1] },
+  moves: { ...baseConfig.moves, byBase: {} },
+  ball: { ...baseConfig.ball, speedCap: 9 },
+  stats: {
+    ...baseConfig.stats,
+    // Attack / 10 exactly: 100 / 10 x (P / 100) for a power stat under 200.
+    powerRef: 100,
+    powerStatMin: 0,
+    powerStatMax: 200,
+    powerMultMin: 0,
+    powerMultMax: 2,
+    guardMax: 0,
+    levelMultiplier: [1, 1.3, 1.6, 2, 2.4, 2.9, 3.5, 4.2],
+    // The type damage the exact-number tests were written with (the game's own is calibrated).
+    typeDamage: { fire: 1, water: 0.9, grass: 2.5, electric: 0.85 },
+  },
   ...(baseConfig.boss === undefined ? {} : { boss: plainBoss as NonNullable<GameConfig['boss']> }),
   interludes: [],
   species: Object.fromEntries(SPECIES.map((s) => [s.id, s])),

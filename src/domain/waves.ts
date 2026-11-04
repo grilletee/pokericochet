@@ -1,5 +1,6 @@
 import { getSpecies, mapStat } from './combat';
 import type { GameConfig, ThemeDef } from './config';
+import { baseOf, formAt } from './forms';
 import { dropCapture } from './pickups';
 import { enemyXp } from './progression';
 import { nextFloat, nextInt } from './rng';
@@ -22,19 +23,6 @@ interface SpawnProfile {
   readonly theme?: ThemeDef | undefined;
   /** Evolution form of the enemies (1 = base species). */
   readonly tier: number;
-}
-
-/** The species an enemy of `base` shows at `level`: the base itself, or the form of its line. */
-export function formAt(config: GameConfig, base: string, level: number): string {
-  const line = config.lines?.[base];
-  if (line === undefined || level <= 1) return base;
-  const form = line[Math.min(level - 2, line.length - 1)];
-  return form !== undefined && config.species[form] !== undefined ? form : base;
-}
-
-/** Base species and level of an enemy species (an evolved form maps back to its line). */
-export function baseOf(config: GameConfig, species: string): { base: string; level: number } {
-  return config.forms?.[species] ?? { base: species, level: 1 };
 }
 
 /**
