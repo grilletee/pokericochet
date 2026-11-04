@@ -22,6 +22,7 @@ import {
 } from '../domain';
 import { Renderer } from '../render';
 import {
+  AimToggle,
   type CardTextContext,
   CreditsScreen,
   creditLines,
@@ -35,6 +36,7 @@ import {
   type StarterOption,
   StartScreen,
   speciesName,
+  TunePanel,
 } from '../ui';
 import { BENCH_LOADS, type BenchLoad, benchScenario } from './benchScenario';
 import { type BestRun, browserStore, loadBestRun, saveIfBest } from './bestRun';
@@ -43,8 +45,18 @@ import { FixedStepper } from './fixedStepper';
 import { Input } from './input';
 import { commandFromInput } from './inputLogic';
 import { FrameMetrics, type Stats, summarize } from './metrics';
-import { loadMuted, saveMuted } from './settings';
+import { loadAutoAim, loadMuted, saveAutoAim, saveMuted } from './settings';
 import { loadSpeciesTextures } from './sprites';
+import {
+  applyTune,
+  changedKnobs,
+  neutral,
+  sanitizeTune,
+  TUNE_DEFS,
+  TUNE_KEY,
+  type TuneValues,
+  tuneToPatch,
+} from './tune';
 
 const MAX_SLOTS = 64;
 const MAX_ENEMIES = 512;
@@ -94,6 +106,10 @@ declare global {
       bossHp: number;
       bossMaxHp: number;
       starter: string;
+      pickups: number;
+      autoAim: boolean;
+      aimX: number;
+      aimY: number;
     };
   }
 }
@@ -104,7 +120,8 @@ function heapBytes(): number {
 }
 
 function benchCommand(tickCount: number): Command {
-  return { moveX: tickCount % 240 < 120 ? 1 : -1 };
+  // The assisted aim keeps the benchmark scene fighting without an aim input.
+  return { moveX: tickCount % 240 < 120 ? 1 : -1, autoAim: true };
 }
 
 function finishBench(metrics: FrameMetrics, load: BenchLoad): BrowserBenchResult {
@@ -150,17 +167,20 @@ function nextCommand(
   input: Input,
   deadZone: number,
   workshop: WorkshopCommand | null,
+  autoAim: boolean,
 ): Command {
   if (run.phase === 'levelup') {
     const index = input.takePick();
-    return index === null ? { moveX: 0 } : { moveX: 0, action: { type: 'pick', index } };
+    return index === null
+      ? { moveX: 0, autoAim }
+      : { moveX: 0, autoAim, action: { type: 'pick', index } };
   }
   input.takePick(); // a number key pressed outside a level-up is not a choice
   if (run.phase === 'workshop') {
-    return workshop === null ? { moveX: 0 } : { moveX: 0, action: workshop };
+    return workshop === null ? { moveX: 0, autoAim } : { moveX: 0, autoAim, action: workshop };
   }
-  const move = commandFromInput(input.state, run.player.x, deadZone);
-  return workshop === null ? move : { moveX: move.moveX, action: workshop };
+  const move = commandFromInput(input.state, run.player.x, deadZone, autoAim);
+  return workshop === null ? move : { ...move, action: workshop };
 }
 
 type WorkshopCommand = FuseAction | WorkshopAction;
@@ -270,6 +290,44 @@ export async function startGame(host: HTMLElement): Promise<void> {
   for (const gesture of ['pointerdown', 'keydown'] as const) {
     window.addEventListener(gesture, () => sound.unlock());
   }
+  let autoAim = loadAutoAim(store);
+  const aimToggle = new AimToggle(host, autoAim, (auto) => {
+    autoAim = auto;
+    saveAutoAim(store, auto);
+  });
+  // ?tune: live tuning panel. The knobs rebuild the config from the shipped one on every change.
+  if (params.has('tune') && !bench) {
+    let tuneValues: TuneValues;
+    try {
+      tuneValues = sanitizeTune(gameConfig, JSON.parse(store?.getItem(TUNE_KEY) ?? 'null'));
+    } catch {
+      tuneValues = sanitizeTune(gameConfig, null);
+    }
+    config = applyTune(gameConfig, tuneValues);
+    new TunePanel(
+      host,
+      TUNE_DEFS.map((d) => ({ ...d, neutral: neutral(d, gameConfig) })),
+      tuneValues,
+      (values) => {
+        tuneValues = values;
+        config = applyTune(gameConfig, values);
+        try {
+          store?.setItem(TUNE_KEY, JSON.stringify(values));
+        } catch {
+          // ignore: the tuning just is not remembered
+        }
+      },
+      () =>
+        JSON.stringify(
+          {
+            knobs: changedKnobs(gameConfig, tuneValues),
+            configPatch: tuneToPatch(gameConfig, tuneValues),
+          },
+          null,
+          2,
+        ),
+    );
+  }
   const stepper = new FixedStepper();
   const metrics = bench ? new FrameMetrics(BENCH_MEASURED_FRAMES) : null;
   const pending: GameEvent[] = [];
@@ -306,6 +364,10 @@ export async function startGame(host: HTMLElement): Promise<void> {
       bossHp: curr.bossHp,
       bossMaxHp: curr.bossMaxHp,
       starter: run.starter,
+      pickups: run.pickups.length,
+      autoAim: run.autoAim,
+      aimX: run.aimX,
+      aimY: run.aimY,
     });
   }
 
@@ -406,6 +468,11 @@ export async function startGame(host: HTMLElement): Promise<void> {
       input.restartRequested = false;
       input.menuRequested = false;
     } else {
+      if (input.autoAimToggleRequested) {
+        autoAim = !autoAim;
+        aimToggle.set(autoAim, false);
+        saveAutoAim(store, autoAim);
+      }
       // F toggles the workshop; Esc or M also close it. They never leave the run from here.
       if (input.workshopToggleRequested) {
         if (run.phase === 'playing') openFn();
@@ -414,6 +481,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
         closeFn();
       }
       input.workshopToggleRequested = false;
+      input.autoAimToggleRequested = false;
       input.restartRequested = false;
       input.menuRequested = false;
     }
@@ -424,7 +492,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
     for (let s = 0; s < steps; s++) {
       const cmd = bench
         ? benchCommand(run.tickCount)
-        : nextCommand(run, input, POINTER_DEAD_ZONE, pendingWorkshop);
+        : nextCommand(run, input, POINTER_DEAD_ZONE, pendingWorkshop, autoAim);
       pendingWorkshop = null;
       const t0 = performance.now();
       const output = tick(run, cmd, config);

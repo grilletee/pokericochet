@@ -86,6 +86,10 @@ export function describeEvent(event: GameEvent): string | null {
       return event.hybrid ? '¡Fusión híbrida!' : `¡Fusión! Una bola sube a nivel ${event.level}`;
     case 'fuseFailed':
       return describeFailure(event.error);
+    case 'capture':
+      return event.ballId === 0
+        ? 'Equipo completo: la captura mejora el daño'
+        : `¡Capturado: ${speciesName(event.species)}!`;
     default:
       return null;
   }

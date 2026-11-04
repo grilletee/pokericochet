@@ -7,11 +7,11 @@ export interface BenchLoad {
 
 /**
  * `stress` is the regression stress test (ADR-008). `real` is the performance budget: the peak
- * load measured in complete runs (4 balls in flight, 20 enemies alive; ADR-015).
+ * load measured in complete runs (24 balls in flight, 30 enemies alive in 4B; it was 4 and 20 in 3B, ADR-015).
  */
 export const BENCH_LOADS = {
   stress: { balls: 40, enemies: 150 },
-  real: { balls: 4, enemies: 20 },
+  real: { balls: 24, enemies: 30 },
 } as const satisfies Record<string, BenchLoad>;
 
 /**

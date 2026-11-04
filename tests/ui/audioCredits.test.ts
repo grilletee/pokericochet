@@ -11,6 +11,9 @@ describe('sound: which event makes which sound', () => {
     [{ type: 'leak', enemyId: 1, damage: 1 }, 'damage'],
     [{ type: 'won' }, 'win'],
     [{ type: 'lost' }, 'lose'],
+    [{ type: 'collect', ballId: 1, x: 10, late: false }, 'collect'],
+    [{ type: 'capture', ballId: 2, species: 'psyduck', x: 10, late: false }, 'capture'],
+    [{ type: 'drop', ballId: 1, x: 10 }, null],
     [{ type: 'launch', ballId: 1 }, null],
     [{ type: 'spawn', enemyId: 1 }, null],
     [{ type: 'waveStart', index: 1 }, null],
@@ -44,6 +47,15 @@ describe('sound: throttle', () => {
     expect(t.allow('fuse', 2)).toBe(true);
     expect(t.allow('fuse', 2)).toBe(true);
     expect(t.allow('lose', 3)).toBe(true);
+    expect(t.allow('capture', 4)).toBe(true);
+    expect(t.allow('capture', 4)).toBe(true);
+  });
+
+  it('spaces the pickup pop, which can come in bursts', () => {
+    const t = new Throttle();
+    expect(t.allow('collect', 0)).toBe(true);
+    expect(t.allow('collect', 59)).toBe(false);
+    expect(t.allow('collect', 60)).toBe(true);
   });
 });
 

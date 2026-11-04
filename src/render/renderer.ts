@@ -1,10 +1,20 @@
 import { Application, Container, Graphics, Sprite, type Texture } from 'pixi.js';
-import type { GameConfig, GameEvent, Snapshot } from '../domain';
+import {
+  type AimDirection,
+  aimDirection,
+  type GameConfig,
+  type GameEvent,
+  type Snapshot,
+} from '../domain';
 import { interpolateBalls, interpolateEnemies } from './interpolate';
 
 /** Placeholder colours per type code (fire, water, grass, electric). No franchise art here. */
 const TYPE_COLORS: readonly number[] = [0xff7043, 0x4fc3f7, 0x81c784, 0xffee58];
 const FX_POOL = 48;
+const AIM_DOTS = 16;
+/** Length of the aim guide and the gap between its dots, in arena pixels. */
+const AIM_LENGTH = 300;
+const PICKUP_GOLD = 0xffd54f;
 const FX_DURATION_MS = 280;
 
 /** How much bigger than its collision circle a species sprite is drawn (sprites have margins). */
@@ -23,6 +33,14 @@ export class Renderer {
   private readonly enemyLayer = new Container();
   private readonly ballLayer = new Container();
   private readonly fxLayer = new Container();
+  private readonly pickupLayer = new Container();
+  private readonly aimLayer = new Container();
+  private readonly pickupSprites: Sprite[] = [];
+  private readonly pickupRings: Sprite[] = [];
+  private readonly aimDots: Sprite[] = [];
+  private readonly aimScratch: AimDirection = { x: 0, y: -1 };
+  private readonly reachRing: Sprite;
+  private pickupsShown = 0;
   private readonly enemySprites: Sprite[] = [];
   private readonly ballSprites: Sprite[] = [];
   private readonly fxSprites: Sprite[] = [];
@@ -40,7 +58,7 @@ export class Renderer {
     private readonly app: Application,
     private readonly config: GameConfig,
     private readonly disc: Texture,
-    ring: Texture,
+    private readonly ring: Texture,
     maxSlots: number,
     maxEnemies: number,
     private readonly art: readonly (Texture | undefined)[],
@@ -71,7 +89,28 @@ export class Renderer {
       this.fxSprites.push(sprite);
       this.fxLayer.addChild(sprite);
     }
-    this.world.addChild(background, this.enemyLayer, this.ballLayer, this.fxLayer, this.player);
+    this.reachRing = new Sprite(ring);
+    this.reachRing.anchor.set(0.5);
+    this.reachRing.alpha = 0.22;
+    this.reachRing.y = config.player.y;
+    this.reachRing.scale.set(config.pickup.radius / 30);
+    for (let i = 0; i < AIM_DOTS; i++) {
+      const dot = new Sprite(disc);
+      dot.anchor.set(0.5);
+      dot.visible = false;
+      this.aimDots.push(dot);
+      this.aimLayer.addChild(dot);
+    }
+    this.world.addChild(
+      background,
+      this.aimLayer,
+      this.enemyLayer,
+      this.pickupLayer,
+      this.ballLayer,
+      this.fxLayer,
+      this.reachRing,
+      this.player,
+    );
     app.stage.addChild(this.world);
   }
 
@@ -128,6 +167,10 @@ export class Renderer {
     this.drawBalls(prev, curr, alpha);
     this.drawEnemies(prev, curr, alpha);
     this.player.x = prev.playerX + (curr.playerX - prev.playerX) * alpha;
+    this.reachRing.x = this.player.x;
+    this.reachRing.scale.set(this.config.pickup.radius / 30);
+    this.drawPickups(curr);
+    this.drawAim(curr);
     this.drawEffects(events, elapsedMs);
 
     this.app.render();
@@ -199,6 +242,82 @@ export class Renderer {
     this.enemiesShown = curr.enemyCount;
   }
 
+  /** Balls on the floor (white ring) and captured ones falling or waiting (gold ring). */
+  private drawPickups(curr: Snapshot): void {
+    const radius = this.config.ball.radius;
+    for (let i = 0; i < curr.pickupCount; i++) {
+      const sprite = this.spriteAt(this.pickupSprites, this.pickupLayer, i);
+      let halo = this.pickupRings[i];
+      if (halo === undefined) {
+        halo = new Sprite(this.ring);
+        halo.anchor.set(0.5);
+        this.pickupRings[i] = halo;
+        this.pickupLayer.addChild(halo);
+      }
+      const captured = curr.pickupCaptured[i] === 1;
+      const ticks = curr.pickupTicks[i] ?? 0;
+      const total = captured ? this.config.pickup.captureTtlTicks : this.config.pickup.returnTicks;
+      // Blink for the last second and a half: it is about to join on its own (or, if captured, to).
+      const urgent = ticks < 90 && Math.floor(curr.tick / 6) % 2 === 0;
+      const x = curr.pickupX[i] ?? 0;
+      const y = curr.pickupY[i] ?? 0;
+      sprite.visible = true;
+      halo.visible = true;
+      sprite.position.set(x, y);
+      halo.position.set(x, y);
+      const art = this.art[curr.pickupSpecies[i] ?? 255];
+      if (art === undefined) {
+        sprite.texture = this.disc;
+        sprite.scale.set(radius / 32);
+        sprite.tint = TYPE_COLORS[curr.pickupType[i] ?? 0] ?? 0xffffff;
+      } else {
+        sprite.texture = art;
+        sprite.scale.set((radius * BALL_ART_SCALE * 1.1) / (art.width / 2));
+        sprite.tint = 0xffffff;
+      }
+      sprite.alpha = urgent ? 0.35 : 1;
+      halo.tint = captured ? PICKUP_GOLD : 0xffffff;
+      halo.alpha = urgent ? 0.2 : 0.4 + 0.6 * Math.min(1, ticks / Math.max(1, total));
+      halo.scale.set((radius * 2.4) / 30);
+    }
+    for (let i = curr.pickupCount; i < this.pickupsShown; i++) {
+      const sprite = this.pickupSprites[i];
+      const halo = this.pickupRings[i];
+      if (sprite) sprite.visible = false;
+      if (halo) halo.visible = false;
+    }
+    this.pickupsShown = curr.pickupCount;
+  }
+
+  /** Dotted guide from the launcher along the manual aim; hidden while the assisted aim is on. */
+  private drawAim(curr: Snapshot): void {
+    const show = !curr.autoAim && curr.phase === 0;
+    if (show) {
+      aimDirection(
+        this.player.x,
+        this.config.player.y,
+        curr.aimX,
+        curr.aimY,
+        this.config.ball.minVerticalRatio,
+        this.aimScratch,
+      );
+    }
+    const gap = AIM_LENGTH / AIM_DOTS;
+    for (let i = 0; i < AIM_DOTS; i++) {
+      const dot = this.aimDots[i];
+      if (dot === undefined) continue;
+      dot.visible = show;
+      if (!show) continue;
+      const d = (i + 1) * gap;
+      dot.position.set(
+        this.player.x + this.aimScratch.x * d,
+        this.config.player.y + this.aimScratch.y * d,
+      );
+      dot.scale.set(0.11 - i * 0.003);
+      dot.alpha = 0.75 - (i / AIM_DOTS) * 0.55;
+    }
+  }
+
   private startEffect(x: number, y: number, color: number): void {
     const index = this.fxNext;
     this.fxNext = (this.fxNext + 1) % FX_POOL;
@@ -215,6 +334,9 @@ export class Renderer {
       if (event.type === 'hit') this.startEffect(event.x, event.y, 0xffffff);
       else if (event.type === 'kill') this.startEffect(event.x, event.y, 0xffd54f);
       else if (event.type === 'chain') this.startEffect(event.toX, event.toY, 0xfff176);
+      else if (event.type === 'collect') this.startEffect(event.x, this.config.player.y, 0x81d4fa);
+      else if (event.type === 'capture')
+        this.startEffect(event.x, this.config.player.y, PICKUP_GOLD);
     }
     const decay = elapsedMs / FX_DURATION_MS;
     for (let i = 0; i < FX_POOL; i++) {

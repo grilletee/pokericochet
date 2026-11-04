@@ -1,5 +1,5 @@
 export type { SoundId } from './audio';
-export { SoundFx, SoundToggle, soundFor, Throttle } from './audio';
+export { AimToggle, SoundFx, SoundToggle, soundFor, Throttle } from './audio';
 export type { CardTextContext } from './cardText';
 export { describeCard, speciesName, typeName } from './cardText';
 export type { CreditLine } from './creditsText';
@@ -23,3 +23,5 @@ export {
   formatTime,
   starterBlurb,
 } from './screenText';
+export type { TuneRow } from './tunePanel';
+export { TunePanel } from './tunePanel';

@@ -45,24 +45,41 @@ describe('FixedStepper', () => {
 });
 
 describe('commandFromInput', () => {
-  const idle = { left: false, right: false, pointerX: null };
+  const idle = { left: false, right: false, pointerX: null, aimX: null, aimY: null };
   it('maps the keyboard to -1 / 0 / 1 and cancels opposite keys', () => {
-    expect(commandFromInput({ ...idle, left: true }, 240, 4)).toEqual({ moveX: -1 });
-    expect(commandFromInput({ ...idle, right: true }, 240, 4)).toEqual({ moveX: 1 });
-    expect(commandFromInput({ ...idle, left: true, right: true }, 240, 4)).toEqual({ moveX: 0 });
-    expect(commandFromInput(idle, 240, 4)).toEqual({ moveX: 0 });
+    expect(commandFromInput({ ...idle, left: true }, 240, 4, false)).toEqual({
+      moveX: -1,
+      autoAim: false,
+    });
+    expect(commandFromInput({ ...idle, right: true }, 240, 4, false)).toEqual({
+      moveX: 1,
+      autoAim: false,
+    });
+    expect(commandFromInput({ ...idle, left: true, right: true }, 240, 4, false).moveX).toBe(0);
+    expect(commandFromInput(idle, 240, 4, false).moveX).toBe(0);
   });
 
-  it('steers towards the pointer with a dead zone', () => {
-    expect(commandFromInput({ ...idle, pointerX: 300 }, 240, 4)).toEqual({ moveX: 1 });
-    expect(commandFromInput({ ...idle, pointerX: 100 }, 240, 4)).toEqual({ moveX: -1 });
-    expect(commandFromInput({ ...idle, pointerX: 242 }, 240, 4)).toEqual({ moveX: 0 });
+  it('steers towards the pointer on the floor with a dead zone', () => {
+    expect(commandFromInput({ ...idle, pointerX: 300 }, 240, 4, false).moveX).toBe(1);
+    expect(commandFromInput({ ...idle, pointerX: 100 }, 240, 4, false).moveX).toBe(-1);
+    expect(commandFromInput({ ...idle, pointerX: 242 }, 240, 4, false).moveX).toBe(0);
   });
 
   it('lets the keyboard win over the pointer', () => {
-    expect(commandFromInput({ left: true, right: false, pointerX: 400 }, 240, 4)).toEqual({
-      moveX: -1,
-    });
+    const cmd = commandFromInput({ ...idle, left: true, pointerX: 400 }, 240, 4, false);
+    expect(cmd.moveX).toBe(-1);
+  });
+
+  it('carries the aim point only once the player has set one', () => {
+    expect(commandFromInput(idle, 240, 4, false).aimX).toBeUndefined();
+    const cmd = commandFromInput({ ...idle, aimX: 120, aimY: 200 }, 240, 4, false);
+    expect(cmd.aimX).toBe(120);
+    expect(cmd.aimY).toBe(200);
+  });
+
+  it('sends the assisted-aim switch with every command', () => {
+    expect(commandFromInput(idle, 240, 4, true).autoAim).toBe(true);
+    expect(commandFromInput(idle, 240, 4, false).autoAim).toBe(false);
   });
 });
 

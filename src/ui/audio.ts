@@ -1,7 +1,15 @@
 import type { GameEvent } from '../domain';
 
 /** The few sounds of the game. */
-export type SoundId = 'bounce' | 'kill' | 'fuse' | 'damage' | 'win' | 'lose';
+export type SoundId =
+  | 'bounce'
+  | 'kill'
+  | 'fuse'
+  | 'damage'
+  | 'win'
+  | 'lose'
+  | 'collect'
+  | 'capture';
 
 /** Which sound, if any, an event makes. A ball hit is the "bounce": walls emit no event. */
 export function soundFor(event: GameEvent): SoundId | null {
@@ -12,6 +20,10 @@ export function soundFor(event: GameEvent): SoundId | null {
       return 'kill';
     case 'fuse':
       return 'fuse';
+    case 'collect':
+      return 'collect';
+    case 'capture':
+      return 'capture';
     case 'leak':
       return 'damage';
     case 'won':
@@ -31,6 +43,8 @@ const MIN_GAP_MS: Record<SoundId, number> = {
   damage: 120,
   win: 0,
   lose: 0,
+  collect: 60,
+  capture: 0,
 };
 
 /** Decides whether a sound may play now, per kind. Pure: time is given, never read. */
@@ -65,6 +79,11 @@ const RECIPES: Record<SoundId, readonly Note[]> = {
     { from: 659, to: 784, seconds: 0.2, wave: 'triangle', gain: 0.12, at: 0.18 },
   ],
   damage: [{ from: 180, to: 70, seconds: 0.22, wave: 'sawtooth', gain: 0.12 }],
+  collect: [{ from: 440, to: 660, seconds: 0.07, wave: 'sine', gain: 0.1 }],
+  capture: [
+    { from: 523, to: 523, seconds: 0.08, wave: 'sine', gain: 0.12 },
+    { from: 784, to: 988, seconds: 0.16, wave: 'sine', gain: 0.12, at: 0.08 },
+  ],
   win: [
     { from: 523, to: 523, seconds: 0.14, wave: 'square', gain: 0.08 },
     { from: 659, to: 659, seconds: 0.14, wave: 'square', gain: 0.08, at: 0.14 },
@@ -147,7 +166,7 @@ export class SoundToggle {
     this.button.type = 'button';
     this.button.dataset.soundToggle = '';
     this.button.style.cssText =
-      'position:absolute;right:12px;bottom:34px;padding:4px 10px;border-radius:8px;' +
+      'position:absolute;right:12px;top:10px;min-height:44px;min-width:44px;padding:4px 12px;border-radius:8px;' +
       'border:2px solid #5b6aa8;background:rgba(27,37,64,0.85);color:#e8ecf8;' +
       'font-family:system-ui,sans-serif;font-size:13px;cursor:pointer;pointer-events:auto;';
     this.button.addEventListener('pointerdown', (e) => e.stopPropagation());
@@ -162,5 +181,42 @@ export class SoundToggle {
 
   private render(): void {
     this.button.textContent = this.muted ? 'Sonido: no' : 'Sonido: sí';
+  }
+}
+
+/**
+ * Button for the assisted aim (the key T does the same). Manual aim is the default; this is an
+ * aid for playing with one hand or without a pointer, and it is weaker on purpose (ADR-021).
+ */
+export class AimToggle {
+  private readonly button: HTMLButtonElement;
+
+  constructor(
+    host: HTMLElement,
+    private auto: boolean,
+    private readonly onChange: (auto: boolean) => void,
+  ) {
+    this.button = document.createElement('button');
+    this.button.type = 'button';
+    this.button.dataset.aimToggle = '';
+    this.button.style.cssText =
+      'position:absolute;right:12px;top:62px;min-height:44px;min-width:44px;padding:4px 12px;' +
+      'border-radius:8px;border:2px solid #5b6aa8;background:rgba(27,37,64,0.85);color:#e8ecf8;' +
+      'font-family:system-ui,sans-serif;font-size:13px;cursor:pointer;pointer-events:auto;';
+    this.button.addEventListener('pointerdown', (e) => e.stopPropagation());
+    this.button.addEventListener('click', () => this.set(!this.auto, true));
+    this.render();
+    host.append(this.button);
+  }
+
+  /** Called by the key T too, so the button always shows the real state. */
+  set(auto: boolean, notify: boolean): void {
+    this.auto = auto;
+    this.render();
+    if (notify) this.onChange(auto);
+  }
+
+  private render(): void {
+    this.button.textContent = this.auto ? 'Apuntado: auto' : 'Apuntado: manual';
   }
 }

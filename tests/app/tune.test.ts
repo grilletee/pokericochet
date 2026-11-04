@@ -1,0 +1,126 @@
+import { describe, expect, it } from 'vitest';
+import {
+  applyTune,
+  changedKnobs,
+  defaultTune,
+  mergeConfig,
+  neutral,
+  sanitizeTune,
+  TUNE_DEFS,
+  tuneToPatch,
+} from '../../src/app/tune';
+import { gameConfig } from '../../src/data';
+
+const base = gameConfig;
+const tuned = (key: string, value: number) =>
+  applyTune(base, { ...defaultTune(base), [key]: value });
+
+describe('live tuning', () => {
+  it('has one neutral value per knob and applying them all changes nothing', () => {
+    expect(Object.keys(defaultTune(base)).sort()).toEqual(TUNE_DEFS.map((d) => d.key).sort());
+    expect(applyTune(base, defaultTune(base))).toEqual(base);
+    expect(changedKnobs(base, defaultTune(base))).toEqual({});
+  });
+
+  it('keeps every neutral value inside the range of its slider, on a step', () => {
+    for (const def of TUNE_DEFS) {
+      const value = neutral(def, base);
+      expect(value, def.key).toBeGreaterThanOrEqual(def.min);
+      expect(value, def.key).toBeLessThanOrEqual(def.max);
+    }
+  });
+
+  it('density divides the spawn interval of every wave', () => {
+    const faster = tuned('spawnRate', 2);
+    faster.waves.forEach((w, i) => {
+      expect(w.spawnIntervalTicks).toBe(Math.round((base.waves[i]?.spawnIntervalTicks ?? 0) / 2));
+      expect(w.hpScale).toBe(base.waves[i]?.hpScale); // the rest of the wave is untouched
+    });
+  });
+
+  it('never lets an interval reach zero', () => {
+    const extreme = applyTune(base, { ...defaultTune(base), spawnRate: 1e9 });
+    expect(extreme.waves.every((w) => w.spawnIntervalTicks >= 1)).toBe(true);
+  });
+
+  it('scales enemy speed, hp, ball speed, damage and xp as multipliers', () => {
+    expect(tuned('enemySpeed', 2).enemy.speedMax).toBeCloseTo(base.enemy.speedMax * 2, 12);
+    expect(tuned('enemySpeed', 2).enemy.speedMin).toBeCloseTo(base.enemy.speedMin * 2, 12);
+    expect(tuned('enemyHp', 2).enemy.hpScale).toBeCloseTo(base.enemy.hpScale * 2, 12);
+    expect(tuned('ballSpeed', 1.5).ball.speedMax).toBeCloseTo(base.ball.speedMax * 1.5, 12);
+    expect(tuned('ballSpeed', 1.5).ball.speedMin).toBeCloseTo(base.ball.speedMin * 1.5, 12);
+    // Damage = attack / divisor: twice the damage is half the divisor.
+    expect(tuned('damage', 2).stats.damageDivisor).toBeCloseTo(base.stats.damageDivisor / 2, 12);
+    expect(tuned('levelCost', 2).progression.levelCosts).toEqual(
+      base.progression.levelCosts.map((c) => Math.round(c * 2)),
+    );
+  });
+
+  it('sets the absolute knobs where the game reads them', () => {
+    expect(tuned('playerSpeed', 8).player.speed).toBe(8);
+    expect(tuned('reload', 40.4).ball.cooldownTicks).toBe(40);
+    expect(tuned('manualJitter', 0.1).ball.manualAimJitter).toBe(0.1);
+    expect(tuned('autoJitter', 0.3).ball.aimJitter).toBe(0.3);
+    expect(tuned('autoReload', 2).ball.autoCooldownMult).toBe(2);
+    expect(tuned('pickupRadius', 60).pickup.radius).toBe(60);
+    expect(tuned('returnTicks', 100.6).pickup.returnTicks).toBe(101);
+    expect(tuned('captureFall', 4).pickup.dropSpeed).toBe(4);
+    expect(tuned('captureChance', 0.3).capture.chance).toBe(0.3);
+    expect(tuned('capturePity', 0.05).capture.pityStep).toBe(0.05);
+  });
+
+  it('does not touch what no knob owns', () => {
+    const out = tuned('captureChance', 0.3);
+    expect(out.arena).toBe(base.arena);
+    expect(out.typeChart).toBe(base.typeChart);
+    expect(out.species).toBe(base.species);
+    expect(out.boss).toEqual(base.boss);
+    expect(base.capture.chance).not.toBe(0.3); // the shipped config is never mutated
+  });
+
+  it('copies only what moved, and the patch reproduces the tuning', () => {
+    const values = { ...defaultTune(base), captureChance: 0.2, spawnRate: 1.5 };
+    expect(changedKnobs(base, values)).toEqual({ captureChance: 0.2, spawnRate: 1.5 });
+    expect(mergeConfig(base, tuneToPatch(base, values))).toEqual(applyTune(base, values));
+  });
+
+  it('clamps stored values to the slider range and ignores junk', () => {
+    const clamped = sanitizeTune(base, {
+      captureChance: 99,
+      spawnRate: -4,
+      nonsense: 1,
+      enemyHp: 'x',
+    });
+    const chance = TUNE_DEFS.find((d) => d.key === 'captureChance');
+    const rate = TUNE_DEFS.find((d) => d.key === 'spawnRate');
+    expect(clamped.captureChance).toBe(chance?.max);
+    expect(clamped.spawnRate).toBe(rate?.min);
+    expect(clamped.enemyHp).toBe(1);
+    expect(clamped.nonsense).toBeUndefined();
+    expect(sanitizeTune(base, null)).toEqual(defaultTune(base));
+    expect(sanitizeTune(base, 'text')).toEqual(defaultTune(base));
+    expect(sanitizeTune(base, { captureChance: Number.NaN }).captureChance).toBe(
+      base.capture.chance,
+    );
+  });
+});
+
+describe('mergeConfig', () => {
+  it('merges objects, replaces numbers and merges arrays by index', () => {
+    const merged = mergeConfig(
+      { a: { b: 1, c: 2 }, list: [{ x: 1, y: 2 }, { x: 3 }] },
+      {
+        a: { b: 9 },
+        list: [{ y: 5 }],
+      },
+    );
+    expect(merged).toEqual({ a: { b: 9, c: 2 }, list: [{ x: 1, y: 5 }, { x: 3 }] });
+  });
+
+  it('returns the base untouched for an undefined patch and does not mutate its input', () => {
+    const input = { a: { b: 1 } };
+    expect(mergeConfig(input, undefined)).toBe(input);
+    mergeConfig(input, { a: { b: 2 } });
+    expect(input).toEqual({ a: { b: 1 } });
+  });
+});

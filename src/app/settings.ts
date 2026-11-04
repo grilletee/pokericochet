@@ -19,3 +19,23 @@ export function saveMuted(store: KeyValueStore | null, muted: boolean): void {
     // ignore
   }
 }
+
+/** localStorage key of the assisted-aim switch. */
+export const AUTO_AIM_KEY = 'autoAim.v1';
+
+/** Manual aim is the default (ADR-021): only an explicit choice turns the assist on. */
+export function loadAutoAim(store: KeyValueStore | null): boolean {
+  try {
+    return store?.getItem(AUTO_AIM_KEY) === '1';
+  } catch {
+    return false;
+  }
+}
+
+export function saveAutoAim(store: KeyValueStore | null, auto: boolean): void {
+  try {
+    store?.setItem(AUTO_AIM_KEY, auto ? '1' : '0');
+  } catch {
+    // ignore
+  }
+}

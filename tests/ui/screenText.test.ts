@@ -151,6 +151,9 @@ describe('results and title text', () => {
       { type: 'fuseFailed', error: 'no-token' },
       { type: 'launch', ballId: 1 },
       { type: 'won' },
+      { type: 'capture', ballId: 5, species: 'psyduck', x: 1, late: false },
+      { type: 'capture', ballId: 0, species: 'psyduck', x: 1, late: false },
+      { type: 'collect', ballId: 1, x: 1, late: false },
     ];
     const texts = events.map(describeEvent);
     expect(texts[0]).toBe('Oleada 3');
@@ -161,5 +164,9 @@ describe('results and title text', () => {
     expect(texts[5]).toContain('ficha');
     expect(texts[6]).toBeNull();
     expect(texts[7]).toBeNull();
+    expect(texts[8]).toContain('Capturado');
+    expect(texts[8]).toContain('Psyduck');
+    expect(texts[9]).toContain('daño');
+    expect(texts[10]).toBeNull(); // picking a ball up is silent text: it happens all the time
   });
 });
