@@ -1,0 +1,14 @@
+{
+  "defaults": {
+    "fire": ["ember", "flamethrower", "fire-blast"],
+    "water": ["water-gun", "surf", "hydro-pump"],
+    "grass": ["vine-whip", "giga-drain", "solar-beam"],
+    "electric": ["thunder-shock", "thunderbolt", "thunder"]
+  },
+  "signatures": {
+    "charmander": ["ember", "flamethrower", "fire-blast"],
+    "squirtle": ["water-gun", "surf", "hydro-pump"],
+    "bulbasaur": ["vine-whip", "razor-leaf", "solar-beam"],
+    "pikachu": ["thunder-shock", "thunderbolt", "thunder"]
+  }
+}

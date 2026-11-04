@@ -203,8 +203,12 @@
       "baseStats": {
         "hp": 39,
         "attack": 52,
+        "defense": 43,
+        "specialAttack": 60,
+        "specialDefense": 50,
         "speed": 65
-      }
+      },
+      "name": "Charmander"
     },
     {
       "id": "vulpix",
@@ -213,8 +217,12 @@
       "baseStats": {
         "hp": 38,
         "attack": 41,
+        "defense": 40,
+        "specialAttack": 50,
+        "specialDefense": 65,
         "speed": 65
-      }
+      },
+      "name": "Vulpix"
     },
     {
       "id": "squirtle",
@@ -223,8 +231,12 @@
       "baseStats": {
         "hp": 44,
         "attack": 48,
+        "defense": 65,
+        "specialAttack": 50,
+        "specialDefense": 64,
         "speed": 43
-      }
+      },
+      "name": "Squirtle"
     },
     {
       "id": "psyduck",
@@ -233,8 +245,12 @@
       "baseStats": {
         "hp": 50,
         "attack": 52,
+        "defense": 48,
+        "specialAttack": 65,
+        "specialDefense": 50,
         "speed": 55
-      }
+      },
+      "name": "Psyduck"
     },
     {
       "id": "bulbasaur",
@@ -243,8 +259,12 @@
       "baseStats": {
         "hp": 45,
         "attack": 49,
+        "defense": 49,
+        "specialAttack": 65,
+        "specialDefense": 65,
         "speed": 45
-      }
+      },
+      "name": "Bulbasaur"
     },
     {
       "id": "oddish",
@@ -253,8 +273,12 @@
       "baseStats": {
         "hp": 45,
         "attack": 50,
+        "defense": 55,
+        "specialAttack": 75,
+        "specialDefense": 65,
         "speed": 30
-      }
+      },
+      "name": "Oddish"
     },
     {
       "id": "pikachu",
@@ -263,8 +287,12 @@
       "baseStats": {
         "hp": 35,
         "attack": 55,
+        "defense": 40,
+        "specialAttack": 50,
+        "specialDefense": 50,
         "speed": 90
-      }
+      },
+      "name": "Pikachu"
     },
     {
       "id": "magnemite",
@@ -273,8 +301,12 @@
       "baseStats": {
         "hp": 25,
         "attack": 35,
+        "defense": 70,
+        "specialAttack": 95,
+        "specialDefense": 55,
         "speed": 45
-      }
+      },
+      "name": "Magnemite"
     },
     {
       "id": "growlithe",
@@ -283,8 +315,12 @@
       "baseStats": {
         "hp": 55,
         "attack": 70,
+        "defense": 45,
+        "specialAttack": 70,
+        "specialDefense": 50,
         "speed": 60
-      }
+      },
+      "name": "Growlithe"
     },
     {
       "id": "ponyta",
@@ -293,8 +329,12 @@
       "baseStats": {
         "hp": 50,
         "attack": 85,
+        "defense": 55,
+        "specialAttack": 65,
+        "specialDefense": 65,
         "speed": 90
-      }
+      },
+      "name": "Ponyta"
     },
     {
       "id": "poliwag",
@@ -303,8 +343,12 @@
       "baseStats": {
         "hp": 40,
         "attack": 50,
+        "defense": 40,
+        "specialAttack": 40,
+        "specialDefense": 40,
         "speed": 90
-      }
+      },
+      "name": "Poliwag"
     },
     {
       "id": "horsea",
@@ -313,8 +357,12 @@
       "baseStats": {
         "hp": 30,
         "attack": 40,
+        "defense": 70,
+        "specialAttack": 70,
+        "specialDefense": 25,
         "speed": 60
-      }
+      },
+      "name": "Horsea"
     },
     {
       "id": "bellsprout",
@@ -323,8 +371,12 @@
       "baseStats": {
         "hp": 50,
         "attack": 75,
+        "defense": 35,
+        "specialAttack": 70,
+        "specialDefense": 30,
         "speed": 40
-      }
+      },
+      "name": "Bellsprout"
     },
     {
       "id": "exeggcute",
@@ -333,8 +385,12 @@
       "baseStats": {
         "hp": 60,
         "attack": 40,
+        "defense": 80,
+        "specialAttack": 60,
+        "specialDefense": 45,
         "speed": 40
-      }
+      },
+      "name": "Exeggcute"
     },
     {
       "id": "voltorb",
@@ -343,8 +399,12 @@
       "baseStats": {
         "hp": 40,
         "attack": 30,
+        "defense": 50,
+        "specialAttack": 55,
+        "specialDefense": 55,
         "speed": 100
-      }
+      },
+      "name": "Voltorb"
     },
     {
       "id": "electabuzz",
@@ -353,8 +413,12 @@
       "baseStats": {
         "hp": 65,
         "attack": 83,
+        "defense": 57,
+        "specialAttack": 95,
+        "specialDefense": 85,
         "speed": 105
-      }
+      },
+      "name": "Electabuzz"
     },
     {
       "id": "magmar",
@@ -363,8 +427,12 @@
       "baseStats": {
         "hp": 65,
         "attack": 95,
+        "defense": 57,
+        "specialAttack": 100,
+        "specialDefense": 85,
         "speed": 93
-      }
+      },
+      "name": "Magmar"
     },
     {
       "id": "slugma",
@@ -373,8 +441,12 @@
       "baseStats": {
         "hp": 40,
         "attack": 40,
+        "defense": 40,
+        "specialAttack": 70,
+        "specialDefense": 40,
         "speed": 20
-      }
+      },
+      "name": "Slugma"
     },
     {
       "id": "numel",
@@ -383,8 +455,12 @@
       "baseStats": {
         "hp": 60,
         "attack": 60,
+        "defense": 40,
+        "specialAttack": 65,
+        "specialDefense": 45,
         "speed": 35
-      }
+      },
+      "name": "Numel"
     },
     {
       "id": "cyndaquil",
@@ -393,8 +469,12 @@
       "baseStats": {
         "hp": 39,
         "attack": 52,
+        "defense": 43,
+        "specialAttack": 60,
+        "specialDefense": 50,
         "speed": 65
-      }
+      },
+      "name": "Cyndaquil"
     },
     {
       "id": "torchic",
@@ -403,8 +483,12 @@
       "baseStats": {
         "hp": 45,
         "attack": 60,
+        "defense": 40,
+        "specialAttack": 70,
+        "specialDefense": 50,
         "speed": 45
-      }
+      },
+      "name": "Torchic"
     },
     {
       "id": "chimchar",
@@ -413,8 +497,12 @@
       "baseStats": {
         "hp": 44,
         "attack": 58,
+        "defense": 44,
+        "specialAttack": 58,
+        "specialDefense": 44,
         "speed": 61
-      }
+      },
+      "name": "Chimchar"
     },
     {
       "id": "krabby",
@@ -423,8 +511,12 @@
       "baseStats": {
         "hp": 30,
         "attack": 105,
+        "defense": 90,
+        "specialAttack": 25,
+        "specialDefense": 25,
         "speed": 50
-      }
+      },
+      "name": "Krabby"
     },
     {
       "id": "staryu",
@@ -433,8 +525,12 @@
       "baseStats": {
         "hp": 30,
         "attack": 45,
+        "defense": 55,
+        "specialAttack": 70,
+        "specialDefense": 55,
         "speed": 85
-      }
+      },
+      "name": "Staryu"
     },
     {
       "id": "goldeen",
@@ -443,8 +539,12 @@
       "baseStats": {
         "hp": 45,
         "attack": 67,
+        "defense": 60,
+        "specialAttack": 35,
+        "specialDefense": 50,
         "speed": 63
-      }
+      },
+      "name": "Goldeen"
     },
     {
       "id": "shellder",
@@ -453,8 +553,12 @@
       "baseStats": {
         "hp": 30,
         "attack": 65,
+        "defense": 100,
+        "specialAttack": 45,
+        "specialDefense": 25,
         "speed": 40
-      }
+      },
+      "name": "Shellder"
     },
     {
       "id": "wooper",
@@ -463,8 +567,12 @@
       "baseStats": {
         "hp": 55,
         "attack": 45,
+        "defense": 45,
+        "specialAttack": 25,
+        "specialDefense": 25,
         "speed": 15
-      }
+      },
+      "name": "Wooper"
     },
     {
       "id": "lotad",
@@ -473,8 +581,12 @@
       "baseStats": {
         "hp": 40,
         "attack": 30,
+        "defense": 30,
+        "specialAttack": 40,
+        "specialDefense": 50,
         "speed": 30
-      }
+      },
+      "name": "Lotad"
     },
     {
       "id": "tangela",
@@ -483,8 +595,12 @@
       "baseStats": {
         "hp": 65,
         "attack": 55,
+        "defense": 115,
+        "specialAttack": 100,
+        "specialDefense": 40,
         "speed": 60
-      }
+      },
+      "name": "Tangela"
     },
     {
       "id": "hoppip",
@@ -493,8 +609,12 @@
       "baseStats": {
         "hp": 35,
         "attack": 35,
+        "defense": 40,
+        "specialAttack": 35,
+        "specialDefense": 55,
         "speed": 50
-      }
+      },
+      "name": "Hoppip"
     },
     {
       "id": "seedot",
@@ -503,8 +623,12 @@
       "baseStats": {
         "hp": 40,
         "attack": 40,
+        "defense": 50,
+        "specialAttack": 30,
+        "specialDefense": 30,
         "speed": 30
-      }
+      },
+      "name": "Seedot"
     },
     {
       "id": "shroomish",
@@ -513,8 +637,12 @@
       "baseStats": {
         "hp": 60,
         "attack": 40,
+        "defense": 60,
+        "specialAttack": 40,
+        "specialDefense": 60,
         "speed": 35
-      }
+      },
+      "name": "Shroomish"
     },
     {
       "id": "sunkern",
@@ -523,8 +651,12 @@
       "baseStats": {
         "hp": 30,
         "attack": 30,
+        "defense": 30,
+        "specialAttack": 30,
+        "specialDefense": 30,
         "speed": 30
-      }
+      },
+      "name": "Sunkern"
     },
     {
       "id": "chikorita",
@@ -533,8 +665,12 @@
       "baseStats": {
         "hp": 45,
         "attack": 49,
+        "defense": 65,
+        "specialAttack": 49,
+        "specialDefense": 65,
         "speed": 45
-      }
+      },
+      "name": "Chikorita"
     },
     {
       "id": "mareep",
@@ -543,8 +679,12 @@
       "baseStats": {
         "hp": 55,
         "attack": 40,
+        "defense": 40,
+        "specialAttack": 65,
+        "specialDefense": 45,
         "speed": 35
-      }
+      },
+      "name": "Mareep"
     },
     {
       "id": "shinx",
@@ -553,8 +693,12 @@
       "baseStats": {
         "hp": 45,
         "attack": 65,
+        "defense": 34,
+        "specialAttack": 40,
+        "specialDefense": 34,
         "speed": 45
-      }
+      },
+      "name": "Shinx"
     },
     {
       "id": "blitzle",
@@ -563,8 +707,12 @@
       "baseStats": {
         "hp": 45,
         "attack": 60,
+        "defense": 32,
+        "specialAttack": 50,
+        "specialDefense": 32,
         "speed": 76
-      }
+      },
+      "name": "Blitzle"
     },
     {
       "id": "tynamo",
@@ -573,8 +721,12 @@
       "baseStats": {
         "hp": 35,
         "attack": 55,
+        "defense": 40,
+        "specialAttack": 45,
+        "specialDefense": 40,
         "speed": 60
-      }
+      },
+      "name": "Tynamo"
     },
     {
       "id": "helioptile",
@@ -583,8 +735,12 @@
       "baseStats": {
         "hp": 44,
         "attack": 38,
+        "defense": 33,
+        "specialAttack": 61,
+        "specialDefense": 43,
         "speed": 70
-      }
+      },
+      "name": "Helioptile"
     },
     {
       "id": "gyarados",
@@ -593,8 +749,12 @@
       "baseStats": {
         "hp": 95,
         "attack": 125,
+        "defense": 79,
+        "specialAttack": 60,
+        "specialDefense": 100,
         "speed": 81
-      }
+      },
+      "name": "Gyarados"
     },
     {
       "id": "moltres",
@@ -603,8 +763,12 @@
       "baseStats": {
         "hp": 90,
         "attack": 100,
+        "defense": 90,
+        "specialAttack": 125,
+        "specialDefense": 85,
         "speed": 90
-      }
+      },
+      "name": "Moltres"
     },
     {
       "id": "kyogre",
@@ -613,8 +777,12 @@
       "baseStats": {
         "hp": 100,
         "attack": 100,
+        "defense": 90,
+        "specialAttack": 150,
+        "specialDefense": 140,
         "speed": 90
-      }
+      },
+      "name": "Kyogre"
     },
     {
       "id": "virizion",
@@ -623,8 +791,12 @@
       "baseStats": {
         "hp": 91,
         "attack": 90,
+        "defense": 72,
+        "specialAttack": 90,
+        "specialDefense": 129,
         "speed": 108
-      }
+      },
+      "name": "Virizion"
     },
     {
       "id": "zapdos",
@@ -633,8 +805,12 @@
       "baseStats": {
         "hp": 90,
         "attack": 90,
+        "defense": 85,
+        "specialAttack": 125,
+        "specialDefense": 90,
         "speed": 100
-      }
+      },
+      "name": "Zapdos"
     },
     {
       "id": "charmeleon",
@@ -643,8 +819,12 @@
       "baseStats": {
         "hp": 58,
         "attack": 64,
+        "defense": 58,
+        "specialAttack": 80,
+        "specialDefense": 65,
         "speed": 80
-      }
+      },
+      "name": "Charmeleon"
     },
     {
       "id": "charizard",
@@ -653,8 +833,12 @@
       "baseStats": {
         "hp": 78,
         "attack": 84,
+        "defense": 78,
+        "specialAttack": 109,
+        "specialDefense": 85,
         "speed": 100
-      }
+      },
+      "name": "Charizard"
     },
     {
       "id": "ninetales",
@@ -663,8 +847,12 @@
       "baseStats": {
         "hp": 73,
         "attack": 76,
+        "defense": 75,
+        "specialAttack": 81,
+        "specialDefense": 100,
         "speed": 100
-      }
+      },
+      "name": "Ninetales"
     },
     {
       "id": "wartortle",
@@ -673,8 +861,12 @@
       "baseStats": {
         "hp": 59,
         "attack": 63,
+        "defense": 80,
+        "specialAttack": 65,
+        "specialDefense": 80,
         "speed": 58
-      }
+      },
+      "name": "Wartortle"
     },
     {
       "id": "blastoise",
@@ -683,8 +875,12 @@
       "baseStats": {
         "hp": 79,
         "attack": 83,
+        "defense": 100,
+        "specialAttack": 85,
+        "specialDefense": 105,
         "speed": 78
-      }
+      },
+      "name": "Blastoise"
     },
     {
       "id": "golduck",
@@ -693,8 +889,12 @@
       "baseStats": {
         "hp": 80,
         "attack": 82,
+        "defense": 78,
+        "specialAttack": 95,
+        "specialDefense": 80,
         "speed": 85
-      }
+      },
+      "name": "Golduck"
     },
     {
       "id": "ivysaur",
@@ -703,8 +903,12 @@
       "baseStats": {
         "hp": 60,
         "attack": 62,
+        "defense": 63,
+        "specialAttack": 80,
+        "specialDefense": 80,
         "speed": 60
-      }
+      },
+      "name": "Ivysaur"
     },
     {
       "id": "venusaur",
@@ -713,8 +917,12 @@
       "baseStats": {
         "hp": 80,
         "attack": 82,
+        "defense": 83,
+        "specialAttack": 100,
+        "specialDefense": 100,
         "speed": 80
-      }
+      },
+      "name": "Venusaur"
     },
     {
       "id": "gloom",
@@ -723,8 +931,12 @@
       "baseStats": {
         "hp": 60,
         "attack": 65,
+        "defense": 70,
+        "specialAttack": 85,
+        "specialDefense": 75,
         "speed": 40
-      }
+      },
+      "name": "Gloom"
     },
     {
       "id": "vileplume",
@@ -733,8 +945,12 @@
       "baseStats": {
         "hp": 75,
         "attack": 80,
+        "defense": 85,
+        "specialAttack": 110,
+        "specialDefense": 90,
         "speed": 50
-      }
+      },
+      "name": "Vileplume"
     },
     {
       "id": "raichu",
@@ -743,8 +959,12 @@
       "baseStats": {
         "hp": 60,
         "attack": 90,
+        "defense": 55,
+        "specialAttack": 90,
+        "specialDefense": 80,
         "speed": 110
-      }
+      },
+      "name": "Raichu"
     },
     {
       "id": "magneton",
@@ -753,8 +973,12 @@
       "baseStats": {
         "hp": 50,
         "attack": 60,
+        "defense": 95,
+        "specialAttack": 120,
+        "specialDefense": 70,
         "speed": 70
-      }
+      },
+      "name": "Magneton"
     },
     {
       "id": "magnezone",
@@ -763,8 +987,12 @@
       "baseStats": {
         "hp": 70,
         "attack": 70,
+        "defense": 115,
+        "specialAttack": 130,
+        "specialDefense": 90,
         "speed": 60
-      }
+      },
+      "name": "Magnezone"
     },
     {
       "id": "arcanine",
@@ -773,8 +1001,12 @@
       "baseStats": {
         "hp": 90,
         "attack": 110,
+        "defense": 80,
+        "specialAttack": 100,
+        "specialDefense": 80,
         "speed": 95
-      }
+      },
+      "name": "Arcanine"
     },
     {
       "id": "rapidash",
@@ -783,8 +1015,12 @@
       "baseStats": {
         "hp": 65,
         "attack": 100,
+        "defense": 70,
+        "specialAttack": 80,
+        "specialDefense": 80,
         "speed": 105
-      }
+      },
+      "name": "Rapidash"
     },
     {
       "id": "poliwhirl",
@@ -793,8 +1029,12 @@
       "baseStats": {
         "hp": 65,
         "attack": 65,
+        "defense": 65,
+        "specialAttack": 50,
+        "specialDefense": 50,
         "speed": 90
-      }
+      },
+      "name": "Poliwhirl"
     },
     {
       "id": "poliwrath",
@@ -803,8 +1043,12 @@
       "baseStats": {
         "hp": 90,
         "attack": 95,
+        "defense": 95,
+        "specialAttack": 70,
+        "specialDefense": 90,
         "speed": 70
-      }
+      },
+      "name": "Poliwrath"
     },
     {
       "id": "seadra",
@@ -813,8 +1057,12 @@
       "baseStats": {
         "hp": 55,
         "attack": 65,
+        "defense": 95,
+        "specialAttack": 95,
+        "specialDefense": 45,
         "speed": 85
-      }
+      },
+      "name": "Seadra"
     },
     {
       "id": "kingdra",
@@ -823,8 +1071,12 @@
       "baseStats": {
         "hp": 75,
         "attack": 95,
+        "defense": 95,
+        "specialAttack": 95,
+        "specialDefense": 95,
         "speed": 85
-      }
+      },
+      "name": "Kingdra"
     },
     {
       "id": "weepinbell",
@@ -833,8 +1085,12 @@
       "baseStats": {
         "hp": 65,
         "attack": 90,
+        "defense": 50,
+        "specialAttack": 85,
+        "specialDefense": 45,
         "speed": 55
-      }
+      },
+      "name": "Weepinbell"
     },
     {
       "id": "victreebel",
@@ -843,8 +1099,12 @@
       "baseStats": {
         "hp": 80,
         "attack": 105,
+        "defense": 65,
+        "specialAttack": 100,
+        "specialDefense": 70,
         "speed": 70
-      }
+      },
+      "name": "Victreebel"
     },
     {
       "id": "exeggutor",
@@ -853,8 +1113,12 @@
       "baseStats": {
         "hp": 95,
         "attack": 95,
+        "defense": 85,
+        "specialAttack": 125,
+        "specialDefense": 75,
         "speed": 55
-      }
+      },
+      "name": "Exeggutor"
     },
     {
       "id": "electrode",
@@ -863,8 +1127,12 @@
       "baseStats": {
         "hp": 60,
         "attack": 50,
+        "defense": 70,
+        "specialAttack": 80,
+        "specialDefense": 80,
         "speed": 150
-      }
+      },
+      "name": "Electrode"
     },
     {
       "id": "electivire",
@@ -873,8 +1141,12 @@
       "baseStats": {
         "hp": 75,
         "attack": 123,
+        "defense": 67,
+        "specialAttack": 95,
+        "specialDefense": 85,
         "speed": 95
-      }
+      },
+      "name": "Electivire"
     },
     {
       "id": "magmortar",
@@ -883,8 +1155,12 @@
       "baseStats": {
         "hp": 75,
         "attack": 95,
+        "defense": 67,
+        "specialAttack": 125,
+        "specialDefense": 95,
         "speed": 83
-      }
+      },
+      "name": "Magmortar"
     },
     {
       "id": "magcargo",
@@ -893,8 +1169,12 @@
       "baseStats": {
         "hp": 60,
         "attack": 50,
+        "defense": 120,
+        "specialAttack": 90,
+        "specialDefense": 80,
         "speed": 30
-      }
+      },
+      "name": "Magcargo"
     },
     {
       "id": "camerupt",
@@ -903,8 +1183,12 @@
       "baseStats": {
         "hp": 70,
         "attack": 100,
+        "defense": 70,
+        "specialAttack": 105,
+        "specialDefense": 75,
         "speed": 40
-      }
+      },
+      "name": "Camerupt"
     },
     {
       "id": "quilava",
@@ -913,8 +1197,12 @@
       "baseStats": {
         "hp": 58,
         "attack": 64,
+        "defense": 58,
+        "specialAttack": 80,
+        "specialDefense": 65,
         "speed": 80
-      }
+      },
+      "name": "Quilava"
     },
     {
       "id": "typhlosion",
@@ -923,8 +1211,12 @@
       "baseStats": {
         "hp": 78,
         "attack": 84,
+        "defense": 78,
+        "specialAttack": 109,
+        "specialDefense": 85,
         "speed": 100
-      }
+      },
+      "name": "Typhlosion"
     },
     {
       "id": "combusken",
@@ -933,8 +1225,12 @@
       "baseStats": {
         "hp": 60,
         "attack": 85,
+        "defense": 60,
+        "specialAttack": 85,
+        "specialDefense": 60,
         "speed": 55
-      }
+      },
+      "name": "Combusken"
     },
     {
       "id": "blaziken",
@@ -943,8 +1239,12 @@
       "baseStats": {
         "hp": 80,
         "attack": 120,
+        "defense": 70,
+        "specialAttack": 110,
+        "specialDefense": 70,
         "speed": 80
-      }
+      },
+      "name": "Blaziken"
     },
     {
       "id": "monferno",
@@ -953,8 +1253,12 @@
       "baseStats": {
         "hp": 64,
         "attack": 78,
+        "defense": 52,
+        "specialAttack": 78,
+        "specialDefense": 52,
         "speed": 81
-      }
+      },
+      "name": "Monferno"
     },
     {
       "id": "infernape",
@@ -963,8 +1267,12 @@
       "baseStats": {
         "hp": 76,
         "attack": 104,
+        "defense": 71,
+        "specialAttack": 104,
+        "specialDefense": 71,
         "speed": 108
-      }
+      },
+      "name": "Infernape"
     },
     {
       "id": "kingler",
@@ -973,8 +1281,12 @@
       "baseStats": {
         "hp": 55,
         "attack": 130,
+        "defense": 115,
+        "specialAttack": 50,
+        "specialDefense": 50,
         "speed": 75
-      }
+      },
+      "name": "Kingler"
     },
     {
       "id": "starmie",
@@ -983,8 +1295,12 @@
       "baseStats": {
         "hp": 60,
         "attack": 75,
+        "defense": 85,
+        "specialAttack": 100,
+        "specialDefense": 85,
         "speed": 115
-      }
+      },
+      "name": "Starmie"
     },
     {
       "id": "seaking",
@@ -993,8 +1309,12 @@
       "baseStats": {
         "hp": 80,
         "attack": 92,
+        "defense": 65,
+        "specialAttack": 65,
+        "specialDefense": 80,
         "speed": 68
-      }
+      },
+      "name": "Seaking"
     },
     {
       "id": "cloyster",
@@ -1003,8 +1323,12 @@
       "baseStats": {
         "hp": 50,
         "attack": 95,
+        "defense": 180,
+        "specialAttack": 85,
+        "specialDefense": 45,
         "speed": 70
-      }
+      },
+      "name": "Cloyster"
     },
     {
       "id": "quagsire",
@@ -1013,8 +1337,12 @@
       "baseStats": {
         "hp": 95,
         "attack": 85,
+        "defense": 85,
+        "specialAttack": 65,
+        "specialDefense": 65,
         "speed": 35
-      }
+      },
+      "name": "Quagsire"
     },
     {
       "id": "lombre",
@@ -1023,8 +1351,12 @@
       "baseStats": {
         "hp": 60,
         "attack": 50,
+        "defense": 50,
+        "specialAttack": 60,
+        "specialDefense": 70,
         "speed": 50
-      }
+      },
+      "name": "Lombre"
     },
     {
       "id": "ludicolo",
@@ -1033,8 +1365,12 @@
       "baseStats": {
         "hp": 80,
         "attack": 70,
+        "defense": 70,
+        "specialAttack": 90,
+        "specialDefense": 100,
         "speed": 70
-      }
+      },
+      "name": "Ludicolo"
     },
     {
       "id": "tangrowth",
@@ -1043,8 +1379,12 @@
       "baseStats": {
         "hp": 100,
         "attack": 100,
+        "defense": 125,
+        "specialAttack": 110,
+        "specialDefense": 50,
         "speed": 50
-      }
+      },
+      "name": "Tangrowth"
     },
     {
       "id": "skiploom",
@@ -1053,8 +1393,12 @@
       "baseStats": {
         "hp": 55,
         "attack": 45,
+        "defense": 50,
+        "specialAttack": 45,
+        "specialDefense": 65,
         "speed": 80
-      }
+      },
+      "name": "Skiploom"
     },
     {
       "id": "jumpluff",
@@ -1063,8 +1407,12 @@
       "baseStats": {
         "hp": 75,
         "attack": 55,
+        "defense": 70,
+        "specialAttack": 55,
+        "specialDefense": 95,
         "speed": 110
-      }
+      },
+      "name": "Jumpluff"
     },
     {
       "id": "nuzleaf",
@@ -1073,8 +1421,12 @@
       "baseStats": {
         "hp": 70,
         "attack": 70,
+        "defense": 40,
+        "specialAttack": 60,
+        "specialDefense": 40,
         "speed": 60
-      }
+      },
+      "name": "Nuzleaf"
     },
     {
       "id": "shiftry",
@@ -1083,8 +1435,12 @@
       "baseStats": {
         "hp": 90,
         "attack": 100,
+        "defense": 60,
+        "specialAttack": 90,
+        "specialDefense": 60,
         "speed": 80
-      }
+      },
+      "name": "Shiftry"
     },
     {
       "id": "breloom",
@@ -1093,8 +1449,12 @@
       "baseStats": {
         "hp": 60,
         "attack": 130,
+        "defense": 80,
+        "specialAttack": 60,
+        "specialDefense": 60,
         "speed": 70
-      }
+      },
+      "name": "Breloom"
     },
     {
       "id": "sunflora",
@@ -1103,8 +1463,12 @@
       "baseStats": {
         "hp": 75,
         "attack": 75,
+        "defense": 55,
+        "specialAttack": 105,
+        "specialDefense": 85,
         "speed": 30
-      }
+      },
+      "name": "Sunflora"
     },
     {
       "id": "bayleef",
@@ -1113,8 +1477,12 @@
       "baseStats": {
         "hp": 60,
         "attack": 62,
+        "defense": 80,
+        "specialAttack": 63,
+        "specialDefense": 80,
         "speed": 60
-      }
+      },
+      "name": "Bayleef"
     },
     {
       "id": "meganium",
@@ -1123,8 +1491,12 @@
       "baseStats": {
         "hp": 80,
         "attack": 82,
+        "defense": 100,
+        "specialAttack": 83,
+        "specialDefense": 100,
         "speed": 80
-      }
+      },
+      "name": "Meganium"
     },
     {
       "id": "flaaffy",
@@ -1133,8 +1505,12 @@
       "baseStats": {
         "hp": 70,
         "attack": 55,
+        "defense": 55,
+        "specialAttack": 80,
+        "specialDefense": 60,
         "speed": 45
-      }
+      },
+      "name": "Flaaffy"
     },
     {
       "id": "ampharos",
@@ -1143,8 +1519,12 @@
       "baseStats": {
         "hp": 90,
         "attack": 75,
+        "defense": 85,
+        "specialAttack": 115,
+        "specialDefense": 90,
         "speed": 55
-      }
+      },
+      "name": "Ampharos"
     },
     {
       "id": "luxio",
@@ -1153,8 +1533,12 @@
       "baseStats": {
         "hp": 60,
         "attack": 85,
+        "defense": 49,
+        "specialAttack": 60,
+        "specialDefense": 49,
         "speed": 60
-      }
+      },
+      "name": "Luxio"
     },
     {
       "id": "luxray",
@@ -1163,8 +1547,12 @@
       "baseStats": {
         "hp": 80,
         "attack": 120,
+        "defense": 79,
+        "specialAttack": 95,
+        "specialDefense": 79,
         "speed": 70
-      }
+      },
+      "name": "Luxray"
     },
     {
       "id": "zebstrika",
@@ -1173,8 +1561,12 @@
       "baseStats": {
         "hp": 75,
         "attack": 100,
+        "defense": 63,
+        "specialAttack": 80,
+        "specialDefense": 63,
         "speed": 116
-      }
+      },
+      "name": "Zebstrika"
     },
     {
       "id": "eelektrik",
@@ -1183,8 +1575,12 @@
       "baseStats": {
         "hp": 65,
         "attack": 85,
+        "defense": 70,
+        "specialAttack": 75,
+        "specialDefense": 70,
         "speed": 40
-      }
+      },
+      "name": "Eelektrik"
     },
     {
       "id": "eelektross",
@@ -1193,8 +1589,12 @@
       "baseStats": {
         "hp": 85,
         "attack": 115,
+        "defense": 80,
+        "specialAttack": 105,
+        "specialDefense": 80,
         "speed": 50
-      }
+      },
+      "name": "Eelektross"
     },
     {
       "id": "heliolisk",
@@ -1203,8 +1603,12 @@
       "baseStats": {
         "hp": 62,
         "attack": 55,
+        "defense": 52,
+        "specialAttack": 109,
+        "specialDefense": 94,
         "speed": 109
-      }
+      },
+      "name": "Heliolisk"
     }
   ]
 }

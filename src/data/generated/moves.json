@@ -1,0 +1,428 @@
+{
+  "byBase": {
+    "charmander": [
+      "ember",
+      "flamethrower",
+      "fire-blast"
+    ],
+    "vulpix": [
+      "flame-wheel",
+      "flamethrower",
+      "fire-blast"
+    ],
+    "squirtle": [
+      "water-gun",
+      "surf",
+      "hydro-pump"
+    ],
+    "psyduck": [
+      "water-pulse",
+      "aqua-tail",
+      "hydro-pump"
+    ],
+    "bulbasaur": [
+      "vine-whip",
+      "razor-leaf",
+      "solar-beam"
+    ],
+    "oddish": [
+      "razor-leaf",
+      "petal-blizzard",
+      "petal-dance"
+    ],
+    "pikachu": [
+      "thunder-shock",
+      "thunderbolt",
+      "thunder"
+    ],
+    "magnemite": [
+      "thunder-shock",
+      "thunderbolt",
+      "zap-cannon"
+    ],
+    "growlithe": [
+      "flame-wheel",
+      "flamethrower",
+      "burn-up"
+    ],
+    "ponyta": [
+      "flame-wheel",
+      "flamethrower",
+      "flare-blitz"
+    ],
+    "poliwag": [
+      "bubble",
+      "bubble-beam",
+      "hydro-pump"
+    ],
+    "horsea": [
+      "water-pulse",
+      "waterfall",
+      "wave-crash"
+    ],
+    "bellsprout": [
+      "razor-leaf",
+      "giga-drain",
+      "leaf-storm"
+    ],
+    "exeggcute": [
+      "mega-drain",
+      "seed-bomb",
+      "leaf-storm"
+    ],
+    "voltorb": [
+      "charge-beam",
+      "thunderbolt",
+      "thunder"
+    ],
+    "electabuzz": [
+      "shock-wave",
+      "thunderbolt",
+      "thunder"
+    ],
+    "magmar": [
+      "flame-wheel",
+      "flamethrower",
+      "fire-blast"
+    ],
+    "slugma": [
+      "incinerate",
+      "flamethrower",
+      "fire-blast"
+    ],
+    "numel": [
+      "flame-wheel",
+      "flamethrower",
+      "eruption"
+    ],
+    "cyndaquil": [
+      "flame-wheel",
+      "flamethrower",
+      "eruption"
+    ],
+    "torchic": [
+      "flame-charge",
+      "flamethrower",
+      "flare-blitz"
+    ],
+    "chimchar": [
+      "flame-wheel",
+      "flamethrower",
+      "flare-blitz"
+    ],
+    "krabby": [
+      "bubble",
+      "razor-shell",
+      "crabhammer"
+    ],
+    "staryu": [
+      "water-gun",
+      "surf",
+      "hydro-pump"
+    ],
+    "goldeen": [
+      "water-pulse",
+      "waterfall",
+      "hydro-pump"
+    ],
+    "shellder": [
+      "water-gun",
+      "razor-shell",
+      "hydro-pump"
+    ],
+    "wooper": [
+      "water-gun",
+      "aqua-tail",
+      "hydro-pump"
+    ],
+    "lotad": [
+      "bubble",
+      "bubble-beam",
+      "hydro-pump"
+    ],
+    "tangela": [
+      "vine-whip",
+      "energy-ball",
+      "power-whip"
+    ],
+    "hoppip": [
+      "mega-drain",
+      "giga-drain",
+      "solar-beam"
+    ],
+    "seedot": [
+      "mega-drain",
+      "leaf-blade",
+      "leaf-storm"
+    ],
+    "shroomish": [
+      "mega-drain",
+      "seed-bomb",
+      "solar-beam"
+    ],
+    "sunkern": [
+      "razor-leaf",
+      "petal-blizzard",
+      "leaf-storm"
+    ],
+    "chikorita": [
+      "magical-leaf",
+      "giga-drain",
+      "petal-dance"
+    ],
+    "mareep": [
+      "charge-beam",
+      "discharge",
+      "zap-cannon"
+    ],
+    "shinx": [
+      "thunder-shock",
+      "wild-charge",
+      "thunder"
+    ],
+    "blitzle": [
+      "shock-wave",
+      "wild-charge",
+      "thunder"
+    ],
+    "tynamo": [
+      "charge-beam",
+      "thunderbolt",
+      "zap-cannon"
+    ],
+    "helioptile": [
+      "thunder-shock",
+      "thunderbolt",
+      "thunder"
+    ]
+  },
+  "defaults": {
+    "fire": [
+      "ember",
+      "flamethrower",
+      "fire-blast"
+    ],
+    "water": [
+      "water-gun",
+      "surf",
+      "hydro-pump"
+    ],
+    "grass": [
+      "vine-whip",
+      "giga-drain",
+      "solar-beam"
+    ],
+    "electric": [
+      "thunder-shock",
+      "thunderbolt",
+      "thunder"
+    ]
+  },
+  "moves": {
+    "aqua-tail": {
+      "name": "Acua Cola",
+      "type": "water",
+      "power": 90
+    },
+    "bubble": {
+      "name": "Burbuja",
+      "type": "water",
+      "power": 40
+    },
+    "bubble-beam": {
+      "name": "Rayo Burbuja",
+      "type": "water",
+      "power": 65
+    },
+    "burn-up": {
+      "name": "Llama Final",
+      "type": "fire",
+      "power": 130
+    },
+    "charge-beam": {
+      "name": "Rayo Carga",
+      "type": "electric",
+      "power": 50
+    },
+    "crabhammer": {
+      "name": "Martillazo",
+      "type": "water",
+      "power": 100
+    },
+    "discharge": {
+      "name": "Chispazo",
+      "type": "electric",
+      "power": 80
+    },
+    "ember": {
+      "name": "Ascuas",
+      "type": "fire",
+      "power": 40
+    },
+    "energy-ball": {
+      "name": "Energibola",
+      "type": "grass",
+      "power": 90
+    },
+    "eruption": {
+      "name": "Estallido",
+      "type": "fire",
+      "power": 150
+    },
+    "fire-blast": {
+      "name": "Llamarada",
+      "type": "fire",
+      "power": 110
+    },
+    "flame-charge": {
+      "name": "Nitrocarga",
+      "type": "fire",
+      "power": 50
+    },
+    "flame-wheel": {
+      "name": "Rueda Fuego",
+      "type": "fire",
+      "power": 60
+    },
+    "flamethrower": {
+      "name": "Lanzallamas",
+      "type": "fire",
+      "power": 90
+    },
+    "flare-blitz": {
+      "name": "Envite Ígneo",
+      "type": "fire",
+      "power": 120
+    },
+    "giga-drain": {
+      "name": "Gigadrenado",
+      "type": "grass",
+      "power": 75
+    },
+    "hydro-pump": {
+      "name": "Hidrobomba",
+      "type": "water",
+      "power": 110
+    },
+    "incinerate": {
+      "name": "Calcinación",
+      "type": "fire",
+      "power": 60
+    },
+    "leaf-blade": {
+      "name": "Hoja Aguda",
+      "type": "grass",
+      "power": 90
+    },
+    "leaf-storm": {
+      "name": "Lluevehojas",
+      "type": "grass",
+      "power": 130
+    },
+    "magical-leaf": {
+      "name": "Hoja Mágica",
+      "type": "grass",
+      "power": 60
+    },
+    "mega-drain": {
+      "name": "Megaagotar",
+      "type": "grass",
+      "power": 40
+    },
+    "petal-blizzard": {
+      "name": "Tormenta Floral",
+      "type": "grass",
+      "power": 90
+    },
+    "petal-dance": {
+      "name": "Danza Pétalo",
+      "type": "grass",
+      "power": 120
+    },
+    "power-whip": {
+      "name": "Latigazo",
+      "type": "grass",
+      "power": 120
+    },
+    "razor-leaf": {
+      "name": "Hoja Afilada",
+      "type": "grass",
+      "power": 55
+    },
+    "razor-shell": {
+      "name": "Concha Filo",
+      "type": "water",
+      "power": 75
+    },
+    "seed-bomb": {
+      "name": "Bomba Germen",
+      "type": "grass",
+      "power": 80
+    },
+    "shock-wave": {
+      "name": "Onda Voltio",
+      "type": "electric",
+      "power": 60
+    },
+    "solar-beam": {
+      "name": "Rayo Solar",
+      "type": "grass",
+      "power": 120
+    },
+    "surf": {
+      "name": "Surf",
+      "type": "water",
+      "power": 90
+    },
+    "thunder": {
+      "name": "Trueno",
+      "type": "electric",
+      "power": 110
+    },
+    "thunder-shock": {
+      "name": "Impactrueno",
+      "type": "electric",
+      "power": 40
+    },
+    "thunderbolt": {
+      "name": "Rayo",
+      "type": "electric",
+      "power": 90
+    },
+    "vine-whip": {
+      "name": "Látigo Cepa",
+      "type": "grass",
+      "power": 45
+    },
+    "water-gun": {
+      "name": "Pistola Agua",
+      "type": "water",
+      "power": 40
+    },
+    "water-pulse": {
+      "name": "Hidropulso",
+      "type": "water",
+      "power": 60
+    },
+    "waterfall": {
+      "name": "Cascada",
+      "type": "water",
+      "power": 80
+    },
+    "wave-crash": {
+      "name": "Envite Acuático",
+      "type": "water",
+      "power": 120
+    },
+    "wild-charge": {
+      "name": "Voltio Cruel",
+      "type": "electric",
+      "power": 90
+    },
+    "zap-cannon": {
+      "name": "Electrocañón",
+      "type": "electric",
+      "power": 120
+    }
+  }
+}

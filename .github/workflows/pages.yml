@@ -32,13 +32,16 @@ jobs:
       - run: pnpm typecheck
       - run: pnpm test
 
-      # Sprites are never committed (ADR-018): fetched on every build, cached between builds.
+      # Sprites are never committed (ADR-018): fetched on every build, cached between builds. Same
+      # key as ci.yml (see the note there), so both workflows share one cache.
       - uses: actions/cache@v4
         with:
           path: |
             tools/fetch-data/.cache
             src/assets/sprites
-          key: fetch-data-${{ hashFiles('tools/fetch-data/roster.json', 'tools/fetch-data/*.ts') }}
+          key: fetch-data-${{ hashFiles('tools/fetch-data/roster.json', 'tools/fetch-data/moves-overrides.json') }}
+          restore-keys: |
+            fetch-data-
       - run: pnpm fetch-data
       - run: git diff --exit-code -- src/data/generated
       # The page must carry the sprites and the affiliation notice: fail if either is missing.
