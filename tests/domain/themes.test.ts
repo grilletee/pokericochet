@@ -267,6 +267,24 @@ describe('bosses between waves (ADR-028)', () => {
     return { run, events };
   }
 
+  it('waits for the first boss to fall before a second one due at the same wave', () => {
+    const [first] = ladder.interludes ?? [];
+    if (first === undefined) throw new Error('fixture without interlude');
+    const twice: GameConfig = { ...ladder, interludes: [first, { ...first, hpScale: 4 }] };
+    const run = createRun(twice, 4, 'charmander');
+    for (let i = 0; i < 60 && !isBossAlive(run); i++) tick(run, { moveX: 0 }, twice);
+    const bossId = run.boss.id;
+    for (let i = 0; i < 20; i++) tick(run, { moveX: 0 }, twice);
+    expect(run.boss.next).toBe(1);
+    expect(run.boss.id).toBe(bossId);
+    const boss = run.enemies.find((e) => e.id === bossId) as Enemy;
+    damageEnemy(run, twice, boss, 1e9);
+    run.enemies = run.enemies.filter((e) => e.hp > 0);
+    tick(run, { moveX: 0 }, twice);
+    expect(run.boss.next).toBe(2);
+    expect(run.boss.id).not.toBe(bossId);
+  });
+
   it('appears when its waves are over, of the type of the wave that just ended', () => {
     const { run, events } = toInterlude();
     expect(events).toContain('bossSpawn');
