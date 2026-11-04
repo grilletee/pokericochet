@@ -1,13 +1,16 @@
-import { createBall } from './combat';
 import type { GameConfig } from './config';
 import { SpatialGrid } from './grid';
 import { imul32 } from './int32';
 import { xpCost } from './progression';
 import { cloneRng, deriveRng, nextInt, type RngState } from './rng';
-import type { Ball, BallBody, Card, Enemy, GameEvent, Pickup } from './types';
+import { addMember } from './team';
+import type { Ball, BallBody, Card, Enemy, GameEvent, GameType, Member, Pickup } from './types';
 
-/** `levelup` pauses the simulation until a card is picked (ADR-014). */
-export type Phase = 'playing' | 'levelup' | 'won' | 'lost';
+/**
+ * `levelup` pauses the simulation until a card is picked (ADR-014); `replace` until the player
+ * answers what to do with a capture that finds the team full (ADR-030).
+ */
+export type Phase = 'playing' | 'levelup' | 'replace' | 'won' | 'lost';
 
 export interface Player {
   x: number;
@@ -19,8 +22,6 @@ export interface Player {
   level: number;
   /** Multiplies every hit (damage cards). */
   damageMult: number;
-  /** Multiplies the ball cooldown (cadence cards). */
-  cooldownMult: number;
   /** Accumulated drain strength, towards healing 1 hp. */
   drain: number;
 }
@@ -70,6 +71,11 @@ export interface Run {
   phase: Phase;
   rng: RunRng;
   player: Player;
+  /** The Pokémon of the team, at most `team.maxMembers` (ADR-030). */
+  team: Member[];
+  /** Capture waiting for an answer while the phase is `replace` (`stage`: its evolution stage). */
+  pendingCapture: { species: string; stage: number } | null;
+  /** The balls the team fires, derived from the Pokémon (`Ball.owner`); the physics works on them. */
   loadout: Ball[];
   /** Per loadout slot: >0 cooling down, 0 ready, -1 in flight or waiting on the floor. */
   cooldowns: number[];
@@ -104,7 +110,7 @@ function newGrid(config: GameConfig): SpatialGrid {
     config.arena.width,
     config.arena.height,
     config.grid.cellSize,
-    config.ball.radius +
+    Math.max(config.ball.radius, ...config.team.ballRadiusByStage) +
       Math.max(
         config.enemy.radius,
         config.boss?.radius ?? 0,
@@ -113,10 +119,25 @@ function newGrid(config: GameConfig): SpatialGrid {
   );
 }
 
-/** One theme per wave, from the run's own `themes` stream (so spawns and cards are not disturbed). */
-function drawThemes(config: GameConfig, rng: RngState): string[] {
-  return config.waves.map((wave) => {
-    const candidates = wave.themes ?? [];
+/**
+ * One theme per wave, from the run's own `themes` stream (so spawns and cards are not disturbed).
+ * The first wave only takes themes whose type does not resist the starter's (ADR-033): so no
+ * starter begins against enemies it cannot hurt. It still draws one number, whatever is left.
+ */
+function drawThemes(
+  config: GameConfig,
+  rng: RngState,
+  starterType: GameType | undefined,
+): string[] {
+  return config.waves.map((wave, index) => {
+    let candidates = wave.themes ?? [];
+    if (index === 0 && starterType !== undefined) {
+      const fair = candidates.filter((id) => {
+        const type = config.themes?.[id]?.type;
+        return type === undefined || config.typeChart[starterType][type] >= 1;
+      });
+      if (fair.length > 0) candidates = fair;
+    }
     if (candidates.length === 0) return '';
     return candidates[nextInt(rng, candidates.length)] ?? '';
   });
@@ -125,8 +146,8 @@ function drawThemes(config: GameConfig, rng: RngState): string[] {
 export function createRun(config: GameConfig, seed: number, starterSpecies: string): Run {
   const normalizedSeed = seed >>> 0;
   const themesRng = deriveRng(normalizedSeed, 'themes');
-  const waveThemes = drawThemes(config, themesRng);
-  return {
+  const waveThemes = drawThemes(config, themesRng, config.species[starterSpecies]?.type);
+  const run: Run = {
     seed: normalizedSeed,
     starter: starterSpecies,
     kills: 0,
@@ -148,11 +169,12 @@ export function createRun(config: GameConfig, seed: number, starterSpecies: stri
       xpNext: xpCost(config, 1),
       level: 1,
       damageMult: 1,
-      cooldownMult: 1,
       drain: 0,
     },
-    loadout: [createBall(config, starterSpecies, 1)],
-    cooldowns: [0],
+    team: [],
+    pendingCapture: null,
+    loadout: [],
+    cooldowns: [],
     pickups: [],
     captureMisses: config.capture.startMisses,
     aimX: config.arena.width / 2,
@@ -160,7 +182,7 @@ export function createRun(config: GameConfig, seed: number, starterSpecies: stri
     autoAim: false,
     waveThemes,
     captured: [],
-    nextBallId: 2,
+    nextBallId: 1,
     bodies: [],
     enemies: [],
     nextEnemyId: 1,
@@ -170,6 +192,8 @@ export function createRun(config: GameConfig, seed: number, starterSpecies: stri
     events: [],
     grid: newGrid(config),
   };
+  addMember(run, config, starterSpecies, 1, true);
+  return run;
 }
 
 export function cloneRun(run: Run): Run {
@@ -188,6 +212,8 @@ export function cloneRun(run: Run): Run {
       themes: cloneRng(run.rng.themes),
     },
     player: { ...run.player },
+    team: run.team.map((m) => ({ ...m })),
+    pendingCapture: run.pendingCapture === null ? null : { ...run.pendingCapture },
     loadout: run.loadout.slice(), // balls are immutable values
     cooldowns: run.cooldowns.slice(),
     pickups: run.pickups.map((p) => ({ ...p })),
@@ -276,11 +302,24 @@ export function hashRun(run: Run): string {
   h.num(p.xpNext);
   h.int(p.level);
   h.num(p.damageMult);
-  h.num(p.cooldownMult);
   h.num(p.drain);
+  h.int(run.team.length);
+  for (const member of run.team) {
+    h.str(member.species);
+    h.str(member.type);
+    h.int(member.level);
+    h.int(member.starter ? 1 : 0);
+    h.int(member.damageUps);
+    h.int(member.cadenceUps);
+  }
+  h.int(run.pendingCapture === null ? 0 : 1);
+  h.str(run.pendingCapture?.species ?? '');
+  h.int(run.pendingCapture?.stage ?? 0);
   h.int(run.loadout.length);
   for (const ball of run.loadout) {
     h.int(ball.id);
+    h.int(ball.owner);
+    h.int(ball.stage);
     h.str(ball.species);
     h.str(ball.type);
     h.int(ball.level);
@@ -291,6 +330,8 @@ export function hashRun(run: Run): string {
     for (const effect of ball.effects) {
       h.str(effect.kind);
       h.num(effect.strength);
+      h.num(effect.radius ?? 0);
+      h.int(effect.count ?? 0);
     }
   }
   h.int(run.cooldowns.length);
@@ -334,6 +375,8 @@ export function hashRun(run: Run): string {
     h.num(e.xp);
     h.int(e.burnTicks);
     h.num(e.burnDps);
+    h.int(e.slowTicks);
+    h.num(e.slow);
   }
   h.int(run.nextEnemyId);
   h.int(run.wave.index);
@@ -358,6 +401,9 @@ export function hashRun(run: Run): string {
     h.str(card.kind === 'newBall' ? card.species : '');
     h.int(card.kind === 'hybrid' ? card.a : -1);
     h.int(card.kind === 'hybrid' ? card.b : -1);
+    h.int(
+      card.kind === 'train' || card.kind === 'power' || card.kind === 'cadence' ? card.member : -1,
+    );
   }
   return h.digest();
 }

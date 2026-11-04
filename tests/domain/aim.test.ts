@@ -119,7 +119,7 @@ describe('the aim command', () => {
   it('does not change anything while the run is paused for a card', () => {
     const run = createRun(quietConfig, 1, 'charmander');
     run.phase = 'levelup';
-    run.offers = [{ kind: 'damage' }];
+    run.offers = [{ kind: 'team' }];
     tick(run, { moveX: 0, aimX: 10, aimY: 10, autoAim: true }, quietConfig);
     expect([run.aimX, run.aimY, run.autoAim]).toEqual([quietConfig.arena.width / 2, 0, false]);
   });

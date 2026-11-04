@@ -29,6 +29,8 @@ const { byType: _legendaries, ...plainBoss } = baseConfig.boss ?? { species: 'gy
 
 export const config: GameConfig = {
   ...baseConfig,
+  // The starter bonus has its own tests; the rest of the damage tests count on exact numbers.
+  team: { ...baseConfig.team, starterBonus: 0 },
   ...(baseConfig.boss === undefined ? {} : { boss: plainBoss as NonNullable<GameConfig['boss']> }),
   interludes: [],
   species: Object.fromEntries(SPECIES.map((s) => [s.id, s])),
@@ -51,6 +53,8 @@ export function makeBall(overrides: Partial<Ball> & { type?: GameType } = {}): B
   const type = overrides.type ?? 'fire';
   return {
     id: 1,
+    owner: 0,
+    stage: 1,
     species: 'charmander',
     type,
     level: 1,
@@ -106,6 +110,8 @@ export function makeEnemy(overrides: Partial<Enemy> = {}): Enemy {
     xp: 3,
     burnTicks: 0,
     burnDps: 0,
+    slowTicks: 0,
+    slow: 0,
     ...overrides,
   };
 }

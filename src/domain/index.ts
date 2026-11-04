@@ -1,10 +1,27 @@
+export { abilitiesFor } from './abilities';
 export type { AimDirection } from './aim';
 export { aimDirection } from './aim';
 export { applyCard, drawOffers } from './cards';
-export { createBall, effectiveness, getSpecies, hitDamage, mapStat } from './combat';
-export type { BossDef, GameConfig, InterludeDef, ThemeDef, WaveDef } from './config';
+export {
+  createBall,
+  damagePlayer,
+  effectiveness,
+  getSpecies,
+  hitDamage,
+  mapStat,
+} from './combat';
+export type {
+  AbilitiesDef,
+  BossDef,
+  GameConfig,
+  InterludeDef,
+  TeamDef,
+  ThemeDef,
+  WaveDef,
+} from './config';
 export {
   applyHitEffects,
+  ballPower,
   damageEnemy,
   pierceCount,
   tickBurning,
@@ -33,12 +50,28 @@ export {
   PHASE_LEVELUP,
   PHASE_LOST,
   PHASE_PLAYING,
+  PHASE_REPLACE,
   PHASE_WON,
   typeCode,
   writeSnapshot,
 } from './snapshot';
 export type { RunSummary } from './summary';
 export { KILL_SCORE, summarizeRun, WAVE_SCORE, WIN_SCORE } from './summary';
+export {
+  addMember,
+  ballRadius,
+  ballsFor,
+  cadenceMult,
+  captureLevel,
+  joinTeam,
+  memberIndexOf,
+  powerMult,
+  resolveReplace,
+  stageOf,
+  syncMember,
+  teamIsFull,
+  trainMember,
+} from './team';
 export type { TickOutput } from './tick';
 export { tick } from './tick';
 export type {
@@ -51,8 +84,10 @@ export type {
   Enemy,
   GameEvent,
   GameType,
+  Member,
   PickAction,
   Pickup,
+  ReplaceAction,
   SpeciesDef,
 } from './types';
 export { GAME_TYPES } from './types';

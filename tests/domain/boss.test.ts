@@ -257,6 +257,7 @@ describe('boss: state, clone, hash and snapshot', () => {
 
   it('the spatial grid reaches a boss bigger than any normal enemy', () => {
     const run = createRun(withConfig({ boss }), 1, 'charmander');
-    expect(run.grid.pad).toBe(quietConfig.ball.radius + 40);
+    // The biggest ball (a last-stage one) plus the biggest body: nothing is missed by the grid.
+    expect(run.grid.pad).toBe(Math.max(...quietConfig.team.ballRadiusByStage) + 40);
   });
 });

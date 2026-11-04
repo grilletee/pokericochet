@@ -39,7 +39,9 @@ describe('run summary and score', () => {
       ticks: 0,
     });
     expect(lost.score).toBe(3 * WAVE_SCORE + 12 * KILL_SCORE);
-    expect(lost.balls).toEqual([{ species: 'bulbasaur', level: 1, hybrid: false }]);
+    expect(lost.team).toEqual([{ species: 'bulbasaur', level: 1, stage: 1 }]);
+    run.team[0] = { ...(run.team[0] as NonNullable<(typeof run.team)[number]>), level: 6 };
+    expect(summarizeRun(run, config).team).toEqual([{ species: 'bulbasaur', level: 6, stage: 3 }]);
 
     run.phase = 'won';
     run.wave.index = 7;

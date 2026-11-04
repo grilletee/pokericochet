@@ -78,10 +78,12 @@ function spawnEnemy(run: Run, config: GameConfig, wave: SpawnProfile): void {
       wave.speedScale *
       variation,
     radius: enemy.radius,
-    threat: enemy.threat,
+    threat: enemy.threat + (wave.tier - 1) * enemy.threatPerTier,
     xp: enemyXp(config, species.baseStats.hp),
     burnTicks: 0,
     burnDps: 0,
+    slowTicks: 0,
+    slow: 0,
   };
   run.nextEnemyId += 1;
   run.enemies.push(spawned);
@@ -147,6 +149,8 @@ function placeBoss(run: Run, config: GameConfig, speciesId: string, shape: BossS
     xp: 0,
     burnTicks: 0,
     burnDps: 0,
+    slowTicks: 0,
+    slow: 0,
   };
   run.nextEnemyId += 1;
   run.enemies.push(boss);

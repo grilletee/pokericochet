@@ -1,16 +1,16 @@
-import { createBall } from './combat';
 import type { GameConfig } from './config';
 import { applyHybrid, previewHybrid } from './evolution';
 import { nextFloat, nextInt } from './rng';
 import type { Run } from './run';
+import { addMember, memberIndexOf, trainMember } from './team';
 import type { Card, GameType } from './types';
 
-const UPGRADES: readonly Card[] = [{ kind: 'damage' }, { kind: 'cadence' }, { kind: 'vitality' }];
 const MAX_ATTEMPTS = 40;
 
 /** Flat list of loadout slot pairs `a` < `b` that can be hybridised: a0, b0, a1, b1, ... */
-function hybridPairs(run: Run): number[] {
+function hybridPairs(run: Run, config: GameConfig): number[] {
   const pairs: number[] = [];
+  if (!config.hybrid.enabled) return pairs;
   for (let a = 0; a < run.loadout.length; a++) {
     for (let b = a + 1; b < run.loadout.length; b++) {
       if (previewHybrid(run, a, b) !== null) pairs.push(a, b);
@@ -19,9 +19,34 @@ function hybridPairs(run: Run): number[] {
   return pairs;
 }
 
-/** Two offers with the same key are the same card (so at most one hybrid is ever offered). */
+/** Two offers with the same key are the same card (a Pokémon can have one card of each kind). */
 function cardKey(card: Card): string {
-  return card.kind === 'newBall' ? `newBall:${card.species}` : card.kind;
+  switch (card.kind) {
+    case 'newBall':
+      return `newBall:${card.species}`;
+    case 'train':
+    case 'power':
+    case 'cadence':
+      return `${card.kind}:${card.member}`;
+    case 'hybrid':
+      return 'hybrid';
+    default:
+      return card.kind;
+  }
+}
+
+/** The Pokémon a card is about, or -1 for a card that is not about one. */
+function memberOf(card: Card): number {
+  return card.kind === 'train' || card.kind === 'power' || card.kind === 'cadence'
+    ? card.member
+    : -1;
+}
+
+/** Indices of the team that satisfy `ok`. */
+function membersWhere(run: Run, ok: (index: number) => boolean): number[] {
+  const out: number[] = [];
+  for (let i = 0; i < run.team.length; i++) if (ok(i)) out.push(i);
+  return out;
 }
 
 /** One random card, drawing only from the `cards` stream. */
@@ -31,30 +56,67 @@ function drawCard(
   pairs: readonly number[],
   answers: readonly string[] | null,
 ): Card {
-  const { weights, maxBalls } = config.cards;
-  const newBall =
-    run.loadout.length < maxBalls && config.ballSpecies.length > 0 ? weights.newBall : 0;
-  const hybrid = pairs.length > 0 ? weights.hybrid : 0;
-  const total = newBall + weights.upgrade + hybrid;
-  const roll = nextFloat(run.rng.cards) * total;
-  if (roll < newBall) {
-    const pool = answers ?? config.ballSpecies;
-    const species = pool[nextInt(run.rng.cards, pool.length)];
-    if (species !== undefined) return { kind: 'newBall', species };
+  const { weights, upgradeCap } = config.cards;
+  const trainable = membersWhere(run, (i) => (run.team[i]?.level ?? 0) < config.team.maxLevel);
+  const powerable = membersWhere(run, (i) => (run.team[i]?.damageUps ?? 0) < upgradeCap);
+  const cadenceable = membersWhere(run, (i) => (run.team[i]?.cadenceUps ?? 0) < upgradeCap);
+  const recruit =
+    run.team.length < config.team.maxMembers && config.ballSpecies.length > 0 ? weights.newBall : 0;
+  const odds = [
+    recruit,
+    trainable.length > 0 ? weights.train : 0,
+    powerable.length > 0 ? weights.power : 0,
+    cadenceable.length > 0 ? weights.cadence : 0,
+    weights.vitality,
+    weights.team,
+    pairs.length > 0 ? weights.hybrid : 0,
+  ];
+  let total = 0;
+  for (const w of odds) total += w;
+  let roll = nextFloat(run.rng.cards) * total;
+  let kind = 0;
+  while (kind < odds.length - 1 && roll >= (odds[kind] ?? 0)) {
+    roll -= odds[kind] ?? 0;
+    kind += 1;
   }
-  if (roll >= newBall + weights.upgrade && pairs.length > 0) {
-    const pair = nextInt(run.rng.cards, pairs.length / 2) * 2;
-    const swap = nextInt(run.rng.cards, 2) === 1;
-    const first = pairs[pair] ?? 0;
-    const second = pairs[pair + 1] ?? 0;
-    return swap ? { kind: 'hybrid', a: second, b: first } : { kind: 'hybrid', a: first, b: second };
+  const pickMember = (list: readonly number[]): number =>
+    list[nextInt(run.rng.cards, list.length)] ?? 0;
+  switch (kind) {
+    case 0: {
+      // A species the team already has is not recruited again: a copy is a level, not a place.
+      const pool = (answers ?? config.ballSpecies).filter((id) => memberIndexOf(run, id) < 0);
+      const species = pool[nextInt(run.rng.cards, pool.length)];
+      if (species !== undefined) return { kind: 'newBall', species };
+      break;
+    }
+    case 1:
+      if (trainable.length > 0) return { kind: 'train', member: pickMember(trainable) };
+      break;
+    case 2:
+      if (powerable.length > 0) return { kind: 'power', member: pickMember(powerable) };
+      break;
+    case 3:
+      if (cadenceable.length > 0) return { kind: 'cadence', member: pickMember(cadenceable) };
+      break;
+    case 5:
+      return { kind: 'team' };
+    case 6: {
+      if (pairs.length === 0) break;
+      const pair = nextInt(run.rng.cards, pairs.length / 2) * 2;
+      const swap = nextInt(run.rng.cards, 2) === 1;
+      const first = pairs[pair] ?? 0;
+      const second = pairs[pair + 1] ?? 0;
+      return swap
+        ? { kind: 'hybrid', a: second, b: first }
+        : { kind: 'hybrid', a: first, b: second };
+    }
   }
-  return UPGRADES[nextInt(run.rng.cards, UPGRADES.length)] ?? { kind: 'damage' };
+  return { kind: 'vitality' };
 }
 
 /**
  * Species the player may be offered that beat the type of the next wave (ADR-027), when the team
- * has no ball that does; null when the team already answers it or nothing can.
+ * has no Pokémon that does; null when the team already answers it or nothing can.
  */
 function answersToNextWave(run: Run, config: GameConfig): readonly string[] | null {
   const waves = config.waves;
@@ -62,7 +124,7 @@ function answersToNextWave(run: Run, config: GameConfig): readonly string[] | nu
   const target = config.themes?.[run.waveThemes[index] ?? '']?.type;
   if (target === undefined) return null;
   const beats = (type: GameType): boolean => config.typeChart[type][target] > 1;
-  if (run.loadout.some((ball) => beats(ball.type))) return null;
+  if (run.team.some((member) => beats(member.type))) return null;
   const answers = config.ballSpecies.filter((id) => {
     const species = config.species[id];
     return species !== undefined && beats(species.type);
@@ -72,15 +134,16 @@ function answersToNextWave(run: Run, config: GameConfig): readonly string[] | nu
 
 /**
  * The cards offered at a level-up: `offerCount` different ones, drawn from the `cards` stream
- * only. A new ball is never offered when the loadout is full, and a hybrid only when two balls of
- * different types and level 2 or more exist. If no ball of the team beats the type of the next
- * wave, the first new-ball card is drawn among the species that do (ADR-027).
+ * only (ADR-032). Each card about one Pokémon names a different one while the team has three or
+ * more. A new Pokémon is offered only with a free place. If no Pokémon of the team beats the type
+ * of the next wave, the first recruit card is drawn among the species that do (ADR-027).
  */
 export function drawOffers(run: Run, config: GameConfig): Card[] {
   const offers: Card[] = [];
-  const pairs = hybridPairs(run);
+  const pairs = hybridPairs(run, config);
   let answers = answersToNextWave(run, config);
   const seen = new Set<string>();
+  const named = new Set<number>();
   for (
     let attempt = 0;
     attempt < MAX_ATTEMPTS && offers.length < config.cards.offerCount;
@@ -90,7 +153,10 @@ export function drawOffers(run: Run, config: GameConfig): Card[] {
     if (card.kind === 'newBall') answers = null;
     const key = cardKey(card);
     if (seen.has(key)) continue;
+    const member = memberOf(card);
+    if (member >= 0 && run.team.length >= 3 && named.has(member)) continue;
     seen.add(key);
+    if (member >= 0) named.add(member);
     offers.push(card);
   }
   return offers;
@@ -101,27 +167,30 @@ export function applyCard(run: Run, config: GameConfig, card: Card): void {
   const { cards } = config;
   switch (card.kind) {
     case 'newBall':
-      if (run.loadout.length < cards.maxBalls) {
-        run.loadout.push(createBall(config, card.species, run.nextBallId));
-        run.nextBallId += 1;
-        run.cooldowns.push(0);
-      }
+      if (run.team.length < config.team.maxMembers) addMember(run, config, card.species, 1);
       break;
-    case 'damage':
+    case 'train':
+      trainMember(run, config, card.member, 'card');
+      break;
+    case 'power': {
+      const member = run.team[card.member];
+      if (member !== undefined && member.damageUps < cards.upgradeCap) member.damageUps += 1;
+      break;
+    }
+    case 'cadence': {
+      const member = run.team[card.member];
+      if (member !== undefined && member.cadenceUps < cards.upgradeCap) member.cadenceUps += 1;
+      break;
+    }
+    case 'team':
       run.player.damageMult += cards.damageStep;
-      break;
-    case 'cadence':
-      run.player.cooldownMult = Math.max(
-        cards.cadenceFloor,
-        run.player.cooldownMult * cards.cadenceFactor,
-      );
       break;
     case 'vitality':
       run.player.maxHp += cards.vitalityHp;
       run.player.hp += cards.vitalityHp;
       break;
     case 'hybrid':
-      applyHybrid(run, card.a, card.b);
+      if (config.hybrid.enabled) applyHybrid(run, card.a, card.b);
       break;
   }
 }

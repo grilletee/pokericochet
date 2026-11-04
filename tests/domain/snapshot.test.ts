@@ -5,6 +5,7 @@ import {
   NO_SPECIES,
   PHASE_LOST,
   PHASE_PLAYING,
+  PHASE_REPLACE,
   type Run,
   typeCode,
   writeSnapshot,
@@ -123,12 +124,30 @@ describe('snapshot: species codes for the render', () => {
   });
 });
 
-describe('snapshot: ball levels for the evolution forms', () => {
-  it('writes the level of every ball in flight and of every pickup, so the render picks the form', () => {
+describe('snapshot: ball stages and radii for the evolution forms', () => {
+  it('writes the stage of every ball in flight and of every pickup, so the render picks the form', () => {
     const run = createRun(quietConfig, 1, 'charmander');
     run.loadout = [
-      { id: 1, species: 'charmander', type: 'fire', level: 3, hybrid: false, effects: [] },
-      { id: 2, species: 'squirtle', type: 'water', level: 2, hybrid: false, effects: [] },
+      {
+        id: 1,
+        owner: 0,
+        stage: 3,
+        species: 'charmander',
+        type: 'fire',
+        level: 6,
+        hybrid: false,
+        effects: [],
+      },
+      {
+        id: 2,
+        owner: 1,
+        stage: 2,
+        species: 'squirtle',
+        type: 'water',
+        level: 3,
+        hybrid: false,
+        effects: [],
+      },
     ];
     run.cooldowns = [-1, -1];
     run.bodies = [{ slot: 0, x: 10, y: 300, vx: 0, vy: -1, pierce: 0, skipId: 0 }];
@@ -137,10 +156,49 @@ describe('snapshot: ball levels for the evolution forms', () => {
       { slot: -1, species: 'psyduck', type: 'water', x: 90, y: 200, level: 1, ticks: 100 },
     ];
     const snap = createSnapshot();
-    writeSnapshot(run, snap);
-    expect(snap.ballLevel[0]).toBe(3);
-    // A returning ball keeps the level of the ball it is; a captured one always starts at 1.
+    writeSnapshot(run, snap, undefined, quietConfig);
+    expect(snap.ballLevel[0]).toBe(3); // the stage, not the level (6)
+    // A returning ball keeps the stage of the ball it is; a captured one carries its own stage.
     expect(snap.pickupLevel[0]).toBe(2);
     expect(snap.pickupLevel[1]).toBe(1);
+  });
+
+  it('writes the radius of each ball by its stage, and 0 when it does not know the rules', () => {
+    const run = createRun(quietConfig, 1, 'charmander');
+    run.loadout = [1, 2, 3].map((stage, i) => ({
+      id: i + 1,
+      owner: 0,
+      stage,
+      species: 'charmander',
+      type: 'fire' as const,
+      level: 1,
+      hybrid: false as const,
+      effects: [],
+    }));
+    run.cooldowns = [-1, -1, -1];
+    run.bodies = [0, 1, 2].map((slot) => ({
+      slot,
+      x: 10,
+      y: 300,
+      vx: 0,
+      vy: -1,
+      pierce: 0,
+      skipId: 0,
+    }));
+    const snap = createSnapshot();
+    writeSnapshot(run, snap, undefined, quietConfig);
+    expect([snap.ballRadius[0], snap.ballRadius[1], snap.ballRadius[2]]).toEqual(
+      quietConfig.team.ballRadiusByStage,
+    );
+    writeSnapshot(run, snap);
+    expect(snap.ballRadius[2]).toBe(0);
+  });
+
+  it('has a phase code for the replace screen', () => {
+    const run = createRun(quietConfig, 1, 'charmander');
+    run.phase = 'replace';
+    const snap = createSnapshot();
+    writeSnapshot(run, snap);
+    expect(snap.phase).toBe(PHASE_REPLACE);
   });
 });

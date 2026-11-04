@@ -1,4 +1,6 @@
+import type { GameConfig } from './config';
 import type { Run } from './run';
+import { ballRadius } from './team';
 import type { GameType } from './types';
 
 /** Numeric codes the render uses to index its colour tables. */
@@ -22,6 +24,7 @@ export const PHASE_PLAYING = 0;
 export const PHASE_LOST = 1;
 export const PHASE_LEVELUP = 2;
 export const PHASE_WON = 3;
+export const PHASE_REPLACE = 4;
 
 function phaseCode(phase: Run['phase']): number {
   switch (phase) {
@@ -33,6 +36,8 @@ function phaseCode(phase: Run['phase']): number {
       return PHASE_LEVELUP;
     case 'won':
       return PHASE_WON;
+    case 'replace':
+      return PHASE_REPLACE;
   }
 }
 
@@ -69,8 +74,10 @@ export interface Snapshot {
   ballType: Uint8Array;
   /** Species code (see `writeSnapshot`), or NO_SPECIES. */
   ballSpecies: Uint8Array;
-  /** Level of the ball (1..3): with the species it picks the evolution form to draw. */
+  /** Evolution stage of the ball (1..3): with the species it picks the form to draw (ADR-031). */
   ballLevel: Uint8Array;
+  /** Collision radius of the ball, which grows with its stage. */
+  ballRadius: Float32Array;
 
   /** Balls waiting on the floor or falling to it (ADR-022, ADR-023). */
   pickupCount: number;
@@ -121,6 +128,7 @@ export function createSnapshot(maxSlots = 64, maxEnemies = 512, maxPickups = 64)
     ballType: new Uint8Array(maxSlots),
     ballSpecies: new Uint8Array(maxSlots),
     ballLevel: new Uint8Array(maxSlots),
+    ballRadius: new Float32Array(maxSlots),
     pickupCount: 0,
     pickupX: new Float32Array(maxPickups),
     pickupY: new Float32Array(maxPickups),
@@ -149,6 +157,7 @@ export function writeSnapshot(
   run: Run,
   snap: Snapshot,
   speciesCodes?: ReadonlyMap<string, number>,
+  config?: GameConfig,
 ): void {
   snap.tick = run.tickCount;
   snap.phase = phaseCode(run.phase);
@@ -188,7 +197,8 @@ export function writeSnapshot(
     snap.ballY[body.slot] = body.y;
     snap.ballType[body.slot] = typeCode(ball.type);
     snap.ballSpecies[body.slot] = speciesCodes?.get(ball.species) ?? NO_SPECIES;
-    snap.ballLevel[body.slot] = ball.level;
+    snap.ballLevel[body.slot] = ball.stage;
+    snap.ballRadius[body.slot] = config === undefined ? 0 : ballRadius(config, ball);
   }
 
   const maxPickups = snap.pickupX.length;
@@ -206,7 +216,7 @@ export function writeSnapshot(
     const ball = p.slot < 0 ? undefined : run.loadout[p.slot];
     const species = ball?.species ?? p.species;
     snap.pickupSpecies[i] = speciesCodes?.get(species) ?? NO_SPECIES;
-    snap.pickupLevel[i] = ball?.level ?? p.level;
+    snap.pickupLevel[i] = ball?.stage ?? p.level;
   }
 
   const maxEnemies = snap.enemyId.length;

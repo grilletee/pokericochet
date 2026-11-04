@@ -9,6 +9,7 @@ import {
   drawOffers,
   evolveTeam,
   fuse,
+  type GameConfig,
   hashRun,
   previewHybrid,
   type Run,
@@ -36,14 +37,20 @@ const water = (id: number, level = 1) =>
     effects: [{ kind: 'pierce', strength: 1 }],
   });
 
+/** The merge of the 4C is no longer part of the tick (ADR-031); the pure step is still tested. */
+function evolveOnce(run: Run): { events: Run['events'] } {
+  run.events.length = 0;
+  evolveTeam(run);
+  return { events: run.events };
+}
+
 describe('automatic evolution (ADR-024)', () => {
-  it('two equal balls become one of the next level at the start of the next tick, with no pause', () => {
+  it('two equal balls become one of the next level, and the tick no longer does it by itself (ADR-031)', () => {
     const run = runWith([fire(1), fire(2), water(3)]);
     run.enemies = [makeEnemy({ id: 1, y: 100, speed: 1 })];
-    const out = tick(run, still, quietConfig);
-    expect(run.phase).toBe('playing');
-    expect(run.tickCount).toBe(1);
-    expect(run.enemies[0]?.y).toBe(101);
+    tick(run, still, quietConfig);
+    expect(run.loadout).toHaveLength(3); // levels, not merging, make Pokémon evolve now
+    const out = evolveOnce(run);
     expect(run.loadout.map((b) => [b.id, b.level])).toEqual([
       [1, 2],
       [3, 1],
@@ -59,7 +66,7 @@ describe('automatic evolution (ADR-024)', () => {
 
   it('picks the pair with the lowest first slot, then the lowest second slot', () => {
     const run = runWith([water(1), fire(2), fire(3), fire(4)]);
-    tick(run, still, quietConfig);
+    evolveOnce(run);
     expect(run.loadout.map((b) => [b.id, b.level])).toEqual([
       [1, 1],
       [2, 2],
@@ -69,13 +76,13 @@ describe('automatic evolution (ADR-024)', () => {
 
   it('evolves one pair per tick: a chain of four resolves over three ticks', () => {
     const run = runWith([fire(1), fire(2), fire(3), fire(4)]);
-    tick(run, still, quietConfig);
+    evolveOnce(run);
     expect(run.loadout.map((b) => b.level)).toEqual([2, 1, 1]);
-    tick(run, still, quietConfig);
+    evolveOnce(run);
     expect(run.loadout.map((b) => b.level)).toEqual([2, 2]);
-    tick(run, still, quietConfig);
+    evolveOnce(run);
     expect(run.loadout.map((b) => [b.id, b.level])).toEqual([[1, 3]]);
-    tick(run, still, quietConfig);
+    evolveOnce(run);
     expect(run.loadout).toHaveLength(1);
   });
 
@@ -90,7 +97,7 @@ describe('automatic evolution (ADR-024)', () => {
     ];
     for (const balls of cases) {
       const run = runWith(balls);
-      const out = tick(run, still, quietConfig);
+      const out = evolveOnce(run);
       expect(run.loadout).toEqual(balls);
       expect(out.events.some((e) => e.type === 'evolve')).toBe(false);
     }
@@ -98,7 +105,7 @@ describe('automatic evolution (ADR-024)', () => {
 
   it('a maximum-level ball does not stop the ones after it from evolving', () => {
     const run = runWith([fire(1, 3), fire(2), fire(3)]);
-    tick(run, still, quietConfig);
+    evolveOnce(run);
     expect(run.loadout.map((b) => [b.id, b.level])).toEqual([
       [1, 3],
       [2, 2],
@@ -120,7 +127,7 @@ describe('automatic evolution (ADR-024)', () => {
       [fire(2, 2), hybrid],
     ]) {
       const run = runWith([...balls]);
-      const out = tick(run, still, quietConfig);
+      const out = evolveOnce(run);
       expect(run.loadout).toHaveLength(1);
       const result = run.loadout[0];
       expect(result).toMatchObject({
@@ -142,20 +149,8 @@ describe('automatic evolution (ADR-024)', () => {
   it('two hybrids do not evolve, and a hybrid does not evolve with another species', () => {
     const hybrid = (id: number) => makeBall({ id, level: 2, hybrid: true });
     const run = runWith([hybrid(1), hybrid(2), water(3, 2)]);
-    tick(run, still, quietConfig);
+    evolveOnce(run);
     expect(run.loadout).toHaveLength(3);
-  });
-
-  it('waits while the run waits for a card, then happens on the next playing tick', () => {
-    const run = runWith([fire(1), fire(2)]);
-    run.phase = 'levelup';
-    run.offers = [{ kind: 'damage' }];
-    tick(run, still, quietConfig);
-    expect(run.loadout).toHaveLength(2);
-    tick(run, { moveX: 0, action: { type: 'pick', index: 0 } }, quietConfig);
-    expect(run.loadout).toHaveLength(2);
-    tick(run, still, quietConfig);
-    expect(run.loadout).toHaveLength(1);
   });
 
   it('a slot above the removed one shifts down, and bodies and pickups follow their slots', () => {
@@ -293,9 +288,13 @@ describe('hybrids (the F2 rule, now a card)', () => {
 });
 
 describe('the hybrid card', () => {
-  const hybridOnly = {
+  const hybridOnly: GameConfig = {
     ...quietConfig,
-    cards: { ...quietConfig.cards, weights: { newBall: 0, upgrade: 0, hybrid: 1 } },
+    hybrid: { enabled: true },
+    cards: {
+      ...quietConfig.cards,
+      weights: { newBall: 0, train: 0, power: 0, cadence: 0, vitality: 0, team: 0, hybrid: 1 },
+    },
   };
 
   it('is offered only when two balls of level 2 or more with different types exist', () => {
@@ -324,7 +323,10 @@ describe('the hybrid card', () => {
     ]);
     const config = {
       ...hybridOnly,
-      cards: { ...hybridOnly.cards, weights: { newBall: 0, upgrade: 1, hybrid: 5 } },
+      cards: {
+        ...hybridOnly.cards,
+        weights: { ...hybridOnly.cards.weights, vitality: 1, hybrid: 5 },
+      },
     };
     for (let i = 0; i < 20; i++) {
       expect(drawOffers(run, config).filter((c) => c.kind === 'hybrid').length).toBeLessThanOrEqual(
@@ -335,16 +337,27 @@ describe('the hybrid card', () => {
 
   it('applying it merges the two balls', () => {
     const run = runWith([fire(1, 2), water(2, 2)]);
-    applyCard(run, quietConfig, { kind: 'hybrid', a: 0, b: 1 });
+    applyCard(run, hybridOnly, { kind: 'hybrid', a: 0, b: 1 });
     expect(run.loadout).toHaveLength(1);
     expect(run.loadout[0]?.hybrid).toBe(true);
+  });
+
+  it('is ignored while hybrids are off by configuration (ADR-033)', () => {
+    const run = runWith([fire(1, 2), water(2, 2)]);
+    applyCard(run, quietConfig, { kind: 'hybrid', a: 0, b: 1 });
+    expect(run.loadout).toHaveLength(2);
+    expect(
+      drawOffers(run, { ...hybridOnly, hybrid: { enabled: false } }).some(
+        (c) => c.kind === 'hybrid',
+      ),
+    ).toBe(false);
   });
 
   it('picking it in the level-up phase applies it and goes back to playing', () => {
     const run = runWith([fire(1, 2), water(2, 2)]);
     run.phase = 'levelup';
     run.offers = [{ kind: 'hybrid', a: 0, b: 1 }];
-    const out = tick(run, { moveX: 0, action: { type: 'pick', index: 0 } }, quietConfig);
+    const out = tick(run, { moveX: 0, action: { type: 'pick', index: 0 } }, hybridOnly);
     expect(run.phase).toBe('playing');
     expect(run.loadout).toHaveLength(1);
     expect(out.events.map((e) => e.type)).toEqual(['hybrid', 'pick']);
@@ -360,9 +373,22 @@ describe('the hybrid card', () => {
 });
 
 describe('hybrid card odds and hashing', () => {
-  const withWeights = (weights: { newBall: number; upgrade: number; hybrid: number }) => ({
+  // `upgrade` stands for the one plain card left in the pool (vitality), as in 4D.
+  const withWeights = (w: { newBall: number; upgrade: number; hybrid: number }) => ({
     ...quietConfig,
-    cards: { ...quietConfig.cards, weights },
+    hybrid: { enabled: true },
+    cards: {
+      ...quietConfig.cards,
+      weights: {
+        newBall: w.newBall,
+        train: 0,
+        power: 0,
+        cadence: 0,
+        vitality: w.upgrade,
+        team: 0,
+        hybrid: w.hybrid,
+      },
+    },
   });
 
   it('a hybrid weight of zero never offers one, even when a pair exists', () => {

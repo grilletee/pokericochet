@@ -219,7 +219,13 @@ describe('capture of an evolved enemy (ADR-027)', () => {
     );
     run.player.x = run.pickups[0]?.x ?? 0;
     for (let i = 0; i < 400 && run.pickups.length > 0; i++) tick(run, { moveX: 0 }, greedy);
-    expect(run.loadout.at(-1)).toMatchObject({ species: 'growlithe', level: 2 });
+    // A stage 2 enemy joins at the level the rules give it, firing that level's balls.
+    const level = greedy.team.captureLevels[1] ?? 0;
+    expect(run.team.at(-1)).toMatchObject({ species: 'growlithe', level });
+    expect(run.loadout.filter((b) => b.owner === run.team.length - 1)).toHaveLength(
+      greedy.team.ballsByLevel[level - 1] ?? 1,
+    );
+    expect(run.loadout.at(-1)).toMatchObject({ species: 'growlithe', level });
     expect(run.captured).toEqual([{ species: 'growlithe', level: 2 }]);
   });
 });
@@ -458,7 +464,10 @@ describe('cards that answer the next wave (ADR-027)', () => {
       pack: { id: 'pack', name: 'Pack', type: 'water', species: ['poliwag'], purity: 1 },
     },
     waves: [wave({ themes: ['pack'] }), wave({ themes: ['pack'] })],
-    cards: { ...themed.cards, weights: { newBall: 1, upgrade: 0, hybrid: 0 } },
+    cards: {
+      ...themed.cards,
+      weights: { newBall: 1, train: 0, power: 0, cadence: 0, vitality: 0, team: 0, hybrid: 0 },
+    },
   };
 
   const newBalls = (cards: Card[]): string[] =>
@@ -478,7 +487,16 @@ describe('cards that answer the next wave (ADR-027)', () => {
     const seen = new Set<string>();
     for (let seed = 1; seed < 60; seed++) {
       const run = createRun(answerConfig, seed, 'charmander');
-      run.loadout = [makeBall({ id: 1, species: 'bulbasaur', type: 'grass' })];
+      run.team = [
+        {
+          species: 'bulbasaur',
+          type: 'grass',
+          level: 1,
+          starter: false,
+          damageUps: 0,
+          cadenceUps: 0,
+        },
+      ];
       for (const s of newBalls(drawOffers(run, answerConfig))) seen.add(s);
     }
     expect(seen.has('charmander')).toBe(true);
@@ -489,7 +507,16 @@ describe('cards that answer the next wave (ADR-027)', () => {
     const first = new Set<string>();
     for (let seed = 1; seed < 80; seed++) {
       const run = createRun(answerConfig, seed, 'charmander');
-      run.loadout = [makeBall({ id: 1, species: 'bulbasaur', type: 'grass' })];
+      run.team = [
+        {
+          species: 'bulbasaur',
+          type: 'grass',
+          level: 1,
+          starter: false,
+          damageUps: 0,
+          cadenceUps: 0,
+        },
+      ];
       const species = newBalls(drawOffers(run, answerConfig))[0];
       if (species !== undefined) first.add(species);
     }
@@ -504,7 +531,16 @@ describe('cards that answer the next wave (ADR-027)', () => {
     };
     for (let seed = 1; seed < 30; seed++) {
       const run = createRun(fireWave, seed, 'pikachu');
-      run.loadout = [makeBall({ id: 1, species: 'pikachu', type: 'electric' })];
+      run.team = [
+        {
+          species: 'pikachu',
+          type: 'electric',
+          level: 1,
+          starter: false,
+          damageUps: 0,
+          cadenceUps: 0,
+        },
+      ];
       expect(newBalls(drawOffers(run, fireWave))[0]).toBe('squirtle');
     }
   });

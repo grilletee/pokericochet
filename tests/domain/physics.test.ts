@@ -28,6 +28,8 @@ function enemy(id: number, x: number, y: number): Enemy {
     xp: 1,
     burnTicks: 0,
     burnDps: 0,
+    slowTicks: 0,
+    slow: 0,
   };
 }
 

@@ -1,11 +1,27 @@
 export type GameType = 'fire' | 'water' | 'grass' | 'electric';
 export const GAME_TYPES: readonly GameType[] = ['fire', 'water', 'grass', 'electric'];
 
-export type EffectKind = 'burn' | 'pierce' | 'drain' | 'chain';
+/**
+ * `burnArea`, `splash`, `slow` and `blast` arrive with the evolution phases (ADR-031); `chain` may
+ * jump `count` times. `radius` is in arena pixels.
+ */
+export type EffectKind =
+  | 'burn'
+  | 'pierce'
+  | 'drain'
+  | 'chain'
+  | 'burnArea'
+  | 'splash'
+  | 'slow'
+  | 'blast';
 
 export interface Effect {
   readonly kind: EffectKind;
   readonly strength: number;
+  /** Area of `burnArea`, `splash` and `blast`. */
+  readonly radius?: number;
+  /** Jumps of `chain` (default 1). */
+  readonly count?: number;
 }
 
 /** Base data of a species. In the game it is generated from PokéAPI by tools/fetch-data. */
@@ -15,13 +31,34 @@ export interface SpeciesDef {
   readonly baseStats: { readonly hp: number; readonly attack: number; readonly speed: number };
 }
 
-/** A ball of the loadout. Immutable value: fusing produces a new one (ADR-003). */
+/**
+ * A Pokémon of the team (ADR-030): the unit the player grows. It owns its balls (`Ball.owner`),
+ * which are derived from its level. `species` is the base of the line; the form it shows is
+ * decided by its stage.
+ */
+export interface Member {
+  readonly species: string;
+  readonly type: GameType;
+  /** 1..team.maxLevel. */
+  level: number;
+  /** The Pokémon the run began with: it has the starter bonus (`team.starterBonus`). */
+  readonly starter: boolean;
+  /** Damage and cadence cards taken for this Pokémon (ADR-032): they are lost if it is replaced. */
+  damageUps: number;
+  cadenceUps: number;
+}
+
+/** A ball of the loadout. Immutable value: a level or stage change produces a new one (ADR-003). */
 export interface Ball {
   readonly id: number;
+  /** Index of its Pokémon in `run.team`; a ball without a Pokémon of that index has no upgrades. */
+  readonly owner: number;
+  /** Evolution stage 1..3 of its Pokémon: it picks the form, the radius and the effects. */
+  readonly stage: number;
   readonly species: string;
   /** Type of the first ingredient; the only one used for effectiveness. */
   readonly type: GameType;
-  /** 1..3. */
+  /** Level of its Pokémon (for a hybrid built by hand, the level of the ball). */
   readonly level: number;
   readonly hybrid: boolean;
   /** Hybrids only: the second ingredient, kept for the card, the run summary and (later) synergies. */
@@ -60,14 +97,24 @@ export interface Enemy {
   /** Ticks of burning left, and the damage per second while burning. */
   burnTicks: number;
   burnDps: number;
+  /** Ticks left slowed and the fraction of speed lost meanwhile (`slow`, ADR-031). */
+  slowTicks: number;
+  slow: number;
 }
 
 /** A reward offered when the player levels up. */
 export type Card =
+  /** Recruits a Pokémon (only with a free place in the team). */
   | { readonly kind: 'newBall'; readonly species: string }
-  | { readonly kind: 'damage' }
-  | { readonly kind: 'cadence' }
+  /** +1 level for the Pokémon at `member` (ADR-031). */
+  | { readonly kind: 'train'; readonly member: number }
+  /** More damage / faster reload for one Pokémon (ADR-032). */
+  | { readonly kind: 'power'; readonly member: number }
+  | { readonly kind: 'cadence'; readonly member: number }
+  /** Global: more health. */
   | { readonly kind: 'vitality' }
+  /** Global and rare: more damage for the whole team. */
+  | { readonly kind: 'team' }
   /**
    * A hybrid of two balls of the loadout, by slot (ADR-024). `a` is the first ingredient: the
    * result keeps its species and type. The run does not advance while the offer is open, so the
@@ -82,6 +129,14 @@ export interface PickAction {
 }
 
 /**
+ * Answer to the replace screen (ADR-030): `slot` is the Pokémon that leaves (or, if it is of the
+ * same species as the capture, the one that gains a level); `release` lets the capture go.
+ */
+export type ReplaceAction =
+  | { readonly type: 'replace'; readonly slot: number }
+  | { readonly type: 'release' };
+
+/**
  * Something lying on the floor (or falling to it) that the player picks up by moving over it
  * (ADR-022, ADR-023): a ball of the loadout that left the arena (`slot` >= 0), or the ball a
  * defeated enemy dropped (`slot` -1, `species` set).
@@ -94,7 +149,7 @@ export interface Pickup {
   type: GameType;
   x: number;
   y: number;
-  /** Level of the ball it carries: a captured enemy of a higher tier gives a higher level (ADR-027). */
+  /** Evolution stage of the captured ball: an enemy of a higher form gives a higher stage (ADR-027). */
   level: number;
   /** Ticks left on the floor before it joins the loadout on its own (counts only once landed). */
   ticks: number;
@@ -111,8 +166,8 @@ export interface Command {
   readonly aimY?: number;
   /** Switches the assisted aim on or off; omitted = keep. */
   readonly autoAim?: boolean;
-  /** `pick` only means something in the level-up phase. */
-  readonly action?: PickAction;
+  /** `pick` only means something in the level-up phase, `replace` and `release` in the replace phase. */
+  readonly action?: PickAction | ReplaceAction;
 }
 
 export type GameEvent =
@@ -166,18 +221,37 @@ export type GameEvent =
   | { readonly type: 'leak'; readonly enemyId: number; readonly damage: number }
   | { readonly type: 'levelup'; readonly level: number }
   | { readonly type: 'pick'; readonly card: Card }
+  /** A Pokémon gained a level (`source`: a card, a duplicate capture or the replace screen). */
+  | {
+      readonly type: 'train';
+      readonly member: number;
+      readonly species: string;
+      readonly level: number;
+      readonly source: 'card' | 'capture';
+    }
+  /** The team is full and the player picked a capture up: the run waits for an answer (ADR-030). */
+  | { readonly type: 'replaceOpen'; readonly species: string; readonly stage: number }
+  /** The Pokémon at `slot` left the team for `species`. */
+  | {
+      readonly type: 'replaced';
+      readonly slot: number;
+      readonly out: string;
+      readonly species: string;
+    }
+  /** A capture was let go (the answer, or it expired with the team full). */
+  | { readonly type: 'release'; readonly species: string }
   /** `theme` is the id of the wave's theme, or '' for a wave without one (ADR-027). */
   | { readonly type: 'waveStart'; readonly index: number; readonly theme: string }
   | { readonly type: 'bossSpawn'; readonly enemyId: number }
   | { readonly type: 'bossSummon'; readonly count: number }
   /** A boss died; `index` counts the bosses defeated so far, this one included (ADR-028). */
   | { readonly type: 'bossDefeated'; readonly species: string; readonly index: number }
-  /** Two equal balls merged on their own into one of the next level (ADR-024). */
+  /** A Pokémon reached a new evolution stage (ADR-031); `ballId` is one of its balls. */
   | {
       readonly type: 'evolve';
       readonly ballId: number;
       readonly species: string;
-      /** Level the ball reached. */
+      /** Stage reached (2 or 3). */
       readonly level: number;
     }
   /** A hybrid card was chosen: `species` (first ingredient) absorbed `withSpecies`. */

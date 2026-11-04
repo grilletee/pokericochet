@@ -94,6 +94,8 @@ describe('anti-stall inside tick', () => {
       xp: 1,
       burnTicks: 0,
       burnDps: 0,
+      slowTicks: 0,
+      slow: 0,
     };
     const run = runWithFlyingBall({ slot: 0, x: 275, y: 300, vx: 6, vy: 0, pierce: 0, skipId: 0 }, [
       enemy,

@@ -1,14 +1,14 @@
 import { type AimDirection, aimDirection } from './aim';
 import { applyCard } from './cards';
-import { getSpecies, hitDamage, mapStat } from './combat';
+import { damagePlayer, getSpecies, hitDamage, mapStat } from './combat';
 import type { GameConfig } from './config';
-import { applyHitEffects, damageEnemy, pierceCount, tickBurning } from './effects';
-import { evolveTeam } from './evolution';
+import { applyHitEffects, ballPower, damageEnemy, pierceCount, tickBurning } from './effects';
 import { bounceOffWalls, enforceMinVertical, findNearestOverlap, reflectOffEnemy } from './physics';
 import { advancePickups, dropBall } from './pickups';
 import { checkLevelUp } from './progression';
 import { nextFloat } from './rng';
 import type { Run } from './run';
+import { ballRadius, resolveReplace } from './team';
 import type { BallBody, Command, Enemy, GameEvent } from './types';
 import { advanceBoss, advanceWave, isBossAlive } from './waves';
 
@@ -135,6 +135,13 @@ function resolveLevelUp(run: Run, cmd: Command, config: GameConfig): void {
   checkLevelUp(run, config); // enough xp for another level straight away
 }
 
+/** Plays the answer to the replace screen while the run waits in the replace phase (ADR-030). */
+function resolveCapture(run: Run, cmd: Command, config: GameConfig): void {
+  const action = cmd.action;
+  if (action === undefined || action.type === 'pick') return;
+  resolveReplace(run, config, action);
+}
+
 /** Victory: the boss is dead, or, in a run without boss, the last wave is gone and nothing lives. */
 function isWon(run: Run, config: GameConfig, alive: number): boolean {
   if (config.waves.length === 0 || run.wave.index < config.waves.length) return false;
@@ -153,10 +160,11 @@ export function tick(run: Run, cmd: Command, config: GameConfig): TickOutput {
     resolveLevelUp(run, cmd, config);
     return { events: run.events };
   }
+  if (run.phase === 'replace') {
+    resolveCapture(run, cmd, config);
+    return { events: run.events };
+  }
   if (run.phase !== 'playing') return { events: run.events };
-
-  // Two equal balls merge on their own, without pausing the run (ADR-024).
-  evolveTeam(run);
 
   const { arena, ball: ballConfig } = config;
 
@@ -178,10 +186,11 @@ export function tick(run: Run, cmd: Command, config: GameConfig): TickOutput {
   // Enemies advance; those that reach the defence line hurt the player and are removed.
   let kept = 0;
   for (const e of run.enemies) {
-    e.y += e.speed;
+    e.y += e.speed * (e.slowTicks > 0 ? 1 - e.slow : 1);
+    if (e.slowTicks > 0) e.slowTicks -= 1;
     if (e.y >= arena.defenseLineY) {
       // The boss reaching the line ends the run whatever the player's health (ADR-016).
-      run.player.hp = e.id === run.boss.id ? 0 : run.player.hp - e.threat;
+      damagePlayer(run, e.id === run.boss.id ? run.player.hp : e.threat);
       run.events.push({ type: 'leak', enemyId: e.id, damage: e.threat });
     } else {
       run.enemies[kept] = e;
@@ -196,31 +205,25 @@ export function tick(run: Run, cmd: Command, config: GameConfig): TickOutput {
   // Balls fly, bounce and hit.
   let flying = 0;
   for (const body of run.bodies) {
+    const ball = run.loadout[body.slot];
+    const radius = ball === undefined ? ballConfig.radius : ballRadius(config, ball);
     body.x += body.vx;
     body.y += body.vy;
-    if (bounceOffWalls(body, ballConfig.radius, arena.width)) {
+    if (bounceOffWalls(body, radius, arena.width)) {
       enforceMinVertical(body, ballConfig.minVerticalRatio);
     }
-    if (body.y - ballConfig.radius > arena.height) {
+    if (body.y - radius > arena.height) {
       // The ball does not come back by itself: it waits on the floor for the player (ADR-022).
       dropBall(run, config, body.slot, body.x);
       continue;
     }
-    const ball = run.loadout[body.slot];
     if (ball === undefined) continue;
 
-    if (body.skipId !== 0 && !stillInside(run.enemies, body, ballConfig.radius)) body.skipId = 0;
-    const hitIndex = findNearestOverlap(
-      run.grid,
-      run.enemies,
-      body.x,
-      body.y,
-      ballConfig.radius,
-      body.skipId,
-    );
+    if (body.skipId !== 0 && !stillInside(run.enemies, body, radius)) body.skipId = 0;
+    const hitIndex = findNearestOverlap(run.grid, run.enemies, body.x, body.y, radius, body.skipId);
     const target = hitIndex >= 0 ? run.enemies[hitIndex] : undefined;
     if (target !== undefined) {
-      const damage = hitDamage(config, ball, target.type) * run.player.damageMult;
+      const damage = hitDamage(config, ball, target.type) * ballPower(run, config, ball);
       run.events.push({
         type: 'hit',
         ballId: ball.id,
@@ -230,13 +233,13 @@ export function tick(run: Run, cmd: Command, config: GameConfig): TickOutput {
         x: target.x,
         y: target.y,
       });
-      damageEnemy(run, config, target, damage);
-      applyHitEffects(run, config, ball, target, damage);
+      const killed = damageEnemy(run, config, target, damage);
+      applyHitEffects(run, config, ball, target, damage, killed);
       if (body.pierce > 0) {
         body.pierce -= 1;
         body.skipId = target.id;
       } else {
-        reflectOffEnemy(body, ballConfig.radius, target);
+        reflectOffEnemy(body, radius, target);
         enforceMinVertical(body, ballConfig.minVerticalRatio);
       }
     }
@@ -266,7 +269,8 @@ export function tick(run: Run, cmd: Command, config: GameConfig): TickOutput {
   } else if (isWon(run, config, alive)) {
     run.phase = 'won';
     run.events.push({ type: 'won' });
-  } else {
+  } else if (run.phase === 'playing') {
+    // A capture that opened the replace screen this tick goes first; the level-up waits its turn.
     checkLevelUp(run, config);
   }
   return { events: run.events };

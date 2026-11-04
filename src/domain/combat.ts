@@ -1,4 +1,7 @@
+import { abilitiesFor } from './abilities';
 import type { GameConfig } from './config';
+import type { Run } from './run';
+import { stageOf } from './team';
 import type { Ball, GameType, SpeciesDef } from './types';
 
 export function getSpecies(config: GameConfig, id: string): SpeciesDef {
@@ -36,16 +39,32 @@ export function hitDamage(config: GameConfig, ball: Ball, defender: GameType): n
   );
 }
 
-/** Level 1 ball for a species, with the effect that its type grants. */
-export function createBall(config: GameConfig, speciesId: string, id: number): Ball {
+/** A ball of a species for the Pokémon at `owner`, at the given level (ADR-031). */
+export function createBall(
+  config: GameConfig,
+  speciesId: string,
+  id: number,
+  owner = 0,
+  level = 1,
+): Ball {
   const species = getSpecies(config, speciesId);
-  const effect = config.typeEffects[species.type];
+  const stage = stageOf(config, level);
   return {
     id,
+    owner,
+    stage,
     species: species.id,
     type: species.type,
-    level: 1,
+    level,
     hybrid: false,
-    effects: [{ kind: effect.kind, strength: effect.strength }],
+    effects: abilitiesFor(config, species.id, species.type, stage),
   };
+}
+
+/**
+ * The only way damage reaches the player (ADR-032, ADR-034): leaks today, boss attacks in the 4G.
+ * Health never goes above the maximum or heals from here.
+ */
+export function damagePlayer(run: Run, amount: number): void {
+  run.player.hp -= amount;
 }

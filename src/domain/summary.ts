@@ -1,5 +1,6 @@
 import type { GameConfig } from './config';
 import type { Run } from './run';
+import { stageOf } from './team';
 
 export interface RunSummary {
   readonly seed: number;
@@ -12,12 +13,11 @@ export interface RunSummary {
   readonly kills: number;
   readonly level: number;
   readonly ticks: number;
-  readonly balls: readonly {
+  /** The Pokémon of the team at the end (ADR-030): species of the line, level and evolution stage. */
+  readonly team: readonly {
     readonly species: string;
     readonly level: number;
-    readonly hybrid: boolean;
-    /** Hybrids only: the second ingredient (ADR-026). */
-    readonly secondSpecies?: string;
+    readonly stage: number;
   }[];
   /** Bosses defeated, the final one included. */
   readonly bossesDefeated: number;
@@ -46,11 +46,10 @@ export function summarizeRun(run: Run, config: GameConfig): RunSummary {
     kills: run.kills,
     level: run.player.level,
     ticks: run.tickCount,
-    balls: run.loadout.map((b) => ({
-      species: b.species,
-      level: b.level,
-      hybrid: b.hybrid,
-      ...(b.secondSpecies === undefined ? {} : { secondSpecies: b.secondSpecies }),
+    team: run.team.map((m) => ({
+      species: m.species,
+      level: m.level,
+      stage: stageOf(config, m.level),
     })),
     bossesDefeated: run.boss.defeated,
     captured: run.captured.map((c) => ({ ...c })),

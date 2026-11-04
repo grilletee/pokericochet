@@ -111,20 +111,29 @@ describe('collecting', () => {
     expect(run.player.x).toBeLessThan(240 + 100); // it stopped needing to walk as soon as it reached
   });
 
-  it('uses the cadence cards and, with the assisted aim, the slower reload', () => {
+  it('uses the cadence cards of the Pokémon of the ball and, with the assisted aim, the slower reload', () => {
     const run = createRun(quietConfig, 1, 'charmander');
-    expect(reloadTicks(run, quietConfig)).toBe(quietConfig.ball.cooldownTicks);
-    run.player.cooldownMult = 0.5;
-    expect(reloadTicks(run, quietConfig)).toBe(
-      Math.floor(quietConfig.ball.cooldownTicks * 0.5 + 0.5),
+    expect(reloadTicks(run, quietConfig, 0)).toBe(quietConfig.ball.cooldownTicks);
+    const member = run.team[0] as NonNullable<(typeof run.team)[number]>;
+    member.cadenceUps = 2;
+    const mult = quietConfig.cards.cadenceFactor * quietConfig.cards.cadenceFactor;
+    expect(reloadTicks(run, quietConfig, 0)).toBe(
+      Math.floor(quietConfig.ball.cooldownTicks * mult + 0.5),
     );
+    // A slot that has no Pokémon, or no slot at all, reloads at the base rate.
+    expect(reloadTicks(run, quietConfig, 7)).toBe(quietConfig.ball.cooldownTicks);
+    expect(reloadTicks(run, quietConfig)).toBe(quietConfig.ball.cooldownTicks);
     const slow = withConfig({ ball: { ...quietConfig.ball, autoCooldownMult: 2 } });
-    run.player.cooldownMult = 1;
-    expect(reloadTicks(run, slow)).toBe(quietConfig.ball.cooldownTicks);
+    member.cadenceUps = 0;
+    expect(reloadTicks(run, slow, 0)).toBe(quietConfig.ball.cooldownTicks);
     run.autoAim = true;
-    expect(reloadTicks(run, slow)).toBe(quietConfig.ball.cooldownTicks * 2);
-    run.player.cooldownMult = 0;
-    expect(reloadTicks(run, slow)).toBe(1); // never zero
+    expect(reloadTicks(run, slow, 0)).toBe(quietConfig.ball.cooldownTicks * 2);
+    const zero = withConfig({
+      ball: { ...quietConfig.ball, autoCooldownMult: 2 },
+      cards: { ...quietConfig.cards, cadenceFactor: 0, cadenceFloor: 0 },
+    });
+    member.cadenceUps = 1;
+    expect(reloadTicks(run, zero, 0)).toBe(1); // never zero
   });
 
   it('collects in order of appearance and several in one tick', () => {
@@ -250,21 +259,49 @@ describe('captured balls', () => {
     expect(run.events.at(-1)).toMatchObject({ type: 'capture', late: true });
   });
 
-  it('is never lost when the team is full: it makes everyone hit harder instead', () => {
-    const full = withConfig({ cards: { ...quietConfig.cards, maxBalls: 1 } });
+  it('with the team full, picking it up opens the replace screen and waits for the answer', () => {
+    const full = withConfig({ team: { ...quietConfig.team, maxMembers: 1 } });
     const run = createRun(full, 1, 'charmander');
     dropCapture(run, full, 'psyduck', 'water', 240, floorY);
     advancePickups(run, full);
-    expect(run.loadout).toHaveLength(1);
-    expect(run.player.damageMult).toBeCloseTo(1 + full.capture.overflowDamageStep, 12);
-    expect(run.events).toContainEqual({
-      type: 'capture',
-      ballId: 0,
-      species: 'psyduck',
-      level: 1,
-      x: 240,
-      late: false,
-    });
+    expect(run.team).toHaveLength(1);
+    expect(run.phase).toBe('replace');
+    expect(run.pendingCapture).toEqual({ species: 'psyduck', stage: 1 });
+    expect(run.events).toContainEqual({ type: 'replaceOpen', species: 'psyduck', stage: 1 });
+  });
+
+  it('with the team full, a capture that waited too long is let go without pausing', () => {
+    const full = withConfig({ team: { ...quietConfig.team, maxMembers: 1 } });
+    const run = createRun(full, 1, 'charmander');
+    dropCapture(run, full, 'psyduck', 'water', 400, floorY);
+    run.player.x = 60;
+    for (let i = 0; i < full.pickup.captureTtlTicks; i++) advancePickups(run, full);
+    expect(run.pickups).toEqual([]);
+    expect(run.phase).toBe('playing');
+    expect(run.pendingCapture).toBeNull();
+    expect(run.events.at(-1)).toEqual({ type: 'release', species: 'psyduck' });
+  });
+
+  it('a species the team already has gains a level at once, with no pause, even if the team is full', () => {
+    const full = withConfig({ team: { ...quietConfig.team, maxMembers: 1 } });
+    const run = createRun(full, 1, 'charmander');
+    dropCapture(run, full, 'charmander', 'fire', 240, floorY);
+    advancePickups(run, full);
+    expect(run.phase).toBe('playing');
+    expect(run.team[0]?.level).toBe(2);
+    expect(run.events).toContainEqual(
+      expect.objectContaining({ type: 'train', source: 'capture' }),
+    );
+  });
+
+  it('while the screen waits, the next capture stays on the floor', () => {
+    const full = withConfig({ team: { ...quietConfig.team, maxMembers: 1 } });
+    const run = createRun(full, 1, 'charmander');
+    dropCapture(run, full, 'psyduck', 'water', 240, floorY);
+    dropCapture(run, full, 'vulpix', 'fire', 240, floorY);
+    advancePickups(run, full);
+    expect(run.pendingCapture?.species).toBe('psyduck');
+    expect(run.pickups.map((p) => p.species)).toEqual(['vulpix']);
   });
 
   it('never holds more than MAX_PICKUPS', () => {

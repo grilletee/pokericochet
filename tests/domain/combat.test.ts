@@ -14,8 +14,14 @@ describe('combat', () => {
     expect(hitDamage(config, charmander, 'electric')).toBeCloseTo(5.2);
     expect(hitDamage(config, charmander, 'grass')).toBeCloseTo(10.4);
     expect(hitDamage(config, charmander, 'water')).toBeCloseTo(2.6);
-    expect(hitDamage(config, { ...charmander, level: 2 }, 'electric')).toBeCloseTo(7.8);
-    expect(hitDamage(config, { ...charmander, level: 3 }, 'electric')).toBeCloseTo(11.7);
+    const levels = config.stats.levelMultiplier;
+    expect(levels).toHaveLength(config.team.maxLevel);
+    expect(hitDamage(config, { ...charmander, level: 2 }, 'electric')).toBeCloseTo(
+      5.2 * (levels[1] ?? 0),
+    );
+    expect(hitDamage(config, { ...charmander, level: 8 }, 'electric')).toBeCloseTo(
+      5.2 * (levels[7] ?? 0),
+    );
   });
 
   it('typeDamage scales the base damage of a type', () => {
@@ -33,18 +39,25 @@ describe('combat', () => {
 
   it('a hybrid uses the type of its first ingredient only', () => {
     const hybrid = makeBall({ type: 'fire', hybrid: true, level: 2 });
-    expect(hitDamage(config, hybrid, 'grass')).toBeCloseTo(5.2 * 1.5 * 2);
+    expect(hitDamage(config, hybrid, 'grass')).toBeCloseTo(
+      5.2 * (config.stats.levelMultiplier[1] ?? 0) * 2,
+    );
   });
 
-  it('builds a level 1 ball from a species, with the effect of its type', () => {
+  it('builds a ball for a Pokémon from a species, with the effects of its type and stage', () => {
     expect(createBall(config, 'pikachu', 7)).toEqual({
       id: 7,
+      owner: 0,
+      stage: 1,
       species: 'pikachu',
       type: 'electric',
       level: 1,
       hybrid: false,
-      effects: [config.typeEffects.electric],
+      effects: config.abilities.byType.electric?.[0],
     });
+    const evolved = createBall(config, 'pikachu', 8, 2, config.team.stageLevels[0]);
+    expect(evolved).toMatchObject({ owner: 2, stage: 2, level: config.team.stageLevels[0] });
+    expect(evolved.effects).toEqual(config.abilities.byType.electric?.[1]);
   });
 
   it('fails loudly on an unknown species', () => {

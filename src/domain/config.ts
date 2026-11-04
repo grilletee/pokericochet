@@ -59,6 +59,38 @@ export interface InterludeDef extends Omit<BossDef, 'species' | 'byType'> {
   readonly healHp: number;
 }
 
+/** The team of up to six Pokémon (ADR-030, ADR-031, ADR-032). */
+export interface TeamDef {
+  readonly maxMembers: number;
+  readonly maxLevel: number;
+  /** Balls a Pokémon fires, indexed by level - 1; the last value repeats. */
+  readonly ballsByLevel: readonly number[];
+  /** Level from which each evolution stage starts: [stage 2, stage 3]. */
+  readonly stageLevels: readonly number[];
+  /**
+   * Level a captured Pokémon joins with, by the stage of the enemy it came from (ADR-027, ADR-031):
+   * 4F-B lets a captured late form arrive trained (the first entry), not at the start of its stage.
+   */
+  readonly captureLevels: readonly number[];
+  /**
+   * Extra damage of the Pokémon the run began with, as a fraction (0.4 = +40 %): the first step of
+   * "the starter is the identity of the run", which Phase 5 turns into passives (Vision).
+   */
+  readonly starterBonus: number;
+  /** Collision radius of a ball by stage - 1; missing values use `ball.radius`. */
+  readonly ballRadiusByStage: readonly number[];
+}
+
+/** What a ball does, by type and stage, with signatures per species (ADR-031). */
+export interface AbilitiesDef {
+  /** Effects of stage 1, 2 and 3 (index stage - 1) for each type id. */
+  readonly byType: Readonly<Record<string, readonly (readonly Effect[])[]>>;
+  /** Per base species and stage; `null` = the effects of its type. */
+  readonly signatures: Readonly<Record<string, readonly (readonly Effect[] | null)[]>>;
+  /** For a type without a table, so a new type works from the first day (ADR-035). */
+  readonly generic: readonly (readonly Effect[])[];
+}
+
 /**
  * Everything the simulation reads but never owns. It is injected (ADR-006): the domain does not
  * import JSON or game-data files. Numbers are initial values, tuned with the balance harness.
@@ -70,6 +102,10 @@ export interface GameConfig {
     /** An enemy whose y reaches this line hurts the player. */
     readonly defenseLineY: number;
   };
+  /** Hybrids are off by default (ADR-033); the code and its tests stay. */
+  readonly hybrid: { readonly enabled: boolean };
+  readonly team: TeamDef;
+  readonly abilities: AbilitiesDef;
   readonly player: {
     readonly y: number;
     readonly speed: number;
@@ -119,12 +155,17 @@ export interface GameConfig {
     readonly pityStep: number;
     /** The run starts as if this many kills had already missed: the first ball comes early. */
     readonly startMisses: number;
-    /** Damage multiplier gained when a capture arrives with the team at `cards.maxBalls`. */
-    readonly overflowDamageStep: number;
+    /**
+     * The chance is multiplied by this when the team is full (< 1): every capture then asks for a
+     * decision, so fewer of them keep the pauses of the replace screen rare (ADR-030, M10).
+     */
+    readonly fullTeamChanceMult: number;
   };
   readonly enemy: {
     readonly radius: number;
     readonly threat: number;
+    /** Extra damage of a leak per evolution form above the first (ADR-032). */
+    readonly threatPerTier: number;
     /** Enemies spawn in one of this many vertical lanes. */
     readonly lanes: number;
     readonly speedMin: number;
@@ -164,6 +205,8 @@ export interface GameConfig {
     readonly drainPerHp: number;
     /** Max distance, centre to centre, at which a chain jumps to a second enemy. */
     readonly chainRadius: number;
+    /** Ticks an enemy stays slowed. */
+    readonly slowTicks: number;
   };
   readonly progression: {
     /** xp needed to go from level n to n + 1, indexed by n - 1; the last value repeats. */
@@ -176,26 +219,32 @@ export interface GameConfig {
   };
   readonly cards: {
     readonly offerCount: number;
-    /** Safety valve of the team size for the frame budget, not a rule to play against (ADR-023). */
-    readonly maxBalls: number;
-    /** Relative odds of each kind of offer. */
+    /** Relative odds of each kind of offer; a kind that cannot be played has no odds. */
     readonly weights: {
       readonly newBall: number;
-      readonly upgrade: number;
-      /** Only counts while a hybrid is possible (ADR-024). */
+      readonly train: number;
+      readonly power: number;
+      readonly cadence: number;
+      readonly vitality: number;
+      readonly team: number;
+      /** Only counts while hybrids are enabled and a pair exists (ADR-024, ADR-033). */
       readonly hybrid: number;
     };
-    /** damage card: damage multiplier += this. */
+    /** power card: the Pokémon's damage multiplier gains this per card. */
+    readonly powerStep: number;
+    /** team card: the damage multiplier of the whole team gains this. */
     readonly damageStep: number;
-    /** cadence card: cooldown multiplier *= this (below 1), never under `cadenceFloor`. */
+    /** cadence card: the Pokémon's cooldown multiplier is this to the power of the cards taken... */
     readonly cadenceFactor: number;
+    /** ...but never under this. */
     readonly cadenceFloor: number;
+    /** power and cadence cards a Pokémon accepts. */
+    readonly upgradeCap: number;
     readonly vitalityHp: number;
   };
   readonly grid: { readonly cellSize: number };
   /** typeChart[attacker][defender] */
   readonly typeChart: Readonly<Record<GameType, Readonly<Record<GameType, number>>>>;
-  readonly typeEffects: Readonly<Record<GameType, Effect>>;
   readonly species: Readonly<Record<string, SpeciesDef>>;
   /** Species ids that spawn as wild enemies. */
   readonly enemySpecies: readonly string[];

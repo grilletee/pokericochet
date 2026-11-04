@@ -182,7 +182,7 @@ describe('drain', () => {
     run.player.hp = 5;
     const enemy = makeEnemy();
     const ball = grassBall();
-    for (let i = 0; i < 14; i++) applyHitEffects(run, cfg, ball, enemy, 1);
+    for (let i = 0; i < cfg.effects.drainPerHp - 1; i++) applyHitEffects(run, cfg, ball, enemy, 1);
     expect(run.player.hp).toBe(5);
     run.events.length = 0;
     applyHitEffects(run, cfg, ball, enemy, 1);
@@ -195,7 +195,9 @@ describe('drain', () => {
     const run = createRun(cfg, 1, 'charmander');
     run.player.hp = 5;
     const half = grassBall({ effects: [{ kind: 'drain', strength: 0.5 }] });
-    for (let i = 0; i < 29; i++) applyHitEffects(run, cfg, half, makeEnemy(), 1);
+    for (let i = 0; i < 2 * cfg.effects.drainPerHp - 1; i++) {
+      applyHitEffects(run, cfg, half, makeEnemy(), 1);
+    }
     expect(run.player.hp).toBe(5);
     applyHitEffects(run, cfg, half, makeEnemy(), 1);
     expect(run.player.hp).toBe(6);

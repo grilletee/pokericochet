@@ -1,6 +1,6 @@
-import { createBall } from './combat';
 import type { GameConfig } from './config';
 import type { Run } from './run';
+import { cadenceMult, joinTeam } from './team';
 import type { Pickup } from './types';
 
 /** Never more than this many pickups at once (the render buffers are sized for it). */
@@ -10,9 +10,14 @@ function clamp(value: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, value));
 }
 
-/** Reload after a ball is back, in ticks: the assisted aim is slower on purpose (ADR-021). */
-export function reloadTicks(run: Run, config: GameConfig): number {
-  const mult = run.player.cooldownMult * (run.autoAim ? config.ball.autoCooldownMult : 1);
+/**
+ * Reload of a ball after it is back, in ticks: its Pokémon's cadence cards count and the assisted
+ * aim is slower on purpose (ADR-021). A slot without a Pokémon reloads at the base rate.
+ */
+export function reloadTicks(run: Run, config: GameConfig, slot = -1): number {
+  const owner = run.loadout[slot]?.owner;
+  const member = owner === undefined ? undefined : run.team[owner];
+  const mult = cadenceMult(config, member) * (run.autoAim ? config.ball.autoCooldownMult : 1);
   return Math.max(1, Math.floor(config.ball.cooldownTicks * mult + 0.5));
 }
 
@@ -63,36 +68,11 @@ function collect(run: Run, config: GameConfig, pickup: Pickup, late: boolean): v
   if (pickup.slot >= 0) {
     const ball = run.loadout[pickup.slot];
     if (ball === undefined) return;
-    run.cooldowns[pickup.slot] = reloadTicks(run, config) + penalty;
+    run.cooldowns[pickup.slot] = reloadTicks(run, config, pickup.slot) + penalty;
     run.events.push({ type: 'collect', ballId: ball.id, x: pickup.x, late });
     return;
   }
-  if (run.loadout.length < config.cards.maxBalls) {
-    const ball = { ...createBall(config, pickup.species, run.nextBallId), level: pickup.level };
-    run.nextBallId += 1;
-    run.captured.push({ species: pickup.species, level: pickup.level });
-    run.loadout.push(ball);
-    run.cooldowns.push(penalty);
-    run.events.push({
-      type: 'capture',
-      ballId: ball.id,
-      species: pickup.species,
-      level: pickup.level,
-      x: pickup.x,
-      late,
-    });
-  } else {
-    // The team is at the safety valve: the capture is not lost, it makes everyone hit harder.
-    run.player.damageMult += config.capture.overflowDamageStep;
-    run.events.push({
-      type: 'capture',
-      ballId: 0,
-      species: pickup.species,
-      level: pickup.level,
-      x: pickup.x,
-      late,
-    });
-  }
+  joinTeam(run, config, pickup.species, pickup.level, pickup.x, late);
 }
 
 /**
@@ -109,7 +89,12 @@ export function advancePickups(run: Run, config: GameConfig): void {
     else p.ticks -= 1;
     const dx = p.x - run.player.x;
     const dy = p.y - floor;
-    if (dx * dx + dy * dy <= reach2) {
+    // While the replace screen waits for an answer, the next capture stays on the floor.
+    const blocked = p.slot < 0 && run.pendingCapture !== null;
+    if (blocked) {
+      run.pickups[kept] = p;
+      kept += 1;
+    } else if (dx * dx + dy * dy <= reach2) {
       collect(run, config, p, false);
     } else if (p.ticks <= 0) {
       collect(run, config, p, true);

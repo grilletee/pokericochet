@@ -132,6 +132,8 @@ describe('auto-aim', () => {
       xp: 1,
       burnTicks: 0,
       burnDps: 0,
+      slowTicks: 0,
+      slow: 0,
     }));
     run.nextEnemyId = 100;
     run.autoAim = true;
@@ -193,6 +195,8 @@ describe('auto-aim', () => {
         xp: 1,
         burnTicks: 0,
         burnDps: 0,
+        slowTicks: 0,
+        slow: 0,
       },
     ];
     run.nextEnemyId = 2;
@@ -223,6 +227,8 @@ describe('combat in the loop', () => {
         xp: 1,
         burnTicks: 0,
         burnDps: 0,
+        slowTicks: 0,
+        slow: 0,
       },
     ];
     run.nextEnemyId = 2;
@@ -252,6 +258,8 @@ describe('combat in the loop', () => {
         xp: 1,
         burnTicks: 0,
         burnDps: 0,
+        slowTicks: 0,
+        slow: 0,
       },
     ];
     run.nextEnemyId = 2;
@@ -278,6 +286,8 @@ describe('combat in the loop', () => {
         xp: 1,
         burnTicks: 0,
         burnDps: 0,
+        slowTicks: 0,
+        slow: 0,
       },
     ];
     tick(run, IDLE, quietConfig);
@@ -343,7 +353,7 @@ describe('determinism', () => {
     expect(hashRun(b)).toBe(hashRun(a));
     b.offers = [{ kind: 'vitality' }];
     expect(hashRun(b)).not.toBe(hashRun(a));
-    a.offers = [{ kind: 'damage' }];
+    a.offers = [{ kind: 'team' }];
     expect(hashRun(b)).not.toBe(hashRun(a));
   });
 
@@ -439,8 +449,20 @@ describe('hashRun', () => {
       'player.damageMult': (r) => {
         r.player.damageMult += 0.01;
       },
-      'player.cooldownMult': (r) => {
-        r.player.cooldownMult -= 0.01;
+      'team damageUps': (r) => {
+        (r.team[0] as NonNullable<(typeof r.team)[number]>).damageUps += 1;
+      },
+      'team cadenceUps': (r) => {
+        (r.team[0] as NonNullable<(typeof r.team)[number]>).cadenceUps += 1;
+      },
+      'team level': (r) => {
+        (r.team[0] as NonNullable<(typeof r.team)[number]>).level += 1;
+      },
+      'pending capture': (r) => {
+        r.pendingCapture = { species: 'psyduck', stage: 1 };
+      },
+      'enemy slow': (r) => {
+        (r.enemies[0] as NonNullable<(typeof r.enemies)[number]>).slowTicks += 1;
       },
       'player.drain': (r) => {
         r.player.drain += 0.5;

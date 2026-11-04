@@ -4,6 +4,7 @@ import { dropCapture, MAX_PICKUPS } from './pickups';
 import { awardKill } from './progression';
 import { nextFloat } from './rng';
 import type { Run } from './run';
+import { memberIndexOf, powerMult, teamIsFull } from './team';
 import type { Ball, Enemy } from './types';
 import { baseOf, onBossDefeated } from './waves';
 
@@ -24,11 +25,16 @@ export function damageEnemy(run: Run, config: GameConfig, enemy: Enemy, amount: 
     onBossDefeated(run, config, enemy); // a boss has its own reward, not the capture roll
     return true;
   }
-  const chance = config.capture.chance + run.captureMisses * config.capture.pityStep;
+  // A tougher form drops the ball of its line at the stage of that form (ADR-027).
+  const { base, level } = baseOf(config, enemy.species);
+  // A full team makes a capture a decision (ADR-030), so a new species is rarer; one the team
+  // already has is a free level and keeps the normal chance.
+  const asksToReplace = teamIsFull(run, config) && memberIndexOf(run, base) < 0;
+  const chance =
+    (config.capture.chance + run.captureMisses * config.capture.pityStep) *
+    (asksToReplace ? config.capture.fullTeamChanceMult : 1);
   if (roll < chance && run.pickups.length < MAX_PICKUPS) {
     run.captureMisses = 0;
-    // A tougher form drops the ball of its line at the level of that form (ADR-027).
-    const { base, level } = baseOf(config, enemy.species);
     dropCapture(run, config, base, enemy.type, enemy.x, enemy.y, level);
   } else {
     run.captureMisses += 1;
@@ -47,11 +53,17 @@ export function pierceCount(run: Run, ball: Ball): number {
   return fraction > 0 && nextFloat(run.rng.aim) < fraction ? whole + 1 : whole;
 }
 
-function nearestOther(enemies: readonly Enemy[], from: Enemy, maxDistance: number): Enemy | null {
+/** Nearest living enemy to `from` within `maxDistance` that is not in `seen`; ties go to the lower id. */
+function nearestOther(
+  enemies: readonly Enemy[],
+  from: Enemy,
+  maxDistance: number,
+  seen: readonly number[],
+): Enemy | null {
   let best: Enemy | null = null;
   let bestD2 = maxDistance * maxDistance;
   for (const e of enemies) {
-    if (e === from || e.hp <= 0) continue;
+    if (e.hp <= 0 || seen.includes(e.id)) continue;
     const d2 = (e.x - from.x) * (e.x - from.x) + (e.y - from.y) * (e.y - from.y);
     if (d2 < bestD2 || (d2 === bestD2 && best !== null && e.id < best.id)) {
       best = e;
@@ -61,10 +73,33 @@ function nearestOther(enemies: readonly Enemy[], from: Enemy, maxDistance: numbe
   return best;
 }
 
+/** Calls `fn` for every living enemy other than `centre` within `radius` of it, in id order. */
+function forEachNear(
+  enemies: readonly Enemy[],
+  centre: Enemy,
+  radius: number,
+  fn: (enemy: Enemy) => void,
+): void {
+  const r2 = radius * radius;
+  for (const e of enemies) {
+    if (e === centre || e.hp <= 0) continue;
+    const d2 = (e.x - centre.x) * (e.x - centre.x) + (e.y - centre.y) * (e.y - centre.y);
+    if (d2 <= r2) fn(e);
+  }
+}
+
+const chainSeen: number[] = [];
+
+/** Damage multiplier of a ball: the whole team's cards times its own Pokémon's power cards. */
+export function ballPower(run: Run, config: GameConfig, ball: Ball): number {
+  return run.player.damageMult * powerMult(config, run.team[ball.owner]);
+}
+
 /**
- * Applies the on-hit effects of a ball: burn, drain and chain. Every effect uses the ball's own
- * type for effectiveness, so a hybrid keeps the second ingredient's effect at reduced strength
- * but the first ingredient's type.
+ * Applies the on-hit effects of a ball (ADR-013, ADR-031): burn and its spread, drain, chain with
+ * several jumps, splash, slow and, if the hit killed, blast. Every effect uses the ball's own type
+ * for effectiveness, so a hybrid keeps the second ingredient's effect at reduced strength but the
+ * first ingredient's type. `killed` says whether this very hit defeated the target.
  */
 export function applyHitEffects(
   run: Run,
@@ -72,15 +107,28 @@ export function applyHitEffects(
   ball: Ball,
   target: Enemy,
   damage: number,
+  killed = false,
 ): void {
+  const power = ballPower(run, config, ball);
   for (const effect of ball.effects) {
     switch (effect.kind) {
       case 'burn': {
         if (target.hp <= 0) break;
-        const dps =
-          effect.strength * effectiveness(config, ball.type, target.type) * run.player.damageMult;
+        const dps = effect.strength * effectiveness(config, ball.type, target.type) * power;
         target.burnTicks = config.effects.burnTicks;
         target.burnDps = Math.max(target.burnDps, dps);
+        break;
+      }
+      case 'burnArea': {
+        // The burn of the same ball, at a fraction of its strength, on whoever stands close.
+        const burn = ball.effects.find((e) => e.kind === 'burn');
+        if (burn === undefined) break;
+        forEachNear(run.enemies, target, effect.radius ?? 0, (other) => {
+          const dps =
+            burn.strength * effect.strength * effectiveness(config, ball.type, other.type) * power;
+          other.burnTicks = config.effects.burnTicks;
+          other.burnDps = Math.max(other.burnDps, dps);
+        });
         break;
       }
       case 'drain': {
@@ -97,23 +145,56 @@ export function applyHitEffects(
         break;
       }
       case 'chain': {
-        const other = nearestOther(run.enemies, target, config.effects.chainRadius);
-        if (other === null) break;
-        run.events.push({
-          type: 'chain',
-          fromX: target.x,
-          fromY: target.y,
-          toX: other.x,
-          toY: other.y,
-        });
-        damageEnemy(
-          run,
-          config,
-          other,
-          damage * effect.strength * effectiveness(config, ball.type, other.type),
-        );
+        let from = target;
+        chainSeen.length = 0;
+        chainSeen.push(target.id);
+        for (let jump = 0; jump < (effect.count ?? 1); jump++) {
+          const other = nearestOther(run.enemies, from, config.effects.chainRadius, chainSeen);
+          if (other === null) break;
+          chainSeen.push(other.id);
+          run.events.push({
+            type: 'chain',
+            fromX: from.x,
+            fromY: from.y,
+            toX: other.x,
+            toY: other.y,
+          });
+          damageEnemy(
+            run,
+            config,
+            other,
+            damage * effect.strength * effectiveness(config, ball.type, other.type),
+          );
+          from = other;
+        }
         break;
       }
+      case 'splash':
+        forEachNear(run.enemies, target, effect.radius ?? 0, (other) => {
+          damageEnemy(
+            run,
+            config,
+            other,
+            damage * effect.strength * effectiveness(config, ball.type, other.type),
+          );
+        });
+        break;
+      case 'blast':
+        if (!killed) break;
+        forEachNear(run.enemies, target, effect.radius ?? 0, (other) => {
+          damageEnemy(
+            run,
+            config,
+            other,
+            damage * effect.strength * effectiveness(config, ball.type, other.type),
+          );
+        });
+        break;
+      case 'slow':
+        if (target.hp <= 0) break;
+        target.slow = Math.max(effect.strength, target.slowTicks > 0 ? target.slow : 0);
+        target.slowTicks = config.effects.slowTicks;
+        break;
       case 'pierce':
         break; // decided at launch
     }
