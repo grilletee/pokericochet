@@ -1,6 +1,5 @@
 import type { GameEvent, GameType, RunSummary } from '../domain';
 import { speciesName, typeName } from './cardText';
-import { describeFailure } from './fusionText';
 
 const TYPE_BLURB: Record<GameType, string> = {
   fire: 'Quema al impactar',
@@ -73,8 +72,14 @@ export function describeResults(
   };
 }
 
+/** Name of the form a ball of `species` shows at `level`; the plain species name by default. */
+export type FormNamer = (species: string, level: number) => string;
+
 /** A short on-screen message for an event, or null if the event needs none. */
-export function describeEvent(event: GameEvent): string | null {
+export function describeEvent(
+  event: GameEvent,
+  formName: FormNamer = (species) => speciesName(species),
+): string | null {
   switch (event.type) {
     case 'waveStart':
       return `Oleada ${event.index + 1}`;
@@ -82,10 +87,12 @@ export function describeEvent(event: GameEvent): string | null {
       return '¡Aparece el jefe!';
     case 'bossSummon':
       return `El jefe invoca ${event.count} refuerzos`;
-    case 'fuse':
-      return event.hybrid ? '¡Fusión híbrida!' : `¡Fusión! Una bola sube a nivel ${event.level}`;
-    case 'fuseFailed':
-      return describeFailure(event.error);
+    case 'evolve':
+      return `¡${formName(event.species, event.level - 1)} evoluciona a ${formName(event.species, event.level)}!`;
+    case 'hybrid':
+      return `¡Híbrida! ${speciesName(event.species)} + ${speciesName(event.withSpecies)}`;
+    case 'captureDrop':
+      return `¡${speciesName(event.species)} soltó una bola! Recógela`;
     case 'capture':
       return event.ballId === 0
         ? 'Equipo completo: la captura mejora el daño'

@@ -1,23 +1,18 @@
-import { gameConfig, STARTER_SPECIES } from '../data';
+import { ART_SPECIES_IDS, formOf, gameConfig, STARTER_SPECIES } from '../data';
 import {
-  type Ball,
   type Command,
   createBall,
   createRun,
   createSnapshot,
-  type FuseAction,
-  type FusionPreview,
+  dropCapture,
   type GameConfig,
   type GameEvent,
   PHASE_LEVELUP,
-  PHASE_PLAYING,
-  PHASE_WORKSHOP,
-  previewFusion,
+  previewHybrid,
   type Run,
   type Snapshot,
   summarizeRun,
   tick,
-  type WorkshopAction,
   writeSnapshot,
 } from '../domain';
 import { Renderer } from '../render';
@@ -28,7 +23,7 @@ import {
   creditLines,
   describeEvent,
   disclaimerShort,
-  FusionPanel,
+  EvolutionBanner,
   Overlay,
   ResultsScreen,
   SoundFx,
@@ -36,6 +31,8 @@ import {
   type StarterOption,
   StartScreen,
   speciesName,
+  spriteTile,
+  TeamBar,
   TunePanel,
 } from '../ui';
 import { BENCH_LOADS, type BenchLoad, benchScenario } from './benchScenario';
@@ -46,7 +43,7 @@ import { Input } from './input';
 import { commandFromInput } from './inputLogic';
 import { FrameMetrics, type Stats, summarize } from './metrics';
 import { loadAutoAim, loadMuted, saveAutoAim, saveMuted } from './settings';
-import { loadSpeciesTextures } from './sprites';
+import { loadSpeciesTextures, spriteUrls } from './sprites';
 import {
   applyTune,
   changedKnobs,
@@ -101,7 +98,6 @@ declare global {
       loadout: number;
       wave: number;
       screen: string;
-      tokens: number;
       kills: number;
       bossHp: number;
       bossMaxHp: number;
@@ -158,17 +154,8 @@ function finishBench(metrics: FrameMetrics, load: BenchLoad): BrowserBenchResult
   };
 }
 
-/**
- * One command for the next tick: a card choice while a level-up is pending, a workshop command
- * (open, fuse, close) when the panel asked for one, otherwise movement.
- */
-function nextCommand(
-  run: Run,
-  input: Input,
-  deadZone: number,
-  workshop: WorkshopCommand | null,
-  autoAim: boolean,
-): Command {
+/** One command for the next tick: a card choice while a level-up is pending, otherwise movement. */
+function nextCommand(run: Run, input: Input, deadZone: number, autoAim: boolean): Command {
   if (run.phase === 'levelup') {
     const index = input.takePick();
     return index === null
@@ -176,14 +163,8 @@ function nextCommand(
       : { moveX: 0, autoAim, action: { type: 'pick', index } };
   }
   input.takePick(); // a number key pressed outside a level-up is not a choice
-  if (run.phase === 'workshop') {
-    return workshop === null ? { moveX: 0, autoAim } : { moveX: 0, autoAim, action: workshop };
-  }
-  const move = commandFromInput(input.state, run.player.x, deadZone, autoAim);
-  return workshop === null ? move : { ...move, action: workshop };
+  return commandFromInput(input.state, run.player.x, deadZone, autoAim);
 }
-
-type WorkshopCommand = FuseAction | WorkshopAction;
 
 function hudText(snap: Snapshot, waveCount: number, seed: number): string {
   const wave =
@@ -194,11 +175,18 @@ function hudText(snap: Snapshot, waveCount: number, seed: number): string {
     `PV ${Math.max(0, Math.round(snap.playerHp))}/${snap.playerMaxHp}`,
     `Nv ${snap.playerLevel} (${Math.floor(snap.playerXp)}/${snap.playerXpNext} XP)`,
     waveCount > 0 ? wave : '',
-    snap.tokens > 0 ? `Fichas ${snap.tokens}` : '',
   ]
     .filter((part) => part !== '')
     .join('   ');
   return `${first}\nSemilla ${seed}`;
+}
+
+/** The arrow (or plus sign) between the pictures of the evolution banner. */
+function arrow(symbol = '→'): HTMLElement {
+  const node = document.createElement('div');
+  node.textContent = symbol;
+  node.style.cssText = 'font-size:28px;font-weight:800;opacity:0.9;';
+  return node;
 }
 
 type Screen = 'menu' | 'credits' | 'playing' | 'results';
@@ -213,8 +201,6 @@ function applyDebugParams(run: Run, config: GameConfig, params: URLSearchParams)
   if (xp !== null) run.player.xp = xp;
   const hp = number('hp');
   if (hp !== null) run.player.hp = hp;
-  const tokens = number('tokens');
-  if (tokens !== null) run.tokens = tokens;
   const wave = number('wave');
   if (wave !== null) run.wave.index = wave; // wave=7 jumps straight to the boss
   const loadout = params.get('loadout');
@@ -226,6 +212,25 @@ function applyDebugParams(run: Run, config: GameConfig, params: URLSearchParams)
       return ball;
     });
     run.cooldowns = run.loadout.map(() => 0);
+  }
+  // ballLevel=2 raises every ball of the loadout to that level (to reach a hybrid quickly).
+  const ballLevel = number('ballLevel');
+  if (ballLevel !== null) {
+    run.loadout = run.loadout.map((ball) => ({
+      ...ball,
+      level: Math.max(1, Math.min(3, ballLevel)),
+    }));
+  }
+  // offers=hybrid opens a level-up with the hybrid of the first two balls, if it is allowed.
+  if (params.get('offers') === 'hybrid' && previewHybrid(run, 0, 1) !== null) {
+    run.offers = [{ kind: 'hybrid', a: 0, b: 1 }, { kind: 'damage' }];
+    run.phase = 'levelup';
+  }
+  // capture=<species> lets a captured ball of that species fall in front of the launcher.
+  const captured = params.get('capture');
+  const def = captured === null ? undefined : config.species[captured];
+  if (captured !== null && def !== undefined) {
+    dropCapture(run, config, captured, def.type, run.player.x, 200);
   }
 }
 
@@ -260,8 +265,18 @@ export async function startGame(host: HTMLElement): Promise<void> {
   if (showDebug && !bench) applyDebugParams(run, config, params);
 
   // Species -> small code the render uses to pick art; the domain never sees art.
-  const speciesIds = Object.keys(config.species);
+  // The art table also holds every evolution form; `forms[code][level - 1]` is the code to draw.
+  const speciesIds = [...new Set([...Object.keys(config.species), ...ART_SPECIES_IDS])];
   const speciesCodes = new Map(speciesIds.map((id, code) => [id, code]));
+  const forms = speciesIds.map((id) =>
+    [1, 2, 3].map((level) => speciesCodes.get(formOf(id, level)) ?? speciesCodes.get(id) ?? 0),
+  );
+  const urls = spriteUrls();
+  const art = {
+    spriteUrl: (species: string, level: number): string | undefined =>
+      urls.get(formOf(species, level)),
+  };
+  const formName = (species: string, level: number): string => speciesName(formOf(species, level));
   let prev = createSnapshot(MAX_SLOTS, MAX_ENEMIES);
   let curr = createSnapshot(MAX_SLOTS, MAX_ENEMIES);
   writeSnapshot(run, prev, speciesCodes);
@@ -273,9 +288,11 @@ export async function startGame(host: HTMLElement): Promise<void> {
     MAX_SLOTS,
     MAX_ENEMIES,
     await loadSpeciesTextures(speciesIds),
+    forms,
   );
   const overlay = new Overlay(host);
-  const fusionPanel = new FusionPanel(host);
+  const teamBar = new TeamBar(host, art, (species) => config.species[species]?.type);
+  const banner = new EvolutionBanner(host);
   const startScreen = new StartScreen(host);
   const creditsScreen = new CreditsScreen(host);
   const resultsScreen = new ResultsScreen(host);
@@ -334,8 +351,6 @@ export async function startGame(host: HTMLElement): Promise<void> {
 
   let screen: Screen = 'playing';
   let best: BestRun | null = loadBestRun(store);
-  // A fusion chosen in the panel, waiting for the next tick.
-  let pendingWorkshop: WorkshopCommand | null = null;
 
   let last = performance.now();
   let frameCount = 0;
@@ -359,7 +374,6 @@ export async function startGame(host: HTMLElement): Promise<void> {
       loadout: run.loadout.length,
       wave: run.wave.index,
       screen,
-      tokens: run.tokens,
       kills: run.kills,
       bossHp: curr.bossHp,
       bossMaxHp: curr.bossMaxHp,
@@ -371,8 +385,13 @@ export async function startGame(host: HTMLElement): Promise<void> {
     });
   }
 
-  const cardContext: CardTextContext = {
+  const cardContext: CardTextContext & typeof art = {
+    ...art,
     typeOf: (species) => config.species[species]?.type,
+    ballAt: (slot) => run.loadout[slot],
+    previewHybrid: (a, b) => previewHybrid(run, a, b),
+    evolvesWith: (species) =>
+      run.loadout.some((ball) => ball.species === species && ball.level === 1 && !ball.hybrid),
     damageStep: config.cards.damageStep,
     cadenceFactor: config.cards.cadenceFactor,
     vitalityHp: config.cards.vitalityHp,
@@ -390,17 +409,16 @@ export async function startGame(host: HTMLElement): Promise<void> {
     writeSnapshot(run, curr, speciesCodes);
     stepper.reset();
     pending.length = 0;
-    pendingWorkshop = null;
     startScreen.hide();
     creditsScreen.hide();
     resultsScreen.hide();
-    fusionPanel.hide();
+    banner.hide();
     screen = 'playing';
   };
   const showMenu = (): void => {
     screen = 'menu';
     resultsScreen.hide();
-    fusionPanel.hide();
+    banner.hide();
     creditsScreen.hide();
     startScreen.show(
       GAME_TITLE,
@@ -421,7 +439,6 @@ export async function startGame(host: HTMLElement): Promise<void> {
     const saved = saveIfBest(store, summary);
     best = saved.best;
     screen = 'results';
-    fusionPanel.hide();
     resultsScreen.show(
       summary,
       saved.best,
@@ -431,18 +448,59 @@ export async function startGame(host: HTMLElement): Promise<void> {
     );
   };
 
-  // Closures created once: the panel calls them, and they always see the current run.
-  const previewFn = (a: number, b: number): FusionPreview => previewFusion(run, a, b);
-  const fuseFn = (a: number, b: number): void => {
-    pendingWorkshop = { type: 'fuse', a, b };
+  /** Arena point to host pixels, for the DOM effects that start on the field. */
+  const toScreen = (x: number, y: number): { x: number; y: number } => {
+    const view = renderer.view;
+    return { x: view.offsetX + x * view.scale, y: view.offsetY + y * view.scale };
   };
-  const openFn = (): void => {
-    pendingWorkshop = { type: 'workshop', open: true };
+  /** The DOM feedback of the events of this frame: captures fly to the team bar, evolutions show. */
+  const showEventFeedback = (events: readonly GameEvent[]): void => {
+    for (const event of events) {
+      if (event.type === 'capture') {
+        const from = toScreen(event.x, config.player.y);
+        teamBar.flyCapture(
+          event.ballId,
+          event.species,
+          art.spriteUrl(event.species, 1),
+          from.x,
+          from.y,
+        );
+      } else if (event.type === 'evolve') {
+        const type = config.species[event.species]?.type;
+        teamBar.pulse(event.ballId);
+        banner.show(
+          [
+            spriteTile(art.spriteUrl(event.species, event.level - 1), event.species, type, 64),
+            arrow(),
+            spriteTile(art.spriteUrl(event.species, event.level), event.species, type, 72),
+          ],
+          describeEvent(event, formName) ?? '',
+          '#ffd54f',
+        );
+      } else if (event.type === 'hybrid') {
+        teamBar.pulse(event.ballId);
+        banner.show(
+          [
+            spriteTile(
+              art.spriteUrl(event.species, event.level),
+              event.species,
+              config.species[event.species]?.type,
+              60,
+            ),
+            arrow('+'),
+            spriteTile(
+              art.spriteUrl(event.withSpecies, event.level),
+              event.withSpecies,
+              config.species[event.withSpecies]?.type,
+              60,
+            ),
+          ],
+          describeEvent(event, formName) ?? '',
+          '#c792ea',
+        );
+      }
+    }
   };
-  const closeFn = (): void => {
-    pendingWorkshop = { type: 'workshop', open: false };
-  };
-  const fusionView = { loadout: run.loadout as readonly Ball[], tokens: 0 };
 
   if (!skipTitle) showMenu();
 
@@ -473,14 +531,6 @@ export async function startGame(host: HTMLElement): Promise<void> {
         aimToggle.set(autoAim, false);
         saveAutoAim(store, autoAim);
       }
-      // F toggles the workshop; Esc or M also close it. They never leave the run from here.
-      if (input.workshopToggleRequested) {
-        if (run.phase === 'playing') openFn();
-        else if (run.phase === 'workshop') closeFn();
-      } else if (input.menuRequested && run.phase === 'workshop') {
-        closeFn();
-      }
-      input.workshopToggleRequested = false;
       input.autoAimToggleRequested = false;
       input.restartRequested = false;
       input.menuRequested = false;
@@ -492,15 +542,17 @@ export async function startGame(host: HTMLElement): Promise<void> {
     for (let s = 0; s < steps; s++) {
       const cmd = bench
         ? benchCommand(run.tickCount)
-        : nextCommand(run, input, POINTER_DEAD_ZONE, pendingWorkshop, autoAim);
-      pendingWorkshop = null;
+        : nextCommand(run, input, POINTER_DEAD_ZONE, autoAim);
       const t0 = performance.now();
       const output = tick(run, cmd, config);
       const t1 = performance.now();
       for (const event of output.events) {
         pending.push(event);
-        const text = describeEvent(event);
-        if (text !== null) overlay.showToast(text, now);
+        const text = describeEvent(event, formName);
+        // Evolutions and hybrids have their own banner with the sprites: no second message.
+        if (text !== null && event.type !== 'evolve' && event.type !== 'hybrid') {
+          overlay.showToast(text, now);
+        }
         sound.playEvent(event, now);
       }
       const swap = prev;
@@ -516,6 +568,8 @@ export async function startGame(host: HTMLElement): Promise<void> {
       }
     }
 
+    teamBar.update(!bench && screen === 'playing' ? run.loadout : null);
+    showEventFeedback(pending);
     const r0 = performance.now();
     if (!skipRender) renderer.render(prev, curr, stepper.alpha, pending, elapsed);
     const renderMs = performance.now() - r0;
@@ -545,18 +599,6 @@ export async function startGame(host: HTMLElement): Promise<void> {
       cardContext,
       (index) => input.requestPick(index),
     );
-    if (!bench && screen === 'playing' && curr.phase === PHASE_WORKSHOP) {
-      fusionPanel.setLauncher(null, openFn);
-      fusionView.loadout = run.loadout;
-      fusionView.tokens = run.tokens;
-      fusionPanel.update(fusionView, previewFn, fuseFn, closeFn);
-    } else {
-      fusionPanel.hide();
-      fusionPanel.setLauncher(
-        !bench && screen === 'playing' && curr.phase === PHASE_PLAYING ? run.tokens : null,
-        openFn,
-      );
-    }
     if (showDebug && frameCount % 15 === 0) {
       overlay.setDebug(
         [

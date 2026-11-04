@@ -7,7 +7,12 @@ describe('sound: which event makes which sound', () => {
   const events: Array<[GameEvent, string | null]> = [
     [{ type: 'hit', ballId: 1, enemyId: 1, damage: 1, effectiveness: 1, x: 0, y: 0 }, 'bounce'],
     [{ type: 'kill', enemyId: 1, x: 0, y: 0 }, 'kill'],
-    [{ type: 'fuse', ballId: 1, level: 2, hybrid: false }, 'fuse'],
+    [{ type: 'evolve', ballId: 1, species: 'charmander', level: 2 }, 'evolve'],
+    [
+      { type: 'hybrid', ballId: 1, species: 'charmander', withSpecies: 'squirtle', level: 2 },
+      'hybrid',
+    ],
+    [{ type: 'captureDrop', species: 'psyduck', x: 10, y: 50 }, 'captureDrop'],
     [{ type: 'leak', enemyId: 1, damage: 1 }, 'damage'],
     [{ type: 'won' }, 'win'],
     [{ type: 'lost' }, 'lose'],
@@ -17,7 +22,6 @@ describe('sound: which event makes which sound', () => {
     [{ type: 'launch', ballId: 1 }, null],
     [{ type: 'spawn', enemyId: 1 }, null],
     [{ type: 'waveStart', index: 1 }, null],
-    [{ type: 'fuseFailed', error: 'no-token' }, null],
   ];
   it.each(events)('%j -> %s', (event, expected) => {
     expect(soundFor(event)).toBe(expected);
@@ -44,8 +48,8 @@ describe('sound: throttle', () => {
     const t = new Throttle();
     expect(t.allow('bounce', 0)).toBe(true);
     expect(t.allow('kill', 1)).toBe(true);
-    expect(t.allow('fuse', 2)).toBe(true);
-    expect(t.allow('fuse', 2)).toBe(true);
+    expect(t.allow('evolve', 2)).toBe(true);
+    expect(t.allow('evolve', 2)).toBe(true);
     expect(t.allow('lose', 3)).toBe(true);
     expect(t.allow('capture', 4)).toBe(true);
     expect(t.allow('capture', 4)).toBe(true);

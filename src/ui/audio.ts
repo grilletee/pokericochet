@@ -4,7 +4,9 @@ import type { GameEvent } from '../domain';
 export type SoundId =
   | 'bounce'
   | 'kill'
-  | 'fuse'
+  | 'evolve'
+  | 'hybrid'
+  | 'captureDrop'
   | 'damage'
   | 'win'
   | 'lose'
@@ -18,8 +20,12 @@ export function soundFor(event: GameEvent): SoundId | null {
       return 'bounce';
     case 'kill':
       return 'kill';
-    case 'fuse':
-      return 'fuse';
+    case 'evolve':
+      return 'evolve';
+    case 'hybrid':
+      return 'hybrid';
+    case 'captureDrop':
+      return 'captureDrop';
     case 'collect':
       return 'collect';
     case 'capture':
@@ -39,7 +45,9 @@ export function soundFor(event: GameEvent): SoundId | null {
 const MIN_GAP_MS: Record<SoundId, number> = {
   bounce: 45,
   kill: 70,
-  fuse: 0,
+  evolve: 0,
+  hybrid: 0,
+  captureDrop: 0,
   damage: 120,
   win: 0,
   lose: 0,
@@ -73,16 +81,33 @@ interface Note {
 const RECIPES: Record<SoundId, readonly Note[]> = {
   bounce: [{ from: 330, to: 220, seconds: 0.06, wave: 'triangle', gain: 0.08 }],
   kill: [{ from: 520, to: 880, seconds: 0.09, wave: 'square', gain: 0.06 }],
-  fuse: [
+  // Evolution: a rising run that ends on a held chord.
+  evolve: [
     { from: 392, to: 392, seconds: 0.1, wave: 'triangle', gain: 0.12 },
-    { from: 523, to: 523, seconds: 0.1, wave: 'triangle', gain: 0.12, at: 0.09 },
-    { from: 659, to: 784, seconds: 0.2, wave: 'triangle', gain: 0.12, at: 0.18 },
+    { from: 494, to: 494, seconds: 0.1, wave: 'triangle', gain: 0.12, at: 0.09 },
+    { from: 587, to: 587, seconds: 0.1, wave: 'triangle', gain: 0.12, at: 0.18 },
+    { from: 784, to: 784, seconds: 0.45, wave: 'triangle', gain: 0.12, at: 0.27 },
+    { from: 988, to: 988, seconds: 0.45, wave: 'sine', gain: 0.08, at: 0.27 },
+  ],
+  // Hybrid: two voices that slide into each other.
+  hybrid: [
+    { from: 330, to: 440, seconds: 0.3, wave: 'sawtooth', gain: 0.06 },
+    { from: 494, to: 440, seconds: 0.3, wave: 'triangle', gain: 0.1 },
+    { from: 660, to: 880, seconds: 0.35, wave: 'sine', gain: 0.1, at: 0.28 },
+  ],
+  // A ball dropped by an enemy: a short bright ping that says look at the field.
+  captureDrop: [
+    { from: 1175, to: 1175, seconds: 0.07, wave: 'sine', gain: 0.1 },
+    { from: 1568, to: 1568, seconds: 0.14, wave: 'sine', gain: 0.1, at: 0.07 },
   ],
   damage: [{ from: 180, to: 70, seconds: 0.22, wave: 'sawtooth', gain: 0.12 }],
   collect: [{ from: 440, to: 660, seconds: 0.07, wave: 'sine', gain: 0.1 }],
+  // Capture joins the team: a three-note jingle, the most recognisable sound of the game.
   capture: [
-    { from: 523, to: 523, seconds: 0.08, wave: 'sine', gain: 0.12 },
-    { from: 784, to: 988, seconds: 0.16, wave: 'sine', gain: 0.12, at: 0.08 },
+    { from: 523, to: 523, seconds: 0.09, wave: 'square', gain: 0.07 },
+    { from: 659, to: 659, seconds: 0.09, wave: 'square', gain: 0.07, at: 0.09 },
+    { from: 784, to: 1047, seconds: 0.28, wave: 'square', gain: 0.07, at: 0.18 },
+    { from: 1047, to: 1047, seconds: 0.28, wave: 'sine', gain: 0.1, at: 0.18 },
   ],
   win: [
     { from: 523, to: 523, seconds: 0.14, wave: 'square', gain: 0.08 },

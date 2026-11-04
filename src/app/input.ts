@@ -24,8 +24,6 @@ export class Input {
   restartRequested = false;
   /** Set when M or Escape asks for the title screen; the game loop consumes it. */
   menuRequested = false;
-  /** Set when F asks to open or close the workshop; the game loop consumes it. */
-  workshopToggleRequested = false;
   /** Set when T asks to switch the assisted aim; the game loop consumes it. */
   autoAimToggleRequested = false;
   /** Pointer ids currently steering (on the floor) and aiming (anywhere above it). */
@@ -127,9 +125,6 @@ export class Input {
         break;
       case 'KeyT':
         if (down) this.autoAimToggleRequested = true;
-        break;
-      case 'KeyF':
-        if (down) this.workshopToggleRequested = true;
         break;
       case 'KeyM':
       case 'Escape':

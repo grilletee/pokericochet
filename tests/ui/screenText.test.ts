@@ -1,7 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { Ball, FuseFailure, GameEvent, RunSummary } from '../../src/domain';
-import { fuse } from '../../src/domain';
-import { describePreview } from '../../src/ui/fusionText';
+import type { GameEvent, RunSummary } from '../../src/domain';
 import {
   describeBest,
   describeEvent,
@@ -9,25 +7,6 @@ import {
   formatTime,
   starterBlurb,
 } from '../../src/ui/screenText';
-
-const ball = (overrides: Partial<Ball>): Ball => ({
-  id: 1,
-  species: 'charmander',
-  type: 'fire',
-  level: 1,
-  hybrid: false,
-  effects: [{ kind: 'burn', strength: 2 }],
-  ...overrides,
-});
-
-const water = (overrides: Partial<Ball> = {}): Ball =>
-  ball({
-    id: 2,
-    species: 'squirtle',
-    type: 'water',
-    effects: [{ kind: 'pierce', strength: 1 }],
-    ...overrides,
-  });
 
 const summary: RunSummary = {
   seed: 4242,
@@ -45,48 +24,6 @@ const summary: RunSummary = {
   ],
   score: 0,
 };
-
-describe('fusion preview text', () => {
-  it('says what an F1 gives', () => {
-    const p = fuse(ball({ id: 1 }), ball({ id: 2 }));
-    expect(describePreview(p)).toEqual({
-      ok: true,
-      text: 'Resultado: Charmander sube a nivel 2.',
-    });
-  });
-
-  it('says what an F2 gives: type of the first, effects of both, level of the lower', () => {
-    const p = fuse(ball({ level: 3 }), water({ level: 2 }));
-    const text = describePreview(p);
-    expect(text.ok).toBe(true);
-    expect(text.text).toContain('Charmander híbrida, tipo Fuego, nivel 2');
-    expect(text.text).toContain('Quemar 2 · Atravesar 0,5');
-  });
-
-  it('gives a reason in Spanish for every way a fusion can fail', () => {
-    const errors: FuseFailure[] = [
-      'same-ball',
-      'hybrid-input',
-      'max-level',
-      'level-mismatch',
-      'same-type-different-species',
-      'level-too-low',
-      'no-token',
-      'bad-slot',
-    ];
-    const texts = errors.map((error) => describePreview({ ok: false, error }).text);
-    for (const text of texts) expect(text.length).toBeGreaterThan(10);
-    expect(new Set(texts).size).toBe(errors.length);
-  });
-
-  it('with no token it still shows the result and then the reason', () => {
-    const p = describePreview({ ok: false, error: 'no-token', ball: ball({ level: 2 }) });
-    expect(p.ok).toBe(false);
-    expect(p.text.split('\n')).toHaveLength(2);
-    expect(p.text).toContain('sube a nivel 2');
-    expect(p.text).toContain('ficha');
-  });
-});
 
 describe('results and title text', () => {
   it('formats time as m:ss', () => {
@@ -146,22 +83,24 @@ describe('results and title text', () => {
       { type: 'waveStart', index: 2 },
       { type: 'bossSpawn', enemyId: 9 },
       { type: 'bossSummon', count: 4 },
-      { type: 'fuse', ballId: 1, level: 2, hybrid: false },
-      { type: 'fuse', ballId: 1, level: 2, hybrid: true },
-      { type: 'fuseFailed', error: 'no-token' },
+      { type: 'evolve', ballId: 1, species: 'charmander', level: 2 },
+      { type: 'hybrid', ballId: 1, species: 'charmander', withSpecies: 'squirtle', level: 2 },
+      { type: 'captureDrop', species: 'growlithe', x: 1, y: 2 },
       { type: 'launch', ballId: 1 },
       { type: 'won' },
       { type: 'capture', ballId: 5, species: 'psyduck', x: 1, late: false },
       { type: 'capture', ballId: 0, species: 'psyduck', x: 1, late: false },
       { type: 'collect', ballId: 1, x: 1, late: false },
     ];
-    const texts = events.map(describeEvent);
+    const formName = (species: string, level: number) =>
+      level >= 2 ? 'Charmeleon' : species.charAt(0).toUpperCase() + species.slice(1);
+    const texts = events.map((event) => describeEvent(event, formName));
     expect(texts[0]).toBe('Oleada 3');
     expect(texts[1]).toContain('jefe');
     expect(texts[2]).toContain('4');
-    expect(texts[3]).toContain('nivel 2');
-    expect(texts[4]).toContain('híbrida');
-    expect(texts[5]).toContain('ficha');
+    expect(texts[3]).toBe('¡Charmander evoluciona a Charmeleon!');
+    expect(texts[4]).toBe('¡Híbrida! Charmander + Squirtle');
+    expect(texts[5]).toBe('¡Growlithe soltó una bola! Recógela');
     expect(texts[6]).toBeNull();
     expect(texts[7]).toBeNull();
     expect(texts[8]).toContain('Capturado');

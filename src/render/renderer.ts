@@ -45,6 +45,7 @@ export class Renderer {
   private readonly ballSprites: Sprite[] = [];
   private readonly fxSprites: Sprite[] = [];
   private readonly fxLife = new Float32Array(FX_POOL);
+  private readonly fxSize = new Float32Array(FX_POOL);
   private fxNext = 0;
   private enemiesShown = 0;
   private ballsShown = 0;
@@ -62,6 +63,7 @@ export class Renderer {
     maxSlots: number,
     maxEnemies: number,
     private readonly art: readonly (Texture | undefined)[],
+    private readonly forms: readonly (readonly number[])[],
   ) {
     this.scratchBallX = new Float32Array(maxSlots);
     this.scratchBallY = new Float32Array(maxSlots);
@@ -120,6 +122,7 @@ export class Renderer {
     maxSlots: number,
     maxEnemies: number,
     art: readonly (Texture | undefined)[] = [],
+    forms: readonly (readonly number[])[] = [],
   ): Promise<Renderer> {
     const app = new Application();
     await app.init({
@@ -135,7 +138,7 @@ export class Renderer {
     const ring = app.renderer.generateTexture(
       new Graphics().circle(0, 0, 30).stroke({ width: 4, color: 0xffffff }),
     );
-    return new Renderer(app, config, disc, ring, maxSlots, maxEnemies, art);
+    return new Renderer(app, config, disc, ring, maxSlots, maxEnemies, art, forms);
   }
 
   /** Arena-to-screen transform, shared with the input layer to convert pointer positions. */
@@ -176,6 +179,11 @@ export class Renderer {
     this.app.render();
   }
 
+  /** Art of the evolution form a ball of `level` shows: `forms[species code][level - 1]`. */
+  private artFor(code: number, level: number): Texture | undefined {
+    return this.art[this.forms[code]?.[level - 1] ?? code];
+  }
+
   private spriteAt(pool: Sprite[], layer: Container, index: number): Sprite {
     let sprite = pool[index];
     if (sprite === undefined) {
@@ -196,7 +204,7 @@ export class Renderer {
       const sprite = this.spriteAt(this.ballSprites, this.ballLayer, shown);
       sprite.visible = true;
       sprite.position.set(this.scratchBallX[slot] ?? 0, this.scratchBallY[slot] ?? 0);
-      const art = this.art[curr.ballSpecies[slot] ?? 255];
+      const art = this.artFor(curr.ballSpecies[slot] ?? 255, curr.ballLevel[slot] ?? 1);
       if (art === undefined) {
         sprite.texture = this.disc;
         sprite.scale.set(radiusScale);
@@ -265,7 +273,7 @@ export class Renderer {
       halo.visible = true;
       sprite.position.set(x, y);
       halo.position.set(x, y);
-      const art = this.art[curr.pickupSpecies[i] ?? 255];
+      const art = this.artFor(curr.pickupSpecies[i] ?? 255, curr.pickupLevel[i] ?? 1);
       if (art === undefined) {
         sprite.texture = this.disc;
         sprite.scale.set(radius / 32);
@@ -318,7 +326,7 @@ export class Renderer {
     }
   }
 
-  private startEffect(x: number, y: number, color: number): void {
+  private startEffect(x: number, y: number, color: number, size = 1): void {
     const index = this.fxNext;
     this.fxNext = (this.fxNext + 1) % FX_POOL;
     const sprite = this.fxSprites[index];
@@ -327,6 +335,7 @@ export class Renderer {
     sprite.tint = color;
     sprite.visible = true;
     this.fxLife[index] = 1;
+    this.fxSize[index] = size;
   }
 
   private drawEffects(events: readonly GameEvent[], elapsedMs: number): void {
@@ -336,7 +345,12 @@ export class Renderer {
       else if (event.type === 'chain') this.startEffect(event.toX, event.toY, 0xfff176);
       else if (event.type === 'collect') this.startEffect(event.x, this.config.player.y, 0x81d4fa);
       else if (event.type === 'capture')
-        this.startEffect(event.x, this.config.player.y, PICKUP_GOLD);
+        this.startEffect(event.x, this.config.player.y, PICKUP_GOLD, 2.2);
+      else if (event.type === 'captureDrop') {
+        // Two staggered rings, big and gold: a drop must be seen from across the field.
+        this.startEffect(event.x, event.y, PICKUP_GOLD, 2.6);
+        this.startEffect(event.x, event.y, 0xffffff, 1.6);
+      }
     }
     const decay = elapsedMs / FX_DURATION_MS;
     for (let i = 0; i < FX_POOL; i++) {
@@ -350,7 +364,7 @@ export class Renderer {
       } else {
         this.fxLife[i] = next;
         sprite.alpha = next;
-        sprite.scale.set(0.35 + (1 - next) * 0.6);
+        sprite.scale.set((this.fxSize[i] ?? 1) * (0.35 + (1 - next) * 0.6));
       }
     }
   }

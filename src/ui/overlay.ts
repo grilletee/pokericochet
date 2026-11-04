@@ -1,5 +1,6 @@
 import type { Card } from '../domain';
 import { type CardTextContext, describeCard } from './cardText';
+import { type ArtLookup, buildCardArt } from './cardView';
 
 /**
  * DOM overlay on top of the canvas: health, a message (lost, restart hint) and an optional
@@ -38,7 +39,7 @@ export class Overlay {
     this.cards = document.createElement('div');
     this.cards.style.cssText =
       'position:absolute;inset:0;display:none;flex-direction:column;align-items:center;' +
-      'justify-content:center;gap:10px;background:rgba(5,8,16,0.72);' +
+      'justify-content:center;gap:8px;background:rgba(5,8,16,0.8);' +
       'font-family:system-ui,sans-serif;color:#e8ecf8;';
     this.toast = document.createElement('div');
     this.toast.style.cssText =
@@ -81,7 +82,7 @@ export class Overlay {
    */
   setCards(
     offers: readonly Card[] | null,
-    context: CardTextContext,
+    context: CardTextContext & ArtLookup,
     onPick: (index: number) => void,
   ): void {
     if (offers === this.shownOffers) return;
@@ -92,7 +93,7 @@ export class Overlay {
       return;
     }
     const heading = document.createElement('div');
-    heading.textContent = '¡Subes de nivel! Elige una mejora';
+    heading.textContent = '¡Subes de nivel! Elige una carta';
     heading.style.cssText = 'font-size:22px;font-weight:700;margin-bottom:6px;';
     this.cards.append(heading);
     offers.forEach((card, index) => {
@@ -101,15 +102,16 @@ export class Overlay {
       button.type = 'button';
       button.dataset.card = String(index);
       button.style.cssText =
-        'pointer-events:auto;min-width:260px;padding:12px 16px;border:2px solid #5b6aa8;' +
-        'border-radius:10px;background:#1b2540;color:inherit;font:inherit;text-align:left;cursor:pointer;';
+        'pointer-events:auto;width:min(340px,92vw);box-sizing:border-box;padding:10px 14px;' +
+        `border:2px solid ${card.kind === 'hybrid' ? '#c792ea' : '#5b6aa8'};` +
+        'border-radius:12px;background:#1b2540;color:inherit;font:inherit;text-align:center;cursor:pointer;';
       const name = document.createElement('div');
       name.textContent = `${index + 1}. ${title}`;
-      name.style.cssText = 'font-size:18px;font-weight:700;';
+      name.style.cssText = 'font-size:17px;font-weight:700;margin-top:4px;';
       const sub = document.createElement('div');
       sub.textContent = detail;
-      sub.style.cssText = 'font-size:14px;opacity:0.8;margin-top:2px;';
-      button.append(name, sub);
+      sub.style.cssText = 'font-size:13px;opacity:0.8;margin-top:2px;';
+      button.append(buildCardArt(card, context), name, sub);
       // Not "pointerdown": that would also reach the canvas input underneath.
       button.addEventListener('click', () => onPick(index));
       this.cards.append(button);

@@ -1,8 +1,8 @@
 import type { GameType, RunSummary } from '../domain';
 import { speciesName } from './cardText';
 import type { CreditLine } from './creditsText';
-import { TYPE_COLORS } from './fusionPanel';
 import { type BestRunView, describeBest, describeResults, starterBlurb } from './screenText';
+import { TYPE_COLORS } from './typeColors';
 
 const PANEL =
   'position:absolute;inset:0;display:none;flex-direction:column;align-items:center;' +
