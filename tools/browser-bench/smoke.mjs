@@ -243,45 +243,62 @@ try {
     (await creditsPage.evaluate(() => window.localStorage.getItem('muted.v1'))) === '1',
   );
 
-  // Workshop: two equal balls and a token fuse into one of the next level.
-  const f1 = await open('starter=charmander&loadout=charmander,charmander&tokens=1&seed=9');
-  await f1.waitForSelector('[data-fusion-open]');
-  await f1.locator('[data-fusion-open]').click();
-  await f1.waitForFunction(() => window.__debug().phase === 'workshop');
-  const pausedAt = (await dbg(f1)).tick;
-  await f1.waitForTimeout(600);
-  check('opening the workshop pauses the game', (await dbg(f1)).tick === pausedAt);
-  await f1.waitForSelector('[data-fusion-panel] button[data-slot]');
-  await f1.locator('button[data-slot="0"]').click();
-  await f1.locator('button[data-slot="1"]').click();
-  const f1Text = await f1.locator('[data-fusion-text]').textContent();
-  check('the panel says what the fusion gives', (f1Text ?? '').includes('sube a nivel 2'), f1Text);
-  await f1.screenshot({ path: outFile.replace('.png', '-fusion.png') });
-  await f1.locator('[data-fusion-go]').click();
-  await f1.waitForFunction(() => window.__debug().loadout === 1);
-  await f1.locator('[data-fusion-close]').click();
-  await f1.waitForFunction(() => window.__debug().phase === 'playing');
-  await f1.waitForTimeout(300);
-  check('closing it resumes the game', (await dbg(f1)).tick > pausedAt);
-  const afterF1 = await dbg(f1);
-  check('fusing consumed the token and one ball', afterF1.tokens === 0 && afterF1.loadout === 1);
-  await f1.keyboard.press('KeyF');
-  await f1.waitForFunction(() => window.__debug().phase === 'workshop');
+  // Evolution: two equal balls merge on their own, with a banner and no pause.
+  const evo = await open('starter=charmander&loadout=charmander,charmander&seed=9');
+  await evo.waitForFunction(() => window.__debug().loadout === 1);
+  check('two equal balls evolve on their own', true);
+  const evoText = (await evo.locator('[data-banner]').textContent()) ?? '';
   check(
-    'the chip now shows level 2',
-    ((await f1.locator('button[data-slot="0"]').textContent()) ?? '').includes('Nv2'),
+    'a banner says who evolved into what',
+    (await evo.locator('[data-banner]').isVisible()) &&
+      evoText.includes('Charmander') &&
+      evoText.includes('Charmeleon'),
+    evoText,
+  );
+  check('the banner shows the sprites', (await evo.locator('[data-banner] img').count()) === 2);
+  const pausedAt = (await dbg(evo)).tick;
+  await evo.waitForTimeout(400);
+  check('evolving never pauses the game', (await dbg(evo)).tick > pausedAt);
+  check(
+    'the team bar shows one ball at level 2',
+    (await evo.locator('[data-team-bar] [data-ball]').count()) === 1,
+  );
+  await evo.screenshot({ path: outFile.replace('.png', '-evolution.png') });
+
+  // Hybrid card: the two balls and the result as pictures, and choosing it fuses them.
+  const hyb = await open(
+    'starter=charmander&loadout=charmander,squirtle&ballLevel=2&offers=hybrid&seed=9',
+  );
+  await hyb.waitForFunction(() => window.__debug().phase === 'levelup');
+  const hybCard = hyb.locator('button[data-card="0"]');
+  const hybText = (await hybCard.textContent()) ?? '';
+  check(
+    'the hybrid card names both balls',
+    hybText.includes('Charmander') && hybText.includes('Squirtle') && hybText.includes('Híbrida'),
+    hybText,
+  );
+  check('the hybrid card shows three sprites', (await hybCard.locator('img').count()) === 3);
+  await hyb.screenshot({ path: outFile.replace('.png', '-hybrid-card.png') });
+  await hybCard.click();
+  await hyb.waitForFunction(() => window.__debug().phase === 'playing');
+  check('choosing the hybrid fuses the two balls', (await dbg(hyb)).loadout === 1);
+  check(
+    'a banner announces the hybrid',
+    ((await hyb.locator('[data-banner]').textContent()) ?? '').includes('Híbrida'),
   );
 
-  // ... and tells why when they cannot fuse.
-  const f2 = await open('starter=charmander&loadout=charmander,squirtle&tokens=1&seed=9');
-  await f2.waitForSelector('[data-fusion-open]');
-  await f2.keyboard.press('KeyF');
-  await f2.waitForSelector('[data-fusion-panel] button[data-slot]');
-  await f2.locator('button[data-slot="0"]').click();
-  await f2.locator('button[data-slot="1"]').click();
-  const f2Text = await f2.locator('[data-fusion-text]').textContent();
-  check('the panel says why it cannot fuse', (f2Text ?? '').includes('nivel 2 o más'), f2Text);
-  check('the fuse button is disabled', await f2.locator('[data-fusion-go]').isDisabled());
+  // Capture: a dropped ball falls, is picked up and flies into the team bar.
+  const cap = await open('starter=charmander&capture=growlithe&seed=9');
+  await cap.waitForFunction(() => window.__debug().loadout === 2);
+  check('the captured ball joins the team', true);
+  const capToast = (await cap.locator('body').textContent()) ?? '';
+  check('a message names the captured species', capToast.includes('Growlithe'));
+  await cap.waitForTimeout(1200);
+  check(
+    'the team bar shows both balls once the sprite has landed',
+    (await cap.locator('[data-team-bar] [data-ball]').count()) === 2,
+  );
+  await cap.screenshot({ path: outFile.replace('.png', '-capture.png') });
 
   // Boss: jumping to the last wave brings it in, with its health bar.
   const bossPage = await open('starter=pikachu&wave=7&seed=3');

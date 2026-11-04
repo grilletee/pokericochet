@@ -17,7 +17,7 @@ import {
  * Fun metrics of GDD-v1 (Informe-4A), measured with bots that USE the new mechanics:
  *  M1 agency      active - still win rate            (target >= 30 points)
  *  M2 new balls   per minute, and the longest drought (target >= 2 per minute, drought <= 45 s)
- *  M3 fusions     per run and runs with a hybrid     (target see Informe-4A)
+ *  M3 evolutions  per run and runs with a hybrid     (target see Informe-4A)
  *  M4 aim         active - active-auto win rate      (target >= 15 points, ADR-021)
  * plus guard rails (the active bot wins between 40 % and 70 %). Bots are a proxy for fun.
  * Run with `pnpm bench:fun`. FUN_PER_STARTER sets the runs per starter (default 50). FUN_PATCH is
@@ -81,7 +81,7 @@ function row(name: string, o: readonly Outcome[]): string {
     `captures ${mean(o, (x) => x.captures).toFixed(1)}`,
     `collected ${mean(o, (x) => x.collected).toFixed(0)} recalled ${mean(o, (x) => x.recalled).toFixed(0)}`,
     `balls ${mean(o, (x) => x.balls).toFixed(1)}`,
-    `fusions ${mean(o, (x) => x.fusions).toFixed(2)} hybrid runs ${((100 * o.filter((x) => x.hybrids > 0).length) / o.length).toFixed(0)}%`,
+    `evolutions ${mean(o, (x) => x.evolutions).toFixed(2)} hybrid runs ${((100 * o.filter((x) => x.hybrids > 0).length) / o.length).toFixed(0)}%`,
     `min ${minutes.toFixed(1)}`,
   ].join(' | ');
 }

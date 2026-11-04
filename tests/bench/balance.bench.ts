@@ -131,7 +131,7 @@ function summarize(outcomes: readonly Outcome[]): string {
       .toFixed(0)
       .padStart(3)}`,
     `balls ${mean((o) => o.balls).toFixed(1)}`,
-    `fusions ${mean((o) => o.fusions).toFixed(1)}`,
+    `evolutions ${mean((o) => o.evolutions).toFixed(1)}`,
     `boss ${((100 * outcomes.filter((o) => o.bossReached).length) / n).toFixed(0)}%`,
   ].join(' | ');
 }

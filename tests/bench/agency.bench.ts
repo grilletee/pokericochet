@@ -32,10 +32,9 @@ function describeRuns(name: string, outcomes: readonly Outcome[]): string {
     `boss ${pct((o) => o.bossReached)
       .toFixed(0)
       .padStart(3)}%`,
-    `fusions ${mean((o) => o.fusions).toFixed(2)}`,
+    `evolutions ${mean((o) => o.evolutions).toFixed(2)}`,
     `hybrids ${mean((o) => o.hybrids).toFixed(2)} (runs with one: ${pct((o) => o.hybrids > 0).toFixed(0)}%)`,
-    `runs with a fusion: ${pct((o) => o.fusions > 0).toFixed(0)}%`,
-    `tokens unspent ${mean((o) => o.tokensLeft).toFixed(2)}`,
+    `runs with an evolution: ${pct((o) => o.evolutions > 0).toFixed(0)}%`,
   ].join(' | ');
 }
 

@@ -3,13 +3,10 @@ import {
   type Command,
   createRng,
   createRun,
-  type FuseAction,
   type GameConfig,
   nextInt,
-  previewFusion,
   type Run,
   tick,
-  type WorkshopAction,
 } from '../../src/domain';
 
 export interface AimPoint {
@@ -21,8 +18,6 @@ export interface Policy {
   readonly name: string;
   move(run: Run, config: GameConfig): -1 | 0 | 1;
   pick(run: Run, offers: readonly Card[]): number;
-  /** A workshop command to send now (open, fuse or close), if the policy wants one. */
-  workshop?(run: Run): WorkshopCommand | null;
   /** Where to aim by hand this tick; omitted or null = leave the aim as it is (ADR-021). */
   aim?(run: Run, config: GameConfig): AimPoint | null;
   /** Use the assisted aim (the launcher picks the nearest enemy by itself). */
@@ -30,8 +25,8 @@ export interface Policy {
 }
 
 /**
- * The command a policy sends this tick: a card while a level-up waits, otherwise movement, aim
- * and (when it wants one) a workshop action. The same builder serves every bench and the full-run
+ * The command a policy sends this tick: a card while a level-up waits, otherwise movement and
+ * aim. The same builder serves every bench and the full-run
  * tests, so what a bot does with the new mechanics is defined in one place.
  */
 export function commandFor(policy: Policy, run: Run, config: GameConfig): Command {
@@ -40,39 +35,11 @@ export function commandFor(policy: Policy, run: Run, config: GameConfig): Comman
   }
   const moveX = policy.move(run, config);
   const aim = policy.aim?.(run, config) ?? null;
-  const base: Command = {
+  return {
     moveX,
     autoAim: policy.autoAim === true,
     ...(aim === null ? {} : { aimX: aim.x, aimY: aim.y }),
   };
-  const action = policy.workshop?.(run);
-  return action ? { ...base, action } : base;
-}
-
-type WorkshopCommand = FuseAction | WorkshopAction;
-
-/**
- * Opens the workshop when a fusion is possible, fuses while any is, then closes it: three kinds of
- * command, one per tick, as the player's panel would send them.
- */
-export function workshopPolicy(run: Run): WorkshopCommand | null {
-  if (run.phase === 'workshop') {
-    return firstValidFusion(run) ?? { type: 'workshop', open: false };
-  }
-  if (run.phase === 'playing' && run.tokens > 0 && firstValidFusion(run) !== null) {
-    return { type: 'workshop', open: true };
-  }
-  return null;
-}
-
-/** The first valid fusion of the loadout, trying every ordered pair of slots; null if none. */
-export function firstValidFusion(run: Run): FuseAction | null {
-  for (let a = 0; a < run.loadout.length; a++) {
-    for (let b = 0; b < run.loadout.length; b++) {
-      if (a !== b && previewFusion(run, a, b).ok) return { type: 'fuse', a, b };
-    }
-  }
-  return null;
 }
 
 /** Moves at random, aims at random and takes random cards: a floor for no skill at all. */
@@ -91,27 +58,26 @@ export function randomPolicy(seed: number): Policy {
 
 /**
  * Does not move and does not aim (the aim stays straight up): the baseline of "what if the player
- * does nothing". Takes the same cards and fusions as the others.
+ * does nothing". Takes the same cards as the others.
  */
 export const standStillPolicy: Policy = {
   name: 'still',
   move: () => 0,
   pick: (run, offers) => chaserPolicy.pick(run, offers),
-  workshop: workshopPolicy,
 };
 
 const PRIORITY: Record<Card['kind'], number> = {
-  newBall: 0,
-  damage: 1,
-  cadence: 2,
-  vitality: 3,
-  token: 4,
+  hybrid: 0,
+  newBall: 1,
+  damage: 2,
+  cadence: 3,
+  vitality: 4,
 };
 
 /**
  * The pre-4B player: assisted aim, follows the enemy closest to the defence line and never picks
  * balls up. Kept as a reference for how much the new mechanics add. Takes cards in a fixed order
- * of usefulness (more balls, damage, cadence, health, token).
+ * of usefulness (hybrid, more balls, damage, cadence, health).
  */
 export const chaserPolicy: Policy = {
   name: 'chaser',
@@ -129,11 +95,10 @@ export const chaserPolicy: Policy = {
     const delta = target - run.player.x;
     return delta > 6 ? 1 : delta < -6 ? -1 : 0;
   },
-  workshop: workshopPolicy,
   pick(_run, offers) {
     let best = 0;
     offers.forEach((card, i) => {
-      if (PRIORITY[card.kind] < PRIORITY[offers[best]?.kind ?? 'token']) best = i;
+      if (PRIORITY[card.kind] < PRIORITY[offers[best]?.kind ?? 'vitality']) best = i;
     });
     return best;
   },
@@ -178,7 +143,6 @@ export const activePolicy: Policy = {
   name: 'active',
   move: collectingMove,
   aim: dangerousTarget,
-  workshop: workshopPolicy,
   pick: (run, offers) => chaserPolicy.pick(run, offers),
 };
 
@@ -187,7 +151,6 @@ export const activeAutoPolicy: Policy = {
   name: 'active-auto',
   autoAim: true,
   move: collectingMove,
-  workshop: workshopPolicy,
   pick: (run, offers) => chaserPolicy.pick(run, offers),
 };
 
@@ -201,11 +164,10 @@ export interface Outcome {
   readonly balls: number;
   readonly hp: number;
   readonly bossReached: boolean;
-  readonly fusions: number;
-  /** Fusions that produced a hybrid (F2). */
+  /** Automatic evolutions (two equal balls merging, ADR-024). */
+  readonly evolutions: number;
+  /** Hybrid cards the policy picked. */
   readonly hybrids: number;
-  /** Fusion tokens still unspent when the run ended. */
-  readonly tokensLeft: number;
   /** Balls that joined the team after the starter: captures and new-ball cards. */
   readonly newBalls: number;
   /**
@@ -230,7 +192,7 @@ export function playRun(
 ): Outcome {
   const run = createRun(config, seed, starter);
   let kills = 0;
-  let fusions = 0;
+  let evolutions = 0;
   let hybrids = 0;
   let newBalls = 0;
   let captures = 0;
@@ -250,10 +212,8 @@ export function playRun(
   for (let i = 0; i < maxTicks && run.phase !== 'lost' && run.phase !== 'won'; i++) {
     for (const e of tick(run, commandFor(policy, run, config), config).events) {
       if (e.type === 'kill') kills += 1;
-      if (e.type === 'fuse') {
-        fusions += 1;
-        if (e.hybrid) hybrids += 1;
-      }
+      if (e.type === 'evolve') evolutions += 1;
+      if (e.type === 'hybrid') hybrids += 1;
       if (e.type === 'capture' && e.ballId > 0) {
         captures += 1;
         gotBall();
@@ -275,9 +235,8 @@ export function playRun(
     balls: run.loadout.length,
     hp: Math.max(0, run.player.hp),
     bossReached: run.boss.spawned,
-    fusions,
+    evolutions,
     hybrids,
-    tokensLeft: run.tokens,
     newBalls,
     maxDroughtTicks: maxDrought,
     firstBallTicks: firstBall < 0 ? run.tickCount : firstBall,

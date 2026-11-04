@@ -96,7 +96,7 @@ const mobile = await browser.newContext({
   // Play with 4 balls from wave 4, steering by touch-drag, to look at legibility.
   const play = await open(
     mobile,
-    '?debug&seed=21&starter=charmander&wave=3&loadout=charmander,squirtle,bulbasaur,pikachu&tokens=2',
+    '?debug&seed=21&starter=charmander&wave=3&loadout=charmander,squirtle,bulbasaur,pikachu&ballLevel=2',
   );
   await play.waitForFunction(() => typeof window.__debug === 'function');
   const canvas = await play.locator('canvas').boundingBox();
@@ -117,24 +117,21 @@ const mobile = await browser.newContext({
   await play.mouse.up();
   report.mobile.afterPlay = await play.evaluate(() => window.__debug());
 
-  // The workshop on a phone.
-  report.mobile.launcher = await rect(play, '[data-fusion-open]');
-  await play.locator('[data-fusion-open]').tap();
-  await play.waitForSelector('[data-fusion-panel] button[data-slot]');
-  await play.locator('button[data-slot="0"]').tap();
-  await play.locator('button[data-slot="1"]').tap();
-  await play.screenshot({ path: join(out, 'mobile-3-workshop.png') });
-  report.mobile.workshop = {
-    panel: await rect(play, '[data-fusion-panel]'),
-    chip: await rect(play, 'button[data-slot="0"]'),
-    closeButton: await rect(play, '[data-fusion-close]'),
-    swapButton: await rect(play, '[data-fusion-swap]'),
-    fuseButton: await rect(play, '[data-fusion-go]'),
-    text: (await play.locator('[data-fusion-text]').textContent()) ?? '',
-    canvas: { w: Math.round(canvas.width), h: Math.round(canvas.height) },
-  };
-  report.mobile.soundToggle = await rect(play, '[data-sound-toggle]');
+  // The team bar and the hybrid card on a phone.
+  report.mobile.teamBar = await rect(play, '[data-team-bar]');
   await play.close();
+  const card = await open(
+    mobile,
+    '?debug&seed=21&starter=charmander&wave=3&loadout=charmander,squirtle,bulbasaur,pikachu&ballLevel=2&offers=hybrid',
+  );
+  await card.waitForSelector('button[data-card="0"]');
+  await card.screenshot({ path: join(out, 'mobile-3-hybrid-card.png') });
+  report.mobile.hybridCard = {
+    button: await rect(card, 'button[data-card="0"]'),
+    sprites: await card.locator('button[data-card="0"] img').count(),
+  };
+  report.mobile.soundToggle = await rect(card, '[data-sound-toggle]');
+  await card.close();
 }
 await mobile.close();
 
