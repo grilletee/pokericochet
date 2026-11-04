@@ -22,6 +22,7 @@
     "playtest": "node tools/browser-bench/playtest.mjs",
     "smoke": "node tools/browser-bench/smoke.mjs",
     "bench:agency": "vitest run --config vitest.bench.config.ts agency",
+    "bench:pressure": "vitest run --config vitest.bench.config.ts pressure",
     "bench:fun": "vitest run --config vitest.bench.config.ts fun",
     "bench:balance": "vitest run --config vitest.bench.config.ts balance",
     "bench:run": "vitest run --config vitest.bench.config.ts run.bench"
