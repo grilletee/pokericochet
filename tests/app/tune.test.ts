@@ -176,4 +176,24 @@ describe('mergeConfig', () => {
     mergeConfig(input, { a: { b: 2 } });
     expect(input).toEqual({ a: { b: 1 } });
   });
+
+  it('the 4F knobs write the team, card and capture rules they are named after', () => {
+    expect(tuned('fullTeamCapture', 0.5).capture.fullTeamChanceMult).toBe(0.5);
+    expect(tuned('powerStep', 0.4).cards.powerStep).toBe(0.4);
+    expect(tuned('cadenceFactor', 0.8).cards.cadenceFactor).toBe(0.8);
+    expect(tuned('teamStep', 0.1).cards.damageStep).toBe(0.1);
+    expect(tuned('wTrain', 1).cards.weights.train).toBe(1);
+    expect(tuned('wPower', 2).cards.weights.power).toBe(2);
+    expect(tuned('wCadence', 3).cards.weights.cadence).toBe(3);
+    expect(tuned('wRecruit', 4).cards.weights.newBall).toBe(4);
+    expect(tuned('wVitality', 5).cards.weights.vitality).toBe(5);
+    expect(tuned('drainPerHp', 60).effects.drainPerHp).toBe(60);
+    expect(tuned('threatPerTier', 1).enemy.threatPerTier).toBe(1);
+    expect(tuned('stage2', 4).team.stageLevels).toEqual([4, base.team.stageLevels[1]]);
+    expect(tuned('stage3', 7).team.stageLevels).toEqual([base.team.stageLevels[0], 7]);
+    // The balls by level move in two blocks (levels 3-5 and 6-8); levels 1 and 2 keep their value.
+    expect(tuned('ballsMid', 4).team.ballsByLevel).toEqual([1, 1, 4, 4, 4, 3, 3, 3]);
+    expect(tuned('ballsMax', 5).team.ballsByLevel).toEqual([1, 1, 2, 2, 2, 5, 5, 5]);
+    expect(tuned('powerStep', 0.4).team).toEqual(base.team); // nothing else moves
+  });
 });

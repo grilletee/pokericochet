@@ -22,7 +22,7 @@ function summary(overrides: Partial<RunSummary> = {}): RunSummary {
     kills: 40,
     level: 5,
     ticks: 6000,
-    balls: [{ species: 'charmander', level: 1, hybrid: false }],
+    team: [{ species: 'charmander', level: 1, stage: 1 }],
     bossesDefeated: 0,
     captured: [],
     score: 30_000 + 4000,

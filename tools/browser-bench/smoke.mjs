@@ -135,8 +135,8 @@ try {
   );
   await tunePage.locator('[data-tune-toggle]').click();
   check(
-    'the panel opens with 38 sliders (16 general, boss health and 21 for the wave curve)',
-    (await tunePage.locator('input[data-tune]').count()) === 38,
+    'the panel opens with 53 sliders (31 general, boss health and 21 for the wave curve)',
+    (await tunePage.locator('input[data-tune]').count()) === 53,
   );
   await tunePage.locator('input[data-tune="captureChance"]').fill('0.5');
   const tuneStored = await tunePage.evaluate(() => window.localStorage.getItem('tune.v1'));
@@ -243,10 +243,28 @@ try {
     (await creditsPage.evaluate(() => window.localStorage.getItem('muted.v1'))) === '1',
   );
 
-  // Evolution: two equal balls merge on their own, with a banner and no pause.
-  const evo = await open('starter=charmander&loadout=charmander,charmander&seed=9');
-  await evo.waitForFunction(() => window.__debug().loadout === 1);
-  check('two equal balls evolve on their own', true);
+  // Growth: a training card gives a level; at level 3 the Pokémon evolves (new form, second ball).
+  const evo = await open('starter=charmander&ballLevel=2&offers=growth&seed=9');
+  await evo.waitForFunction(() => window.__debug().phase === 'levelup');
+  const trainCard = evo.locator('button[data-card="0"]');
+  const trainText = (await trainCard.textContent()) ?? '';
+  check(
+    'the training card names the Pokémon, the level and the evolution',
+    trainText.includes('Entrenar a Charmander') &&
+      trainText.includes('Nv 2 → 3') &&
+      trainText.includes('evoluciona'),
+    trainText,
+  );
+  check('the training card shows the Pokémon', (await trainCard.locator('img').count()) === 1);
+  await evo.screenshot({ path: outFile.replace('.png', '-growth-cards.png') });
+  const levelBefore = await dbg(evo);
+  await trainCard.click();
+  await evo.waitForFunction(() => window.__debug().phase === 'playing');
+  const levelAfter = await dbg(evo);
+  check(
+    'training gives a ball: the level-3 Pokémon fires two',
+    levelBefore.loadout === 1 && levelAfter.loadout === 2,
+  );
   const evoText = (await evo.locator('[data-banner]').textContent()) ?? '';
   check(
     'a banner says who evolved into what',
@@ -260,45 +278,76 @@ try {
   await evo.waitForTimeout(400);
   check('evolving never pauses the game', (await dbg(evo)).tick > pausedAt);
   check(
-    'the team bar shows one ball at level 2',
-    (await evo.locator('[data-team-bar] [data-ball]').count()) === 1,
+    'the team bar shows one Pokémon, still one, with its level',
+    (await evo.locator('[data-team-bar] img').count()) === 1 &&
+      ((await evo.locator('[data-team-bar]').textContent()) ?? '').includes('Nv3'),
   );
   await evo.screenshot({ path: outFile.replace('.png', '-evolution.png') });
 
-  // Hybrid card: the two balls and the result as pictures, and choosing it fuses them.
-  const hyb = await open(
-    'starter=charmander&loadout=charmander,squirtle&ballLevel=2&offers=hybrid&seed=9',
-  );
-  await hyb.waitForFunction(() => window.__debug().phase === 'levelup');
-  const hybCard = hyb.locator('button[data-card="0"]');
-  const hybText = (await hybCard.textContent()) ?? '';
-  check(
-    'the hybrid card names both balls',
-    hybText.includes('Charmander') && hybText.includes('Squirtle') && hybText.includes('Híbrida'),
-    hybText,
-  );
-  check('the hybrid card shows three sprites', (await hybCard.locator('img').count()) === 3);
-  await hyb.screenshot({ path: outFile.replace('.png', '-hybrid-card.png') });
-  await hybCard.click();
-  await hyb.waitForFunction(() => window.__debug().phase === 'playing');
-  check('choosing the hybrid fuses the two balls', (await dbg(hyb)).loadout === 1);
-  check(
-    'a banner announces the hybrid',
-    ((await hyb.locator('[data-banner]').textContent()) ?? '').includes('Híbrida'),
-  );
-
-  // Capture: a dropped ball falls, is picked up and flies into the team bar.
+  // Capture with room in the team: the Pokémon joins and flies into the bar.
   const cap = await open('starter=charmander&capture=growlithe&seed=9');
-  await cap.waitForFunction(() => window.__debug().loadout === 2);
-  check('the captured ball joins the team', true);
+  await cap.waitForFunction(() => window.__debug().team === 2);
+  check('the captured Pokémon joins the team', true);
   const capToast = (await cap.locator('body').textContent()) ?? '';
   check('a message names the captured species', capToast.includes('Growlithe'));
   await cap.waitForTimeout(1200);
   check(
-    'the team bar shows both balls once the sprite has landed',
-    (await cap.locator('[data-team-bar] [data-ball]').count()) === 2,
+    'the team bar shows both Pokémon once the sprite has landed',
+    (await cap.locator('[data-team-bar] img').count()) === 2,
   );
   await cap.screenshot({ path: outFile.replace('.png', '-capture.png') });
+
+  // Replace screen: with six Pokémon a capture pauses the run and asks.
+  const FULL = 'charmander,squirtle,bulbasaur,pikachu,vulpix,psyduck';
+  const rep = await open(`starter=charmander&team=${FULL}&capture=growlithe&seed=9`);
+  await rep.waitForFunction(() => window.__debug().phase === 'replace');
+  const repText = (await rep.locator('[data-replace]').textContent()) ?? '';
+  check(
+    'the replace screen names the capture and says the team is full',
+    (await rep.locator('[data-replace]').isVisible()) &&
+      repText.includes('Growlithe') &&
+      repText.includes('completo'),
+    repText,
+  );
+  check(
+    'it offers the six Pokémon and a release button',
+    (await rep.locator('[data-replace-slot]').count()) === 6 &&
+      (await rep.locator('[data-replace-release]').count()) === 1,
+  );
+  const paused = (await dbg(rep)).tick;
+  await rep.waitForTimeout(400);
+  check('the run is paused while it waits', (await dbg(rep)).tick === paused);
+  const tall = await rep.locator('[data-replace-slot="2"]').boundingBox();
+  check(
+    'the buttons are big enough to touch (at least 44 px)',
+    tall !== null && tall.height >= 44 && tall.width >= 44,
+    JSON.stringify(tall),
+  );
+  await rep.screenshot({ path: outFile.replace('.png', '-replace.png') });
+  await rep.locator('[data-replace-slot="2"]').click();
+  await rep.waitForFunction(() => window.__debug().phase === 'playing');
+  const swapped = await dbg(rep);
+  check(
+    'choosing a Pokémon swaps it and the run goes on',
+    swapped.team === 6 && swapped.pendingCapture === '',
+  );
+  check(
+    'the bar shows the newcomer and its message',
+    ((await rep.locator('body').textContent()) ?? '').includes('reemplaza'),
+  );
+  const rel = await open(`starter=charmander&team=${FULL}&capture=growlithe&seed=9`);
+  await rel.waitForFunction(() => window.__debug().phase === 'replace');
+  await rel.keyboard.press('Digit0');
+  await rel.waitForFunction(() => window.__debug().phase === 'playing');
+  check('the 0 key lets the capture go', (await dbg(rel)).team === 6);
+  const num = await open(`starter=charmander&team=${FULL}&capture=growlithe&seed=9`);
+  await num.waitForFunction(() => window.__debug().phase === 'replace');
+  await num.keyboard.press('Digit5');
+  await num.waitForFunction(() => window.__debug().phase === 'playing');
+  check(
+    'a number key swaps that Pokémon',
+    ((await num.locator('body').textContent()) ?? '').includes('reemplaza a Vulpix'),
+  );
 
   // Themed waves: the first wave is announced with its theme, its type and what beats it.
   const themePage = await open('starter=charmander&seed=9');

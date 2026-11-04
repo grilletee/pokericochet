@@ -1,5 +1,8 @@
 import { FLOOR_Y, type InputState } from './inputLogic';
 
+/** Value of `takePick` that means "let the capture go" (the replace screen, ADR-030). */
+export const RELEASE_PICK = -1;
+
 export interface ArenaView {
   readonly scale: number;
   readonly offsetX: number;
@@ -29,7 +32,7 @@ export class Input {
   /** Pointer ids currently steering (on the floor) and aiming (anywhere above it). */
   private steerId: number | null = null;
   private aimId: number | null = null;
-  /** Card or starter chosen with the keys 1-4 or a click, waiting for the game loop. */
+  /** Card, starter or Pokémon chosen with the keys 1-6 or a click, waiting for the game loop. */
   private pickIndex: number | null = null;
 
   constructor(
@@ -145,6 +148,19 @@ export class Input {
       case 'Digit4':
       case 'Numpad4':
         if (down) this.pickIndex = 3;
+        break;
+      case 'Digit5':
+      case 'Numpad5':
+        if (down) this.pickIndex = 4;
+        break;
+      case 'Digit6':
+      case 'Numpad6':
+        if (down) this.pickIndex = 5;
+        break;
+      case 'Digit0':
+      case 'Numpad0':
+      case 'KeyX':
+        if (down) this.pickIndex = RELEASE_PICK; // lets a capture go on the replace screen
         break;
       default:
         return;

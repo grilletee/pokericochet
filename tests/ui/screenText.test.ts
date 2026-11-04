@@ -18,9 +18,9 @@ const summary: RunSummary = {
   kills: 130,
   level: 9,
   ticks: 60 * 60 * 6 + 60 * 5,
-  balls: [
-    { species: 'squirtle', level: 2, hybrid: false },
-    { species: 'charmander', level: 2, hybrid: true },
+  team: [
+    { species: 'squirtle', level: 2, stage: 1 },
+    { species: 'charmander', level: 7, stage: 3 },
   ],
   bossesDefeated: 0,
   captured: [],
@@ -42,7 +42,7 @@ describe('results and title text', () => {
     expect(all).toContain('Bajas: 130');
     expect(all).toContain('Nivel 9');
     expect(all).toContain('Tiempo 6:05');
-    expect(all).toContain('Squirtle Nv2, Charmander Nv2 (híbrida)');
+    expect(all).toContain('Squirtle Nv2, Charmander Nv7');
     expect(all).toContain('Semilla: 4242');
     expect(all).toContain('Aún no hay');
   });
@@ -91,7 +91,10 @@ describe('results and title text', () => {
       { type: 'launch', ballId: 1 },
       { type: 'won' },
       { type: 'capture', level: 1, ballId: 5, species: 'psyduck', x: 1, late: false },
-      { type: 'capture', level: 1, ballId: 0, species: 'psyduck', x: 1, late: false },
+      { type: 'train', member: 1, species: 'squirtle', level: 4, source: 'card' },
+      { type: 'replaced', slot: 2, out: 'vulpix', species: 'psyduck' },
+      { type: 'release', species: 'psyduck' },
+      { type: 'replaceOpen', species: 'psyduck', stage: 1 },
       { type: 'collect', ballId: 1, x: 1, late: false },
     ];
     const formName = (species: string, level: number) =>
@@ -107,8 +110,11 @@ describe('results and title text', () => {
     expect(texts[7]).toBeNull();
     expect(texts[8]).toContain('Capturado');
     expect(texts[8]).toContain('Psyduck');
-    expect(texts[9]).toContain('daño');
-    expect(texts[10]).toBeNull(); // picking a ball up is silent text: it happens all the time
+    expect(texts[9]).toBe('¡Squirtle sube a Nv4!');
+    expect(texts[10]).toBe('Psyduck reemplaza a Vulpix');
+    expect(texts[11]).toBe('Soltaste a Psyduck');
+    expect(texts[12]).toBeNull(); // the replace screen speaks for itself
+    expect(texts[13]).toBeNull(); // picking a ball up is silent text: it happens all the time
   });
 
   it('names the form of a dropped or captured evolved enemy, and the boss that fell', () => {

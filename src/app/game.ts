@@ -1,7 +1,9 @@
 import { ART_SPECIES_IDS, formOf, gameConfig, STARTER_SPECIES } from '../data';
 import {
+  addMember,
+  ballsFor,
   type Command,
-  createBall,
+  captureLevel,
   createRun,
   createSnapshot,
   dropCapture,
@@ -12,7 +14,9 @@ import {
   previewHybrid,
   type Run,
   type Snapshot,
+  stageOf,
   summarizeRun,
+  syncMember,
   tick,
   writeSnapshot,
 } from '../domain';
@@ -26,6 +30,7 @@ import {
   disclaimerShort,
   EvolutionBanner,
   Overlay,
+  ReplaceScreen,
   ResultsScreen,
   SoundFx,
   SoundToggle,
@@ -41,7 +46,7 @@ import { BENCH_LOADS, type BenchLoad, benchScenario } from './benchScenario';
 import { type BestRun, browserStore, loadBestRun, saveIfBest } from './bestRun';
 import { GAME_TITLE } from './config';
 import { FixedStepper } from './fixedStepper';
-import { Input } from './input';
+import { Input, RELEASE_PICK } from './input';
 import { commandFromInput } from './inputLogic';
 import { FrameMetrics, type Stats, summarize } from './metrics';
 import { loadAutoAim, loadMuted, saveAutoAim, saveMuted } from './settings';
@@ -98,6 +103,8 @@ declare global {
       level: number;
       offers: number;
       loadout: number;
+      team: number;
+      pendingCapture: string;
       wave: number;
       screen: string;
       kills: number;
@@ -164,6 +171,15 @@ function nextCommand(run: Run, input: Input, deadZone: number, autoAim: boolean)
       ? { moveX: 0, autoAim }
       : { moveX: 0, autoAim, action: { type: 'pick', index } };
   }
+  if (run.phase === 'replace') {
+    const pick = input.takePick();
+    if (pick === null) return { moveX: 0, autoAim };
+    return {
+      moveX: 0,
+      autoAim,
+      action: pick === RELEASE_PICK ? { type: 'release' } : { type: 'replace', slot: pick },
+    };
+  }
   input.takePick(); // a number key pressed outside a level-up is not a choice
   return commandFromInput(input.state, run.player.x, deadZone, autoAim);
 }
@@ -209,30 +225,37 @@ function applyDebugParams(run: Run, config: GameConfig, params: URLSearchParams)
     // The bosses between waves that this jump skips must not appear all at once.
     run.boss.next = (config.interludes ?? []).filter((boss) => boss.after <= wave).length;
   }
-  const loadout = params.get('loadout');
-  if (loadout !== null) {
-    const species = loadout.split(',').filter((id) => config.species[id] !== undefined);
-    run.loadout = species.map((id) => {
-      const ball = createBall(config, id, run.nextBallId);
-      run.nextBallId += 1;
-      return ball;
+  // team=a,b,c replaces the team with these Pokémon (up to six; the first is the starter).
+  const team = params.get('team') ?? params.get('loadout');
+  if (team !== null) {
+    const species = team
+      .split(',')
+      .filter((id) => config.species[id] !== undefined)
+      .slice(0, config.team.maxMembers);
+    run.team = [];
+    run.loadout = [];
+    run.cooldowns = [];
+    run.bodies = [];
+    for (const id of species) addMember(run, config, id, 1);
+  }
+  // ballLevel=N sets the level of every Pokémon of the team (to see a stage or a full set of balls).
+  const level = number('ballLevel');
+  if (level !== null) {
+    run.team.forEach((member, index) => {
+      member.level = Math.max(1, Math.min(config.team.maxLevel, level));
+      syncMember(run, config, index);
     });
-    run.cooldowns = run.loadout.map(() => 0);
   }
-  // ballLevel=2 raises every ball of the loadout to that level (to reach a hybrid quickly).
-  const ballLevel = number('ballLevel');
-  if (ballLevel !== null) {
-    run.loadout = run.loadout.map((ball) => ({
-      ...ball,
-      level: Math.max(1, Math.min(3, ballLevel)),
-    }));
-  }
-  // offers=hybrid opens a level-up with the hybrid of the first two balls, if it is allowed.
-  if (params.get('offers') === 'hybrid' && previewHybrid(run, 0, 1) !== null) {
-    run.offers = [{ kind: 'hybrid', a: 0, b: 1 }, { kind: 'damage' }];
+  // offers=growth opens a level-up with a Pokémon card of each kind for the first Pokémon.
+  if (params.get('offers') === 'growth') {
+    run.offers = [
+      { kind: 'train', member: 0 },
+      { kind: 'power', member: 0 },
+      { kind: 'cadence', member: 0 },
+    ];
     run.phase = 'levelup';
   }
-  // capture=<species> lets a captured ball of that species fall in front of the launcher.
+  // capture=<species> lets a captured Pokémon of that species fall in front of the launcher.
   const captured = params.get('capture');
   const def = captured === null ? undefined : config.species[captured];
   if (captured !== null && def !== undefined) {
@@ -285,8 +308,8 @@ export async function startGame(host: HTMLElement): Promise<void> {
   const formName = (species: string, level: number): string => speciesName(formOf(species, level));
   let prev = createSnapshot(MAX_SLOTS, MAX_ENEMIES);
   let curr = createSnapshot(MAX_SLOTS, MAX_ENEMIES);
-  writeSnapshot(run, prev, speciesCodes);
-  writeSnapshot(run, curr, speciesCodes);
+  writeSnapshot(run, prev, speciesCodes, config);
+  writeSnapshot(run, curr, speciesCodes, config);
 
   const renderer = await Renderer.create(
     host,
@@ -297,7 +320,13 @@ export async function startGame(host: HTMLElement): Promise<void> {
     forms,
   );
   const overlay = new Overlay(host);
-  const teamBar = new TeamBar(host, art, (species) => config.species[species]?.type);
+  const teamBar = new TeamBar(
+    host,
+    art,
+    (species) => config.species[species]?.type,
+    (level) => stageOf(config, level),
+  );
+  const replaceScreen = new ReplaceScreen(host);
   const banner = new EvolutionBanner(host);
   const startScreen = new StartScreen(host);
   const creditsScreen = new CreditsScreen(host);
@@ -378,6 +407,8 @@ export async function startGame(host: HTMLElement): Promise<void> {
       level: run.player.level,
       offers: run.offers.length,
       loadout: run.loadout.length,
+      team: run.team.length,
+      pendingCapture: run.pendingCapture?.species ?? '',
       wave: run.wave.index,
       screen,
       kills: run.kills,
@@ -396,8 +427,10 @@ export async function startGame(host: HTMLElement): Promise<void> {
     typeOf: (species) => config.species[species]?.type,
     ballAt: (slot) => run.loadout[slot],
     previewHybrid: (a, b) => previewHybrid(run, a, b),
-    evolvesWith: (species) =>
-      run.loadout.some((ball) => ball.species === species && ball.level === 1 && !ball.hybrid),
+    memberAt: (index) => run.team[index],
+    ballsAt: (level) => ballsFor(config, level),
+    stageAt: (level) => stageOf(config, level),
+    powerStep: config.cards.powerStep,
     damageStep: config.cards.damageStep,
     cadenceFactor: config.cards.cadenceFactor,
     vitalityHp: config.cards.vitalityHp,
@@ -418,8 +451,8 @@ export async function startGame(host: HTMLElement): Promise<void> {
   const startRun = (species: string): void => {
     starter = species;
     run = createRun(config, newSeed(), starter);
-    writeSnapshot(run, prev, speciesCodes);
-    writeSnapshot(run, curr, speciesCodes);
+    writeSnapshot(run, prev, speciesCodes, config);
+    writeSnapshot(run, curr, speciesCodes, config);
     stepper.reset();
     pending.length = 0;
     startScreen.hide();
@@ -466,21 +499,26 @@ export async function startGame(host: HTMLElement): Promise<void> {
     const view = renderer.view;
     return { x: view.offsetX + x * view.scale, y: view.offsetY + y * view.scale };
   };
+  /** Place in the team of the Pokémon that fires a ball (the last place if it is gone). */
+  const memberOfBall = (ballId: number): number =>
+    run.loadout.find((ball) => ball.id === ballId)?.owner ?? Math.max(0, run.team.length - 1);
   /** The DOM feedback of the events of this frame: captures fly to the team bar, evolutions show. */
   const showEventFeedback = (events: readonly GameEvent[]): void => {
     for (const event of events) {
       if (event.type === 'capture') {
         const from = toScreen(event.x, config.player.y);
         teamBar.flyCapture(
-          event.ballId,
+          memberOfBall(event.ballId),
           event.species,
           art.spriteUrl(event.species, event.level),
           from.x,
           from.y,
         );
+      } else if (event.type === 'train') {
+        teamBar.pulse(event.member);
       } else if (event.type === 'evolve') {
         const type = config.species[event.species]?.type;
-        teamBar.pulse(event.ballId);
+        teamBar.pulse(memberOfBall(event.ballId));
         banner.show(
           [
             spriteTile(art.spriteUrl(event.species, event.level - 1), event.species, type, 64),
@@ -491,7 +529,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
           '#ffd54f',
         );
       } else if (event.type === 'hybrid') {
-        teamBar.pulse(event.ballId);
+        teamBar.pulse(memberOfBall(event.ballId));
         banner.show(
           [
             spriteTile(
@@ -571,7 +609,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
       const swap = prev;
       prev = curr;
       curr = swap;
-      writeSnapshot(run, curr, speciesCodes);
+      writeSnapshot(run, curr, speciesCodes, config);
       const t2 = performance.now();
       tickMs += t1 - t0;
       snapshotMs += t2 - t1;
@@ -581,7 +619,24 @@ export async function startGame(host: HTMLElement): Promise<void> {
       }
     }
 
-    teamBar.update(!bench && screen === 'playing' ? run.loadout : null);
+    teamBar.update(!bench && screen === 'playing' ? run.team : null);
+    replaceScreen.update(
+      screen === 'playing' && run.phase === 'replace' && run.pendingCapture !== null
+        ? {
+            team: run.team,
+            capture: {
+              species: run.pendingCapture.species,
+              stage: stageOf(config, captureLevel(config, run.pendingCapture.stage)),
+            },
+            captureType: config.species[run.pendingCapture.species]?.type,
+            captureLevel: captureLevel(config, run.pendingCapture.stage),
+            stageOf: (level) => stageOf(config, level),
+          }
+        : null,
+      art,
+      (slot) => input.requestPick(slot),
+      () => input.requestPick(RELEASE_PICK),
+    );
     showEventFeedback(pending);
     const r0 = performance.now();
     if (!skipRender) renderer.render(prev, curr, stepper.alpha, pending, elapsed);

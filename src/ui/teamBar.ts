@@ -1,8 +1,7 @@
-import type { Ball, GameType } from '../domain';
+import type { GameType, Member } from '../domain';
 import { type ArtLookup, spriteTile } from './cardView';
 import { TYPE_COLORS } from './typeColors';
 
-const HYBRID_COLOR = '#c792ea';
 const FLY_MS = 700;
 
 function animate(
@@ -13,40 +12,43 @@ function animate(
   return typeof element.animate === 'function' ? element.animate(keyframes, options) : null;
 }
 
-/** Tile edge in px for a team of `count` balls: the bar shrinks instead of covering the field. */
-function tileSize(count: number): number {
-  return count <= 8 ? 36 : count <= 16 ? 29 : 23;
+/** Same Pokémon, same level and same cards: what the bar needs to know to redraw a tile. */
+function memberKey(member: Member): string {
+  return `${member.species}:${member.level}:${member.damageUps}:${member.cadenceUps}`;
 }
 
 /**
- * The team as a row of sprites with their level (ADR-024): what the player has and what a
- * capture or an evolution just changed. The DOM is rebuilt only when the team changes. A captured
- * ball flies from where it was picked up to its tile, which stays hidden until it arrives.
+ * The team of up to six Pokémon as a row of big tiles (ADR-030): the form of its stage, its level
+ * and the cards taken for it. The DOM is rebuilt only when the team changes. A captured Pokémon
+ * flies from where it was picked up to its tile, which stays hidden until it arrives. Tiles are
+ * addressed by their place in the team.
  */
 export class TeamBar {
   private readonly root: HTMLDivElement;
-  private shown: readonly Ball[] = [];
+  private shown: readonly string[] = [];
   private readonly tiles = new Map<number, HTMLElement>();
-  /** Balls whose tile waits for the capture sprite to land. */
+  /** Places whose tile waits for the capture sprite to land. */
   private readonly arriving = new Set<number>();
 
   constructor(
     host: HTMLElement,
     private readonly art: ArtLookup,
     private readonly typeOf: (species: string) => GameType | undefined,
+    /** Evolution stage of a Pokémon of this level (the rules of the config). */
+    private readonly stageOf: (level: number) => number,
   ) {
     this.root = document.createElement('div');
     this.root.dataset.teamBar = '';
     this.root.style.cssText =
-      'position:absolute;left:12px;top:58px;display:none;flex-wrap:wrap;gap:3px;' +
-      'max-width:min(300px,calc(100% - 180px));pointer-events:none;' +
+      'position:absolute;left:12px;top:58px;display:none;flex-wrap:wrap;gap:4px;' +
+      'max-width:min(340px,calc(100% - 180px));pointer-events:none;' +
       'font-family:system-ui,sans-serif;color:#e8ecf8;';
     host.append(this.root);
   }
 
-  /** Cheap to call every frame: it compares the balls by identity (they are immutable values). */
-  update(loadout: readonly Ball[] | null): void {
-    if (loadout === null) {
+  /** Cheap to call every frame: it compares a short key per Pokémon. */
+  update(team: readonly Member[] | null): void {
+    if (team === null) {
       if (this.shown.length === 0 && this.root.style.display === 'none') return;
       this.root.style.display = 'none';
       this.shown = [];
@@ -54,46 +56,41 @@ export class TeamBar {
       this.arriving.clear();
       return;
     }
-    let same = loadout.length === this.shown.length;
-    for (let i = 0; same && i < loadout.length; i++) same = loadout[i] === this.shown[i];
-    if (same) return;
-    this.shown = loadout.slice();
+    const keys = team.map(memberKey);
+    if (keys.length === this.shown.length && keys.every((key, i) => key === this.shown[i])) return;
+    this.shown = keys;
     this.root.style.display = 'flex';
     this.root.replaceChildren();
     this.tiles.clear();
-    const size = tileSize(loadout.length);
-    for (const ball of loadout) {
-      const tile = this.buildTile(ball, size);
-      if (this.arriving.has(ball.id)) tile.style.opacity = '0';
-      this.tiles.set(ball.id, tile);
+    team.forEach((member, index) => {
+      const tile = this.buildTile(member);
+      if (this.arriving.has(index)) tile.style.opacity = '0';
+      this.tiles.set(index, tile);
       this.root.append(tile);
-    }
+    });
   }
 
-  private buildTile(ball: Ball, size: number): HTMLElement {
+  private buildTile(member: Member): HTMLElement {
     const tile = spriteTile(
-      this.art.spriteUrl(ball.species, ball.level),
-      ball.species,
-      ball.type,
-      size,
+      this.art.spriteUrl(member.species, this.stageOf(member.level)),
+      member.species,
+      member.type,
+      44,
+      member.level,
     );
-    tile.dataset.ball = String(ball.id);
-    const pips = document.createElement('div');
-    pips.style.cssText = 'display:flex;gap:2px;height:5px;';
-    for (let i = 0; i < ball.level; i++) {
-      const pip = document.createElement('div');
-      pip.style.cssText = `width:6px;height:5px;border-radius:2px;background:${
-        ball.hybrid ? HYBRID_COLOR : TYPE_COLORS[ball.type]
-      };`;
-      pips.append(pip);
+    const ups = member.damageUps + member.cadenceUps;
+    if (ups > 0) {
+      const mark = document.createElement('div');
+      mark.style.cssText = `font-size:10px;font-weight:700;color:${TYPE_COLORS[member.type]};`;
+      mark.textContent = `⚔${member.damageUps} ⟳${member.cadenceUps}`;
+      tile.append(mark);
     }
-    tile.append(pips);
     return tile;
   }
 
-  /** Scale-and-glow pulse on the tile of a ball that just evolved or became a hybrid. */
-  pulse(ballId: number): void {
-    const tile = this.tiles.get(ballId);
+  /** Scale-and-glow pulse on the tile of a Pokémon that just evolved or was trained. */
+  pulse(member: number): void {
+    const tile = this.tiles.get(member);
     if (tile === undefined) return;
     animate(
       tile,
@@ -107,24 +104,23 @@ export class TeamBar {
   }
 
   /**
-   * Flies the sprite of a captured ball from screen point (`fromX`, `fromY`), relative to the
-   * host, to its tile; `ballId` 0 (the team was full) flies to the end of the bar. Call after
-   * `update`, so the tile exists.
+   * Flies the sprite of a captured Pokémon from screen point (`fromX`, `fromY`), relative to the
+   * host, to its tile. Call after `update`, so the tile exists.
    */
   flyCapture(
-    ballId: number,
+    member: number,
     species: string,
     url: string | undefined,
     fromX: number,
     fromY: number,
   ): void {
-    const tile = this.tiles.get(ballId);
+    const tile = this.tiles.get(member);
     const target = (tile ?? this.root).getBoundingClientRect();
     const hostRect = this.root.offsetParent?.getBoundingClientRect() ?? { left: 0, top: 0 };
     const toX = target.left - hostRect.left + target.width / 2;
     const toY = target.top - hostRect.top + target.height / 2;
     if (tile !== undefined) {
-      this.arriving.add(ballId);
+      this.arriving.add(member);
       tile.style.opacity = '0';
     }
     const flier = spriteTile(url, species, this.typeOf(species), 44);
@@ -132,11 +128,11 @@ export class TeamBar {
     this.root.parentElement?.append(flier);
     const finish = (): void => {
       flier.remove();
-      this.arriving.delete(ballId);
-      const landed = this.tiles.get(ballId);
+      this.arriving.delete(member);
+      const landed = this.tiles.get(member);
       if (landed !== undefined) {
         landed.style.opacity = '1';
-        this.pulse(ballId);
+        this.pulse(member);
       }
     };
     const flight = animate(

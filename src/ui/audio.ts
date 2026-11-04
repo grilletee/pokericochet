@@ -30,6 +30,8 @@ export function soundFor(event: GameEvent): SoundId | null {
       return 'collect';
     case 'capture':
       return 'capture';
+    case 'train':
+      return 'collect';
     case 'leak':
       return 'damage';
     case 'won':

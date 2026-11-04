@@ -52,9 +52,7 @@ export function describeResults(
   isNewBest: boolean,
 ): ResultsText {
   const won = summary.result === 'won';
-  const team = summary.balls
-    .map((b) => `${speciesName(b.species)} Nv${b.level}${b.hybrid ? ' (híbrida)' : ''}`)
-    .join(', ');
+  const team = summary.team.map((m) => `${speciesName(m.species)} Nv${m.level}`).join(', ');
   const progress = won
     ? 'Derrotaste al jefe.'
     : summary.bossReached
@@ -101,9 +99,13 @@ export function describeEvent(
     case 'captureDrop':
       return `¡${formName(event.species, event.level)} soltó una bola! Recógela`;
     case 'capture':
-      return event.ballId === 0
-        ? 'Equipo completo: la captura mejora el daño'
-        : `¡Capturado: ${formName(event.species, event.level)}!`;
+      return `¡Capturado: ${formName(event.species, event.level)}!`;
+    case 'train':
+      return `¡${speciesName(event.species)} sube a Nv${event.level}!`;
+    case 'replaced':
+      return `${speciesName(event.species)} reemplaza a ${speciesName(event.out)}`;
+    case 'release':
+      return `Soltaste a ${speciesName(event.species)}`;
     default:
       return null;
   }

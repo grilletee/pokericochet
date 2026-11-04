@@ -50,6 +50,8 @@ export function benchScenario(
     xp: 1,
     burnTicks: 0,
     burnDps: 0,
+    slowTicks: 0,
+    slow: 0,
   }));
   run.nextEnemyId = load.enemies + 1;
   return { run, config: benchConfig };

@@ -1,4 +1,4 @@
-import type { Ball, Card, GameType } from '../domain';
+import type { Ball, Card, GameType, Member } from '../domain';
 import { describeEffects } from './ballText';
 
 const TYPE_NAMES: Record<GameType, string> = {
@@ -15,8 +15,12 @@ export interface CardTextContext {
   ballAt(slot: number): Ball | undefined;
   /** What a hybrid of the two slots would be, or null if it is not allowed. */
   previewHybrid(a: number, b: number): Ball | null;
-  /** True if the team has a base ball of this species that a new copy would evolve. */
-  evolvesWith(species: string): boolean;
+  /** The Pokémon at a place of the team (the cards of 4F name them by place). */
+  memberAt(index: number): Member | undefined;
+  /** Balls a Pokémon of this level fires, and its evolution stage (ADR-031). */
+  ballsAt(level: number): number;
+  stageAt(level: number): number;
+  readonly powerStep: number;
   readonly damageStep: number;
   readonly cadenceFactor: number;
   readonly vitalityHp: number;
@@ -38,23 +42,38 @@ export function describeCard(
   switch (card.kind) {
     case 'newBall': {
       const type = context.typeOf(card.species);
-      const kind = type === undefined ? 'Una bola más' : `Tipo ${typeName(type)}`;
       return {
-        title: `Nueva bola: ${speciesName(card.species)}`,
-        detail: context.evolvesWith(card.species)
-          ? `${kind} · ¡Evoluciona con la que ya tienes!`
-          : kind,
+        title: `Fichar a ${speciesName(card.species)}`,
+        detail: type === undefined ? 'Un Pokémon más para el equipo' : `Tipo ${typeName(type)}`,
       };
     }
-    case 'damage':
+    case 'train': {
+      const member = context.memberAt(card.member);
+      if (member === undefined) return { title: 'Entrenar', detail: 'Ya no está en el equipo' };
+      const next = member.level + 1;
+      const parts = [`Nv ${member.level} → ${next}`];
+      if (context.ballsAt(next) > context.ballsAt(member.level)) parts.push('+1 bola');
+      if (context.stageAt(next) > context.stageAt(member.level)) parts.push('¡evoluciona!');
+      return { title: `Entrenar a ${speciesName(member.species)}`, detail: parts.join(' · ') };
+    }
+    case 'power': {
+      const name = speciesName(context.memberAt(card.member)?.species ?? '');
       return {
-        title: 'Más daño',
-        detail: `+${Math.round(context.damageStep * 100)} % de daño en todas las bolas`,
+        title: `Potencia de ${name}`,
+        detail: `+${Math.round(context.powerStep * 100)} % de daño de ${name}`,
       };
-    case 'cadence':
+    }
+    case 'cadence': {
+      const name = speciesName(context.memberAt(card.member)?.species ?? '');
       return {
-        title: 'Recarga rápida',
-        detail: `−${Math.round((1 - context.cadenceFactor) * 100)} % de tiempo de recarga`,
+        title: `Cadencia de ${name}`,
+        detail: `−${Math.round((1 - context.cadenceFactor) * 100)} % de recarga de ${name}`,
+      };
+    }
+    case 'team':
+      return {
+        title: 'Entrenamiento de equipo',
+        detail: `+${Math.round(context.damageStep * 100)} % de daño en todo el equipo`,
       };
     case 'vitality':
       return { title: 'Vitalidad', detail: `+${context.vitalityHp} PV máximos y curación` };

@@ -197,20 +197,21 @@ export class Renderer {
 
   private drawBalls(prev: Snapshot, curr: Snapshot, alpha: number): void {
     interpolateBalls(prev, curr, alpha, this.scratchBallX, this.scratchBallY);
-    const radiusScale = this.config.ball.radius / 32;
     let shown = 0;
     for (let slot = 0; slot < curr.slotCount; slot++) {
       if (curr.ballActive[slot] !== 1) continue;
       const sprite = this.spriteAt(this.ballSprites, this.ballLayer, shown);
       sprite.visible = true;
       sprite.position.set(this.scratchBallX[slot] ?? 0, this.scratchBallY[slot] ?? 0);
+      // The ball grows with the stage of its Pokémon (ADR-031): the bigger, the further along.
+      const radius = curr.ballRadius[slot] || this.config.ball.radius;
       const art = this.artFor(curr.ballSpecies[slot] ?? 255, curr.ballLevel[slot] ?? 1);
       if (art === undefined) {
         sprite.texture = this.disc;
-        sprite.scale.set(radiusScale);
+        sprite.scale.set(radius / 32);
       } else {
         sprite.texture = art;
-        sprite.scale.set((this.config.ball.radius * BALL_ART_SCALE) / (art.width / 2));
+        sprite.scale.set((radius * BALL_ART_SCALE) / (art.width / 2));
       }
       sprite.tint = 0xffffff;
       sprite.alpha = 1;

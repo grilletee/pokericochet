@@ -6,6 +6,10 @@ const EFFECT_NAMES: Record<EffectKind, string> = {
   pierce: 'Atravesar',
   drain: 'Drenar',
   chain: 'Encadenar',
+  burnArea: 'Quemadura en área',
+  splash: 'Salpicadura',
+  slow: 'Ralentizar',
+  blast: 'Explosión',
 };
 
 /** 1.5 -> "1,5"; at most two decimals, no trailing zeros. */

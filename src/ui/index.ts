@@ -8,6 +8,8 @@ export { buildCardArt, spriteTile } from './cardView';
 export type { CreditLine } from './creditsText';
 export { creditLines, disclaimerShort, POKEAPI_URL, SPRITES_URL } from './creditsText';
 export { Overlay } from './overlay';
+export type { ReplaceView } from './replaceScreen';
+export { ReplaceScreen } from './replaceScreen';
 export type { StarterOption } from './screens';
 export { CreditsScreen, ResultsScreen, StartScreen } from './screens';
 export type { BestRunView, FormNamer, ResultsText } from './screenText';

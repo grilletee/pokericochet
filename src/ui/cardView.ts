@@ -1,4 +1,4 @@
-import type { Ball, Card, GameType } from '../domain';
+import type { Ball, Card, GameType, Member } from '../domain';
 import { type CardTextContext, speciesName } from './cardText';
 import { TYPE_COLORS } from './typeColors';
 
@@ -7,10 +7,12 @@ export interface ArtLookup {
   spriteUrl(species: string, level: number): string | undefined;
 }
 
-const GLYPHS: Record<'damage' | 'cadence' | 'vitality', string> = {
-  damage: '⚔',
+const GLYPHS: Record<'power' | 'cadence' | 'vitality' | 'team' | 'train', string> = {
+  power: '⚔',
   cadence: '⟳',
   vitality: '♥',
+  team: '★',
+  train: '▲',
 };
 
 function box(css: string, text = ''): HTMLDivElement {
@@ -59,6 +61,21 @@ function symbol(text: string): HTMLElement {
   );
 }
 
+/** A Pokémon of the team drawn in the form of its stage, with its level. */
+function memberTile(
+  member: Member,
+  context: CardTextContext & ArtLookup,
+  size: number,
+): HTMLElement {
+  return spriteTile(
+    context.spriteUrl(member.species, context.stageAt(member.level)),
+    member.species,
+    member.type,
+    size,
+    member.level,
+  );
+}
+
 function ballTile(ball: Ball, context: ArtLookup, size: number): HTMLElement {
   return spriteTile(
     context.spriteUrl(ball.species, ball.level),
@@ -79,19 +96,22 @@ export function buildCardArt(card: Card, context: CardTextContext & ArtLookup): 
     'display:flex;align-items:center;justify-content:center;gap:8px;min-height:84px;',
   );
   switch (card.kind) {
-    case 'newBall': {
-      const type = context.typeOf(card.species);
-      if (context.evolvesWith(card.species)) {
-        row.append(
-          spriteTile(context.spriteUrl(card.species, 1), card.species, type, 56, 1),
-          symbol('+'),
-          spriteTile(context.spriteUrl(card.species, 1), card.species, type, 56, 1),
-          symbol('→'),
-          spriteTile(context.spriteUrl(card.species, 2), card.species, type, 64, 2),
-        );
-      } else {
-        row.append(spriteTile(context.spriteUrl(card.species, 1), card.species, type, 72));
-      }
+    case 'newBall':
+      row.append(
+        spriteTile(
+          context.spriteUrl(card.species, 1),
+          card.species,
+          context.typeOf(card.species),
+          72,
+        ),
+      );
+      break;
+    case 'train':
+    case 'power':
+    case 'cadence': {
+      const member = context.memberAt(card.member);
+      if (member === undefined) break;
+      row.append(memberTile(member, context, 68), symbol(GLYPHS[card.kind]));
       break;
     }
     case 'hybrid': {
@@ -127,7 +147,7 @@ export function buildCardArt(card: Card, context: CardTextContext & ArtLookup): 
         box(
           'width:64px;height:64px;border-radius:50%;border:2px solid #5b6aa8;background:#2a3566;' +
             'display:flex;align-items:center;justify-content:center;font-size:32px;',
-          GLYPHS[card.kind],
+          GLYPHS[card.kind as keyof typeof GLYPHS] ?? '?',
         ),
       );
   }
