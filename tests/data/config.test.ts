@@ -44,32 +44,72 @@ describe('type chart (GDD-v0)', () => {
 });
 
 describe('stat mapping', () => {
-  it('uses damage = attack / 10 and a level multiplier of 1, 1.5, 2.25', () => {
+  it('uses damage = attack / 10 and a level multiplier that grows with every one of the 8 levels', () => {
     expect(baseConfig.stats.damageDivisor).toBe(10);
-    expect(baseConfig.stats.levelMultiplier).toEqual([1, 1.5, 2.25]);
+    const levels = baseConfig.stats.levelMultiplier;
+    expect(levels).toHaveLength(baseConfig.team.maxLevel);
+    expect(levels[0]).toBe(1);
+    for (let i = 1; i < levels.length; i++)
+      expect(levels[i] ?? 0).toBeGreaterThan(levels[i - 1] ?? 0);
   });
 
   it('keeps the ball speed below the smallest enemy radius (no tunnelling)', () => {
     expect(baseConfig.ball.speedMax).toBeLessThan(baseConfig.enemy.radius);
   });
 
-  it('documents the deviations from damage = attack / 10: grass x2 and electric x0.85 (ADR-015)', () => {
-    expect(baseConfig.stats.typeDamage).toEqual({ fire: 1, water: 1, grass: 2, electric: 0.85 });
+  it('documents the deviations from damage = attack / 10: grass x2.5, water x0.9 and electric x0.85 (ADR-015, 4F-B)', () => {
+    expect(baseConfig.stats.typeDamage).toEqual({
+      fire: 1,
+      water: 0.9,
+      grass: 2.5,
+      electric: 0.85,
+    });
   });
 
   it('exposes the enemy hp multiplier as the named, provisional parameter enemy.hpScale', () => {
-    expect(baseConfig.enemy.hpScale).toBe(0.68);
+    expect(baseConfig.enemy.hpScale).toBe(0.88);
   });
 
   it('pins the provisional boss hp multiplier, so changing it is a conscious decision', () => {
     expect(baseConfig.boss?.hpScale).toBe(44);
   });
 
-  it('maps each type to one effect kind', () => {
-    expect(baseConfig.typeEffects.fire.kind).toBe('burn');
-    expect(baseConfig.typeEffects.water.kind).toBe('pierce');
-    expect(baseConfig.typeEffects.grass.kind).toBe('drain');
-    expect(baseConfig.typeEffects.electric.kind).toBe('chain');
+  it('gives every type an effect at each of the three stages, and the first stage is the old one', () => {
+    const { byType } = baseConfig.abilities;
+    expect(byType.fire?.[0]?.[0]?.kind).toBe('burn');
+    expect(byType.water?.[0]?.[0]?.kind).toBe('pierce');
+    expect(byType.grass?.[0]?.[0]?.kind).toBe('drain');
+    expect(byType.electric?.[0]?.[0]?.kind).toBe('chain');
+    for (const type of ['fire', 'water', 'grass', 'electric']) {
+      expect(byType[type]).toHaveLength(3);
+    }
+    expect(baseConfig.abilities.generic).toHaveLength(3);
+  });
+
+  it('each stage adds to the one before: later stages have at least as many effects', () => {
+    for (const stages of Object.values(baseConfig.abilities.byType)) {
+      expect(stages[1]?.length ?? 0).toBeGreaterThanOrEqual(stages[0]?.length ?? 0);
+      expect(stages[2]?.length ?? 0).toBeGreaterThanOrEqual(stages[1]?.length ?? 0);
+    }
+  });
+
+  it('keeps the team small and its levels coherent (ADR-030, ADR-031)', () => {
+    const t = baseConfig.team;
+    expect(t.maxMembers).toBe(6);
+    expect(t.maxLevel).toBe(8);
+    expect(t.ballsByLevel).toHaveLength(t.maxLevel);
+    for (let i = 1; i < t.ballsByLevel.length; i++) {
+      expect(t.ballsByLevel[i] ?? 0).toBeGreaterThanOrEqual(t.ballsByLevel[i - 1] ?? 0);
+    }
+    expect(t.stageLevels).toEqual([3, 6]);
+    expect(Math.max(...t.ballRadiusByStage)).toBeLessThan(baseConfig.enemy.radius);
+    expect(t.ballRadiusByStage[0]).toBe(baseConfig.ball.radius);
+  });
+
+  it('keeps hybrids off by configuration (ADR-033) and bosses without a heal (ADR-032)', () => {
+    expect(baseConfig.hybrid.enabled).toBe(false);
+    expect(baseConfig.cards.weights.hybrid).toBe(0);
+    for (const boss of baseConfig.interludes ?? []) expect(boss.healHp).toBe(0);
   });
 });
 
@@ -158,16 +198,23 @@ describe('progression and card tables', () => {
 
   it('has sane card settings', () => {
     const c = gameConfig.cards;
-    expect(c.maxBalls).toBe(24); // a safety valve for the frame budget, not a rule (ADR-023)
     expect(c.offerCount).toBe(3);
     expect(c.cadenceFactor).toBeLessThan(1);
     expect(c.cadenceFloor).toBeGreaterThan(0);
-    expect(c.weights.newBall + c.weights.upgrade + c.weights.hybrid).toBeGreaterThan(0);
+    expect(c.upgradeCap).toBeGreaterThan(0);
+    const w = c.weights;
+    expect(w.newBall + w.train + w.power + w.cadence + w.vitality + w.team).toBeGreaterThan(0);
+    expect(w.team).toBeLessThan(w.train); // the global card is the rare one (ADR-032)
   });
 
-  it('effects match GDD-v0: burn 2/s for 3 s, drain 1 hp per 15, chain at 80 px for 50 %', () => {
-    expect(gameConfig.effects).toEqual({ burnTicks: 180, drainPerHp: 15, chainRadius: 80 });
-    expect(gameConfig.typeEffects.fire.strength).toBe(2);
-    expect(gameConfig.typeEffects.electric.strength).toBe(0.5);
+  it('effects: burn 2/s for 3 s, chain at 80 px for 50 %, and drain that costs twice as much as in 4D', () => {
+    expect(gameConfig.effects).toEqual({
+      burnTicks: 180,
+      drainPerHp: 30,
+      chainRadius: 80,
+      slowTicks: 120,
+    });
+    expect(gameConfig.abilities.byType.fire?.[0]?.[0]?.strength).toBe(2);
+    expect(gameConfig.abilities.byType.electric?.[0]?.[0]?.strength).toBe(0.5);
   });
 });

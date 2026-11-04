@@ -10,15 +10,107 @@ export const baseConfig: Omit<
   GameConfig,
   'species' | 'enemySpecies' | 'ballSpecies' | 'lines' | 'forms'
 > = {
+  // Hybrids are off (ADR-033): the code and its tests stay, the card is never offered.
+  hybrid: { enabled: false },
+  // A team of up to six Pokémon, each firing balls that grow with its level (ADR-030, ADR-031).
+  // PROVISIONAL like the rest: calibrated with the bots (M1-M10) and ?tune in 4F-B.
+  team: {
+    maxMembers: 6,
+    maxLevel: 8,
+    ballsByLevel: [1, 1, 2, 2, 2, 3, 3, 3],
+    stageLevels: [3, 6],
+    captureLevels: [1, 3, 4],
+    starterBonus: 0.6,
+    ballRadiusByStage: [6, 7, 9],
+  },
+  // What a ball does by type and stage; signatures per species; a generic table for any other
+  // type, so a new type works from the first day (ADR-031, ADR-035).
+  abilities: {
+    byType: {
+      fire: [
+        [{ kind: 'burn', strength: 2 }],
+        [
+          { kind: 'burn', strength: 2.5 },
+          { kind: 'burnArea', strength: 0.5, radius: 56 },
+        ],
+        [
+          { kind: 'burn', strength: 3 },
+          { kind: 'burnArea', strength: 0.6, radius: 64 },
+          { kind: 'blast', strength: 0.8, radius: 56 },
+        ],
+      ],
+      water: [
+        [{ kind: 'pierce', strength: 1 }],
+        [
+          { kind: 'pierce', strength: 2 },
+          { kind: 'splash', strength: 0.35, radius: 44 },
+        ],
+        [
+          { kind: 'pierce', strength: 3 },
+          { kind: 'splash', strength: 0.5, radius: 52 },
+        ],
+      ],
+      grass: [
+        [{ kind: 'drain', strength: 0.5 }],
+        [
+          { kind: 'drain', strength: 0.6 },
+          { kind: 'slow', strength: 0.3 },
+        ],
+        [
+          { kind: 'drain', strength: 0.8 },
+          { kind: 'slow', strength: 0.45 },
+        ],
+      ],
+      electric: [
+        [{ kind: 'chain', strength: 0.5 }],
+        [{ kind: 'chain', strength: 0.5, count: 2 }],
+        [{ kind: 'chain', strength: 0.6, count: 3 }],
+      ],
+    },
+    signatures: {
+      charmander: [
+        null,
+        null,
+        [
+          { kind: 'burn', strength: 3.2 },
+          { kind: 'burnArea', strength: 0.7, radius: 72 },
+          { kind: 'blast', strength: 1.2, radius: 72 },
+        ],
+      ],
+      squirtle: [
+        null,
+        null,
+        [
+          { kind: 'pierce', strength: 5 },
+          { kind: 'splash', strength: 0.5, radius: 52 },
+        ],
+      ],
+      bulbasaur: [
+        null,
+        null,
+        [
+          { kind: 'drain', strength: 0.8 },
+          { kind: 'slow', strength: 0.5 },
+          { kind: 'splash', strength: 0.4, radius: 48 },
+        ],
+      ],
+      pikachu: [null, null, [{ kind: 'chain', strength: 0.7, count: 4 }]],
+    },
+    generic: [
+      [],
+      [{ kind: 'splash', strength: 0.2, radius: 36 }],
+      [{ kind: 'splash', strength: 0.35, radius: 48 }],
+    ],
+  },
   arena: { width: 480, height: 720, defenseLineY: 640 },
   player: { y: 680, speed: 5, margin: 20, maxHp: 10 },
   ball: {
     radius: 6,
     cooldownTicks: 72,
-    aimJitter: 0.25,
+    aimJitter: 0.3,
     manualAimJitter: 0.02,
     // The assisted aim is a weaker aid on purpose: it reloads slower and spreads more (ADR-021).
-    autoCooldownMult: 1.4,
+    autoCooldownMult: 1.8,
     speedMin: 6,
     speedMax: 9,
     minVerticalRatio: 0.2,
@@ -31,16 +123,19 @@ export const baseConfig: Omit<
     dropSpeed: 2,
     captureTtlTicks: 480,
   },
-  capture: { chance: 0.05, pityStep: 0.02, startMisses: 6, overflowDamageStep: 0.05 },
+  // With the team full a new species is rarer: every capture then asks for a decision (ADR-030).
+  capture: { chance: 0.05, pityStep: 0.02, startMisses: 6, fullTeamChanceMult: 0.07 },
   enemy: {
     radius: 16,
     threat: 1,
+    // A leak hurts more with the form of the enemy: 1, 3, 5 (ADR-032).
+    threatPerTier: 2,
     lanes: 7,
     speedMin: 0.2,
     speedMax: 0.5,
     speedVariation: 0.15,
     // Tuned with the balance harness (pnpm bench:balance); GDD-v0 does not fix enemy hp.
-    hpScale: 0.68,
+    hpScale: 0.88,
   },
   // The final boss (ADR-016, ADR-028): a legendary of the type drawn by the run's seed. hpScale is
   // PROVISIONAL like the rest of the curve (4D-B): measured with bots (time to kill), to be
@@ -69,7 +164,7 @@ export const baseConfig: Omit<
       summonCount: 2,
       summonSpeedScale: 1,
       summonHpScale: 0.8,
-      healHp: 2,
+      healHp: 0, // bosses no longer heal (ADR-032): the reward is the capture
     },
     {
       after: 4,
@@ -81,7 +176,7 @@ export const baseConfig: Omit<
       summonCount: 3,
       summonSpeedScale: 1,
       summonHpScale: 0.8,
-      healHp: 2,
+      healHp: 0, // bosses no longer heal (ADR-032): the reward is the capture
     },
     {
       after: 6,
@@ -93,7 +188,7 @@ export const baseConfig: Omit<
       summonCount: 4,
       summonSpeedScale: 1,
       summonHpScale: 0.8,
-      healHp: 2,
+      healHp: 0, // bosses no longer heal (ADR-032): the reward is the capture
     },
   ],
   // Wave themes (ADR-027). Species are base forms; the wave's `tier` picks the evolution form.
@@ -253,7 +348,7 @@ export const baseConfig: Omit<
   ],
   stats: {
     damageDivisor: 10,
-    levelMultiplier: [1, 1.5, 2.25],
+    levelMultiplier: [1, 1.3, 1.6, 2, 2.4, 2.9, 3.5, 4.2],
     speedStatMin: 20,
     speedStatMax: 130,
     // Damage = attack / damageDivisor * typeDamage. Grass has no offensive effect (it only
@@ -261,23 +356,25 @@ export const baseConfig: Omit<
     // Bulbasaur within ~10 points of the other starters (ADR-015, measured with n = 25 and later
     // found noisy). Electric x0.85: with 200 runs per starter Pikachu was clearly above the rest
     // (81 % vs 47-72 %); x0.85 brings it to 65 % [58-71]. Grass stays at x2 until a human playtest.
-    typeDamage: { fire: 1, water: 1, grass: 2, electric: 0.85 },
+    typeDamage: { fire: 1, water: 0.9, grass: 2.5, electric: 0.85 },
   },
-  effects: { burnTicks: 180, drainPerHp: 15, chainRadius: 80 },
+  // Drain heals much less than in 4D: it gave back more than half of the health lost (ADR-032).
+  effects: { burnTicks: 180, drainPerHp: 30, chainRadius: 80, slowTicks: 120 },
   progression: {
-    levelCosts: [18, 25, 34, 45, 58, 72, 90, 112, 137, 166],
+    levelCosts: [11, 15, 21, 27, 35, 43, 54, 67, 82, 100],
     hpPerXp: 10,
     lootChance: 0.1,
     lootMultiplier: 3,
   },
   cards: {
     offerCount: 3,
-    // Safety valve for the frame budget (ADR-023), not the old limit of 4 that cut the entry.
-    maxBalls: 24,
-    weights: { newBall: 4, upgrade: 4, hybrid: 4 },
-    damageStep: 0.15,
-    cadenceFactor: 0.9,
+    // Relative odds; a card that cannot be played (a full team, every Pokémon at the cap) has none.
+    weights: { newBall: 3, train: 8, power: 3, cadence: 3, vitality: 2, team: 1, hybrid: 0 },
+    powerStep: 0.45,
+    damageStep: 0.08,
+    cadenceFactor: 0.85,
     cadenceFloor: 0.4,
+    upgradeCap: 6,
     vitalityHp: 2,
   },
   grid: { cellSize: 48 },
@@ -287,12 +384,5 @@ export const baseConfig: Omit<
     water: { fire: 2, water: 0.5, grass: 0.5, electric: 1 },
     grass: { fire: 0.5, water: 2, grass: 0.5, electric: 1 },
     electric: { fire: 1, water: 2, grass: 0.5, electric: 0.5 },
-  },
-  // One effect per type. The behaviours themselves arrive with the vertical slice.
-  typeEffects: {
-    fire: { kind: 'burn', strength: 2 },
-    water: { kind: 'pierce', strength: 1 },
-    grass: { kind: 'drain', strength: 1 },
-    electric: { kind: 'chain', strength: 0.5 },
   },
 };
