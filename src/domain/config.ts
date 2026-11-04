@@ -134,7 +134,6 @@ export interface GameConfig {
     /** Chance that a kill is "rich" and gives `lootMultiplier` times the experience. */
     readonly lootChance: number;
     readonly lootMultiplier: number;
-    readonly tokensPerWave: number;
   };
   readonly cards: {
     readonly offerCount: number;
@@ -144,7 +143,8 @@ export interface GameConfig {
     readonly weights: {
       readonly newBall: number;
       readonly upgrade: number;
-      readonly token: number;
+      /** Only counts while a hybrid is possible (ADR-024). */
+      readonly hybrid: number;
     };
     /** damage card: damage multiplier += this. */
     readonly damageStep: number;

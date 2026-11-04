@@ -4,14 +4,14 @@ import { type Command, cloneRun, createRun, hashRun, type Run, tick } from '../.
 import { activePolicy, commandFor } from '../bench/bots';
 
 /**
- * A whole run with the real game data: waves, cards, fusions, the boss and the end. The bot
+ * A whole run with the real game data: waves, cards, evolutions, the boss and the end. The bot
  * produces the commands; the replay uses only (seed, commands).
  */
 interface Recording {
   readonly commands: Command[];
   readonly checkpoints: Map<number, string>;
   readonly run: Run;
-  readonly fusions: number;
+  readonly evolutions: number;
   readonly summons: number;
 }
 
@@ -22,13 +22,13 @@ function record(seed: number, starter: string): Recording {
   const run = createRun(gameConfig, seed, starter);
   const commands: Command[] = [];
   const checkpoints = new Map<number, string>();
-  let fusions = 0;
+  let evolutions = 0;
   let summons = 0;
   while (run.phase !== 'won' && run.phase !== 'lost' && run.tickCount < MAX_TICKS) {
     const cmd: Command = commandFor(activePolicy, run, gameConfig);
     commands.push(cmd);
     for (const e of tick(run, cmd, gameConfig).events) {
-      if (e.type === 'fuse') fusions += 1;
+      if (e.type === 'evolve') evolutions += 1;
       if (e.type === 'bossSummon') summons += 1;
     }
     // Paused ticks do not advance the clock: only the first tick that reaches a count is a checkpoint.
@@ -36,7 +36,7 @@ function record(seed: number, starter: string): Recording {
       checkpoints.set(run.tickCount, hashRun(run));
     }
   }
-  return { commands, checkpoints, run, fusions, summons };
+  return { commands, checkpoints, run, evolutions, summons };
 }
 
 function replay(seed: number, starter: string, commands: readonly Command[]): Run {
@@ -45,27 +45,25 @@ function replay(seed: number, starter: string, commands: readonly Command[]): Ru
   return run;
 }
 
-/** First seed (deterministic search) whose run fuses, reaches the boss and gets summons. */
+/** First seed (deterministic search) whose run evolves, reaches the boss and gets summons. */
 function findInterestingRun(): { seed: number; starter: string; rec: Recording } {
   for (let seed = 1; seed < 60; seed++) {
     const starter = ['pikachu', 'squirtle', 'charmander', 'bulbasaur'][seed % 4] ?? 'pikachu';
     const rec = record(seed, starter);
-    if (rec.fusions > 0 && rec.run.boss.spawned && rec.summons > 0) return { seed, starter, rec };
+    if (rec.evolutions > 0 && rec.run.boss.spawned && rec.summons > 0)
+      return { seed, starter, rec };
   }
-  throw new Error('no seed fused and reached the boss');
+  throw new Error('no seed evolved and reached the boss');
 }
 
-describe('a whole run, with fusions and the boss, is a function of (seed, commands)', () => {
+describe('a whole run, with evolutions and the boss, is a function of (seed, commands)', () => {
   const { seed, starter, rec } = findInterestingRun();
 
-  it('the scenario is not vacuous: it fuses, summons and ends', () => {
-    expect(rec.fusions).toBeGreaterThan(0);
+  it('the scenario is not vacuous: it evolves, summons and ends', () => {
+    expect(rec.evolutions).toBeGreaterThan(0);
     expect(rec.summons).toBeGreaterThan(0);
     expect(rec.run.boss.spawned).toBe(true);
     expect(['won', 'lost']).toContain(rec.run.phase);
-    expect(rec.commands.some((c) => c.action?.type === 'fuse')).toBe(true);
-    expect(rec.commands.some((c) => c.action?.type === 'workshop' && c.action.open)).toBe(true);
-    expect(rec.commands.some((c) => c.action?.type === 'workshop' && !c.action.open)).toBe(true);
     expect(rec.commands.some((c) => c.action?.type === 'pick')).toBe(true);
     expect(rec.run.kills).toBeGreaterThan(20);
   });
@@ -99,11 +97,11 @@ describe('a whole run, with fusions and the boss, is a function of (seed, comman
     expect(hashRun(copy)).toBe(hashRun(rec.run));
   });
 
-  it('dropping the fusions changes the run: they are part of the recorded commands', () => {
-    const withoutFusions = rec.commands.map((c) =>
-      c.action?.type === 'fuse' ? { moveX: c.moveX } : c,
+  it('dropping the card choices changes the run: they are part of the recorded commands', () => {
+    const withoutPicks = rec.commands.map((c) =>
+      c.action?.type === 'pick' ? { moveX: c.moveX } : c,
     );
-    expect(hashRun(replay(seed, starter, withoutFusions))).not.toBe(hashRun(rec.run));
+    expect(hashRun(replay(seed, starter, withoutPicks))).not.toBe(hashRun(rec.run));
   });
 
   it('another seed with the same commands gives another run', () => {

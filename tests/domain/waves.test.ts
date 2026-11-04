@@ -63,17 +63,15 @@ describe('waves: schedule', () => {
     expect(run.nextEnemyId).toBe(11); // the 10th spawn is at tick 1000
   });
 
-  it('moves to the next wave when its duration ends: index, tick, token and event', () => {
+  it('moves to the next wave when its duration ends: index, tick and event', () => {
     const cfg = withConfig({
       waves: [wave({ durationTicks: 50, spawnIntervalTicks: 1000 }), wave({ durationTicks: 80 })],
     });
     const run = createRun(cfg, 1, 'charmander');
     for (let i = 0; i < 49; i++) tick(run, { moveX: 0 }, cfg);
     expect(run.wave).toEqual({ index: 0, tick: 49 });
-    expect(run.tokens).toBe(0);
     const out = tick(run, { moveX: 0 }, cfg);
     expect(run.wave).toEqual({ index: 1, tick: 0 });
-    expect(run.tokens).toBe(cfg.progression.tokensPerWave);
     expect(out.events).toContainEqual({ type: 'waveStart', index: 1 });
   });
 
@@ -110,9 +108,9 @@ describe('waves: schedule', () => {
     const cfg = withConfig({ waves: [wave({ durationTicks: 5, spawnIntervalTicks: 100 })] });
     const run = createRun(cfg, 1, 'charmander');
     for (let i = 0; i < 5; i++) advanceWave(run, cfg);
-    const state = JSON.stringify([run.wave, run.tokens, run.nextEnemyId]);
+    const state = JSON.stringify([run.wave, run.nextEnemyId]);
     advanceWave(run, cfg);
-    expect(JSON.stringify([run.wave, run.tokens, run.nextEnemyId])).toBe(state);
+    expect(JSON.stringify([run.wave, run.nextEnemyId])).toBe(state);
   });
 });
 

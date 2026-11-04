@@ -84,7 +84,6 @@ export function advanceWave(run: Run, config: GameConfig): void {
   if (run.wave.tick >= wave.durationTicks) {
     run.wave.index += 1;
     run.wave.tick = 0;
-    run.tokens += config.progression.tokensPerWave;
     if (run.wave.index < waves.length) {
       run.events.push({ type: 'waveStart', index: run.wave.index });
     }

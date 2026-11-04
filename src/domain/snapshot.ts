@@ -22,7 +22,6 @@ export const PHASE_PLAYING = 0;
 export const PHASE_LOST = 1;
 export const PHASE_LEVELUP = 2;
 export const PHASE_WON = 3;
-export const PHASE_WORKSHOP = 4;
 
 function phaseCode(phase: Run['phase']): number {
   switch (phase) {
@@ -34,8 +33,6 @@ function phaseCode(phase: Run['phase']): number {
       return PHASE_LEVELUP;
     case 'won':
       return PHASE_WON;
-    case 'workshop':
-      return PHASE_WORKSHOP;
   }
 }
 
@@ -53,7 +50,6 @@ export interface Snapshot {
   playerLevel: number;
   playerXp: number;
   playerXpNext: number;
-  tokens: number;
   /** Hp and maximum hp of the boss while it is alive; both 0 otherwise. */
   bossHp: number;
   bossMaxHp: number;
@@ -71,6 +67,8 @@ export interface Snapshot {
   ballType: Uint8Array;
   /** Species code (see `writeSnapshot`), or NO_SPECIES. */
   ballSpecies: Uint8Array;
+  /** Level of the ball (1..3): with the species it picks the evolution form to draw. */
+  ballLevel: Uint8Array;
 
   /** Balls waiting on the floor or falling to it (ADR-022, ADR-023). */
   pickupCount: number;
@@ -79,6 +77,7 @@ export interface Snapshot {
   pickupType: Uint8Array;
   /** Species code of the ball the pickup carries (see `writeSnapshot`), or NO_SPECIES. */
   pickupSpecies: Uint8Array;
+  pickupLevel: Uint8Array;
   /** 1 = a captured ball, 0 = a returning ball of the team. */
   pickupCaptured: Uint8Array;
   /** Ticks left before it joins by itself. */
@@ -106,7 +105,6 @@ export function createSnapshot(maxSlots = 64, maxEnemies = 512, maxPickups = 64)
     playerLevel: 1,
     playerXp: 0,
     playerXpNext: 1,
-    tokens: 0,
     bossHp: 0,
     bossMaxHp: 0,
     waveIndex: 0,
@@ -119,11 +117,13 @@ export function createSnapshot(maxSlots = 64, maxEnemies = 512, maxPickups = 64)
     ballY: new Float32Array(maxSlots),
     ballType: new Uint8Array(maxSlots),
     ballSpecies: new Uint8Array(maxSlots),
+    ballLevel: new Uint8Array(maxSlots),
     pickupCount: 0,
     pickupX: new Float32Array(maxPickups),
     pickupY: new Float32Array(maxPickups),
     pickupType: new Uint8Array(maxPickups),
     pickupSpecies: new Uint8Array(maxPickups),
+    pickupLevel: new Uint8Array(maxPickups),
     pickupCaptured: new Uint8Array(maxPickups),
     pickupTicks: new Int32Array(maxPickups),
     enemyCount: 0,
@@ -155,7 +155,6 @@ export function writeSnapshot(
   snap.playerLevel = run.player.level;
   snap.playerXp = run.player.xp;
   snap.playerXpNext = run.player.xpNext;
-  snap.tokens = run.tokens;
   snap.bossHp = 0;
   snap.bossMaxHp = 0;
   if (run.boss.id !== 0) {
@@ -184,6 +183,7 @@ export function writeSnapshot(
     snap.ballY[body.slot] = body.y;
     snap.ballType[body.slot] = typeCode(ball.type);
     snap.ballSpecies[body.slot] = speciesCodes?.get(ball.species) ?? NO_SPECIES;
+    snap.ballLevel[body.slot] = ball.level;
   }
 
   const maxPickups = snap.pickupX.length;
@@ -198,8 +198,10 @@ export function writeSnapshot(
     snap.pickupType[i] = typeCode(p.type);
     snap.pickupCaptured[i] = p.slot < 0 ? 1 : 0;
     snap.pickupTicks[i] = p.ticks;
-    const species = p.slot < 0 ? p.species : (run.loadout[p.slot]?.species ?? '');
+    const ball = p.slot < 0 ? undefined : run.loadout[p.slot];
+    const species = ball?.species ?? p.species;
     snap.pickupSpecies[i] = speciesCodes?.get(species) ?? NO_SPECIES;
+    snap.pickupLevel[i] = ball?.level ?? 1;
   }
 
   const maxEnemies = snap.enemyId.length;

@@ -121,13 +121,12 @@ export const baseConfig: Omit<GameConfig, 'species' | 'enemySpecies' | 'ballSpec
     hpPerXp: 10,
     lootChance: 0.1,
     lootMultiplier: 3,
-    tokensPerWave: 1,
   },
   cards: {
     offerCount: 3,
     // Safety valve for the frame budget (ADR-023), not the old limit of 4 that cut the entry.
     maxBalls: 24,
-    weights: { newBall: 4, upgrade: 4, token: 2 },
+    weights: { newBall: 4, upgrade: 4, hybrid: 4 },
     damageStep: 0.15,
     cadenceFactor: 0.9,
     cadenceFloor: 0.4,

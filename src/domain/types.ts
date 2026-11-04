@@ -65,39 +65,18 @@ export type Card =
   | { readonly kind: 'damage' }
   | { readonly kind: 'cadence' }
   | { readonly kind: 'vitality' }
-  | { readonly kind: 'token' };
+  /**
+   * A hybrid of two balls of the loadout, by slot (ADR-024). `a` is the first ingredient: the
+   * result keeps its species and type. The run does not advance while the offer is open, so the
+   * slots cannot change before the choice.
+   */
+  | { readonly kind: 'hybrid'; readonly a: number; readonly b: number };
 
 export interface PickAction {
   readonly type: 'pick';
   /** Index into the current offers. */
   readonly index: number;
 }
-
-/** Opens or closes the workshop. While it is open the simulation is paused (ADR-016). */
-export interface WorkshopAction {
-  readonly type: 'workshop';
-  readonly open: boolean;
-}
-
-/** Fuses two balls of the loadout (workshop phase only), spending one fusion token. Order matters. */
-export interface FuseAction {
-  readonly type: 'fuse';
-  /** Loadout slot of the first ingredient: the result keeps its id, species and type. */
-  readonly a: number;
-  /** Loadout slot of the second ingredient: it disappears. */
-  readonly b: number;
-}
-
-/** Why a fusion was refused: the rules of `fuse` plus the two things only the run knows. */
-export type FuseFailure =
-  | 'same-ball'
-  | 'hybrid-input'
-  | 'max-level'
-  | 'level-mismatch'
-  | 'same-type-different-species'
-  | 'level-too-low'
-  | 'no-token'
-  | 'bad-slot';
 
 /**
  * Something lying on the floor (or falling to it) that the player picks up by moving over it
@@ -127,11 +106,8 @@ export interface Command {
   readonly aimY?: number;
   /** Switches the assisted aim on or off; omitted = keep. */
   readonly autoAim?: boolean;
-  /**
-   * `pick` only means something in the level-up phase; `workshop` opens it (while playing) or
-   * closes it; `fuse` only in the workshop phase.
-   */
-  readonly action?: PickAction | FuseAction | WorkshopAction;
+  /** `pick` only means something in the level-up phase. */
+  readonly action?: PickAction;
 }
 
 export type GameEvent =
@@ -145,6 +121,13 @@ export type GameEvent =
       readonly ballId: number;
       readonly x: number;
       readonly late: boolean;
+    }
+  /** A defeated enemy let its ball fall at `x`, `y` (the player has not got it yet). */
+  | {
+      readonly type: 'captureDrop';
+      readonly species: string;
+      readonly x: number;
+      readonly y: number;
     }
   /** A captured ball joined the team (`ballId` 0: the team was full and it became damage). */
   | {
@@ -179,12 +162,21 @@ export type GameEvent =
   | { readonly type: 'waveStart'; readonly index: number }
   | { readonly type: 'bossSpawn'; readonly enemyId: number }
   | { readonly type: 'bossSummon'; readonly count: number }
+  /** Two equal balls merged on their own into one of the next level (ADR-024). */
   | {
-      readonly type: 'fuse';
+      readonly type: 'evolve';
       readonly ballId: number;
+      readonly species: string;
+      /** Level the ball reached. */
       readonly level: number;
-      readonly hybrid: boolean;
     }
-  | { readonly type: 'fuseFailed'; readonly error: FuseFailure }
+  /** A hybrid card was chosen: `species` (first ingredient) absorbed `withSpecies`. */
+  | {
+      readonly type: 'hybrid';
+      readonly ballId: number;
+      readonly species: string;
+      readonly withSpecies: string;
+      readonly level: number;
+    }
   | { readonly type: 'won' }
   | { readonly type: 'lost' };

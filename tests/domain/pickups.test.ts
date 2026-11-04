@@ -1,13 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import {
   advancePickups,
-  applyFusion,
   cloneRun,
   createRun,
   createSnapshot,
   damageEnemy,
   dropBall,
   dropCapture,
+  evolveTeam,
   hashRun,
   MAX_PICKUPS,
   type Run,
@@ -121,7 +121,8 @@ describe('collecting', () => {
 
   it('collects in order of appearance and several in one tick', () => {
     const run = createRun(quietConfig, 1, 'charmander');
-    run.loadout = [makeBall({ id: 1 }), makeBall({ id: 2 })];
+    // Different species: two equal balls would evolve at the start of the tick instead.
+    run.loadout = [makeBall({ id: 1 }), makeBall({ id: 2, species: 'vulpix' })];
     run.cooldowns = [-1, -1];
     dropBall(run, quietConfig, 1, 240);
     dropBall(run, quietConfig, 0, 245);
@@ -349,7 +350,7 @@ describe('capture on a kill', () => {
   });
 });
 
-describe('fusing with balls on the floor', () => {
+describe('evolving with balls on the floor', () => {
   function fusable(): Run {
     const run = createRun(quietConfig, 1, 'charmander');
     run.loadout = [
@@ -358,7 +359,6 @@ describe('fusing with balls on the floor', () => {
       makeBall({ id: 3, species: 'vulpix' }),
     ];
     run.cooldowns = [-1, -1, -1];
-    run.tokens = 1;
     run.player.x = 450;
     dropBall(run, quietConfig, 0, 50);
     dropBall(run, quietConfig, 1, 100);
@@ -368,19 +368,20 @@ describe('fusing with balls on the floor', () => {
 
   it('removes the pickups of both ingredients and shifts the later slots down', () => {
     const run = fusable();
-    applyFusion(run, 0, 1);
+    evolveTeam(run);
     expect(run.loadout.map((b) => b.id)).toEqual([1, 3]);
     expect(run.pickups.map((p) => [p.slot, p.x])).toEqual([[1, 150]]);
   });
 
   it('leaves the pickups of earlier slots alone', () => {
     const run = fusable();
-    applyFusion(run, 1, 2); // species differ: refused, nothing changes
-    expect(run.pickups).toHaveLength(3);
-    const ok = fusable();
-    ok.loadout = [makeBall({ id: 1, species: 'vulpix' }), makeBall({ id: 2 }), makeBall({ id: 3 })];
-    applyFusion(ok, 1, 2);
-    expect(ok.pickups.map((p) => p.slot)).toEqual([0]);
+    run.loadout = [
+      makeBall({ id: 1, species: 'vulpix' }),
+      makeBall({ id: 2 }),
+      makeBall({ id: 3 }),
+    ];
+    evolveTeam(run);
+    expect(run.pickups.map((p) => p.slot)).toEqual([0]);
   });
 });
 
@@ -423,5 +424,26 @@ describe('what the render sees', () => {
     writeSnapshot(run, snap);
     expect(snap.pickupCount).toBe(3);
     expect(snap.truncated).toBe(true);
+  });
+});
+
+describe('capture drop event', () => {
+  it('announces where the ball starts to fall, with the clamped x and the capped y', () => {
+    const run = createRun(quietConfig, 1, 'charmander');
+    dropCapture(run, quietConfig, 'psyduck', 'water', -50, 900);
+    const margin = quietConfig.player.margin;
+    expect(run.events).toEqual([
+      { type: 'captureDrop', species: 'psyduck', x: margin, y: quietConfig.player.y },
+    ]);
+    expect(run.pickups[0]?.x).toBe(margin);
+  });
+
+  it('a kill that drops a ball emits it, and a full floor does not', () => {
+    const cfg = withConfig({ capture: { ...quietConfig.capture, chance: 1 } });
+    const run = createRun(cfg, 1, 'charmander');
+    const enemy = makeEnemy({ id: 7, x: 200, y: 100, hp: 1 });
+    run.enemies = [enemy];
+    damageEnemy(run, cfg, enemy, 5);
+    expect(run.events.filter((e) => e.type === 'captureDrop')).toHaveLength(1);
   });
 });

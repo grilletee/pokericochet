@@ -341,7 +341,7 @@ describe('determinism', () => {
     const a = play(42, commands.slice(0, 200));
     const b = cloneRun(a);
     expect(hashRun(b)).toBe(hashRun(a));
-    b.offers = [{ kind: 'token' }];
+    b.offers = [{ kind: 'vitality' }];
     expect(hashRun(b)).not.toBe(hashRun(a));
     a.offers = [{ kind: 'damage' }];
     expect(hashRun(b)).not.toBe(hashRun(a));
@@ -475,11 +475,11 @@ describe('hashRun', () => {
       'wave.tick': (r) => {
         r.wave.tick += 1;
       },
-      tokens: (r) => {
-        r.tokens += 1;
-      },
       offers: (r) => {
-        r.offers = [{ kind: 'token' }];
+        r.offers = [{ kind: 'vitality' }];
+      },
+      'offers hybrid slots': (r) => {
+        r.offers = [{ kind: 'hybrid', a: 0, b: 1 }];
       },
       'offers species': (r) => {
         r.offers = [{ kind: 'newBall', species: 'pikachu' }];

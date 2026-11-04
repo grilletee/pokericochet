@@ -125,12 +125,12 @@ describe('level up', () => {
   it('a valid pick applies the card, reports it and resumes play', () => {
     const run = createRun(quietConfig, 1, 'charmander');
     run.phase = 'levelup';
-    run.offers = [{ kind: 'damage' }, { kind: 'token' }];
+    run.offers = [{ kind: 'damage' }, { kind: 'vitality' }];
     const out = tick(run, { moveX: 0, action: { type: 'pick', index: 1 } }, quietConfig);
-    expect(run.tokens).toBe(1);
+    expect(run.player.maxHp).toBe(quietConfig.player.maxHp + quietConfig.cards.vitalityHp);
     expect(run.phase).toBe('playing');
     expect(run.offers).toEqual([]);
-    expect(out.events).toContainEqual({ type: 'pick', card: { kind: 'token' } });
+    expect(out.events).toContainEqual({ type: 'pick', card: { kind: 'vitality' } });
     expect(run.player.damageMult).toBe(1);
   });
 
@@ -214,17 +214,21 @@ describe('card offers', () => {
 
   it('terminates with fewer cards when only one distinct card exists', () => {
     const cfg = withConfig({
-      cards: { ...quietConfig.cards, weights: { newBall: 0, upgrade: 0, token: 1 } },
+      cards: { ...quietConfig.cards, weights: { newBall: 0, upgrade: 1, hybrid: 0 } },
     });
     const offers = offersFor(1, cfg);
-    expect(offers).toEqual([{ kind: 'token' }]);
+    expect(offers).toHaveLength(3); // the three upgrades are distinct cards
+    const only = withConfig({
+      cards: { ...quietConfig.cards, weights: { newBall: 0, upgrade: 0, hybrid: 0 } },
+    });
+    expect(offersFor(1, only).length).toBeGreaterThan(0);
   });
 
   it('upgrade cards cover all three kinds over many draws', () => {
     const kinds = new Set<string>();
     const run = createRun(quietConfig, 1, 'charmander');
     for (let i = 0; i < 200; i++) for (const c of drawOffers(run, quietConfig)) kinds.add(c.kind);
-    expect(kinds).toEqual(new Set(['newBall', 'damage', 'cadence', 'vitality', 'token']));
+    expect(kinds).toEqual(new Set(['newBall', 'damage', 'cadence', 'vitality']));
   });
 });
 
@@ -300,12 +304,5 @@ describe('applying cards', () => {
     applyCard(run, quietConfig, { kind: 'vitality' });
     expect(run.player.maxHp).toBe(quietConfig.player.maxHp + quietConfig.cards.vitalityHp);
     expect(run.player.hp).toBe(4 + quietConfig.cards.vitalityHp);
-  });
-
-  it('token adds a fusion token', () => {
-    const run = fresh();
-    applyCard(run, quietConfig, { kind: 'token' });
-    applyCard(run, quietConfig, { kind: 'token' });
-    expect(run.tokens).toBe(2);
   });
 });

@@ -9,6 +9,7 @@ export {
   pierceCount,
   tickBurning,
 } from './effects';
+export { applyHybrid, evolveTeam, mergeBalls, previewHybrid } from './evolution';
 export type { FuseError, FuseResult } from './fusion';
 export { fuse, HYBRID_MIN_LEVEL, MAX_BALL_LEVEL, SECONDARY_EFFECT_SCALE } from './fusion';
 export { SpatialGrid } from './grid';
@@ -33,7 +34,6 @@ export {
   PHASE_LOST,
   PHASE_PLAYING,
   PHASE_WON,
-  PHASE_WORKSHOP,
   typeCode,
   writeSnapshot,
 } from './snapshot';
@@ -49,16 +49,11 @@ export type {
   Effect,
   EffectKind,
   Enemy,
-  FuseAction,
-  FuseFailure,
   GameEvent,
   GameType,
   PickAction,
   Pickup,
   SpeciesDef,
-  WorkshopAction,
 } from './types';
 export { GAME_TYPES } from './types';
 export { advanceBoss, advanceWave, isBossAlive, laneX } from './waves';
-export type { FusionPreview } from './workshop';
-export { applyFusion, previewFusion } from './workshop';

@@ -3,6 +3,7 @@ import { applyCard } from './cards';
 import { getSpecies, hitDamage, mapStat } from './combat';
 import type { GameConfig } from './config';
 import { applyHitEffects, damageEnemy, pierceCount, tickBurning } from './effects';
+import { evolveTeam } from './evolution';
 import { bounceOffWalls, enforceMinVertical, findNearestOverlap, reflectOffEnemy } from './physics';
 import { advancePickups, dropBall } from './pickups';
 import { checkLevelUp } from './progression';
@@ -10,7 +11,6 @@ import { nextFloat } from './rng';
 import type { Run } from './run';
 import type { BallBody, Command, Enemy, GameEvent } from './types';
 import { advanceBoss, advanceWave, isBossAlive } from './waves';
-import { applyFusion } from './workshop';
 
 export interface TickOutput {
   /** Valid until the next tick: it is the run's own transient array. */
@@ -135,14 +135,6 @@ function resolveLevelUp(run: Run, cmd: Command, config: GameConfig): void {
   checkLevelUp(run, config); // enough xp for another level straight away
 }
 
-/** While the workshop is open only fusing and closing do anything; time does not pass. */
-function resolveWorkshop(run: Run, cmd: Command): void {
-  const action = cmd.action;
-  if (action === undefined) return;
-  if (action.type === 'fuse') applyFusion(run, action.a, action.b);
-  else if (action.type === 'workshop' && !action.open) run.phase = 'playing';
-}
-
 /** Victory: the boss is dead, or, in a run without boss, the last wave is gone and nothing lives. */
 function isWon(run: Run, config: GameConfig, alive: number): boolean {
   if (config.waves.length === 0 || run.wave.index < config.waves.length) return false;
@@ -152,8 +144,8 @@ function isWon(run: Run, config: GameConfig, alive: number): boolean {
 
 /**
  * Advances the run by one 1/60 s step (ADR-004, ADR-007). Mutates `run` in place and returns the
- * events of this tick. While the run waits for a card choice or the workshop is open, time does
- * not pass and only `pick` / `fuse` / closing commands do anything; a finished run does not advance.
+ * events of this tick. While the run waits for a card choice time does not pass and only `pick`
+ * does anything; a finished run does not advance.
  */
 export function tick(run: Run, cmd: Command, config: GameConfig): TickOutput {
   run.events.length = 0;
@@ -161,17 +153,10 @@ export function tick(run: Run, cmd: Command, config: GameConfig): TickOutput {
     resolveLevelUp(run, cmd, config);
     return { events: run.events };
   }
-  if (run.phase === 'workshop') {
-    resolveWorkshop(run, cmd);
-    return { events: run.events };
-  }
   if (run.phase !== 'playing') return { events: run.events };
 
-  // Opening the workshop pauses the run before anything moves (ADR-016).
-  if (cmd.action?.type === 'workshop' && cmd.action.open) {
-    run.phase = 'workshop';
-    return { events: run.events };
-  }
+  // Two equal balls merge on their own, without pausing the run (ADR-024).
+  evolveTeam(run);
 
   const { arena, ball: ballConfig } = config;
 

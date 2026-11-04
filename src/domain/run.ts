@@ -6,8 +6,8 @@ import { xpCost } from './progression';
 import { cloneRng, deriveRng, type RngState } from './rng';
 import type { Ball, BallBody, Card, Enemy, GameEvent, Pickup } from './types';
 
-/** `workshop` and `levelup` pause the simulation until a command ends them (ADR-014, ADR-016). */
-export type Phase = 'playing' | 'levelup' | 'workshop' | 'won' | 'lost';
+/** `levelup` pauses the simulation until a card is picked (ADR-014). */
+export type Phase = 'playing' | 'levelup' | 'won' | 'lost';
 
 export interface Player {
   x: number;
@@ -80,8 +80,6 @@ export interface Run {
   nextEnemyId: number;
   wave: { index: number; tick: number };
   boss: BossState;
-  /** Fusion tokens, earned one per wave (spent in the workshop). */
-  tokens: number;
   /** Cards on offer while the phase is `levelup`; empty otherwise. */
   offers: Card[];
   events: GameEvent[];
@@ -136,7 +134,6 @@ export function createRun(config: GameConfig, seed: number, starterSpecies: stri
     nextEnemyId: 1,
     wave: { index: 0, tick: 0 },
     boss: { spawned: false, id: 0, maxHp: 0, tick: 0 },
-    tokens: 0,
     offers: [],
     events: [],
     grid: newGrid(config),
@@ -171,7 +168,6 @@ export function cloneRun(run: Run): Run {
     nextEnemyId: run.nextEnemyId,
     wave: { ...run.wave },
     boss: { ...run.boss },
-    tokens: run.tokens,
     offers: run.offers.slice(), // cards are immutable values
     events: run.events.slice(),
     grid: new SpatialGrid(run.grid.width, run.grid.height, run.grid.cellSize, run.grid.pad),
@@ -307,11 +303,12 @@ export function hashRun(run: Run): string {
   h.int(run.boss.id);
   h.num(run.boss.maxHp);
   h.int(run.boss.tick);
-  h.int(run.tokens);
   h.int(run.offers.length);
   for (const card of run.offers) {
     h.str(card.kind);
     h.str(card.kind === 'newBall' ? card.species : '');
+    h.int(card.kind === 'hybrid' ? card.a : -1);
+    h.int(card.kind === 'hybrid' ? card.b : -1);
   }
   return h.digest();
 }

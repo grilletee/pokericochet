@@ -122,3 +122,25 @@ describe('snapshot: species codes for the render', () => {
     expect(snap.enemySpecies[0]).toBe(NO_SPECIES);
   });
 });
+
+describe('snapshot: ball levels for the evolution forms', () => {
+  it('writes the level of every ball in flight and of every pickup, so the render picks the form', () => {
+    const run = createRun(quietConfig, 1, 'charmander');
+    run.loadout = [
+      { id: 1, species: 'charmander', type: 'fire', level: 3, hybrid: false, effects: [] },
+      { id: 2, species: 'squirtle', type: 'water', level: 2, hybrid: false, effects: [] },
+    ];
+    run.cooldowns = [-1, -1];
+    run.bodies = [{ slot: 0, x: 10, y: 300, vx: 0, vy: -1, pierce: 0, skipId: 0 }];
+    run.pickups = [
+      { slot: 1, species: '', type: 'water', x: 50, y: 680, ticks: 100 },
+      { slot: -1, species: 'psyduck', type: 'water', x: 90, y: 200, ticks: 100 },
+    ];
+    const snap = createSnapshot();
+    writeSnapshot(run, snap);
+    expect(snap.ballLevel[0]).toBe(3);
+    // A returning ball keeps the level of the ball it is; a captured one always starts at 1.
+    expect(snap.pickupLevel[0]).toBe(2);
+    expect(snap.pickupLevel[1]).toBe(1);
+  });
+});

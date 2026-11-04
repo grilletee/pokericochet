@@ -42,14 +42,17 @@ export function dropCapture(
   y: number,
 ): void {
   if (run.pickups.length >= MAX_PICKUPS) return;
+  const at = clamp(x, config.player.margin, config.arena.width - config.player.margin);
+  const from = Math.min(y, config.player.y);
   run.pickups.push({
     slot: -1,
     species,
     type,
-    x: clamp(x, config.player.margin, config.arena.width - config.player.margin),
-    y: Math.min(y, config.player.y),
+    x: at,
+    y: from,
     ticks: config.pickup.captureTtlTicks,
   });
+  run.events.push({ type: 'captureDrop', species, x: at, y: from });
 }
 
 function collect(run: Run, config: GameConfig, pickup: Pickup, late: boolean): void {
