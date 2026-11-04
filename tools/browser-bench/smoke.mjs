@@ -135,8 +135,8 @@ try {
   );
   await tunePage.locator('[data-tune-toggle]').click();
   check(
-    'the panel opens with 16 sliders',
-    (await tunePage.locator('input[data-tune]').count()) === 16,
+    'the panel opens with 38 sliders (16 general, boss health and 21 for the wave curve)',
+    (await tunePage.locator('input[data-tune]').count()) === 38,
   );
   await tunePage.locator('input[data-tune="captureChance"]').fill('0.5');
   const tuneStored = await tunePage.evaluate(() => window.localStorage.getItem('tune.v1'));
@@ -300,12 +300,29 @@ try {
   );
   await cap.screenshot({ path: outFile.replace('.png', '-capture.png') });
 
+  // Themed waves: the first wave is announced with its theme, its type and what beats it.
+  const themePage = await open('starter=charmander&seed=9');
+  await themePage.waitForTimeout(300);
+  const themeText = (await themePage.locator('body').textContent()) ?? '';
+  check(
+    'the first wave is announced with its theme and the types that beat it',
+    /Oleada 1: .+\(.+\) · le gana/.test(themeText),
+    themeText.slice(0, 200),
+  );
+  await themePage.screenshot({ path: outFile.replace('.png', '-theme.png') });
+
   // Boss: jumping to the last wave brings it in, with its health bar.
   const bossPage = await open('starter=pikachu&wave=7&seed=3');
   await bossPage.waitForFunction(() => window.__debug().bossMaxHp > 0);
   check('the boss appears after the last wave', true);
   await bossPage.waitForTimeout(400);
   check('the boss bar is visible', await bossPage.locator('[data-boss-bar]').isVisible());
+  check(
+    'the final boss is a legendary named on its bar',
+    /(Moltres|Kyogre|Virizion|Zapdos)/.test(
+      (await bossPage.locator('[data-boss-bar]').textContent()) ?? '',
+    ),
+  );
   await bossPage.screenshot({ path: outFile.replace('.png', '-boss.png') });
 
   // End of run: results screen, best run in localStorage, and the two ways to go on.
