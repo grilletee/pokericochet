@@ -57,17 +57,17 @@ describe('stat mapping', () => {
     expect(baseConfig.ball.speedMax).toBeLessThan(baseConfig.enemy.radius);
   });
 
-  it('documents the deviations from damage = attack / 10: fire x1.05, water x0.9, grass x2.3, electric x1.35 (ADR-015, 4F-B, 4F-C)', () => {
+  it('documents the deviations from damage = attack / 10: fire x1.05, water x1, grass x2.1, electric x1.35 (ADR-015, 4F-B, 4F-C, 4F-D)', () => {
     expect(baseConfig.stats.typeDamage).toEqual({
       fire: 1.05,
-      water: 0.9,
-      grass: 2.3,
+      water: 1.0,
+      grass: 2.1,
       electric: 1.35,
     });
   });
 
   it('exposes the enemy hp multiplier as the named, provisional parameter enemy.hpScale', () => {
-    expect(baseConfig.enemy.hpScale).toBe(1.72);
+    expect(baseConfig.enemy.hpScale).toBe(1.55);
   });
 
   it('keeps the assisted aim a weaker aid than the manual one, but a usable one (ADR-021, M4)', () => {

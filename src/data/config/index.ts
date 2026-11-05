@@ -25,17 +25,29 @@ export const baseConfig: Omit<
     ],
     // The signatures of the four starters (ADR-039): a cross, a wave, a long beam, a long chain.
     signatures: {
-      charmander: [null, null, { kind: 'cross', width: 48, power: 4.5 }],
+      // From stage 2 every starter has one (4F-D); the player throws it, it never goes off alone.
+      // Powers measured with the active bot (M7, M17): the first set (2 / 1.7 / 2 at stage 2) gave
+      // Squirtle 50 % and Bulbasaur 66 %; these give 57 % and 59 % (150 runs per starter), and
+      // throwing the signature is worth about 11 points of win rate for the bot.
+      charmander: [
+        null,
+        { kind: 'cross', width: 36, power: 1.8 },
+        { kind: 'cross', width: 48, power: 2.8 },
+      ],
       squirtle: [
         null,
-        { kind: 'wave', width: 56, power: 2.5 },
-        { kind: 'wave', width: 72, power: 4 },
+        { kind: 'wave', width: 56, power: 2.2 },
+        { kind: 'wave', width: 72, power: 3.4 },
       ],
-      bulbasaur: [null, null, { kind: 'beam', width: 72, power: 4.5 }],
+      bulbasaur: [
+        null,
+        { kind: 'beam', width: 56, power: 1.6 },
+        { kind: 'beam', width: 72, power: 2.5 },
+      ],
       pikachu: [
-        { kind: 'chain', count: 1, power: 1.5 },
-        { kind: 'chain', count: 3, power: 2.5 },
-        { kind: 'chain', count: 5, power: 3.5 },
+        { kind: 'chain', count: 1, power: 1 },
+        { kind: 'chain', count: 3, power: 1.7 },
+        { kind: 'chain', count: 5, power: 2.4 },
       ],
     },
     status: {
@@ -182,7 +194,10 @@ export const baseConfig: Omit<
     // 4F-C: stats of the form, moves and the stage growth add damage, so 0.88 -> 1.72 (bot win 98 %
     // with 0.88 and 93 % with the moves; 52 % at 1.6, 52 % at 1.65 and 43 % [38-48] at 1.72, 80 runs
     // per starter, active bot, with the starter and aim settings of this file).
-    hpScale: 1.72,
+    // 4F-D: -10 % at the author's request (1.72 -> 1.55); with the signature thrown by the bot it
+    // wins 59 % [56-62] (48 % without the signature), above the 35-50 % window of the bot; the
+    // author tunes the final value with ?tune ("Vida enemiga").
+    hpScale: 1.55,
   },
   // The final boss (ADR-016, ADR-028): a legendary of the type drawn by the run's seed. hpScale is
   // PROVISIONAL like the rest of the curve (4D-B): measured with bots (time to kill), to be
@@ -420,7 +435,10 @@ export const baseConfig: Omit<
     // 4F-C: with the real stats of the forms the four starters moved apart (Pikachu 40 % against
     // 47-57 %, Bulbasaur above the rest). Electric 0.85 -> 1.35, grass 2.5 -> 2.3, fire 1 -> 1.05:
     // 46 / 46 / 40 / 39 % (80 runs each), a spread of 8 points (target <= 10, error about 8).
-    typeDamage: { fire: 1.05, water: 0.9, grass: 2.3, electric: 1.35 },
+    // 4F-D: with the signature thrown by hand (and 10 % less enemy hp) Squirtle trailed the rest
+    // (51 % against 62 %: a spread of 11-12 points, 300 runs per starter) and signature powers
+    // did not move it. Water 0.9 -> 1.0 and grass 2.3 -> 2.1 give 61 / 59 / 60 / 58 %, a spread of 3.
+    typeDamage: { fire: 1.05, water: 1.0, grass: 2.1, electric: 1.35 },
   },
   // Drain heals much less than in 4D: it gave back more than half of the health lost (ADR-032).
   effects: { burnTicks: 180, drainPerHp: 30, chainRadius: 80, slowTicks: 120 },
