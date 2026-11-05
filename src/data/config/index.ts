@@ -66,7 +66,6 @@ export const baseConfig: Omit<
     maxLevel: 8,
     ballsByLevel: [1, 1, 2, 2, 2, 3, 3, 3],
     stageLevels: [3, 6],
-    captureLevels: [1, 3, 4],
     starterBonus: 0.6,
     ballRadiusByStage: [6, 7, 9],
     // A stage that keeps the form is worth as much as one that changes it (ADR-037): the damage of
@@ -346,9 +345,9 @@ export const baseConfig: Omit<
     {
       durationTicks: 3600,
       // Softer than the rest of the curve on purpose: the run starts with a single ball (M5, 4D).
-      spawnIntervalTicks: 260,
+      spawnIntervalTicks: 215,
       speedScale: 0.8,
-      hpScale: 0.45,
+      hpScale: 0.55,
       tier: 1,
       types: ALL_TYPES,
       themes: ['fire-pack', 'water-pond', 'grass-garden', 'electric-meadow', 'growlithe-pack'],
@@ -357,7 +356,7 @@ export const baseConfig: Omit<
       durationTicks: 3600,
       spawnIntervalTicks: 110,
       speedScale: 0.9,
-      hpScale: 0.6,
+      hpScale: 0.85,
       tier: 1,
       types: ALL_TYPES,
       themes: ['fire-starters', 'water-tide', 'grass-forest', 'electric-storm', 'voltorb-army'],
@@ -375,7 +374,7 @@ export const baseConfig: Omit<
       durationTicks: 3600,
       spawnIntervalTicks: 70,
       speedScale: 1.05,
-      hpScale: 1.6,
+      hpScale: 1.7,
       tier: 2,
       types: ALL_TYPES,
       themes: ['fire-pack', 'water-pond', 'grass-forest', 'electric-storm'],
@@ -384,25 +383,25 @@ export const baseConfig: Omit<
       durationTicks: 3600,
       spawnIntervalTicks: 58,
       speedScale: 1.1,
-      hpScale: 2.3,
+      hpScale: 2.4,
       tier: 2,
       types: ALL_TYPES,
       themes: ['fire-starters', 'water-tide', 'grass-garden', 'voltorb-army'],
     },
     {
       durationTicks: 3600,
-      spawnIntervalTicks: 50,
+      spawnIntervalTicks: 54,
       speedScale: 1.2,
-      hpScale: 3.1,
+      hpScale: 2.8,
       tier: 3,
       types: ALL_TYPES,
       themes: ['fire-volcano', 'water-shore', 'grass-forest', 'electric-meadow'],
     },
     {
       durationTicks: 3600,
-      spawnIntervalTicks: 44,
+      spawnIntervalTicks: 48,
       speedScale: 1.3,
-      hpScale: 3.7,
+      hpScale: 3.1,
       tier: 3,
       types: ALL_TYPES,
       themes: ['growlithe-pack', 'water-tide', 'grass-garden', 'electric-storm'],
@@ -438,7 +437,10 @@ export const baseConfig: Omit<
     // 4F-D: with the signature thrown by hand (and 10 % less enemy hp) Squirtle trailed the rest
     // (51 % against 62 %: a spread of 11-12 points, 300 runs per starter) and signature powers
     // did not move it. Water 0.9 -> 1.0 and grass 2.3 -> 2.1 give 61 / 59 / 60 / 58 %, a spread of 3.
-    typeDamage: { fire: 1.05, water: 1.0, grass: 2.1, electric: 1.35 },
+    // 4F-E: the stage 3 captures (level 6) and the new wave curve moved the starters apart again
+    // (Squirtle 51 %, Bulbasaur 68 %): water 1.0 -> 1.15, grass 2.1 -> 1.95, electric 1.35 -> 1.3
+    // give 65 / 62 / 65 / 65 % (300 runs per starter), a spread of 4.
+    typeDamage: { fire: 1.05, water: 1.15, grass: 1.95, electric: 1.3 },
   },
   // Drain heals much less than in 4D: it gave back more than half of the health lost (ADR-032).
   effects: { burnTicks: 180, drainPerHp: 30, chainRadius: 80, slowTicks: 120 },

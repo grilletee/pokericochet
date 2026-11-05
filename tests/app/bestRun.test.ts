@@ -24,6 +24,8 @@ function summary(overrides: Partial<RunSummary> = {}): RunSummary {
     ticks: 6000,
     team: [{ species: 'charmander', form: 'charmander', level: 1, stage: 1 }],
     bossesDefeated: 0,
+    bossesTotal: 4,
+    waveReached: 4,
     captured: [],
     score: 30_000 + 4000,
     ...overrides,

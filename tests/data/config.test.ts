@@ -57,12 +57,12 @@ describe('stat mapping', () => {
     expect(baseConfig.ball.speedMax).toBeLessThan(baseConfig.enemy.radius);
   });
 
-  it('documents the deviations from damage = attack / 10: fire x1.05, water x1, grass x2.1, electric x1.35 (ADR-015, 4F-B, 4F-C, 4F-D)', () => {
+  it('documents the deviations from damage = attack / 10: fire x1.05, water x1.15, grass x1.95, electric x1.3 (ADR-015, 4F-B..4F-E)', () => {
     expect(baseConfig.stats.typeDamage).toEqual({
       fire: 1.05,
-      water: 1.0,
-      grass: 2.1,
-      electric: 1.35,
+      water: 1.15,
+      grass: 1.95,
+      electric: 1.3,
     });
   });
 
