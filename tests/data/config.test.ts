@@ -158,9 +158,9 @@ describe('stat mapping', () => {
 describe('wave table (GDD-v0)', () => {
   const waves = gameConfig.waves;
 
-  it('has 7 waves of 60 s, 7 minutes in total (the boss adds about one more)', () => {
+  it('has 7 waves of 45 s, about 5 minutes in total (the bosses add the rest; 4H-B1)', () => {
     expect(waves).toHaveLength(7);
-    expect(waves.every((w) => w.durationTicks === 3600)).toBe(true);
+    expect(waves.every((w) => w.durationTicks === 2700)).toBe(true);
   });
 
   it('every wave has a general pool of all four types and at least three themes to draw from (ADR-027)', () => {

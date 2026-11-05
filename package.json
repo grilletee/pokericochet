@@ -25,6 +25,7 @@
     "bench:pressure": "vitest run --config vitest.bench.config.ts pressure",
     "bench:diagnosis": "vitest run --config vitest.bench.config.ts diagnosis",
     "bench:fun": "vitest run --config vitest.bench.config.ts fun",
+    "bench:ultimates": "vitest run --config vitest.bench.config.ts ultimates",
     "bench:balance": "vitest run --config vitest.bench.config.ts balance",
     "bench:run": "vitest run --config vitest.bench.config.ts run.bench"
   },

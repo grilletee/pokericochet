@@ -29,25 +29,28 @@ export const baseConfig: Omit<
       // Powers measured with the active bot (M7, M17): the first set (2 / 1.7 / 2 at stage 2) gave
       // Squirtle 50 % and Bulbasaur 66 %; these give 57 % and 59 % (150 runs per starter), and
       // throwing the signature is worth about 11 points of win rate for the bot.
+      // 4H-B1 (U1): the four are worth the same, measured as the damage of one cast, burn included,
+      // in 24 fixed situations (`pnpm bench:ultimates`). The cross hits on two axes and burns, so
+      // it was worth half as much again as the average (eighth playtest: "Charizard is broken").
       charmander: [
         null,
-        { kind: 'cross', width: 36, power: 1.8 },
-        { kind: 'cross', width: 48, power: 2.8 },
+        { kind: 'cross', width: 36, power: 1.2 },
+        { kind: 'cross', width: 48, power: 1.85 },
       ],
       squirtle: [
         null,
-        { kind: 'wave', width: 56, power: 2.2 },
-        { kind: 'wave', width: 72, power: 3.4 },
+        { kind: 'wave', width: 56, power: 2.95 },
+        { kind: 'wave', width: 72, power: 3.9 },
       ],
       bulbasaur: [
         null,
-        { kind: 'beam', width: 56, power: 1.6 },
+        { kind: 'beam', width: 56, power: 1.65 },
         { kind: 'beam', width: 72, power: 2.5 },
       ],
       pikachu: [
         { kind: 'chain', count: 1, power: 1 },
-        { kind: 'chain', count: 3, power: 1.7 },
-        { kind: 'chain', count: 5, power: 2.4 },
+        { kind: 'chain', count: 3, power: 2.1 },
+        { kind: 'chain', count: 5, power: 3.7 },
       ],
     },
     status: {
@@ -179,7 +182,7 @@ export const baseConfig: Omit<
     captureTtlTicks: 480,
   },
   // With the team full a new species is rarer: every capture then asks for a decision (ADR-030).
-  capture: { chance: 0.05, pityStep: 0.02, startMisses: 6, fullTeamChanceMult: 0.07 },
+  capture: { chance: 0.0625, pityStep: 0.025, startMisses: 6, fullTeamChanceMult: 0.07 },
   enemy: {
     radius: 16,
     threat: 1,
@@ -339,21 +342,24 @@ export const baseConfig: Omit<
       purity: 0.9,
     },
   },
-  // 7 waves of 60 s (3600 ticks): an explicit curve of density, health, speed and form (ADR-029).
+  // 7 waves of 45 s (2700 ticks; 60 s before the 4H, eighth playtest "a bit long"): an explicit curve of density, health, speed and form (ADR-029).
   // Every wave may draw any of its themes; the general pool of its types fills the rest.
   waves: [
     {
-      durationTicks: 3600,
+      durationTicks: 2700,
       // Softer than the rest of the curve on purpose: the run starts with a single ball (M5, 4D).
       spawnIntervalTicks: 215,
       speedScale: 0.8,
+      // Not lowered to keep M5 of the 4F-E (4H-B1): with waves of 45 s the pressure per second of the
+      // first two waves is 27 % and 16 % above it, because the team grows within a shorter wave, but
+      // softening them gave the assisted aim 62 % instead of 49 % (M4 of 15 points fell to 4).
       hpScale: 0.55,
       tier: 1,
       types: ALL_TYPES,
       themes: ['fire-pack', 'water-pond', 'grass-garden', 'electric-meadow', 'growlithe-pack'],
     },
     {
-      durationTicks: 3600,
+      durationTicks: 2700,
       spawnIntervalTicks: 110,
       speedScale: 0.9,
       hpScale: 0.85,
@@ -362,7 +368,7 @@ export const baseConfig: Omit<
       themes: ['fire-starters', 'water-tide', 'grass-forest', 'electric-storm', 'voltorb-army'],
     },
     {
-      durationTicks: 3600,
+      durationTicks: 2700,
       spawnIntervalTicks: 90,
       speedScale: 1.0,
       hpScale: 1.35,
@@ -371,7 +377,7 @@ export const baseConfig: Omit<
       themes: ['fire-volcano', 'water-shore', 'grass-garden', 'electric-meadow'],
     },
     {
-      durationTicks: 3600,
+      durationTicks: 2700,
       spawnIntervalTicks: 70,
       speedScale: 1.05,
       hpScale: 1.7,
@@ -380,7 +386,7 @@ export const baseConfig: Omit<
       themes: ['fire-pack', 'water-pond', 'grass-forest', 'electric-storm'],
     },
     {
-      durationTicks: 3600,
+      durationTicks: 2700,
       spawnIntervalTicks: 58,
       speedScale: 1.1,
       hpScale: 2.4,
@@ -389,7 +395,7 @@ export const baseConfig: Omit<
       themes: ['fire-starters', 'water-tide', 'grass-garden', 'voltorb-army'],
     },
     {
-      durationTicks: 3600,
+      durationTicks: 2700,
       spawnIntervalTicks: 54,
       speedScale: 1.2,
       hpScale: 2.8,
@@ -398,7 +404,7 @@ export const baseConfig: Omit<
       themes: ['fire-volcano', 'water-shore', 'grass-forest', 'electric-meadow'],
     },
     {
-      durationTicks: 3600,
+      durationTicks: 2700,
       spawnIntervalTicks: 48,
       speedScale: 1.3,
       hpScale: 3.1,
@@ -445,9 +451,11 @@ export const baseConfig: Omit<
   // Drain heals much less than in 4D: it gave back more than half of the health lost (ADR-032).
   effects: { burnTicks: 180, drainPerHp: 30, chainRadius: 80, slowTicks: 120 },
   progression: {
-    levelCosts: [11, 15, 21, 27, 35, 43, 54, 67, 82, 100],
+    // x0.8 of the 4F values, with the capture and loot chances x1.25: waves of 45 s instead of 60
+    // (4H-B1) bring 25 % fewer kills per wave, so the growth per wave stays the same.
+    levelCosts: [9, 12, 17, 22, 28, 34, 43, 54, 66, 80],
     hpPerXp: 10,
-    lootChance: 0.1,
+    lootChance: 0.125,
     lootMultiplier: 3,
   },
   cards: {

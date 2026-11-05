@@ -1,4 +1,6 @@
 export { abilitiesFor } from './abilities';
+export type { BossAdvice, WaveAdvice } from './advice';
+export { matchup, themeTypes, typeAdvice, waveAdvice } from './advice';
 export type { AimDirection } from './aim';
 export { aimDirection } from './aim';
 export { applyCard, drawOffers } from './cards';
