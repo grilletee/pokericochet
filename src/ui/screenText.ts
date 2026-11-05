@@ -1,4 +1,4 @@
-import type { GameEvent, GameType, RunSummary } from '../domain';
+import type { GameEvent, GameType, MoveShapeKind, RunSummary } from '../domain';
 import { typeName } from './cardText';
 import { pokemonName } from './names';
 
@@ -11,6 +11,23 @@ const TYPE_BLURB: Record<GameType, string> = {
 
 export function starterBlurb(type: GameType): string {
   return `${typeName(type)} · ${TYPE_BLURB[type]}`;
+}
+
+const SHAPE_WORD: Record<MoveShapeKind, string> = {
+  burst: 'estallido',
+  beam: 'columna',
+  nova: 'nova',
+  cross: 'cruz',
+  wave: 'ola',
+  chain: 'cadena',
+};
+
+/**
+ * The starter's signature on the title screen (4F-D): the real move, the shape it draws and when
+ * it is yours ("Firma: Lanzallamas, una cruz, desde Charmeleon · la lanzas tú").
+ */
+export function signatureLine(moveLabel: string, shape: MoveShapeKind, fromForm: string): string {
+  return `Firma: ${moveLabel}, ${SHAPE_WORD[shape]} · desde ${fromForm} · la lanzas tú`;
 }
 
 /** 4271 ticks at 60 Hz -> "1:11". */

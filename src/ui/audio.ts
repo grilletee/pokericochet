@@ -6,6 +6,8 @@ export type SoundId =
   | 'kill'
   | 'evolve'
   | 'move'
+  | 'signature'
+  | 'ready'
   | 'hybrid'
   | 'captureDrop'
   | 'damage'
@@ -25,7 +27,7 @@ export function soundFor(event: GameEvent): SoundId | null {
     case 'evolve':
       return 'evolve';
     case 'move':
-      return 'move';
+      return event.manual ? 'signature' : 'move';
     case 'hybrid':
       return 'hybrid';
     case 'captureDrop':
@@ -53,6 +55,8 @@ const MIN_GAP_MS: Record<SoundId, number> = {
   kill: 70,
   evolve: 0,
   move: 140,
+  signature: 0,
+  ready: 400,
   hybrid: 0,
   captureDrop: 0,
   damage: 120,
@@ -90,6 +94,17 @@ const RECIPES: Record<SoundId, readonly Note[]> = {
   kill: [{ from: 520, to: 880, seconds: 0.09, wave: 'square', gain: 0.06 }],
   // A move with a name (ADR-039): a short rising sweep, quieter than a kill so it never drowns the rest.
   move: [{ from: 300, to: 720, seconds: 0.16, wave: 'sawtooth', gain: 0.07 }],
+  // The starter's signature (4F-D): a low thump under a bright rising sweep, bigger than any move.
+  signature: [
+    { from: 120, to: 60, seconds: 0.3, wave: 'sawtooth', gain: 0.12 },
+    { from: 400, to: 1100, seconds: 0.28, wave: 'square', gain: 0.07 },
+    { from: 800, to: 1400, seconds: 0.3, wave: 'sine', gain: 0.09, at: 0.1 },
+  ],
+  // The signature is charged: two soft bells that ask to be pressed.
+  ready: [
+    { from: 880, to: 880, seconds: 0.12, wave: 'sine', gain: 0.09 },
+    { from: 1320, to: 1320, seconds: 0.2, wave: 'sine', gain: 0.09, at: 0.1 },
+  ],
   // Evolution: a rising run that ends on a held chord.
   evolve: [
     { from: 392, to: 392, seconds: 0.1, wave: 'triangle', gain: 0.12 },

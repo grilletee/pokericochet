@@ -1,5 +1,5 @@
 import type { Ball, Card, GameType, Member } from '../domain';
-import type { CardTextContext } from './cardText';
+import { type CardTextContext, cardStep } from './cardText';
 import { pokemonName } from './names';
 import { TYPE_COLORS } from './typeColors';
 
@@ -55,9 +55,13 @@ export function spriteTile(
   return tile;
 }
 
-function symbol(text: string): HTMLElement {
+/** Gold of everything that announces a stage step: the card, its arrow, the banner. */
+export const STEP_COLOR = '#ffd54f';
+
+function symbol(text: string, color?: string): HTMLElement {
   return box(
-    'font-size:24px;font-weight:800;opacity:0.9;align-self:center;padding-bottom:12px;',
+    'font-size:24px;font-weight:800;opacity:0.9;align-self:center;padding-bottom:12px;' +
+      (color === undefined ? '' : `color:${color};font-size:32px;opacity:1;`),
     text,
   );
 }
@@ -96,6 +100,19 @@ export function buildCardArt(card: Card, context: CardTextContext & ArtLookup): 
     case 'cadence': {
       const member = context.memberAt(card.member);
       if (member === undefined) break;
+      const step = cardStep(card, context);
+      if (step !== null) {
+        // The card that evolves a Pokémon shows both forms, big, with a golden arrow (4F-D).
+        const now = context.formOf(member);
+        row.append(
+          memberTile(member, context, 68),
+          symbol(step.kind === 'evolve' ? '⇒' : '▲', STEP_COLOR),
+          spriteTile(context.spriteUrl(step.to), step.to, member.type, 80, member.level + 1),
+        );
+        row.dataset.step = step.kind;
+        row.title = `${pokemonName(now)} → ${pokemonName(step.to)}`;
+        break;
+      }
       row.append(memberTile(member, context, 68), symbol(GLYPHS[card.kind]));
       break;
     }

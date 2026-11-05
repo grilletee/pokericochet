@@ -1,6 +1,6 @@
 import type { Card } from '../domain';
-import { type CardTextContext, describeCard } from './cardText';
-import { type ArtLookup, buildCardArt } from './cardView';
+import { type CardTextContext, cardStep, describeCard } from './cardText';
+import { type ArtLookup, buildCardArt, STEP_COLOR } from './cardView';
 
 /**
  * DOM overlay on top of the canvas: health, a message (lost, restart hint) and an optional
@@ -98,12 +98,17 @@ export class Overlay {
     this.cards.append(heading);
     offers.forEach((card, index) => {
       const { title, detail } = describeCard(card, context);
+      const step = cardStep(card, context);
       const button = document.createElement('button');
       button.type = 'button';
       button.dataset.card = String(index);
+      if (step !== null) button.dataset.step = step.kind;
+      // A card that evolves a Pokémon stands out: gold border and glow (4F-D).
+      const border = step !== null ? STEP_COLOR : card.kind === 'hybrid' ? '#c792ea' : '#5b6aa8';
       button.style.cssText =
         'pointer-events:auto;width:min(340px,92vw);box-sizing:border-box;padding:10px 14px;' +
-        `border:2px solid ${card.kind === 'hybrid' ? '#c792ea' : '#5b6aa8'};` +
+        `border:${step !== null ? 3 : 2}px solid ${border};` +
+        (step !== null ? `box-shadow:0 0 14px ${STEP_COLOR}88;` : '') +
         'border-radius:12px;background:#1b2540;color:inherit;font:inherit;text-align:center;cursor:pointer;';
       const name = document.createElement('div');
       name.textContent = `${index + 1}. ${title}`;

@@ -26,6 +26,8 @@ function el<K extends keyof HTMLElementTagNameMap>(
 export interface StarterOption {
   readonly id: string;
   readonly type: GameType;
+  /** The line that names its signature move (4F-D); empty if it has none. */
+  readonly signature: string;
 }
 
 /** Title screen: pick one of the starters (click, or keys 1-4). */
@@ -58,6 +60,15 @@ export class StartScreen {
         el('div', 'font-size:18px;font-weight:700;', `${index + 1}. ${pokemonName(starter.id)}`),
         el('div', 'font-size:14px;opacity:0.8;margin-top:2px;', starterBlurb(starter.type)),
       );
+      if (starter.signature !== '') {
+        const line = el(
+          'div',
+          `font-size:13px;font-weight:700;margin-top:3px;color:${TYPE_COLORS[starter.type]};`,
+          starter.signature,
+        );
+        line.dataset.signature = starter.id;
+        button.append(line);
+      }
       // Not "pointerdown": that would also reach the canvas input underneath.
       button.addEventListener('click', () => onPick(index));
       this.root.append(button);

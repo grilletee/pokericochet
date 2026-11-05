@@ -196,6 +196,15 @@ try {
     'the title screen offers 4 starters',
     (await title.locator('button[data-starter]').count()) === 4,
   );
+  // The signature of each starter is announced before choosing (4F-D).
+  const signatures = await title.locator('[data-signature]').allTextContents();
+  check(
+    'every starter shows its signature move with its shape and the form it starts with',
+    signatures.length === 4 &&
+      signatures.every((text) => text.startsWith('Firma: ') && text.includes('la lanzas tú')) &&
+      signatures.some((text) => text.includes('Lanzallamas') && text.includes('cruz')),
+    signatures.join(' | '),
+  );
   const idleTick = (await dbg(title)).tick;
   await title.waitForTimeout(500);
   const idle = await dbg(title);
@@ -249,13 +258,15 @@ try {
   const trainCard = evo.locator('button[data-card="0"]');
   const trainText = (await trainCard.textContent()) ?? '';
   check(
-    'the training card names the Pokémon, the level and the form it evolves into',
-    trainText.includes('Entrenar a Charmander') &&
-      trainText.includes('Nv 2 → 3') &&
-      trainText.includes('evoluciona a Charmeleon'),
+    'the training card announces the evolution: both forms in the title and the level',
+    trainText.includes('¡Charmander evolucionará a Charmeleon!') && trainText.includes('Nv 2 → 3'),
     trainText,
   );
-  check('the training card shows the Pokémon', (await trainCard.locator('img').count()) === 1);
+  check(
+    'the evolving card shows both forms, big, and stands out in gold',
+    (await trainCard.locator('img').count()) === 2 &&
+      (await trainCard.getAttribute('data-step')) === 'evolve',
+  );
   await evo.screenshot({ path: outFile.replace('.png', '-growth-cards.png') });
   const levelBefore = await dbg(evo);
   await trainCard.click();
@@ -265,18 +276,31 @@ try {
     'training gives a ball: the level-3 Pokémon fires two',
     levelBefore.loadout === 1 && levelAfter.loadout === 2,
   );
-  const evoText = (await evo.locator('[data-banner]').textContent()) ?? '';
+  // The evolution moment (4F-D): slow motion, silhouette, flash and the big name, in the centre.
+  const moment = evo.locator('[data-evolution-moment]');
+  const momentText = (await moment.textContent()) ?? '';
   check(
-    'a banner says who evolved into what',
-    (await evo.locator('[data-banner]').isVisible()) &&
-      evoText.includes('Charmander') &&
-      evoText.includes('Charmeleon'),
-    evoText,
+    'the evolution moment is on screen and names who evolves',
+    (await moment.isVisible()) && momentText.includes('Charmander'),
+    momentText,
   );
-  check('the banner shows the sprites', (await evo.locator('[data-banner] img').count()) === 2);
+  check('it draws both forms', (await moment.locator('img').count()) === 2);
+  await evo.waitForFunction(
+    () => document.querySelector('[data-evolution-moment]')?.textContent?.includes('Charmeleon'),
+    undefined,
+    { timeout: 3000 },
+  );
+  check('the flash turns the name into the new form', true);
+  await evo.screenshot({ path: outFile.replace('.png', '-moment.png') });
   const pausedAt = (await dbg(evo)).tick;
   await evo.waitForTimeout(400);
-  check('evolving never pauses the game', (await dbg(evo)).tick > pausedAt);
+  check('evolving never pauses the game (it only slows down)', (await dbg(evo)).tick > pausedAt);
+  await evo.waitForFunction(
+    () => getComputedStyle(document.querySelector('[data-evolution-moment]')).display === 'none',
+    undefined,
+    { timeout: 4000 },
+  );
+  check('the moment ends by itself', true);
   const barText = (await evo.locator('[data-team-bar]').textContent()) ?? '';
   check(
     'the team bar shows one Pokémon, still one, with its level and the name of its CURRENT form',
@@ -287,12 +311,13 @@ try {
     barText,
   );
   check(
-    'the tile has a charge bar under it (ADR-039)',
-    (await evo.locator('[data-team-bar] [data-charge]').count()) === 1,
+    'the tile has no charge bar any more: it glows instead (4F-D)',
+    (await evo.locator('[data-team-bar] [data-charge]').count()) === 0 &&
+      (await evo.locator('[data-team-tile="0"]').getAttribute('data-glow')) !== null,
   );
 
-  // The sheet of a Pokémon: real stats, its move, and the game waits while it is open.
-  await evo.locator('[data-team-tile="0"]').click();
+  // The sheet of a Pokémon (from its small "i"): real stats, its move, and the game waits.
+  await evo.locator('[data-team-info="0"]').click();
   const sheetText = (await evo.locator('[data-sheet]').textContent()) ?? '';
   check(
     'clicking a Pokémon of the team opens its sheet with six stat bars and its move',
@@ -418,6 +443,44 @@ try {
     }),
   );
   await moves.screenshot({ path: outFile.replace('.png', '-moves.png') });
+
+  // The starter's signature (4F-D): it waits glowing with its tag, never goes off alone, and the
+  // player throws it with its number key or by tapping the portrait.
+  for (const how of ['key', 'tap']) {
+    const sig = await open('starter=charmander&ballLevel=3&charge=30&wave=2&seed=9');
+    await sig.waitForSelector('[data-team-tile="0"][data-glow="ready"]', { timeout: 20000 });
+    check(
+      `(${how}) the ready signature shows its tag with the key that throws it`,
+      (await sig.locator('[data-team-tile="0"] [data-signature-tag]').isVisible()) &&
+        (
+          (await sig.locator('[data-team-tile="0"] [data-signature-tag]').textContent()) ?? ''
+        ).includes('[1]'),
+    );
+    const readyText = (await sig.locator('[data-banner]').textContent()) ?? '';
+    check(
+      `(${how}) the first time, a notice says the signature is ready and how to throw it`,
+      readyText.includes('Firma lista') && readyText.includes('Charmeleon'),
+      readyText,
+    );
+    await sig.waitForTimeout(600);
+    check(
+      `(${how}) it does not go off by itself`,
+      (await dbg(sig)).moveCasts === 0,
+      String((await dbg(sig)).moveCasts),
+    );
+    // Nobody to hit, nothing to throw at: wait for enemies on the field.
+    await sig.waitForFunction(() => window.__debug().enemies > 0, undefined, { timeout: 10000 });
+    if (how === 'key') await sig.keyboard.press('Digit1');
+    else await sig.locator('[data-team-tile="0"]').click();
+    await sig.waitForFunction(() => window.__debug().moveCasts >= 1, undefined, { timeout: 5000 });
+    const thrown = (await sig.locator('[data-banner]').textContent()) ?? '';
+    check(`(${how}) the first throw shows a big notice`, thrown.includes('¡FIRMA!'), thrown);
+    check(
+      `(${how}) the tag goes away once it is thrown`,
+      !(await sig.locator('[data-team-tile="0"] [data-signature-tag]').isVisible()),
+    );
+    if (how === 'key') await sig.screenshot({ path: outFile.replace('.png', '-signature.png') });
+  }
 
   // Themed waves: the first wave is announced with its theme, its type and what beats it.
   const themePage = await open('starter=charmander&seed=9');

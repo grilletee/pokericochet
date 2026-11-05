@@ -14,12 +14,14 @@ export interface ReplaceMember {
   readonly stats: MemberStats;
   /** Guard of the team if this Pokémon were the one replaced (ADR-038). */
   readonly guardIfReplaced: number;
+  /** The Pokémon the run began with: replacing it loses its signature too (4F-D). */
+  readonly starter: boolean;
 }
 
 /** What the replace screen needs: the team, the capture and the guard before the choice. */
 export interface ReplaceView {
   readonly team: readonly ReplaceMember[];
-  readonly capture: Omit<ReplaceMember, 'damageUps' | 'cadenceUps' | 'guardIfReplaced'>;
+  readonly capture: Omit<ReplaceMember, 'damageUps' | 'cadenceUps' | 'guardIfReplaced' | 'starter'>;
   /** Guard of the team now, 0..1. */
   readonly guard: number;
 }
@@ -122,6 +124,9 @@ export class ReplaceScreen {
       button.append(
         spriteTile(art.spriteUrl(member.form), member.form, member.type, 52, member.level),
         box('font-size:13px;font-weight:700;', `${slot + 1}. ${pokemonName(member.form)}`),
+        ...(member.starter
+          ? [box('font-size:11px;font-weight:800;color:#ffd54f;', '★ Inicial: perderías su firma')]
+          : []),
         statBars(member.stats, true),
         box('font-size:11px;opacity:0.85;', statSummary(member.stats)),
         box('font-size:11px;opacity:0.85;', `⚔${member.damageUps} ⟳${member.cadenceUps}`),

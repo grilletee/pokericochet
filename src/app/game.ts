@@ -21,6 +21,8 @@ import {
   previewHybrid,
   type Run,
   type Snapshot,
+  signatureOf,
+  signatureReady,
   stageForLevel,
   statsOf,
   statsOfMember,
@@ -39,23 +41,29 @@ import {
   describeEvent,
   disclaimerShort,
   EvolutionBanner,
+  EvolutionMoment,
   labelPriority,
   MemberSheet,
   MoveLabelPolicy,
   MoveLabels,
+  moveName,
   Overlay,
   pokemonName,
   ReplaceScreen,
   type ReplaceView,
   ResultsScreen,
+  SlowMotion,
   SoundFx,
   SoundToggle,
+  STEP_COLOR,
   type StarterOption,
   StartScreen,
   setNames,
+  signatureLine,
+  slowMs,
   spriteTile,
-  stageText,
   TeamBar,
+  type TileGlow,
   TunePanel,
   typeName,
 } from '../ui';
@@ -82,6 +90,8 @@ import {
 const MAX_SLOTS = 64;
 const MAX_ENEMIES = 512;
 const POINTER_DEAD_ZONE = 3;
+/** Share of its charge from which a Pokémon's portrait glows: its move is about to go off (4F-D). */
+const NEAR_CHARGE = 0.75;
 const BENCH_WARMUP_FRAMES = 120;
 const BENCH_MEASURED_FRAMES = 600;
 
@@ -202,8 +212,11 @@ function nextCommand(run: Run, input: Input, deadZone: number, autoAim: boolean)
       action: pick === RELEASE_PICK ? { type: 'release' } : { type: 'replace', slot: pick },
     };
   }
-  input.takePick(); // a number key pressed outside a level-up is not a choice
-  return commandFromInput(input.state, run.player.x, deadZone, autoAim);
+  // Outside a card or replace choice a number key (or a tap on a Pokémon's tile) throws the
+  // signature of that place of the team; the domain ignores it if it is not ready (4F-D).
+  const cast = input.takePick();
+  const command = commandFromInput(input.state, run.player.x, deadZone, autoAim);
+  return cast !== null && cast >= 0 ? { ...command, cast } : command;
 }
 
 function hudText(snap: Snapshot, waveCount: number, seed: number): string {
@@ -280,11 +293,13 @@ function applyDebugParams(run: Run, config: GameConfig, params: URLSearchParams)
     ];
     run.phase = 'levelup';
   }
-  // capture=<species> lets a captured Pokémon of that species fall in front of the launcher.
+  // capture=<species> lets a captured Pokémon of that species fall in front of the launcher;
+  // captureStage=2 or 3 makes it the ball of an evolved enemy (a Rapidash boss is stage 2).
   const captured = params.get('capture');
   const def = captured === null ? undefined : config.species[captured];
   if (captured !== null && def !== undefined) {
-    dropCapture(run, config, captured, def.type, run.player.x, 200);
+    const stage = Math.max(1, Math.min(3, number('captureStage') ?? 1));
+    dropCapture(run, config, captured, def.type, run.player.x, 200, stage);
   }
 }
 
@@ -350,7 +365,11 @@ export async function startGame(host: HTMLElement): Promise<void> {
     art,
     (species) => config.species[species]?.type,
     (member) => formOfMember(config, member),
-    (member) => chargeNeed(config, stageForLevel(config, member.level)),
+    (member, index): TileGlow => {
+      if (signatureReady(run, config, index)) return 'ready';
+      const need = chargeNeed(config, stageForLevel(config, member.level));
+      return member.charge >= need * NEAR_CHARGE ? 'near' : 'idle';
+    },
   );
   const replaceScreen = new ReplaceScreen(host);
   const sheet = new MemberSheet(host);
@@ -358,6 +377,8 @@ export async function startGame(host: HTMLElement): Promise<void> {
   // At most three move names at once; the starter's move always shows (ADR-039, M11).
   const labelPolicy = new MoveLabelPolicy(3, 900);
   const banner = new EvolutionBanner(host);
+  const moment = new EvolutionMoment(host);
+  const slow = new SlowMotion();
   const startScreen = new StartScreen(host);
   const creditsScreen = new CreditsScreen(host);
   const resultsScreen = new ResultsScreen(host);
@@ -417,6 +438,10 @@ export async function startGame(host: HTMLElement): Promise<void> {
   let screen: Screen = 'playing';
   let best: BestRun | null = loadBestRun(store);
   let moveCasts = 0;
+  /** The notices that happen once per run: the signature is ready / was thrown for the first time. */
+  let signatureAnnounced = false;
+  let signatureWasReady = false;
+  let readyAnnounced = false;
 
   let last = performance.now();
   let frameCount = 0;
@@ -471,9 +496,19 @@ export async function startGame(host: HTMLElement): Promise<void> {
     cadenceFactor: config.cards.cadenceFactor,
     vitalityHp: config.cards.vitalityHp,
   };
+  // The title screen names the signature of each starter and the form it starts with (4F-D).
+  const signatureText = (id: string): string => {
+    for (let stage = 1; stage <= config.team.stageLevels.length + 1; stage++) {
+      const shape = signatureOf(config, id, stage);
+      const move = moveIdOf(config, id, stage);
+      if (shape === null || move === undefined) continue;
+      return signatureLine(moveName(move), shape.kind, pokemonName(formAt(config, id, stage)));
+    }
+    return '';
+  };
   const starters: StarterOption[] = STARTER_SPECIES.flatMap((id) => {
     const type = config.species[id]?.type;
-    return type === undefined ? [] : [{ id, type }];
+    return type === undefined ? [] : [{ id, type, signature: signatureText(id) }];
   });
   /** Wave announcement: the theme, its type and the types that beat it (ADR-027). */
   const themeLabel = (id: string): string | null => {
@@ -495,6 +530,11 @@ export async function startGame(host: HTMLElement): Promise<void> {
     creditsScreen.hide();
     resultsScreen.hide();
     banner.hide();
+    moment.hide();
+    slow.reset();
+    signatureAnnounced = false;
+    signatureWasReady = false;
+    readyAnnounced = false;
     sheet.hide();
     screen = 'playing';
   };
@@ -556,6 +596,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
       cadenceUps: member.cadenceUps,
       stats: statsOfMember(config, member),
       guardIfReplaced: guardAfterReplace(config, run.team, slot, pending),
+      starter: member.starter,
     })),
   });
   /** The sheet of one Pokémon of the team: its real stats and its move (ADR-038, ADR-039). */
@@ -575,12 +616,18 @@ export async function startGame(host: HTMLElement): Promise<void> {
         move: moveIdOf(config, member.species, stats.stage),
         charge: member.charge,
         chargeNeed: chargeNeed(config, stats.stage),
+        signature: member.starter && signatureOf(config, member.species, stats.stage) !== null,
       },
       art,
       () => {},
     );
   };
   teamBar.setOnInspect(openSheet);
+  // A tap on a portrait throws the signature if it is ready; otherwise it opens the sheet (4F-D).
+  teamBar.setOnTap((index) => {
+    if (signatureReady(run, config, index)) input.requestPick(index);
+    else openSheet(index);
+  });
   /** The DOM feedback of the events of this frame: captures fly to the team bar, evolutions show. */
   const showEventFeedback = (events: readonly GameEvent[], now: number): void => {
     for (const event of events) {
@@ -596,19 +643,35 @@ export async function startGame(host: HTMLElement): Promise<void> {
       } else if (event.type === 'train') {
         teamBar.pulse(event.member);
       } else if (event.type === 'stage') {
-        // An evolution, an awakening or the maximum power: the banner names what changed (ADR-037).
-        const type = config.species[event.species]?.type;
+        // An evolution, an awakening or the maximum power (ADR-037): a short slow-motion moment
+        // with the silhouette, the flash and the big name (4F-D). Several at once merge into one.
+        const ms = slowMs(event.stage);
+        slow.start(now, ms);
         teamBar.pulse(event.member);
-        banner.show(
-          [
-            spriteTile(art.spriteUrl(event.from), event.from, type, 64),
-            arrow(event.kind === 'evolve' ? '→' : '▲'),
-            spriteTile(art.spriteUrl(event.to), event.to, type, 72),
-          ],
-          stageText(event.kind, event.from, event.to),
-          '#ffd54f',
+        moment.show(
+          {
+            kind: event.kind,
+            stage: event.stage,
+            type: config.species[event.species]?.type,
+            from: event.from,
+            to: event.to,
+            fromUrl: art.spriteUrl(event.from),
+            toUrl: art.spriteUrl(event.to),
+          },
+          ms,
         );
       } else if (event.type === 'move') {
+        if (event.manual && !signatureAnnounced) {
+          // The first time the signature goes off in a run: a big notice (4F-D).
+          signatureAnnounced = true;
+          const caster = run.team[event.member];
+          const form = caster === undefined ? event.species : formOfMember(config, caster);
+          banner.show(
+            [spriteTile(art.spriteUrl(form), form, event.element, 72)],
+            `¡FIRMA! ${moveName(event.move)}`,
+            STEP_COLOR,
+          );
+        }
         const at = toScreen(event.x, event.y);
         labelPolicy.offer(
           event.member,
@@ -678,7 +741,9 @@ export async function startGame(host: HTMLElement): Promise<void> {
     }
 
     // The Pokémon sheet pauses the game here, in the app: the run takes no command, so it is the same run.
-    const steps = screen === 'playing' && !sheet.open ? stepper.advance(elapsed) : 0;
+    // A stage step plays in slow motion: the loop runs slower, the run is the same (4F-D).
+    const steps =
+      screen === 'playing' && !sheet.open ? stepper.advance(elapsed * slow.scale(now)) : 0;
     let tickMs = 0;
     let snapshotMs = 0;
     for (let s = 0; s < steps; s++) {
@@ -712,6 +777,25 @@ export async function startGame(host: HTMLElement): Promise<void> {
     }
 
     teamBar.update(!bench && screen === 'playing' ? run.team : null);
+    if (!bench && screen === 'playing') {
+      const index = run.team.findIndex((member) => member.starter);
+      const ready = index >= 0 && signatureReady(run, config, index);
+      if (ready && !signatureWasReady) {
+        sound.play('ready', now);
+        if (!readyAnnounced) {
+          // The first time in a run: say what it is and how to throw it (4F-D).
+          readyAnnounced = true;
+          const member = run.team[index];
+          const form = member === undefined ? starter : formOfMember(config, member);
+          banner.show(
+            [spriteTile(art.spriteUrl(form), form, member?.type, 64)],
+            `Firma lista: toca a ${pokemonName(form)} o pulsa ${index + 1}`,
+            STEP_COLOR,
+          );
+        }
+      }
+      signatureWasReady = ready;
+    }
     replaceScreen.update(
       screen === 'playing' && run.phase === 'replace' && run.pendingCapture !== null
         ? replaceView(run.pendingCapture)

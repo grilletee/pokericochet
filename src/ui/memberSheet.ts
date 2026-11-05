@@ -17,6 +17,8 @@ export interface SheetView {
   readonly move: string | undefined;
   readonly charge: number;
   readonly chargeNeed: number;
+  /** True for the starter's signature: it waits for the player instead of going off by itself (4F-D). */
+  readonly signature: boolean;
 }
 
 function box(css: string, text = ''): HTMLDivElement {
@@ -81,12 +83,17 @@ export class MemberSheet {
       box('font-size:13px;', `⚔${view.damageUps} ⟳${view.cadenceUps} (mejoras de este Pokémon)`),
     );
     if (view.move !== undefined) {
+      const label = view.signature ? 'Firma' : 'Movimiento';
+      const state =
+        view.charge >= view.chargeNeed ? 'lista' : `${view.charge}/${view.chargeNeed} golpes`;
       card.append(
-        box(
-          'font-size:14px;font-weight:700;',
-          `Movimiento: ${moveName(view.move)} (${view.charge}/${view.chargeNeed} golpes)`,
-        ),
+        box('font-size:14px;font-weight:700;', `${label}: ${moveName(view.move)} (${state})`),
       );
+      if (view.signature) {
+        card.append(
+          box('font-size:12px;opacity:0.85;', 'La lanzas tú: toca su retrato o pulsa su número.'),
+        );
+      }
     }
     const close = document.createElement('button');
     close.type = 'button';

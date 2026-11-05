@@ -2,7 +2,7 @@ import { beforeAll, describe, expect, it } from 'vitest';
 import { gameConfig, MOVE_NAMES, POKEMON_NAMES } from '../../src/data';
 import type { Ball, Card, Member } from '../../src/domain';
 import { ballsFor, formOfMember, fuse, nextStep, stageForLevel } from '../../src/domain';
-import { describeCard, pokemonName, setNames, typeName } from '../../src/ui';
+import { cardStep, describeCard, pokemonName, setNames, typeName } from '../../src/ui';
 
 beforeAll(() => setNames(POKEMON_NAMES, MOVE_NAMES));
 
@@ -70,18 +70,35 @@ describe('card text', () => {
 
   it('says what a level gives: the next level, a new ball, an evolution into a named form', () => {
     // Charmander Nv2 -> Nv3 reaches the second stage (and a second ball): Charmeleon.
+    // The card is the announcement (4F-D): the title names both forms.
     expect(describeCard({ kind: 'train', member: 0 }, context)).toEqual({
-      title: 'Entrenar a Charmander',
-      detail: 'Nv 2 → 3 · +1 bola · ¡evoluciona a Charmeleon!',
+      title: '¡Charmander evolucionará a Charmeleon!',
+      detail: 'Nv 2 → 3 · +1 bola',
     });
     // Squirtle Nv5 is Wartortle: Nv6 gives a third ball and the last form, Blastoise.
     expect(describeCard({ kind: 'train', member: 1 }, context)).toEqual({
-      title: 'Entrenar a Wartortle',
-      detail: 'Nv 5 → 6 · +1 bola · ¡evoluciona a Blastoise!',
+      title: '¡Wartortle evolucionará a Blastoise!',
+      detail: 'Nv 5 → 6 · +1 bola',
     });
     // Nv3 -> Nv4 only changes the level.
     const mid = { ...context, memberAt: () => member('charmander', 'fire', 3) };
-    expect(describeCard({ kind: 'train', member: 0 }, mid).detail).toBe('Nv 3 → 4');
+    expect(describeCard({ kind: 'train', member: 0 }, mid)).toEqual({
+      title: 'Entrenar a Charmeleon',
+      detail: 'Nv 3 → 4',
+    });
+  });
+
+  it('cardStep: only a training card one level from a stage carries a step (4F-D)', () => {
+    expect(cardStep({ kind: 'train', member: 0 }, context)).toEqual({
+      kind: 'evolve',
+      to: 'charmeleon',
+    });
+    const mid = { ...context, memberAt: () => member('charmander', 'fire', 3) };
+    expect(cardStep({ kind: 'train', member: 0 }, mid)).toBeNull();
+    // Power and cadence never level a Pokémon up, and a member that left has no step.
+    expect(cardStep({ kind: 'power', member: 0 }, context)).toBeNull();
+    expect(cardStep({ kind: 'cadence', member: 0 }, context)).toBeNull();
+    expect(cardStep({ kind: 'train', member: 9 }, context)).toBeNull();
   });
 
   it('calls the step of a line that does not change form by what it is (ADR-037)', () => {
@@ -90,13 +107,12 @@ describe('card text', () => {
       ...context,
       memberAt: () => member('exeggcute', 'grass', level),
     });
-    expect(describeCard({ kind: 'train', member: 0 }, egg(2)).detail).toContain(
-      '¡evoluciona a Exeggutor!',
+    expect(describeCard({ kind: 'train', member: 0 }, egg(2)).title).toBe(
+      '¡Exeggcute evolucionará a Exeggutor!',
     );
     const peak = describeCard({ kind: 'train', member: 0 }, egg(5));
-    expect(peak.title).toBe('Entrenar a Exeggutor');
-    expect(peak.detail).toContain('¡alcanza su máximo poder!');
-    expect(peak.detail).not.toContain('evoluciona');
+    expect(peak.title).toBe('¡Exeggutor alcanzará su máximo poder!');
+    expect(peak.title).not.toContain('evolucion');
   });
 
   it('says "awakens" for a species that does not evolve, never "evolves"', () => {
@@ -107,9 +123,8 @@ describe('card text', () => {
       nextStep: () => ({ kind: 'awaken' as const, to: 'tangela' }),
     };
     const awaken = describeCard({ kind: 'train', member: 0 }, quiet);
-    expect(awaken.detail).toContain('¡despierta su poder!');
-    expect(awaken.detail).not.toContain('evoluciona');
-    expect(awaken.title).toBe('Entrenar a Tangela');
+    expect(awaken.title).toBe('¡Tangela despertará su poder!');
+    expect(awaken.title).not.toContain('evolucion');
   });
 
   it('survives a card about a Pokémon that is no longer in the team', () => {

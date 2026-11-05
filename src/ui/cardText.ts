@@ -34,15 +34,26 @@ export function typeName(type: GameType): string {
   return TYPE_NAMES[type];
 }
 
-/** What the card says about the step the next level brings. */
-function stepText(step: { kind: StageKind; to: string }): string {
+/** The stage step a card brings (4F-D): only a training card of a Pokémon one level from a stage. */
+export function cardStep(
+  card: Card,
+  context: Pick<CardTextContext, 'memberAt' | 'nextStep'>,
+): { readonly kind: StageKind; readonly to: string } | null {
+  if (card.kind !== 'train') return null;
+  const member = context.memberAt(card.member);
+  return member === undefined ? null : context.nextStep(member);
+}
+
+/** The headline of a card that makes a Pokémon evolve, awaken or reach its peak. */
+function stepTitle(from: string, step: { kind: StageKind; to: string }): string {
+  const name = pokemonName(from);
   switch (step.kind) {
     case 'evolve':
-      return `¡evoluciona a ${pokemonName(step.to)}!`;
+      return `¡${name} evolucionará a ${pokemonName(step.to)}!`;
     case 'awaken':
-      return '¡despierta su poder!';
+      return `¡${name} despertará su poder!`;
     case 'peak':
-      return '¡alcanza su máximo poder!';
+      return `¡${name} alcanzará su máximo poder!`;
   }
 }
 
@@ -66,9 +77,9 @@ export function describeCard(
       const parts = [`Nv ${member.level} → ${next}`];
       if (context.ballsAt(next) > context.ballsAt(member.level)) parts.push('+1 bola');
       const step = context.nextStep(member);
-      if (step !== null) parts.push(stepText(step));
+      const from = context.formOf(member);
       return {
-        title: `Entrenar a ${pokemonName(context.formOf(member))}`,
+        title: step === null ? `Entrenar a ${pokemonName(from)}` : stepTitle(from, step),
         detail: parts.join(' · '),
       };
     }

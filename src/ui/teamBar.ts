@@ -19,6 +19,12 @@ function memberKey(member: Member): string {
 }
 
 /**
+ * How close a Pokémon is to its move (4F-D), shown as the glow of its portrait instead of a bar:
+ * `near` = its own move is about to go off; `ready` = the starter's signature waits for the player.
+ */
+export type TileGlow = 'idle' | 'near' | 'ready';
+
+/**
  * The team of up to six Pokémon as a row of big tiles (ADR-030): the form of its stage, its level
  * and the cards taken for it. The DOM is rebuilt only when the team changes. A captured Pokémon
  * flies from where it was picked up to its tile, which stays hidden until it arrives. Tiles are
@@ -28,12 +34,14 @@ export class TeamBar {
   private readonly root: HTMLDivElement;
   private shown: readonly string[] = [];
   private readonly tiles = new Map<number, HTMLElement>();
-  /** The charge bar of each tile (ADR-039) and the last width drawn, so it only writes on change. */
-  private readonly bars = new Map<number, HTMLElement>();
-  private readonly barWidths = new Map<number, string>();
+  /** The last glow drawn on each tile, so it only writes on change. */
+  private readonly glows = new Map<number, TileGlow>();
+  /** The "FIRMA" tag of each tile, shown while its signature is ready. */
+  private readonly tags = new Map<number, HTMLElement>();
   /** Places whose tile waits for the capture sprite to land. */
   private readonly arriving = new Set<number>();
   private onInspect: (member: number) => void = () => {};
+  private onTap: (member: number) => void = () => {};
 
   constructor(
     host: HTMLElement,
@@ -41,8 +49,8 @@ export class TeamBar {
     private readonly typeOf: (species: string) => GameType | undefined,
     /** The species a Pokémon shows now (ADR-036): what the bar draws and names. */
     private readonly formOf: (member: Member) => string,
-    /** Hits a Pokémon must land before its move (ADR-039). */
-    private readonly chargeNeed: (member: Member) => number,
+    /** How close each Pokémon is to its move (4F-D). */
+    private readonly glowOf: (member: Member, index: number) => TileGlow,
   ) {
     this.root = document.createElement('div');
     this.root.dataset.teamBar = '';
@@ -53,20 +61,25 @@ export class TeamBar {
     host.append(this.root);
   }
 
-  /** Called with the place of the Pokémon whose tile was pressed (the sheet of ADR-038). */
+  /** Called with the place of the Pokémon whose "i" was pressed (the sheet of ADR-038). */
   setOnInspect(handler: (member: number) => void): void {
     this.onInspect = handler;
   }
 
-  /** Cheap to call every frame: it compares a short key per Pokémon and moves the charge bars. */
+  /** Called with the place of the Pokémon whose portrait was tapped (throws its signature if ready). */
+  setOnTap(handler: (member: number) => void): void {
+    this.onTap = handler;
+  }
+
+  /** Cheap to call every frame: it compares a short key per Pokémon and moves the glows. */
   update(team: readonly Member[] | null): void {
     if (team === null) {
       if (this.shown.length === 0 && this.root.style.display === 'none') return;
       this.root.style.display = 'none';
       this.shown = [];
       this.tiles.clear();
-      this.bars.clear();
-      this.barWidths.clear();
+      this.glows.clear();
+      this.tags.clear();
       this.arriving.clear();
       return;
     }
@@ -76,8 +89,8 @@ export class TeamBar {
       this.root.style.display = 'flex';
       this.root.replaceChildren();
       this.tiles.clear();
-      this.bars.clear();
-      this.barWidths.clear();
+      this.glows.clear();
+      this.tags.clear();
       team.forEach((member, index) => {
         const tile = this.buildTile(member, index);
         if (this.arriving.has(index)) tile.style.opacity = '0';
@@ -86,13 +99,21 @@ export class TeamBar {
       });
     }
     team.forEach((member, index) => {
-      const bar = this.bars.get(index);
-      if (bar === undefined) return;
-      const need = Math.max(1, this.chargeNeed(member));
-      const width = `${Math.min(100, Math.round((member.charge / need) * 100))}%`;
-      if (this.barWidths.get(index) === width) return;
-      this.barWidths.set(index, width);
-      bar.style.width = width;
+      const tile = this.tiles.get(index);
+      if (tile === undefined) return;
+      const glow = this.glowOf(member, index);
+      if (this.glows.get(index) === glow) return;
+      this.glows.set(index, glow);
+      const color = TYPE_COLORS[member.type];
+      tile.dataset.glow = glow;
+      tile.style.filter =
+        glow === 'ready'
+          ? `drop-shadow(0 0 7px ${color}) drop-shadow(0 0 3px #fff)`
+          : glow === 'near'
+            ? `drop-shadow(0 0 4px ${color})`
+            : '';
+      const tag = this.tags.get(index);
+      if (tag !== undefined) tag.style.display = glow === 'ready' ? 'block' : 'none';
     });
   }
 
@@ -101,23 +122,37 @@ export class TeamBar {
     const tile = spriteTile(this.art.spriteUrl(form), form, member.type, 44, member.level);
     tile.dataset.teamTile = String(index);
     tile.title = `${pokemonName(form)} Nv${member.level}`;
-    tile.style.cssText += 'pointer-events:auto;cursor:pointer;';
-    tile.addEventListener('click', () => this.onInspect(index));
+    tile.style.cssText += 'pointer-events:auto;cursor:pointer;position:relative;';
+    tile.addEventListener('click', () => this.onTap(index));
     const name = document.createElement('div');
     name.textContent = pokemonName(form);
     name.style.cssText =
       'font-size:10px;font-weight:700;max-width:60px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;';
     tile.append(name);
-    // The charge towards its move: a thin bar under the tile (ADR-039).
-    const track = document.createElement('div');
-    track.style.cssText =
-      'width:44px;height:4px;border-radius:2px;background:#ffffff22;overflow:hidden;';
-    const fill = document.createElement('div');
-    fill.dataset.charge = '';
-    fill.style.cssText = `width:0%;height:100%;background:${TYPE_COLORS[member.type]};`;
-    track.append(fill);
-    tile.append(track);
-    this.bars.set(index, fill);
+    // "FIRMA" with the key that throws it, only while the signature is ready (4F-D).
+    const tag = document.createElement('div');
+    tag.dataset.signatureTag = '';
+    tag.textContent = `¡FIRMA! [${index + 1}]`;
+    tag.style.cssText =
+      `display:none;font-size:9px;font-weight:800;padding:0 3px;border-radius:4px;color:#10131c;` +
+      `background:${TYPE_COLORS[member.type]};white-space:nowrap;`;
+    tile.append(tag);
+    this.tags.set(index, tag);
+    // The sheet is one tap away on a small "i": the portrait itself is for the signature.
+    const info = document.createElement('button');
+    info.type = 'button';
+    info.dataset.teamInfo = String(index);
+    info.textContent = 'i';
+    info.setAttribute('aria-label', `Ficha de ${pokemonName(form)}`);
+    info.style.cssText =
+      'position:absolute;right:-6px;top:-6px;width:20px;height:20px;border-radius:50%;padding:0;' +
+      'border:1px solid #ffffff88;background:#0b0e16cc;color:#e8ecf8;font:700 11px system-ui;' +
+      'cursor:pointer;pointer-events:auto;';
+    info.addEventListener('click', (e) => {
+      e.stopPropagation();
+      this.onInspect(index);
+    });
+    tile.append(info);
     const ups = member.damageUps + member.cadenceUps;
     if (ups > 0) {
       const mark = document.createElement('div');
