@@ -36,7 +36,9 @@ export class TeamBar {
   private readonly tiles = new Map<number, HTMLElement>();
   /** The last glow drawn on each tile, so it only writes on change. */
   private readonly glows = new Map<number, TileGlow>();
-  /** The "FIRMA" tag of each tile, shown while its signature is ready. */
+  /** The looping pulse of each glowing tile (cancelled when the glow changes). */
+  private readonly pulses = new Map<number, Animation>();
+  /** The "ULTIMATE" tag of each tile, shown while its signature move is ready. */
   private readonly tags = new Map<number, HTMLElement>();
   /** Places whose tile waits for the capture sprite to land. */
   private readonly arriving = new Set<number>();
@@ -108,10 +110,25 @@ export class TeamBar {
       tile.dataset.glow = glow;
       tile.style.filter =
         glow === 'ready'
-          ? `drop-shadow(0 0 7px ${color}) drop-shadow(0 0 3px #fff)`
+          ? `drop-shadow(0 0 9px ${color}) drop-shadow(0 0 4px #fff)`
           : glow === 'near'
-            ? `drop-shadow(0 0 4px ${color})`
+            ? `drop-shadow(0 0 5px ${color})`
             : '';
+      // A ready Ultimate breathes (6th playtest: "I did not notice the portrait that glows").
+      this.pulses.get(index)?.cancel();
+      this.pulses.delete(index);
+      if (glow !== 'idle') {
+        const loop = animate(
+          tile,
+          [
+            { transform: 'scale(1)' },
+            { transform: glow === 'ready' ? 'scale(1.18)' : 'scale(1.08)' },
+            { transform: 'scale(1)' },
+          ],
+          { duration: glow === 'ready' ? 700 : 1100, iterations: Number.POSITIVE_INFINITY },
+        );
+        if (loop !== null) this.pulses.set(index, loop);
+      }
       const tag = this.tags.get(index);
       if (tag !== undefined) tag.style.display = glow === 'ready' ? 'block' : 'none';
     });
@@ -129,10 +146,10 @@ export class TeamBar {
     name.style.cssText =
       'font-size:10px;font-weight:700;max-width:60px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;';
     tile.append(name);
-    // "FIRMA" with the key that throws it, only while the signature is ready (4F-D).
+    // "ULTIMATE" with the key that throws it, only while the signature is ready (4F-D).
     const tag = document.createElement('div');
     tag.dataset.signatureTag = '';
-    tag.textContent = `¡FIRMA! [${index + 1}]`;
+    tag.textContent = `¡ULTIMATE! [${index + 1}]`;
     tag.style.cssText =
       `display:none;font-size:9px;font-weight:800;padding:0 3px;border-radius:4px;color:#10131c;` +
       `background:${TYPE_COLORS[member.type]};white-space:nowrap;`;

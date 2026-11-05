@@ -10,6 +10,7 @@ import {
 } from '../../src/domain';
 import { setNames } from '../../src/ui';
 import {
+  bossLabel,
   describeBest,
   describeEvent,
   describeResults,
@@ -34,7 +35,9 @@ const summary: RunSummary = {
     { species: 'squirtle', form: 'squirtle', level: 2, stage: 1 },
     { species: 'charmander', form: 'charizard', level: 7, stage: 3 },
   ],
-  bossesDefeated: 0,
+  bossesDefeated: 3,
+  bossesTotal: 4,
+  waveReached: 7,
   captured: [],
   score: 0,
 };
@@ -50,7 +53,10 @@ describe('results and title text', () => {
     const text = describeResults(summary, null, false);
     expect(text.title).toBe('Derrota');
     const all = text.lines.join('\n');
-    expect(all).toContain('Oleadas superadas: 5/7');
+    // 6th playtest: the HUD said "Oleada 7/7", the final screen "superadas 6/7". Now both say 7.
+    expect(all).toContain('Llegaste a la oleada 7/7');
+    expect(all).toContain('Derrotaste a 3 de 4 jefes');
+    expect(all).not.toContain('superadas');
     expect(all).toContain('Bajas: 130');
     expect(all).toContain('Nivel 9');
     expect(all).toContain('Tiempo 6:05');
@@ -70,13 +76,18 @@ describe('results and title text', () => {
     expect(lines).toContain('Charizard Nv8, Exeggutor Nv8');
   });
 
-  it('describes reaching the boss and winning differently', () => {
-    expect(describeResults({ ...summary, bossReached: true }, null, false).lines[0]).toContain(
-      'Llegaste al jefe',
+  it('describes a defeat and a win differently, and counts the bosses', () => {
+    expect(
+      describeResults({ ...summary, waveReached: 2, bossesDefeated: 0 }, null, false).lines,
+    ).toEqual(expect.arrayContaining(['Llegaste a la oleada 2/7.', 'Derrotaste a 0 de 4 jefes.']));
+    const won = describeResults(
+      { ...summary, result: 'won', bossReached: true, bossesDefeated: 4 },
+      null,
+      true,
     );
-    const won = describeResults({ ...summary, result: 'won', bossReached: true }, null, true);
     expect(won.title).toBe('¡Victoria!');
-    expect(won.lines[0]).toBe('Derrotaste al jefe.');
+    expect(won.lines[0]).toBe('¡Derrotaste al jefe final!');
+    expect(won.lines[1]).toBe('Derrotaste a 4 de 4 jefes.');
     expect(won.lines.join('\n')).toContain('Nueva mejor partida');
   });
 
@@ -106,7 +117,7 @@ describe('results and title text', () => {
   it('turns the events that matter into messages and ignores the rest', () => {
     const events: GameEvent[] = [
       { type: 'waveStart', index: 2, theme: '' },
-      { type: 'bossSpawn', enemyId: 9 },
+      { type: 'bossSpawn', enemyId: 9, species: 'kingdra', number: 3, interludes: 3, final: false },
       { type: 'bossSummon', count: 4 },
       {
         type: 'stage',
@@ -153,7 +164,23 @@ describe('results and title text', () => {
     ];
     const texts = events.map((event) => describeEvent(event));
     expect(texts[0]).toBe('Oleada 3');
-    expect(texts[1]).toContain('jefe');
+    expect(texts[1]).toBe('¡Jefe 3/3: Kingdra!');
+    expect([1, 2, 3].map((n) => bossLabel(n, 3, false))).toEqual([
+      'Jefe 1/3',
+      'Jefe 2/3',
+      'Jefe 3/3',
+    ]);
+    expect(bossLabel(4, 3, true)).toBe('Jefe final');
+    expect(
+      describeEvent({
+        type: 'bossSpawn',
+        enemyId: 9,
+        species: 'virizion',
+        number: 4,
+        interludes: 3,
+        final: true,
+      }),
+    ).toBe('¡Jefe final: Virizion!');
     expect(texts[2]).toContain('4');
     expect(texts[3]).toBe('¡Charmander evoluciona a Charmeleon!');
     expect(texts[4]).toBe('¡Híbrida! Charmander + Squirtle');

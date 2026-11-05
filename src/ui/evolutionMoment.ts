@@ -3,29 +3,30 @@ import { STEP_COLOR } from './cardView';
 import { pokemonName } from './names';
 import { TYPE_COLORS } from './typeColors';
 
-/** Speed of the game while a stage step plays (4F-D): the loop of the app slows down, the sim does not change. */
-export const SLOW_SCALE = 0.35;
-
-/** Real milliseconds a stage step slows the game: a step to stage 3 lasts longer than one to 2. */
-export function slowMs(stage: number): number {
-  return stage >= 3 ? 1300 : 800;
+/**
+ * Real milliseconds the game stops for a stage step (4F-E): about one second, a little longer for
+ * the maximum stage. The 4F-D slow motion was dropped: "it cuts the rhythm and feels odd".
+ */
+export function pauseMs(stage: number): number {
+  return stage >= 3 ? 1200 : 1000;
 }
 
 /**
- * The slow motion of the app (4F-D). A new step while one plays extends it to the longer end: they
- * merge into one moment instead of stacking. Pure: the clock is given, never read.
+ * The pause of the app while an evolution plays in the foreground. The run is paused at the app
+ * level (no tick is taken, so it is the same run). A new step while one plays extends the pause to
+ * the later end: they merge into one moment. Pure: the clock is given, never read.
  */
-export class SlowMotion {
+export class GamePause {
   private until = Number.NEGATIVE_INFINITY;
 
-  /** Starts (or extends) a slow moment of `ms` from `now`. */
+  /** Starts (or extends) a pause of `ms` from `now`. */
   start(now: number, ms: number): void {
     this.until = Math.max(this.until, now + ms);
   }
 
-  /** The factor to apply to the frame's elapsed time. */
-  scale(now: number): number {
-    return now < this.until ? SLOW_SCALE : 1;
+  /** True while the game is stopped. */
+  active(now: number): boolean {
+    return now < this.until;
   }
 
   reset(): void {
@@ -34,30 +35,19 @@ export class SlowMotion {
 }
 
 /**
- * Real seconds of slow motion a run spends (M16 of the fun bench): the steps of `steps` merge when
- * one starts before the previous moment is over. `tickMs` is the real length of a tick at normal
- * speed; during a moment a tick takes 1 / SLOW_SCALE times longer.
+ * Real seconds a run spends paused by evolutions (M16 of the fun bench). While paused no tick is
+ * taken, so two steps on different ticks never overlap; steps on the same tick merge into one
+ * pause of the longest of them.
  */
-export function slowSeconds(
+export function pauseSeconds(
   steps: readonly { readonly tick: number; readonly stage: number }[],
-  tickMs: number,
 ): number {
-  let total = 0;
-  let wall = 0; // real ms since the start of the run, advanced tick by tick
-  let lastTick = 0;
-  let until = Number.NEGATIVE_INFINITY;
+  const longest = new Map<number, number>();
   for (const step of steps) {
-    // Ticks between two steps take 1 / SLOW_SCALE times longer while a moment is still running.
-    const ticks = step.tick - lastTick;
-    const slowTicks = Math.min(ticks, Math.max(0, ((until - wall) * SLOW_SCALE) / tickMs));
-    wall += (slowTicks * tickMs) / SLOW_SCALE + (ticks - slowTicks) * tickMs;
-    lastTick = step.tick;
-    const end = wall + slowMs(step.stage);
-    if (end > until) {
-      total += end - Math.max(until, wall);
-      until = end;
-    }
+    longest.set(step.tick, Math.max(longest.get(step.tick) ?? 0, pauseMs(step.stage)));
   }
+  let total = 0;
+  for (const ms of longest.values()) total += ms;
   return total / 1000;
 }
 
@@ -88,9 +78,10 @@ export interface MomentView {
 }
 
 /**
- * The evolution moment (4F-D, polished in 4E): while the game runs in slow motion, the old form
- * shows as a glowing silhouette, a flash changes it into the new form and the name of what it
- * became appears big in the centre. It never takes pointer events and never pauses the game.
+ * The evolution moment (4F-D, pause instead of slow motion in 4F-E, polished in 4E): the game is
+ * paused by the app (`GamePause`) while the screen dims and the old form shows as a glowing
+ * silhouette in the foreground; a flash changes it into the new form and the name of what it
+ * became appears big in the centre. It takes no pointer events and ends by itself.
  */
 export class EvolutionMoment {
   private readonly root: HTMLDivElement;
@@ -98,9 +89,9 @@ export class EvolutionMoment {
 
   constructor(host: HTMLElement) {
     this.root = box(
-      'position:absolute;left:50%;top:34%;transform:translateX(-50%);display:none;' +
-        'flex-direction:column;align-items:center;gap:8px;pointer-events:none;z-index:7;' +
-        'font-family:system-ui,sans-serif;color:#fff;text-align:center;',
+      'position:absolute;inset:0;display:none;background:rgba(5,8,16,0.72);' +
+        'flex-direction:column;align-items:center;justify-content:center;gap:14px;' +
+        'pointer-events:none;z-index:7;font-family:system-ui,sans-serif;color:#fff;text-align:center;',
     );
     this.root.dataset.evolutionMoment = '';
     host.append(this.root);
@@ -113,7 +104,7 @@ export class EvolutionMoment {
   show(view: MomentView, ms: number): void {
     this.clearTimers();
     const color = view.type === undefined ? STEP_COLOR : TYPE_COLORS[view.type];
-    const size = view.stage >= 3 ? 150 : 120;
+    const size = view.stage >= 3 ? 220 : 180;
     const picture = (url: string | undefined, form: string): HTMLElement => {
       if (url === undefined) {
         return box(`font-size:${size / 2}px;font-weight:800;`, pokemonName(form).charAt(0));
@@ -136,23 +127,18 @@ export class EvolutionMoment {
     );
     stage.append(before, after, flash);
     const title = box(
-      `font-size:${view.stage >= 3 ? 34 : 28}px;font-weight:900;letter-spacing:0.5px;` +
+      `font-size:${view.stage >= 3 ? 40 : 34}px;font-weight:900;letter-spacing:0.5px;` +
         `text-shadow:0 2px 0 #000,0 0 14px ${color};`,
       this.headline(view, false),
     );
     this.root.replaceChildren(stage, title);
     this.root.style.display = 'flex';
 
-    const half = ms * 0.55;
+    const half = ms * 0.45;
     animate(
       this.root,
-      [
-        { opacity: 0, transform: 'translateX(-50%) scale(0.6)' },
-        { opacity: 1, transform: 'translateX(-50%) scale(1)', offset: 0.18 },
-        { opacity: 1, transform: 'translateX(-50%) scale(1)', offset: 0.85 },
-        { opacity: 0, transform: 'translateX(-50%) scale(1.15)' },
-      ],
-      { duration: ms + 900, easing: 'ease-out' },
+      [{ opacity: 0 }, { opacity: 1, offset: 0.12 }, { opacity: 1, offset: 0.85 }, { opacity: 0 }],
+      { duration: ms, easing: 'ease-out' },
     );
     animate(before, [{ opacity: 0.55 }, { opacity: 1 }, { opacity: 0.55 }, { opacity: 1 }], {
       duration: half,
@@ -168,7 +154,7 @@ export class EvolutionMoment {
         easing: 'ease-out',
       });
     });
-    this.later(ms + 900, () => this.hide());
+    this.later(ms, () => this.hide());
   }
 
   hide(): void {

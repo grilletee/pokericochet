@@ -8,13 +8,7 @@ export { buildCardArt, STEP_COLOR, spriteTile } from './cardView';
 export type { CreditLine } from './creditsText';
 export { creditLines, disclaimerShort, POKEAPI_URL, SPRITES_URL } from './creditsText';
 export type { MomentView } from './evolutionMoment';
-export {
-  EvolutionMoment,
-  SLOW_SCALE,
-  SlowMotion,
-  slowMs,
-  slowSeconds,
-} from './evolutionMoment';
+export { EvolutionMoment, GamePause, pauseMs, pauseSeconds } from './evolutionMoment';
 export type { SheetView } from './memberSheet';
 export { MemberSheet } from './memberSheet';
 export type { LabelFate, MoveLabel } from './moveLabels';
@@ -27,6 +21,7 @@ export type { StarterOption } from './screens';
 export { CreditsScreen, ResultsScreen, StartScreen } from './screens';
 export type { BestRunView, ResultsText } from './screenText';
 export {
+  bossLabel,
   describeBest,
   describeEvent,
   describeResults,

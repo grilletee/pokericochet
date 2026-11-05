@@ -201,7 +201,7 @@ try {
   check(
     'every starter shows its signature move with its shape and the form it starts with',
     signatures.length === 4 &&
-      signatures.every((text) => text.startsWith('Firma: ') && text.includes('la lanzas tú')) &&
+      signatures.every((text) => text.startsWith('Ultimate: ') && text.includes('la lanzas tú')) &&
       signatures.some((text) => text.includes('Lanzallamas') && text.includes('cruz')),
     signatures.join(' | '),
   );
@@ -292,15 +292,18 @@ try {
   );
   check('the flash turns the name into the new form', true);
   await evo.screenshot({ path: outFile.replace('.png', '-moment.png') });
+  // The game is stopped for about a second (4F-E): no tick while the moment is up.
   const pausedAt = (await dbg(evo)).tick;
-  await evo.waitForTimeout(400);
-  check('evolving never pauses the game (it only slows down)', (await dbg(evo)).tick > pausedAt);
+  await evo.waitForTimeout(200);
+  check('evolving stops the game while it plays', (await dbg(evo)).tick === pausedAt);
   await evo.waitForFunction(
     () => getComputedStyle(document.querySelector('[data-evolution-moment]')).display === 'none',
     undefined,
     { timeout: 4000 },
   );
   check('the moment ends by itself', true);
+  await evo.waitForTimeout(300);
+  check('and the game goes on afterwards', (await dbg(evo)).tick > pausedAt);
   const barText = (await evo.locator('[data-team-bar]').textContent()) ?? '';
   check(
     'the team bar shows one Pokémon, still one, with its level and the name of its CURRENT form',
@@ -459,7 +462,7 @@ try {
     const readyText = (await sig.locator('[data-banner]').textContent()) ?? '';
     check(
       `(${how}) the first time, a notice says the signature is ready and how to throw it`,
-      readyText.includes('Firma lista') && readyText.includes('Charmeleon'),
+      readyText.includes('Ultimate lista') && readyText.includes('Charmeleon'),
       readyText,
     );
     await sig.waitForTimeout(600);
@@ -471,10 +474,11 @@ try {
     // Nobody to hit, nothing to throw at: wait for enemies on the field.
     await sig.waitForFunction(() => window.__debug().enemies > 0, undefined, { timeout: 10000 });
     if (how === 'key') await sig.keyboard.press('Digit1');
-    else await sig.locator('[data-team-tile="0"]').click();
+    // The ready portrait breathes (an endless animation), so the click does not wait for it to rest.
+    else await sig.locator('[data-team-tile="0"]').click({ force: true });
     await sig.waitForFunction(() => window.__debug().moveCasts >= 1, undefined, { timeout: 5000 });
     const thrown = (await sig.locator('[data-banner]').textContent()) ?? '';
-    check(`(${how}) the first throw shows a big notice`, thrown.includes('¡FIRMA!'), thrown);
+    check(`(${how}) the first throw shows a big notice`, thrown.includes('¡ULTIMATE!'), thrown);
     check(
       `(${how}) the tag goes away once it is thrown`,
       !(await sig.locator('[data-team-tile="0"] [data-signature-tag]').isVisible()),

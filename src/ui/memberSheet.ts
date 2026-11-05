@@ -83,7 +83,7 @@ export class MemberSheet {
       box('font-size:13px;', `⚔${view.damageUps} ⟳${view.cadenceUps} (mejoras de este Pokémon)`),
     );
     if (view.move !== undefined) {
-      const label = view.signature ? 'Firma' : 'Movimiento';
+      const label = view.signature ? 'Ultimate' : 'Movimiento';
       const state =
         view.charge >= view.chargeNeed ? 'lista' : `${view.charge}/${view.chargeNeed} golpes`;
       card.append(

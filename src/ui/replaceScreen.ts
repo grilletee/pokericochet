@@ -125,7 +125,12 @@ export class ReplaceScreen {
         spriteTile(art.spriteUrl(member.form), member.form, member.type, 52, member.level),
         box('font-size:13px;font-weight:700;', `${slot + 1}. ${pokemonName(member.form)}`),
         ...(member.starter
-          ? [box('font-size:11px;font-weight:800;color:#ffd54f;', '★ Inicial: perderías su firma')]
+          ? [
+              box(
+                'font-size:11px;font-weight:800;color:#ffd54f;',
+                '★ Inicial: perderías su Ultimate',
+              ),
+            ]
           : []),
         statBars(member.stats, true),
         box('font-size:11px;opacity:0.85;', statSummary(member.stats)),

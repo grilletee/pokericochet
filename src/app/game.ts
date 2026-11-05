@@ -35,6 +35,7 @@ import {
 import { Renderer } from '../render';
 import {
   AimToggle,
+  bossLabel,
   type CardTextContext,
   CreditsScreen,
   creditLines,
@@ -42,17 +43,18 @@ import {
   disclaimerShort,
   EvolutionBanner,
   EvolutionMoment,
+  GamePause,
   labelPriority,
   MemberSheet,
   MoveLabelPolicy,
   MoveLabels,
   moveName,
   Overlay,
+  pauseMs,
   pokemonName,
   ReplaceScreen,
   type ReplaceView,
   ResultsScreen,
-  SlowMotion,
   SoundFx,
   SoundToggle,
   STEP_COLOR,
@@ -60,7 +62,6 @@ import {
   StartScreen,
   setNames,
   signatureLine,
-  slowMs,
   spriteTile,
   TeamBar,
   type TileGlow,
@@ -219,11 +220,13 @@ function nextCommand(run: Run, input: Input, deadZone: number, autoAim: boolean)
   return cast !== null && cast >= 0 ? { ...command, cast } : command;
 }
 
-function hudText(snap: Snapshot, waveCount: number, seed: number): string {
+/** `boss` is "Jefe 2/3" or "Jefe final" while a boss lives; it replaces the wave in the HUD (4F-E). */
+function hudText(snap: Snapshot, waveCount: number, seed: number, boss: string | null): string {
   const wave =
-    waveCount > 0 && snap.waveIndex >= waveCount
-      ? 'Jefe'
-      : `Oleada ${Math.min(snap.waveIndex + 1, Math.max(1, waveCount))}/${waveCount}`;
+    boss ??
+    (waveCount > 0 && snap.waveIndex >= waveCount
+      ? 'Jefe final'
+      : `Oleada ${Math.min(snap.waveIndex + 1, Math.max(1, waveCount))}/${waveCount}`);
   const first = [
     `PV ${Math.max(0, Math.round(snap.playerHp))}/${snap.playerMaxHp}`,
     `Nv ${snap.playerLevel} (${Math.floor(snap.playerXp)}/${snap.playerXpNext} XP)`,
@@ -378,7 +381,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
   const labelPolicy = new MoveLabelPolicy(3, 900);
   const banner = new EvolutionBanner(host);
   const moment = new EvolutionMoment(host);
-  const slow = new SlowMotion();
+  const pause = new GamePause();
   const startScreen = new StartScreen(host);
   const creditsScreen = new CreditsScreen(host);
   const resultsScreen = new ResultsScreen(host);
@@ -531,7 +534,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
     resultsScreen.hide();
     banner.hide();
     moment.hide();
-    slow.reset();
+    pause.reset();
     signatureAnnounced = false;
     signatureWasReady = false;
     readyAnnounced = false;
@@ -643,10 +646,10 @@ export async function startGame(host: HTMLElement): Promise<void> {
       } else if (event.type === 'train') {
         teamBar.pulse(event.member);
       } else if (event.type === 'stage') {
-        // An evolution, an awakening or the maximum power (ADR-037): a short slow-motion moment
-        // with the silhouette, the flash and the big name (4F-D). Several at once merge into one.
-        const ms = slowMs(event.stage);
-        slow.start(now, ms);
+        // An evolution, an awakening or the maximum power (ADR-037): the game stops for about a
+        // second (the pause starts in the tick loop) and the silhouette, the flash and the big name
+        // fill the screen (4F-E). Several at once merge into one.
+        const ms = pauseMs(event.stage);
         teamBar.pulse(event.member);
         moment.show(
           {
@@ -668,7 +671,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
           const form = caster === undefined ? event.species : formOfMember(config, caster);
           banner.show(
             [spriteTile(art.spriteUrl(form), form, event.element, 72)],
-            `¡FIRMA! ${moveName(event.move)}`,
+            `¡ULTIMATE! ${moveName(event.move)}`,
             STEP_COLOR,
           );
         }
@@ -741,12 +744,13 @@ export async function startGame(host: HTMLElement): Promise<void> {
     }
 
     // The Pokémon sheet pauses the game here, in the app: the run takes no command, so it is the same run.
-    // A stage step plays in slow motion: the loop runs slower, the run is the same (4F-D).
+    // An evolution pauses the game for about a second in the same way (4F-E).
     const steps =
-      screen === 'playing' && !sheet.open ? stepper.advance(elapsed * slow.scale(now)) : 0;
+      screen === 'playing' && !sheet.open && !pause.active(now) ? stepper.advance(elapsed) : 0;
     let tickMs = 0;
     let snapshotMs = 0;
-    for (let s = 0; s < steps; s++) {
+    let stopped = false; // a stage step pauses the game: no more ticks in this frame
+    for (let s = 0; s < steps && !stopped; s++) {
       const cmd = bench
         ? benchCommand(run.tickCount)
         : nextCommand(run, input, POINTER_DEAD_ZONE, autoAim);
@@ -762,6 +766,10 @@ export async function startGame(host: HTMLElement): Promise<void> {
           overlay.showToast(text, now);
         }
         sound.playEvent(event, now);
+        if (event.type === 'stage') {
+          pause.start(now, pauseMs(event.stage));
+          stopped = true;
+        }
       }
       const swap = prev;
       prev = curr;
@@ -789,7 +797,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
           const form = member === undefined ? starter : formOfMember(config, member);
           banner.show(
             [spriteTile(art.spriteUrl(form), form, member?.type, 64)],
-            `Firma lista: toca a ${pokemonName(form)} o pulsa ${index + 1}`,
+            `Ultimate lista: toca a ${pokemonName(form)} o pulsa ${index + 1}`,
             STEP_COLOR,
           );
         }
@@ -826,7 +834,16 @@ export async function startGame(host: HTMLElement): Promise<void> {
     }
 
     overlay.setHud(
-      screen === 'menu' || screen === 'credits' ? '' : hudText(curr, config.waves.length, run.seed),
+      screen === 'menu' || screen === 'credits'
+        ? ''
+        : hudText(
+            curr,
+            config.waves.length,
+            run.seed,
+            curr.bossHp > 0
+              ? bossLabel(run.boss.next, (config.interludes ?? []).length, run.boss.spawned)
+              : null,
+          ),
     );
     overlay.updateToast(now);
     overlay.setBoss(

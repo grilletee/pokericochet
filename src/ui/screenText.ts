@@ -24,10 +24,10 @@ const SHAPE_WORD: Record<MoveShapeKind, string> = {
 
 /**
  * The starter's signature on the title screen (4F-D): the real move, the shape it draws and when
- * it is yours ("Firma: Lanzallamas, una cruz, desde Charmeleon · la lanzas tú").
+ * it is yours ("Ultimate: Lanzallamas, cruz · desde Charmeleon · la lanzas tú").
  */
 export function signatureLine(moveLabel: string, shape: MoveShapeKind, fromForm: string): string {
-  return `Firma: ${moveLabel}, ${SHAPE_WORD[shape]} · desde ${fromForm} · la lanzas tú`;
+  return `Ultimate: ${moveLabel}, ${SHAPE_WORD[shape]} · desde ${fromForm} · la lanzas tú`;
 }
 
 /** 4271 ticks at 60 Hz -> "1:11". */
@@ -71,21 +71,27 @@ export function describeResults(
 ): ResultsText {
   const won = summary.result === 'won';
   const team = summary.team.map((m) => `${pokemonName(m.form)} Nv${m.level}`).join(', ');
+  // "Llegaste a la oleada 7/7" counts the wave you were in, the one the HUD showed (4F-E); the
+  // bosses are counted apart: "Derrotaste a 3 de 4 jefes".
   const progress = won
-    ? 'Derrotaste al jefe.'
-    : summary.bossReached
-      ? 'Llegaste al jefe, pero no lo derrotaste.'
-      : `Oleadas superadas: ${summary.wavesCleared}/${summary.wavesTotal}.`;
+    ? '¡Derrotaste al jefe final!'
+    : `Llegaste a la oleada ${summary.waveReached}/${summary.wavesTotal}.`;
   return {
     title: won ? '¡Victoria!' : 'Derrota',
     lines: [
       progress,
+      `Derrotaste a ${summary.bossesDefeated} de ${summary.bossesTotal} jefes.`,
       `Bajas: ${summary.kills} · Nivel ${summary.level} · Tiempo ${formatTime(summary.ticks)}`,
       `Equipo: ${team}`,
       `Inicial: ${pokemonName(summary.starter)} · Semilla: ${summary.seed}`,
       isNewBest ? '¡Nueva mejor partida!' : describeBest(best),
     ],
   };
+}
+
+/** "Jefe 2/3" for the bosses between waves and "Jefe final" for the last one (4F-E). */
+export function bossLabel(number: number, interludes: number, final: boolean): string {
+  return final ? 'Jefe final' : `Jefe ${number}/${interludes}`;
 }
 
 /** The announcement of a step: an evolution, an awakening or the maximum power (ADR-037). */
@@ -118,7 +124,7 @@ export function describeEvent(
     case 'bossDefeated':
       return `¡Jefe derrotado: ${pokemonName(event.species)}!`;
     case 'bossSpawn':
-      return '¡Aparece el jefe!';
+      return `¡${bossLabel(event.number, event.interludes, event.final)}: ${pokemonName(event.species)}!`;
     case 'bossSummon':
       return `El jefe invoca ${event.count} refuerzos`;
     case 'stage':

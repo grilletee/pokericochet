@@ -1,79 +1,63 @@
 import { describe, expect, it } from 'vitest';
-import { SLOW_SCALE, SlowMotion, slowMs, slowSeconds, starterBlurb } from '../../src/ui';
+import { GamePause, pauseMs, pauseSeconds, starterBlurb } from '../../src/ui';
 import { signatureLine } from '../../src/ui/screenText';
 
-describe('the slow motion of a stage step (4F-D)', () => {
-  it('lasts longer for the maximum stage and slows the loop to a fraction', () => {
-    expect(slowMs(2)).toBe(800);
-    expect(slowMs(3)).toBe(1300);
-    expect(slowMs(3)).toBeGreaterThan(slowMs(2));
-    expect(SLOW_SCALE).toBeGreaterThan(0);
-    expect(SLOW_SCALE).toBeLessThan(1);
+describe('the pause of a stage step (4F-E)', () => {
+  it('lasts about a second, a little longer for the maximum stage', () => {
+    expect(pauseMs(2)).toBe(1000);
+    expect(pauseMs(3)).toBe(1200);
+    expect(pauseMs(3)).toBeGreaterThan(pauseMs(2));
   });
 
-  it('is slow only while the moment lasts, and a new step extends it instead of stacking', () => {
-    const slow = new SlowMotion();
-    expect(slow.scale(0)).toBe(1);
-    slow.start(1000, 800);
-    expect(slow.scale(1000)).toBe(SLOW_SCALE);
-    expect(slow.scale(1799)).toBe(SLOW_SCALE);
-    expect(slow.scale(1800)).toBe(1);
-    slow.start(1500, 800); // ends at 2300, later than the first
-    expect(slow.scale(2299)).toBe(SLOW_SCALE);
-    expect(slow.scale(2300)).toBe(1);
-    slow.start(1600, 100); // shorter: the end does not move back
-    expect(slow.scale(2200)).toBe(SLOW_SCALE);
-    slow.reset();
-    expect(slow.scale(1600)).toBe(1);
+  it('is on only while the moment lasts, and a new step extends it instead of stacking', () => {
+    const pause = new GamePause();
+    expect(pause.active(0)).toBe(false);
+    pause.start(1000, 1000);
+    expect(pause.active(1000)).toBe(true);
+    expect(pause.active(1999)).toBe(true);
+    expect(pause.active(2000)).toBe(false);
+    pause.start(1500, 1000); // ends at 2500, later than the first
+    expect(pause.active(2499)).toBe(true);
+    expect(pause.active(2500)).toBe(false);
+    pause.start(1600, 100); // shorter: the end does not move back
+    expect(pause.active(2400)).toBe(true);
+    pause.reset();
+    expect(pause.active(1600)).toBe(false);
   });
 });
 
-describe('slowSeconds: the real time a run spends in slow motion (M16)', () => {
-  const TICK = 1000 / 60;
-
-  it('is zero without steps and the length of the moment for a lone one', () => {
-    expect(slowSeconds([], TICK)).toBe(0);
-    expect(slowSeconds([{ tick: 600, stage: 2 }], TICK)).toBeCloseTo(0.8, 6);
-    expect(slowSeconds([{ tick: 600, stage: 3 }], TICK)).toBeCloseTo(1.3, 6);
+describe('pauseSeconds: the real time a run spends paused by evolutions (M16)', () => {
+  it('is zero without steps and the length of the pause for a lone one', () => {
+    expect(pauseSeconds([])).toBe(0);
+    expect(pauseSeconds([{ tick: 600, stage: 2 }])).toBeCloseTo(1, 6);
+    expect(pauseSeconds([{ tick: 600, stage: 3 }])).toBeCloseTo(1.2, 6);
   });
 
-  it('adds up steps that are far apart', () => {
+  it('adds up steps on different ticks (the game is stopped, so they never overlap)', () => {
     const steps = [
       { tick: 600, stage: 2 },
-      { tick: 6000, stage: 3 },
+      { tick: 601, stage: 3 },
     ];
-    expect(slowSeconds(steps, TICK)).toBeCloseTo(2.1, 6);
+    expect(pauseSeconds(steps)).toBeCloseTo(2.2, 6);
   });
 
-  it('merges steps that start inside the moment of the previous one', () => {
-    // The second starts 10 ticks later: in slow motion that is 10 / 0.35 ticks of real time (~0.48 s).
+  it('merges steps on the same tick into one pause of the longest', () => {
     const steps = [
       { tick: 600, stage: 2 },
-      { tick: 610, stage: 2 },
-    ];
-    const merged = slowSeconds(steps, TICK);
-    expect(merged).toBeGreaterThan(0.8);
-    expect(merged).toBeLessThan(1.6);
-    expect(merged).toBeCloseTo(0.8 + 10 / 60 / SLOW_SCALE, 3);
-  });
-
-  it('a step whose moment ends inside a longer one adds nothing', () => {
-    const steps = [
       { tick: 600, stage: 3 },
-      { tick: 601, stage: 2 },
+      { tick: 600, stage: 2 },
     ];
-    expect(slowSeconds(steps, TICK)).toBeCloseTo(1.3, 3);
+    expect(pauseSeconds(steps)).toBeCloseTo(1.2, 6);
   });
 });
 
 describe('the signature on the title screen (4F-D)', () => {
   it('names the real move, the shape and the form it starts with', () => {
-    expect(signatureLine('Lanzallamas', 'cross', 'Charmeleon')).toBe(
-      'Firma: Lanzallamas, cruz · desde Charmeleon · la lanzas tú',
-    );
+    expect(signatureLine('Lanzallamas', 'cross', 'Charmeleon')).toContain('Lanzallamas, cruz');
     expect(signatureLine('Rayo', 'chain', 'Pikachu')).toContain('cadena');
     expect(signatureLine('Surf', 'wave', 'Wartortle')).toContain('ola');
     expect(signatureLine('Latigazo', 'beam', 'Ivysaur')).toContain('columna');
+    expect(signatureLine('Latigazo', 'beam', 'Ivysaur')).toContain('desde Ivysaur');
     expect(starterBlurb('fire')).toContain('Fuego');
   });
 });
