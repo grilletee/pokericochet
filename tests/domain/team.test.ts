@@ -56,9 +56,15 @@ describe('the rules of the team (ADR-030, ADR-031)', () => {
     expect(ballsFor(withConfig({ team: { ...t, ballsByLevel: [] } }), 3)).toBe(1);
   });
 
-  it('captureLevel is the level a captured enemy joins with, by its stage', () => {
-    expect([1, 2, 3].map((s) => captureLevel(quietConfig, s))).toEqual(t.captureLevels);
-    expect(captureLevel(quietConfig, 9)).toBe(1);
+  it('captureLevel is the FIRST level of the stage of the enemy it came from (4F-E)', () => {
+    expect([1, 2, 3].map((s) => captureLevel(quietConfig, s))).toEqual([1, ...t.stageLevels]);
+    expect([1, 2, 3].map((s) => stageOf(quietConfig, captureLevel(quietConfig, s)))).toEqual([
+      1, 2, 3,
+    ]);
+    // Past the last stage it stays at the last one; stage 0 or less is the base.
+    expect(captureLevel(quietConfig, 9)).toBe(t.stageLevels[1]);
+    expect(captureLevel(quietConfig, 0)).toBe(1);
+    expect(captureLevel(withConfig({ team: { ...t, stageLevels: [] } }), 3)).toBe(1);
   });
 
   it('ballRadius grows with the stage and falls back to the base radius', () => {
@@ -285,14 +291,13 @@ describe('a capture reaches the team (joinTeam)', () => {
     });
   });
 
-  it('the capture of a stage 3 enemy shows the form of the level it joins with, not its own', () => {
+  it('the capture of a stage 3 enemy joins at stage 3: what falls is what joins (4F-E)', () => {
     const run = teamRun();
     joinTeam(run, quietConfig, 'psyduck', 3, 240, false);
     const level = captureLevel(quietConfig, 3);
-    expect(stageOf(quietConfig, level)).toBeLessThan(3); // the real rules: it arrives trained, not finished
-    expect(run.events).toContainEqual(
-      expect.objectContaining({ type: 'capture', level: stageOf(quietConfig, level) }),
-    );
+    expect(stageOf(quietConfig, level)).toBe(3);
+    expect(member(run, 1).level).toBe(level);
+    expect(run.events).toContainEqual(expect.objectContaining({ type: 'capture', level: 3 }));
   });
 
   it('one that waited too long joins with the extra reload on all its balls', () => {
@@ -341,7 +346,7 @@ describe('a capture reaches the team (joinTeam)', () => {
   });
 
   it('a duplicate is capped at the maximum level even if the form is worth more', () => {
-    const odd = withConfig({ team: { ...quietConfig.team, captureLevels: [1, 3, 12] } });
+    const odd = withConfig({ team: { ...quietConfig.team, stageLevels: [3, 12] } });
     const run = teamRun(odd, 'squirtle', 'bulbasaur', 'pikachu', 'vulpix', 'psyduck');
     joinTeam(run, odd, 'vulpix', 3, 10, false);
     expect(member(run, 4).level).toBe(odd.team.maxLevel);

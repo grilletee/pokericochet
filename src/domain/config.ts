@@ -68,11 +68,6 @@ export interface TeamDef {
   /** Level from which each evolution stage starts: [stage 2, stage 3]. */
   readonly stageLevels: readonly number[];
   /**
-   * Level a captured Pokémon joins with, by the stage of the enemy it came from (ADR-027, ADR-031):
-   * 4F-B lets a captured late form arrive trained (the first entry), not at the start of its stage.
-   */
-  readonly captureLevels: readonly number[];
-  /**
    * Extra damage of the Pokémon the run began with, as a fraction (0.4 = +40 %): the first step of
    * "the starter is the identity of the run", which Phase 5 turns into passives (Vision).
    */

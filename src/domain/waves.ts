@@ -121,7 +121,18 @@ interface BossShape {
   readonly radius: number;
 }
 
-function placeBoss(run: Run, config: GameConfig, speciesId: string, shape: BossShape): void {
+/**
+ * Puts a boss on the field. `number` is its place in the run (1-based: the boss between waves are
+ * 1..n, the final one n + 1), which the interface says as "Jefe 2/3" or "Jefe final" (4F-E).
+ */
+function placeBoss(
+  run: Run,
+  config: GameConfig,
+  speciesId: string,
+  shape: BossShape,
+  number: number,
+  isFinal: boolean,
+): void {
   const species = getSpecies(config, speciesId);
   const hp = species.baseStats.hp * config.enemy.hpScale * shape.hpScale;
   const boss: Enemy = {
@@ -145,7 +156,14 @@ function placeBoss(run: Run, config: GameConfig, speciesId: string, shape: BossS
   run.boss.id = boss.id;
   run.boss.maxHp = hp;
   run.boss.tick = 0;
-  run.events.push({ type: 'bossSpawn', enemyId: boss.id });
+  run.events.push({
+    type: 'bossSpawn',
+    enemyId: boss.id,
+    species: species.id,
+    number,
+    interludes: (config.interludes ?? []).length,
+    final: isFinal,
+  });
 }
 
 /**
@@ -182,7 +200,7 @@ export function advanceBoss(run: Run, config: GameConfig): void {
     run.wave.index >= next.after
   ) {
     const type = bossType(run, config, next.byType, next.after - 1);
-    placeBoss(run, config, next.byType[type], next);
+    placeBoss(run, config, next.byType[type], next, run.boss.next + 1, false);
     run.boss.next += 1;
     run.boss.type = type;
     return;
@@ -196,6 +214,8 @@ export function advanceBoss(run: Run, config: GameConfig): void {
       config,
       (type === undefined ? undefined : final.byType?.[type]) ?? final.species,
       final,
+      interludes.length + 1,
+      true,
     );
     run.boss.spawned = true;
     run.boss.type = type ?? '';

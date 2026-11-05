@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   baseOf,
   type Card,
+  captureLevel,
   cloneRun,
   createRun,
   createSnapshot,
@@ -13,6 +14,7 @@ import {
   type Enemy,
   formAt,
   type GameConfig,
+  type GameEvent,
   hashRun,
   isBossAlive,
   nextU32,
@@ -220,7 +222,7 @@ describe('capture of an evolved enemy (ADR-027)', () => {
     run.player.x = run.pickups[0]?.x ?? 0;
     for (let i = 0; i < 400 && run.pickups.length > 0; i++) tick(run, { moveX: 0 }, greedy);
     // A stage 2 enemy joins at the level the rules give it, firing that level's balls.
-    const level = greedy.team.captureLevels[1] ?? 0;
+    const level = captureLevel(greedy, 2);
     expect(run.team.at(-1)).toMatchObject({ species: 'growlithe', level });
     expect(run.loadout.filter((b) => b.owner === run.team.length - 1)).toHaveLength(
       greedy.team.ballsByLevel[level - 1] ?? 1,
@@ -289,6 +291,33 @@ describe('bosses between waves (ADR-028)', () => {
     tick(run, { moveX: 0 }, twice);
     expect(run.boss.next).toBe(2);
     expect(run.boss.id).not.toBe(bossId);
+  });
+
+  it('says which boss it is: "number of total" for those between waves, then the final one (4F-E)', () => {
+    const [first] = ladder.interludes ?? [];
+    if (first === undefined) throw new Error('fixture without interlude');
+    const twice: GameConfig = { ...ladder, interludes: [first, { ...first, hpScale: 4 }] };
+    const run = createRun(twice, 4, 'charmander');
+    const spawns: GameEvent[] = [];
+    for (let i = 0; i < 2000 && !(run.boss.spawned && isBossAlive(run)); i++) {
+      for (const e of tick(run, { moveX: 0 }, twice).events) {
+        if (e.type === 'bossSpawn') spawns.push(e);
+      }
+      const alive = run.enemies.find((e) => e.id === run.boss.id && e.hp > 0);
+      if (alive !== undefined) damageEnemy(run, twice, alive, 1e9);
+      run.enemies = run.enemies.filter((e) => e.hp > 0);
+    }
+    expect(
+      spawns.map((e) => (e.type === 'bossSpawn' ? [e.number, e.interludes, e.final] : [])),
+    ).toEqual([
+      [1, 2, false],
+      [2, 2, false],
+      [3, 2, true],
+    ]);
+    // Each event names the species it placed, which is the one on the field.
+    const names = spawns.map((e) => (e.type === 'bossSpawn' ? e.species : ''));
+    expect(names.slice(0, 2)).toEqual(['rapidash', 'rapidash']);
+    expect(['moltres', 'kyogre', 'gyarados']).toContain(names[2]);
   });
 
   it('appears when its waves are over, of the type of the wave that just ended', () => {

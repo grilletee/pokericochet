@@ -24,8 +24,11 @@ export interface RunSummary {
     readonly level: number;
     readonly stage: number;
   }[];
-  /** Bosses defeated, the final one included. */
+  /** Bosses defeated, the final one included, and how many there are in a run (4F-E). */
   readonly bossesDefeated: number;
+  readonly bossesTotal: number;
+  /** The wave the run was in when it ended, 1-based and at most `wavesTotal`: what the HUD showed. */
+  readonly waveReached: number;
   /** Balls captured during the run (line species and level): the input of the rewards (ADR-025). */
   readonly captured: readonly { readonly species: string; readonly level: number }[];
   /** Orders runs: a win beats any defeat, then more waves, then more kills. */
@@ -58,6 +61,8 @@ export function summarizeRun(run: Run, config: GameConfig): RunSummary {
       stage: stageOf(config, m.level),
     })),
     bossesDefeated: run.boss.defeated,
+    bossesTotal: (config.interludes ?? []).length + (config.boss === undefined ? 0 : 1),
+    waveReached: Math.min(run.wave.index + 1, Math.max(1, wavesTotal)),
     captured: run.captured.map((c) => ({ ...c })),
     score: (result === 'won' ? WIN_SCORE : 0) + wavesCleared * WAVE_SCORE + run.kills * KILL_SCORE,
   };

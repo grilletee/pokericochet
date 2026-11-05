@@ -13,9 +13,16 @@ function speciesOf(config: GameConfig, id: string): SpeciesDef {
 /** Evolution stage (1..3) of a Pokémon of this level: one more for each threshold reached. */
 export const stageOf = stageForLevel;
 
-/** Level a captured Pokémon joins with, by the stage of the enemy it came from. */
+/**
+ * Level a captured Pokémon joins with, by the stage of the enemy it came from: the FIRST level of
+ * that stage, so what falls to the floor is what joins (4F-E). It used to be a separate table
+ * (`[1, 3, 4]`) whose third entry was below the start of stage 3 (level 6): a Kingdra boss dropped
+ * a Kingdra and joined as a Seadra. Derived from `stageLevels`, the two can no longer drift apart.
+ */
 export function captureLevel(config: GameConfig, stage: number): number {
-  return config.team.captureLevels[stage - 1] ?? 1;
+  const levels = config.team.stageLevels;
+  if (stage <= 1) return 1;
+  return levels[Math.min(stage - 2, levels.length - 1)] ?? 1;
 }
 
 /** Balls a Pokémon of this level fires. */

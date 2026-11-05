@@ -52,13 +52,13 @@ describe('events carry the form the Pokémon shows (ADR-036), with the real line
   });
 
   it('a capture joins as the form of the level it joins with, not of the enemy it came from', () => {
-    // A stage 3 Charmander arrives at its capture level (4): stage 2, Charmeleon, not Charizard.
-    expect(captureLevel(gameConfig, 3)).toBe(gameConfig.team.captureLevels[2]);
-    expect(captureForm(gameConfig, 'charmander', 3)).toBe('charmeleon');
+    // A stage 3 Charmander arrives at the first level of stage 3 (6): Charizard, what was beaten.
+    expect(captureLevel(gameConfig, 3)).toBe(gameConfig.team.stageLevels[1]);
+    expect(captureForm(gameConfig, 'charmander', 3)).toBe('charizard');
     expect(captureForm(gameConfig, 'charmander', 1)).toBe('charmander');
     const r = run('squirtle');
     joinTeam(r, gameConfig, 'charmander', 3, 100, false);
-    expect(r.events.find((e) => e.type === 'capture')).toMatchObject({ form: 'charmeleon' });
+    expect(r.events.find((e) => e.type === 'capture')).toMatchObject({ form: 'charizard' });
   });
 
   it('the replace screen events name the form of the capture and of the Pokémon that leaves', () => {
@@ -70,7 +70,7 @@ describe('events carry the form the Pokémon shows (ADR-036), with the real line
     joinTeam(r, gameConfig, 'charmander', 3, 10, false);
     expect(r.events.find((e) => e.type === 'replaceOpen')).toMatchObject({
       species: 'charmander',
-      form: 'charmeleon',
+      form: 'charizard',
     });
     r.events.length = 0;
     resolveReplace(r, gameConfig, { type: 'replace', slot: 0 });
@@ -78,7 +78,7 @@ describe('events carry the form the Pokémon shows (ADR-036), with the real line
       out: 'squirtle',
       outForm: 'wartortle',
       species: 'charmander',
-      form: 'charmeleon',
+      form: 'charizard',
     });
   });
 
@@ -88,12 +88,12 @@ describe('events carry the form the Pokémon shows (ADR-036), with the real line
       addMember(r, gameConfig, id, 1);
     }
     joinTeam(r, gameConfig, 'charmander', 3, 10, true);
-    expect(last(r.events)).toEqual({ type: 'release', species: 'charmander', form: 'charmeleon' });
+    expect(last(r.events)).toEqual({ type: 'release', species: 'charmander', form: 'charizard' });
     r.events.length = 0;
     joinTeam(r, gameConfig, 'charmander', 3, 10, false);
     r.events.length = 0;
     resolveReplace(r, gameConfig, { type: 'release' });
-    expect(last(r.events)).toEqual({ type: 'release', species: 'charmander', form: 'charmeleon' });
+    expect(last(r.events)).toEqual({ type: 'release', species: 'charmander', form: 'charizard' });
   });
 
   it('a dropped capture is named by the form of the enemy that dropped it', () => {

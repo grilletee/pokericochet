@@ -275,7 +275,18 @@ export type GameEvent =
   | { readonly type: 'release'; readonly species: string; readonly form: string }
   /** `theme` is the id of the wave's theme, or '' for a wave without one (ADR-027). */
   | { readonly type: 'waveStart'; readonly index: number; readonly theme: string }
-  | { readonly type: 'bossSpawn'; readonly enemyId: number }
+  /**
+   * A boss entered: `number` is its place in the run (1..`interludes` for the bosses between waves,
+   * then the final one), so the interface says "Jefe 2/3" or "Jefe final" (4F-E).
+   */
+  | {
+      readonly type: 'bossSpawn';
+      readonly enemyId: number;
+      readonly species: string;
+      readonly number: number;
+      readonly interludes: number;
+      readonly final: boolean;
+    }
   | { readonly type: 'bossSummon'; readonly count: number }
   /** A boss died; `index` counts the bosses defeated so far, this one included (ADR-028). */
   | { readonly type: 'bossDefeated'; readonly species: string; readonly index: number }
