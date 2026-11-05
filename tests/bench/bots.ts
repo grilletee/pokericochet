@@ -8,6 +8,7 @@ import {
   nextInt,
   type ReplaceAction,
   type Run,
+  signatureReady,
   statsOf,
   tick,
 } from '../../src/domain';
@@ -28,6 +29,31 @@ export interface Policy {
   replace?(run: Run, config: GameConfig): ReplaceAction;
   /** Use the assisted aim (the launcher picks the nearest enemy by itself). */
   readonly autoAim?: boolean;
+  /**
+   * Ticks the bot takes to throw the starter's signature once it is ready (a human reaction, 4F-D);
+   * default `SIGNATURE_REACTION_TICKS`. A negative value never throws it: the control group that
+   * shows what the signature is worth.
+   */
+  readonly signatureDelay?: number;
+}
+
+/** About 0.75 s: the time a player takes to see the glow and tap the portrait. */
+export const SIGNATURE_REACTION_TICKS = 45;
+
+/** The tick at which each run's signature became ready, so the bots can wait a human reaction time. */
+const readySince = new WeakMap<Run, number>();
+
+/** The place of the team whose signature to throw this tick, if the policy would do it now. */
+function signatureToCast(policy: Policy, run: Run, config: GameConfig): number | null {
+  const delay = policy.signatureDelay ?? SIGNATURE_REACTION_TICKS;
+  const index = run.team.findIndex((member) => member.starter);
+  if (delay < 0 || index < 0 || !signatureReady(run, config, index)) {
+    readySince.delete(run);
+    return null;
+  }
+  const since = readySince.get(run) ?? run.tickCount;
+  readySince.set(run, since);
+  return run.tickCount - since >= delay ? index : null;
 }
 
 /**
@@ -45,11 +71,15 @@ function memberWorth(member: Run['team'][number]): number {
 export function chooseReplace(run: Run, config: GameConfig): ReplaceAction {
   const pending = run.pendingCapture;
   if (pending === null) return { type: 'release' };
-  let weakest = 0;
-  for (let i = 1; i < run.team.length; i++) {
+  // The starter is the identity of the run and its signature goes with it (4F-D): never swapped.
+  let weakest = run.team.findIndex((member) => !member.starter);
+  if (weakest < 0) return { type: 'release' };
+  for (let i = weakest + 1; i < run.team.length; i++) {
     const a = run.team[i];
     const b = run.team[weakest];
-    if (a !== undefined && b !== undefined && memberWorth(a) < memberWorth(b)) weakest = i;
+    if (a !== undefined && b !== undefined && !a.starter && memberWorth(a) < memberWorth(b)) {
+      weakest = i;
+    }
   }
   const out = run.team[weakest];
   const incoming = captureLevel(config, pending.stage) * 10;
@@ -72,10 +102,12 @@ export function commandFor(policy: Policy, run: Run, config: GameConfig): Comman
   }
   const moveX = policy.move(run, config);
   const aim = policy.aim?.(run, config) ?? null;
+  const cast = signatureToCast(policy, run, config);
   return {
     moveX,
     autoAim: policy.autoAim === true,
     ...(aim === null ? {} : { aimX: aim.x, aimY: aim.y }),
+    ...(cast === null ? {} : { cast }),
   };
 }
 
@@ -241,6 +273,13 @@ export const activePolicy: Policy = {
   pick: balancedPick,
 };
 
+/** The same bot that never throws the signature: shows what throwing it is worth (4F-D, M17). */
+export const activeNoSignaturePolicy: Policy = {
+  ...activePolicy,
+  name: 'active-no-signature',
+  signatureDelay: -1,
+};
+
 /** The same bot with the assisted aim: isolates what aiming by hand is worth (ADR-021). */
 export const activeAutoPolicy: Policy = {
   name: 'active-auto',
@@ -273,6 +312,7 @@ export function chooseReplaceByStats(run: Run, config: GameConfig): ReplaceActio
   let weakest = 0;
   let weakestWorth = Number.POSITIVE_INFINITY;
   run.team.forEach((member, i) => {
+    if (member.starter) return; // the starter and its signature stay (4F-D)
     const worth = statsWorth(config, member.species, member.level) + member.damageUps;
     if (worth < weakestWorth) {
       weakestWorth = worth;
@@ -426,10 +466,19 @@ export interface Outcome {
   readonly labelsDropped: number;
   /** Per Pokémon: ticks it was in the team and moves it cast, for "a move every 40 s" (M11). */
   readonly castCoverage: readonly { readonly ticks: number; readonly casts: number }[];
-  /** The starter's moves after it reached stage 3: casts, ticks until the first, ticks it lasted (M12). */
+  /**
+   * The starter's signature, which the player throws (4F-D, M12): casts after it was ready for the
+   * first time, ticks from then to the first cast, ticks from then to the end of the run.
+   */
   readonly starterCastsLate: number;
   readonly starterFirstCastDelay: number;
   readonly starterLateTicks: number;
+  /** Tick at which the signature was ready for the first time (-1 never): when "Firma lista" shows. */
+  readonly signatureReadyTick: number;
+  /** False when the replace screen swapped the starter out (it loses its signature with it). */
+  readonly starterKept: boolean;
+  /** Stage steps with their tick and stage, for the slow-motion time of the evolution moment (M16). */
+  readonly stepList: readonly { readonly tick: number; readonly stage: number }[];
   /** Balls that left the arena at the bottom, and captured balls that dropped to the floor (pickups). */
   readonly drops: number;
   readonly captureDrops: number;
@@ -480,7 +529,8 @@ export function playRun(
   let hitDamage = 0;
   const labels = new MoveLabelPolicy(3, 900);
   const presence = new Map<string, { first: number; last: number; casts: number }>();
-  let starterStage3 = -1;
+  let firstReady = -1;
+  const stepList: { tick: number; stage: number }[] = [];
   let starterCastsLate = 0;
   let starterFirstCast = -1;
   let drops = 0;
@@ -512,7 +562,7 @@ export function playRun(
           evolutions += 1;
           steps[e.kind] += 1;
           if (firstEvolve < 0) firstEvolve = run.tickCount;
-          if (e.species === starter && e.stage === 3) starterStage3 = run.tickCount;
+          stepList.push({ tick: run.tickCount, stage: e.stage });
           break;
         case 'move': {
           moveCasts += 1;
@@ -530,7 +580,7 @@ export function playRun(
             e.y,
             (run.tickCount * 1000) / 60,
           );
-          if (e.starter && starterStage3 >= 0) {
+          if (e.manual && firstReady >= 0) {
             starterCastsLate += 1;
             if (starterFirstCast < 0) starterFirstCast = run.tickCount;
           }
@@ -602,6 +652,10 @@ export function playRun(
       }
     }
     minHp = Math.min(minHp, run.player.hp);
+    if (firstReady < 0) {
+      const index = run.team.findIndex((member) => member.starter);
+      if (index >= 0 && signatureReady(run, config, index)) firstReady = run.tickCount;
+    }
   }
   if (!teamFull) maxDrought = Math.max(maxDrought, run.tickCount - lastNewBall);
   maxDecisionGap = Math.max(maxDecisionGap, run.tickCount - lastDecision);
@@ -653,8 +707,11 @@ export function playRun(
     })),
     starterCastsLate,
     starterFirstCastDelay:
-      starterFirstCast < 0 || starterStage3 < 0 ? -1 : starterFirstCast - starterStage3,
-    starterLateTicks: starterStage3 < 0 ? 0 : run.tickCount - starterStage3,
+      starterFirstCast < 0 || firstReady < 0 ? -1 : starterFirstCast - firstReady,
+    starterLateTicks: firstReady < 0 ? 0 : run.tickCount - firstReady,
+    signatureReadyTick: firstReady,
+    starterKept: run.team.some((member) => member.starter),
+    stepList,
     drops,
     captureDrops,
     lateCaptures,
