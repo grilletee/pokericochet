@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { mergeConfig } from '../../src/app/tune';
 import { gameConfig } from '../../src/data';
 import { createBall, type GameConfig, hitDamage } from '../../src/domain';
-import { slowSeconds } from '../../src/ui';
+import { pauseSeconds } from '../../src/ui';
 import {
   activeAgainstStatsPolicy,
   activeAutoPolicy,
@@ -38,7 +38,7 @@ import {
  *  M12 starter signature casts per minute once ready, thrown by the player   >= 3, ready < 120 s, first thrown <= 5 s later
  *  M13 moves' damage     share of the total damage                    15 % - 35 %
  * 4F-D (identity):
- *  M16 evolution moment  real seconds of slow motion per minute of play  <= 4
+ *  M16 evolution moment  real seconds of pause per minute of play  <= 4
  *  M17 signature worth   win rate with it thrown - never thrown          3 - 15 points
  *  M14 line parity       damage growth by stage, 2 / 1 / 0 forms      within +-15 % of each other
  *  M15 stats matter      bot that replaces by stats - at random       >= 8 points of win rate
@@ -287,15 +287,15 @@ describe('fun metrics', () => {
         `M11 named moves: ${perMinute(active, (x) => x.moveCasts).toFixed(1)} cast per minute, ${perMinute(active, (x) => x.labelsShown).toFixed(1)} labels shown per minute (>= 10, < 25), ${pct(sum((x) => x.labelsDropped) / Math.max(1, offered))} of casts left without a label (screen full), ${pct(sum((x) => x.labelsMerged) / Math.max(1, offered))} merged`,
         `    Pokémon casting at least once per 40 s: ${pct(castingOften.length / Math.max(1, coverage.length))} of ${coverage.length}; median seconds between casts ${median(gaps).toFixed(0)}; never cast: ${pct(coverage.filter((c) => c.casts === 0).length / Math.max(1, coverage.length))}`,
         `M12 starter signature (thrown by the player): ${(sum((x) => x.starterCastsLate) / Math.max(1e-9, lateMinutes)).toFixed(1)} casts per minute after it was ready the first time (>= 3), ready after a median of ${median(late.map((x) => x.signatureReadyTick / 60)).toFixed(0)} s (<= 120), first thrown ${median(firstDelays).toFixed(0)} s after (<= 5); ${pct(late.length / active.length)} of runs reach it (>= 90 %)`,
-        `M16 slow motion of the evolution moment: ${(
-          active.reduce((a, x) => a + slowSeconds(x.stepList, 1000 / 60), 0) /
+        `M16 pause of the evolution moment: ${(
+          active.reduce((a, x) => a + pauseSeconds(x.stepList), 0) /
             Math.max(
               1e-9,
               active.reduce((a, x) => a + x.ticks / TICKS_PER_MINUTE, 0),
             )
         ).toFixed(
           2,
-        )} real seconds per minute of play (<= 4), longest run ${Math.max(...active.map((x) => slowSeconds(x.stepList, 1000 / 60))).toFixed(1)} s`,
+        )} real seconds per minute of play (<= 4), longest run ${Math.max(...active.map((x) => pauseSeconds(x.stepList))).toFixed(1)} s`,
         `    by starter: ${STARTERS.map((s, k) => {
           const mine = active.filter((_, i) => Math.floor(i / PER_STARTER) === k);
           return `${s} ready in ${pct(mine.filter((x) => x.signatureReadyTick >= 0).length / mine.length)} (kept ${pct(mine.filter((x) => x.starterKept).length / mine.length)})`;

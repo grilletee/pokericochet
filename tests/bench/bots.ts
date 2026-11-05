@@ -473,7 +473,7 @@ export interface Outcome {
   readonly starterCastsLate: number;
   readonly starterFirstCastDelay: number;
   readonly starterLateTicks: number;
-  /** Tick at which the signature was ready for the first time (-1 never): when "Firma lista" shows. */
+  /** Tick at which the signature was ready for the first time (-1 never): when "Ultimate lista" shows. */
   readonly signatureReadyTick: number;
   /** False when the replace screen swapped the starter out (it loses its signature with it). */
   readonly starterKept: boolean;

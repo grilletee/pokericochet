@@ -70,5 +70,8 @@ M = [
     # ---- the data (config)
     ("data: Charmander has no stage 2 signature", [(CF, "      charmander: [\n        null,\n        { kind: 'cross', width: 36, power: 1.8 },", "      charmander: [\n        null,\n        null,")]),
     ("data: Bulbasaur has no stage 2 signature", [(CF, "      bulbasaur: [\n        null,\n        { kind: 'beam', width: 56, power: 1.6 },", "      bulbasaur: [\n        null,\n        null,")]),
-    ("data: enemies back to 1.72 hp", [(CF, "    hpScale: 1.55,\n  },\n  // The final boss", "    hpScale: 1.72,\n  },\n  // The final boss")]),
+    ("data: enemies back to 1.72 hp",[(CF, "    hpScale: 1.55,\n  },\n  // The final boss", "    hpScale: 1.72,\n  },\n  // The final boss")]),
 ]
+
+# 4F-E replaced the slow motion by a pause: those mutants live in 4fe.py now (no anchor left here).
+M = [mutant for mutant in M if not mutant[0].startswith("moment:") or "shortens" in mutant[0] or "never extends" in mutant[0] or "reset keeps" in mutant[0]]
