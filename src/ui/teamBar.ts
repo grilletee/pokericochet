@@ -25,6 +25,18 @@ function memberKey(member: Member): string {
 export type TileGlow = 'idle' | 'near' | 'ready';
 
 /**
+ * How a Pokémon's attack type fares against the wave in progress (ADR-050): an up arrow when it is
+ * effective, a down arrow when it falls short, nothing when it is even.
+ */
+export type TileEdge = 'good' | 'poor' | 'even';
+
+const EDGE_MARK: Record<TileEdge, { text: string; color: string; label: string }> = {
+  good: { text: '▲', color: '#6be58a', label: 'eficaz contra esta oleada' },
+  poor: { text: '▼', color: '#ff7a7a', label: 'poco eficaz contra esta oleada' },
+  even: { text: '', color: 'transparent', label: '' },
+};
+
+/**
  * The team of up to six Pokémon as a row of big tiles (ADR-030): the form of its stage, its level
  * and the cards taken for it. The DOM is rebuilt only when the team changes. A captured Pokémon
  * flies from where it was picked up to its tile, which stays hidden until it arrives. Tiles are
@@ -40,6 +52,8 @@ export class TeamBar {
   private readonly pulses = new Map<number, Animation>();
   /** The "ULTIMATE" tag of each tile, shown while its signature move is ready. */
   private readonly tags = new Map<number, HTMLElement>();
+  /** The effectiveness arrow of each tile and the last edge drawn on it. */
+  private readonly edges = new Map<number, { node: HTMLElement; edge: TileEdge | null }>();
   /** Places whose tile waits for the capture sprite to land. */
   private readonly arriving = new Set<number>();
   private onInspect: (member: number) => void = () => {};
@@ -53,11 +67,13 @@ export class TeamBar {
     private readonly formOf: (member: Member) => string,
     /** How close each Pokémon is to its move (4F-D). */
     private readonly glowOf: (member: Member, index: number) => TileGlow,
+    /** How its attack type fares against the wave in progress (ADR-050). */
+    private readonly edgeOf: (member: Member) => TileEdge = () => 'even',
   ) {
     this.root = document.createElement('div');
     this.root.dataset.teamBar = '';
     this.root.style.cssText =
-      'position:absolute;left:12px;top:58px;display:none;flex-wrap:wrap;gap:4px;' +
+      'position:absolute;left:12px;top:112px;display:none;flex-wrap:wrap;gap:4px;' +
       'max-width:min(340px,calc(100% - 180px));pointer-events:none;' +
       'font-family:system-ui,sans-serif;color:#e8ecf8;';
     host.append(this.root);
@@ -82,6 +98,7 @@ export class TeamBar {
       this.tiles.clear();
       this.glows.clear();
       this.tags.clear();
+      this.edges.clear();
       this.arriving.clear();
       return;
     }
@@ -93,6 +110,7 @@ export class TeamBar {
       this.tiles.clear();
       this.glows.clear();
       this.tags.clear();
+      this.edges.clear();
       team.forEach((member, index) => {
         const tile = this.buildTile(member, index);
         if (this.arriving.has(index)) tile.style.opacity = '0';
@@ -103,6 +121,18 @@ export class TeamBar {
     team.forEach((member, index) => {
       const tile = this.tiles.get(index);
       if (tile === undefined) return;
+      const mark = this.edges.get(index);
+      if (mark !== undefined) {
+        const edge = this.edgeOf(member);
+        if (mark.edge !== edge) {
+          mark.edge = edge;
+          const look = EDGE_MARK[edge];
+          mark.node.textContent = look.text;
+          mark.node.style.color = look.color;
+          mark.node.title = look.label;
+          mark.node.dataset.edge = edge;
+        }
+      }
       const glow = this.glowOf(member, index);
       if (this.glows.get(index) === glow) return;
       this.glows.set(index, glow);
@@ -155,6 +185,14 @@ export class TeamBar {
       `background:${TYPE_COLORS[member.type]};white-space:nowrap;`;
     tile.append(tag);
     this.tags.set(index, tag);
+    // The arrow of how this Pokémon's type fares against the wave (ADR-050); filled in `update`.
+    const edge = document.createElement('div');
+    edge.dataset.tileEdge = '';
+    edge.style.cssText =
+      'position:absolute;left:-3px;top:-5px;font-size:13px;font-weight:900;line-height:1;' +
+      'text-shadow:0 0 3px #000,0 0 3px #000;pointer-events:none;';
+    tile.append(edge);
+    this.edges.set(index, { node: edge, edge: null });
     // The sheet is one tap away on a small "i": the portrait itself is for the signature.
     const info = document.createElement('button');
     info.type = 'button';

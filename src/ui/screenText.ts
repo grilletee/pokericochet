@@ -1,4 +1,11 @@
-import type { GameEvent, GameType, MoveShapeKind, RunSummary } from '../domain';
+import type {
+  BossAdvice,
+  GameEvent,
+  GameType,
+  MoveShapeKind,
+  RunSummary,
+  WaveAdvice,
+} from '../domain';
 import { typeName } from './cardText';
 import { pokemonName } from './names';
 
@@ -92,6 +99,71 @@ export function describeResults(
 /** "Jefe 2/3" for the bosses between waves and "Jefe final" for the last one (4F-E). */
 export function bossLabel(number: number, interludes: number, final: boolean): string {
   return final ? 'Jefe final' : `Jefe ${number}/${interludes}`;
+}
+
+/** Ticks to "1:12": rounded up, so the last second shows 0:01 and never 0:00 while time is left. */
+export function countdown(ticks: number): string {
+  const total = Math.ceil(Math.max(0, ticks) / 60);
+  return `${Math.floor(total / 60)}:${String(total % 60).padStart(2, '0')}`;
+}
+
+/** The strip warns that a boss is near (pulses) from this many ticks before it appears (ADR-050). */
+export const BOSS_WARNING_TICKS = 300;
+
+/** "Oleada 3/7" (the wave in progress, as the HUD counts it). */
+export function waveLabel(index: number, total: number): string {
+  return `Oleada ${index + 1}/${total}`;
+}
+
+/** The boss line of the strip: "Jefe 1/3 en 1:12", or "Jefe 1/3: ya viene" when it is about to appear. */
+export function bossCountdown(boss: BossAdvice): string {
+  const label = bossLabel(boss.number, boss.interludes, boss.final);
+  return boss.ticks <= 0 ? `${label}: ya viene` : `${label} en ${countdown(boss.ticks)}`;
+}
+
+/** What the wave cartel (a 2 s sign at the start of a wave) says (ADR-050). */
+export interface CartelText {
+  readonly title: string;
+  /** The types the wave brings, shown as icons. */
+  readonly types: readonly GameType[];
+  /** "Eficaz:" with its icons, or the sentence that says no type has an edge. */
+  readonly effectiveLabel: string;
+  readonly effective: readonly GameType[];
+  /** "Al acabar: Jefe 1/3" when a boss comes as this wave ends, else null. */
+  readonly boss: string | null;
+}
+
+export function waveCartel(advice: WaveAdvice, themeName: string): CartelText {
+  const name = themeName === '' ? '' : ` · ${themeName}`;
+  const effective = advice.effective.slice(0, 3);
+  const bossNext = advice.boss !== null && advice.boss.ticks <= advice.ticksLeft;
+  return {
+    title: `OLEADA ${advice.index + 1}/${advice.total}${name}`,
+    types: advice.types,
+    effectiveLabel: effective.length > 0 ? 'Eficaz:' : 'Ningún tipo tiene ventaja',
+    effective,
+    boss:
+      bossNext && advice.boss !== null
+        ? `Al acabar: ${bossLabel(advice.boss.number, advice.boss.interludes, advice.boss.final)}`
+        : null,
+  };
+}
+
+/** The cartel of a boss that has just appeared: its name, its type and what beats it. */
+export function bossCartel(
+  label: string,
+  species: string,
+  types: readonly GameType[],
+  effective: readonly GameType[],
+): CartelText {
+  const shown = effective.slice(0, 3);
+  return {
+    title: `${label.toUpperCase()} · ${pokemonName(species)}`,
+    types,
+    effectiveLabel: shown.length > 0 ? 'Eficaz:' : 'Ningún tipo tiene ventaja',
+    effective: shown,
+    boss: null,
+  };
 }
 
 /** The announcement of a step: an evolution, an awakening or the maximum power (ADR-037). */

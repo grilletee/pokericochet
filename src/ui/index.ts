@@ -21,7 +21,11 @@ export type { StarterOption } from './screens';
 export { CreditsScreen, ResultsScreen, StartScreen } from './screens';
 export type { BestRunView, ResultsText } from './screenText';
 export {
+  BOSS_WARNING_TICKS,
+  bossCartel,
+  bossCountdown,
   bossLabel,
+  countdown,
   describeBest,
   describeEvent,
   describeResults,
@@ -29,10 +33,15 @@ export {
   signatureLine,
   stageText,
   starterBlurb,
+  waveCartel,
+  waveLabel,
 } from './screenText';
 export { barPercent, oneDecimal, STAT_BAR_MAX, STAT_ROWS, statBars, statSummary } from './statBars';
-export type { TileGlow } from './teamBar';
+export type { TileEdge, TileGlow } from './teamBar';
 export { EvolutionBanner, TeamBar } from './teamBar';
 export type { TuneRow } from './tunePanel';
 export { TunePanel } from './tunePanel';
 export { TYPE_COLORS } from './typeColors';
+export { typeIcon, typeIcons } from './typeIcons';
+export { BOSS_CARTEL_MS, CARTEL_MS, SignQueue, WaveBanner } from './waveBanner';
+export { WaveStrip } from './waveStrip';

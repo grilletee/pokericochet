@@ -4,12 +4,16 @@ import { pokemonName } from './names';
 import { TYPE_COLORS } from './typeColors';
 
 /**
- * Real milliseconds the game stops for a stage step (4F-E): about one second, a little longer for
- * the maximum stage. The 4F-D slow motion was dropped: "it cuts the rhythm and feels odd".
+ * Real milliseconds the game stops for a stage step: about two seconds, a little longer for the
+ * maximum stage (4H-B1; one second in 4F-E was "a bit short to see it well"). The 4F-D slow motion
+ * was dropped: "it cuts the rhythm and feels odd". A tap or a key skips it (`GamePause.skip`).
  */
 export function pauseMs(stage: number): number {
-  return stage >= 3 ? 1200 : 1000;
+  return stage >= 3 ? 2400 : 2000;
 }
+
+/** A skip counts only after this long, so the tap that was meant for the game does not cancel it. */
+export const SKIP_GRACE_MS = 300;
 
 /**
  * The pause of the app while an evolution plays in the foreground. The run is paused at the app
@@ -18,9 +22,11 @@ export function pauseMs(stage: number): number {
  */
 export class GamePause {
   private until = Number.NEGATIVE_INFINITY;
+  private since = Number.NEGATIVE_INFINITY;
 
   /** Starts (or extends) a pause of `ms` from `now`. */
   start(now: number, ms: number): void {
+    if (now >= this.until) this.since = now;
     this.until = Math.max(this.until, now + ms);
   }
 
@@ -29,8 +35,19 @@ export class GamePause {
     return now < this.until;
   }
 
+  /**
+   * Ends the pause early (a tap or a key). Returns true if it did: nothing happens when no pause
+   * is on or when it started less than `SKIP_GRACE_MS` ago.
+   */
+  skip(now: number): boolean {
+    if (!this.active(now) || now - this.since < SKIP_GRACE_MS) return false;
+    this.until = Number.NEGATIVE_INFINITY;
+    return true;
+  }
+
   reset(): void {
     this.until = Number.NEGATIVE_INFINITY;
+    this.since = Number.NEGATIVE_INFINITY;
   }
 }
 
@@ -81,7 +98,8 @@ export interface MomentView {
  * The evolution moment (4F-D, pause instead of slow motion in 4F-E, polished in 4E): the game is
  * paused by the app (`GamePause`) while the screen dims and the old form shows as a glowing
  * silhouette in the foreground; a flash changes it into the new form and the name of what it
- * became appears big in the centre. It takes no pointer events and ends by itself.
+ * became appears big in the centre. It takes no pointer events and ends by itself, or earlier when
+ * the app skips the pause (a tap or a key, 4H-B1: the app calls `hide`).
  */
 export class EvolutionMoment {
   private readonly root: HTMLDivElement;

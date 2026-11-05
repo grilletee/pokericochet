@@ -245,6 +245,25 @@ try {
   await creditsPage.waitForFunction(() => window.__debug().screen === 'menu');
   check('Escape goes back from the credits to the title screen', true);
 
+  // The evolution pause can be skipped with a key (and a tap), after a short grace (4H-B1).
+  for (const how of ['key', 'tap']) {
+    const skip = await open('starter=charmander&ballLevel=2&offers=growth&seed=9');
+    await skip.waitForFunction(() => window.__debug().phase === 'levelup');
+    await skip.locator('button[data-card="0"]').click();
+    await skip.waitForFunction(() => window.__debug().phase === 'playing');
+    const moment2 = skip.locator('[data-evolution-moment]');
+    check(`(${how}) the evolution moment is up before the skip`, await moment2.isVisible());
+    const stoppedAt = (await dbg(skip)).tick;
+    await skip.waitForTimeout(450); // past the grace
+    if (how === 'key') await skip.keyboard.press('Space');
+    else await skip.mouse.click(270, 400);
+    await skip.waitForTimeout(250);
+    check(`(${how}) it ends at once, long before its two seconds`, !(await moment2.isVisible()));
+    await skip.waitForTimeout(300);
+    check(`(${how}) and the game goes on`, (await dbg(skip)).tick > stoppedAt);
+    await skip.close();
+  }
+
   // Sound switch: present, and the choice is remembered.
   await creditsPage.locator('[data-sound-toggle]').click();
   check(
@@ -292,7 +311,7 @@ try {
   );
   check('the flash turns the name into the new form', true);
   await evo.screenshot({ path: outFile.replace('.png', '-moment.png') });
-  // The game is stopped for about a second (4F-E): no tick while the moment is up.
+  // The game is stopped for about two seconds (4H-B1): no tick while the moment is up.
   const pausedAt = (await dbg(evo)).tick;
   await evo.waitForTimeout(200);
   check('evolving stops the game while it plays', (await dbg(evo)).tick === pausedAt);
@@ -489,13 +508,84 @@ try {
   // Themed waves: the first wave is announced with its theme, its type and what beats it.
   const themePage = await open('starter=charmander&seed=9');
   await themePage.waitForTimeout(300);
-  const themeText = (await themePage.locator('body').textContent()) ?? '';
+  // The wave cartel (4H-B1, ADR-050): its own sign with the theme, the type icons and what is
+  // effective; the strip under the HUD always says the wave, the clock and the next boss.
+  const cartel = themePage.locator('[data-cartel]');
+  const cartelText = (await cartel.textContent()) ?? '';
   check(
-    'the first wave is announced with its theme and the types that beat it',
-    /Oleada 1: .+\(.+\) · le gana/.test(themeText),
-    themeText.slice(0, 200),
+    'the first wave is announced by a cartel with its number and its theme',
+    (await cartel.isVisible()) && /OLEADA 1\/7 · .+/.test(cartelText),
+    cartelText,
+  );
+  check(
+    'the cartel shows the types of the wave as icons and says what is effective',
+    (await cartel.locator('[data-type-icon]').count()) >= 2 &&
+      (cartelText.includes('Eficaz:') || cartelText.includes('Ningún tipo tiene ventaja')),
+    cartelText,
+  );
+  check(
+    'the cartel says which boss comes (the first one is two waves away: none yet)',
+    !cartelText.includes('Al acabar'),
+    cartelText,
+  );
+  const stripText = (await themePage.locator('[data-wave-strip]').textContent()) ?? '';
+  check(
+    'the strip shows the wave, its seconds, and how long until the first boss',
+    stripText.includes('Oleada 1/7') &&
+      /\d+ s/.test(stripText) &&
+      /Jefe 1\/3 en \d:\d\d/.test(stripText),
+    stripText,
+  );
+  check(
+    'the strip carries the type icons',
+    (await themePage.locator('[data-wave-strip] [data-type-icon]').count()) >= 1,
+  );
+  check(
+    'every tile of the team bar has its effectiveness arrow slot',
+    (await themePage.locator('[data-team-tile] [data-tile-edge]').count()) >= 1,
   );
   await themePage.screenshot({ path: outFile.replace('.png', '-theme.png') });
+  // A1/A2: the strip is readable on a phone and never lies over the buttons or the team bar.
+  const overlaps = (a, b) =>
+    a !== null &&
+    b !== null &&
+    a.x < b.x + b.width &&
+    b.x < a.x + a.width &&
+    a.y < b.y + b.height &&
+    b.y < a.y + a.height;
+  for (const [label, size] of [
+    ['desktop', { width: 540, height: 820 }],
+    ['phone', { width: 360, height: 640 }],
+  ]) {
+    const view = await open('starter=charmander&seed=9', size);
+    await view.waitForTimeout(400);
+    const stripBox = await view.locator('[data-wave-strip]').boundingBox();
+    const others = [
+      await view.locator('[data-sound-toggle]').boundingBox(),
+      await view.locator('[data-aim-toggle]').boundingBox(),
+      await view.locator('[data-team-bar]').boundingBox(),
+    ];
+    check(
+      `(${label}) the strip is inside the screen and clear of the buttons and the team bar`,
+      stripBox !== null &&
+        stripBox.x >= 0 &&
+        stripBox.x + stripBox.width <= size.width &&
+        others.every((box) => !overlaps(stripBox, box)),
+      JSON.stringify({ stripBox, others }),
+    );
+    if (label === 'phone') await view.screenshot({ path: outFile.replace('.png', '-phone.png') });
+    await view.close();
+  }
+  await themePage.waitForFunction(
+    () => getComputedStyle(document.querySelector('[data-cartel]')).display === 'none',
+    undefined,
+    { timeout: 4000 },
+  );
+  check('the cartel takes itself down after about two seconds', true);
+  check(
+    'no toast repeats the wave message',
+    !((await themePage.locator('body').textContent()) ?? '').includes('Oleada 1: '),
+  );
 
   // Boss: jumping to the last wave brings it in, with its health bar.
   const bossPage = await open('starter=pikachu&wave=7&seed=3');
@@ -503,6 +593,17 @@ try {
   check('the boss appears after the last wave', true);
   await bossPage.waitForTimeout(400);
   check('the boss bar is visible', await bossPage.locator('[data-boss-bar]').isVisible());
+  // Wave 7 jumped to: the wave cartel is up, and the boss one waits its turn behind it (A1).
+  await bossPage.waitForFunction(
+    () => document.querySelector('[data-cartel]')?.textContent?.includes('JEFE FINAL'),
+    undefined,
+    { timeout: 6000 },
+  );
+  check('the boss gets its own cartel, after the wave one, with its name', true);
+  check(
+    'while a boss lives the strip says which one instead of the clock',
+    ((await bossPage.locator('[data-wave-strip]').textContent()) ?? '').includes('Jefe final'),
+  );
   check(
     'the final boss is a legendary named on its bar',
     /(Moltres|Kyogre|Virizion|Zapdos)/.test(

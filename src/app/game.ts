@@ -15,6 +15,7 @@ import {
   type GameConfig,
   type GameEvent,
   guardAfterReplace,
+  matchup,
   moveIdOf,
   nextStep,
   PHASE_LEVELUP,
@@ -30,11 +31,15 @@ import {
   syncMember,
   teamGuard,
   tick,
+  typeAdvice,
+  type WaveAdvice,
+  waveAdvice,
   writeSnapshot,
 } from '../domain';
 import { Renderer } from '../render';
 import {
   AimToggle,
+  bossCartel,
   bossLabel,
   type CardTextContext,
   CreditsScreen,
@@ -64,9 +69,13 @@ import {
   signatureLine,
   spriteTile,
   TeamBar,
+  type TileEdge,
   type TileGlow,
   TunePanel,
   typeName,
+  WaveBanner,
+  WaveStrip,
+  waveCartel,
 } from '../ui';
 import { BENCH_LOADS, type BenchLoad, benchScenario } from './benchScenario';
 import { type BestRun, browserStore, loadBestRun, saveIfBest } from './bestRun';
@@ -363,6 +372,8 @@ export async function startGame(host: HTMLElement): Promise<void> {
     forms,
   );
   const overlay = new Overlay(host);
+  // What the wave in progress is, for the strip and the arrows of the team bar (ADR-050).
+  let advice: WaveAdvice | null = null;
   const teamBar = new TeamBar(
     host,
     art,
@@ -373,7 +384,14 @@ export async function startGame(host: HTMLElement): Promise<void> {
       const need = chargeNeed(config, stageForLevel(config, member.level));
       return member.charge >= need * NEAR_CHARGE ? 'near' : 'idle';
     },
+    (member): TileEdge => {
+      if (advice === null || advice.types.length === 0) return 'even';
+      const value = matchup(config, member.type, advice.types);
+      return value > 1 ? 'good' : value < 1 ? 'poor' : 'even';
+    },
   );
+  const cartel = new WaveBanner(host);
+  const strip = new WaveStrip(host);
   const replaceScreen = new ReplaceScreen(host);
   const sheet = new MemberSheet(host);
   const moveLabels = new MoveLabels(host);
@@ -382,6 +400,12 @@ export async function startGame(host: HTMLElement): Promise<void> {
   const banner = new EvolutionBanner(host);
   const moment = new EvolutionMoment(host);
   const pause = new GamePause();
+  // A tap or any key skips the evolution pause (4H-B1); the grace time lives in `GamePause.skip`.
+  const skipEvolution = (): void => {
+    if (pause.skip(performance.now())) moment.hide();
+  };
+  host.addEventListener('pointerdown', skipEvolution);
+  window.addEventListener('keydown', skipEvolution);
   const startScreen = new StartScreen(host);
   const creditsScreen = new CreditsScreen(host);
   const resultsScreen = new ResultsScreen(host);
@@ -534,6 +558,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
     resultsScreen.hide();
     banner.hide();
     moment.hide();
+    cartel.hide();
     pause.reset();
     signatureAnnounced = false;
     signatureWasReady = false;
@@ -634,7 +659,24 @@ export async function startGame(host: HTMLElement): Promise<void> {
   /** The DOM feedback of the events of this frame: captures fly to the team bar, evolutions show. */
   const showEventFeedback = (events: readonly GameEvent[], now: number): void => {
     for (const event of events) {
-      if (event.type === 'capture') {
+      if (event.type === 'waveStart') {
+        // The sign of the wave (ADR-050): its own element, one at a time, never a toast.
+        const current = waveAdvice(run, config);
+        cartel.push(waveCartel(current, config.themes?.[event.theme]?.name ?? ''), now);
+      } else if (event.type === 'bossSpawn') {
+        const type = config.species[event.species]?.type;
+        const types = type === undefined ? [] : [type];
+        cartel.push(
+          bossCartel(
+            bossLabel(event.number, event.interludes, event.final),
+            event.species,
+            types,
+            typeAdvice(config, types).effective,
+          ),
+          now,
+          true,
+        );
+      } else if (event.type === 'capture') {
         const from = toScreen(event.x, config.player.y);
         teamBar.flyCapture(
           memberOfBall(event.ballId),
@@ -761,8 +803,15 @@ export async function startGame(host: HTMLElement): Promise<void> {
         pending.push(event);
         if (event.type === 'move') moveCasts += 1;
         const text = describeEvent(event, themeLabel);
-        // Stage steps and hybrids have their own banner with the sprites: no second message.
-        if (text !== null && event.type !== 'stage' && event.type !== 'hybrid') {
+        // Stage steps and hybrids have their own banner with the sprites, and waves and bosses have
+        // the cartel (ADR-050): no second message, a toast would cover them.
+        if (
+          text !== null &&
+          event.type !== 'stage' &&
+          event.type !== 'hybrid' &&
+          event.type !== 'waveStart' &&
+          event.type !== 'bossSpawn'
+        ) {
           overlay.showToast(text, now);
         }
         sound.playEvent(event, now);
@@ -784,6 +833,14 @@ export async function startGame(host: HTMLElement): Promise<void> {
       }
     }
 
+    advice = !bench && screen === 'playing' ? waveAdvice(run, config) : null;
+    strip.update(
+      advice,
+      curr.bossHp > 0
+        ? bossLabel(run.boss.next, (config.interludes ?? []).length, run.boss.spawned)
+        : null,
+    );
+    cartel.update(now);
     teamBar.update(!bench && screen === 'playing' ? run.team : null);
     if (!bench && screen === 'playing') {
       const index = run.team.findIndex((member) => member.starter);
