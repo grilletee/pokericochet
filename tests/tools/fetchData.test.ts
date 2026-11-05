@@ -464,4 +464,135 @@ describe('fetch-data: cache and pauses', () => {
     expect(files.size).toBe(0);
     expect(fetcher.networkRequests).toBe(3);
   });
+
+  it('waits four times longer after a 429 (Too Many Requests)', async () => {
+    const { fetcher, log } = setup([new Error('HTTP 429'), bytes(1)]);
+    await fetcher.get('u', 'c');
+    expect(log).toEqual(['GET u', 'sleep 800', 'GET u']);
+  });
+});
+
+describe('fetch-data: concurrent workers (4H-B1, ADR-048)', () => {
+  /** A download that stays open until the test lets it finish, so the overlap can be measured. */
+  function gated(concurrency?: number) {
+    const files = new Map<string, Uint8Array>();
+    const sleeps: number[] = [];
+    const open: Array<() => void> = [];
+    let inFlight = 0;
+    let peak = 0;
+    let started = 0;
+    const fetcher = new PoliteFetcher(
+      {
+        exists: (p) => files.has(p),
+        read: (p) => files.get(p) ?? new Uint8Array(),
+        write: (p, d) => {
+          files.set(p, d);
+        },
+        download: () => {
+          started += 1;
+          inFlight += 1;
+          peak = Math.max(peak, inFlight);
+          return new Promise<Uint8Array>((resolve) => {
+            open.push(() => {
+              inFlight -= 1;
+              resolve(Uint8Array.from([1]));
+            });
+          });
+        },
+        sleep: async (ms) => {
+          sleeps.push(ms);
+        },
+      },
+      { delayMs: 500, retries: 0, ...(concurrency === undefined ? {} : { concurrency }) },
+    );
+    const settle = async (): Promise<void> => {
+      await new Promise((done) => setTimeout(done, 0));
+    };
+    return {
+      fetcher,
+      sleeps,
+      settle,
+      get peak() {
+        return peak;
+      },
+      get started() {
+        return started;
+      },
+      finishOne: () => open.shift()?.(),
+    };
+  }
+
+  it('never has more downloads open than its workers, and the rest wait their turn', async () => {
+    const g = gated(4);
+    const all = Promise.all(Array.from({ length: 10 }, (_, i) => g.fetcher.get(`u${i}`, `c${i}`)));
+    await g.settle();
+    expect(g.started).toBe(4);
+    g.finishOne();
+    await g.settle();
+    expect(g.started).toBe(5); // a worker that finished took the next one
+    for (let i = 0; i < 9; i++) {
+      g.finishOne();
+      await g.settle();
+    }
+    await all;
+    expect(g.started).toBe(10);
+    expect(g.peak).toBe(4);
+  });
+
+  it('each worker pauses before its own second request and never before its first', async () => {
+    const g = gated(4);
+    const all = Promise.all(Array.from({ length: 8 }, (_, i) => g.fetcher.get(`u${i}`, `c${i}`)));
+    await g.settle();
+    expect(g.sleeps).toEqual([]); // the first four go out at once: 4 workers, 4 first requests
+    for (let i = 0; i < 8; i++) {
+      g.finishOne();
+      await g.settle();
+    }
+    await all;
+    expect(g.sleeps).toEqual([500, 500, 500, 500]); // the second round of each worker
+  });
+
+  it('lets two callers that ask for the same file share one download', async () => {
+    const g = gated(4);
+    const a = g.fetcher.get('u', 'same');
+    const b = g.fetcher.get('u', 'same');
+    await g.settle();
+    expect(g.started).toBe(1);
+    g.finishOne();
+    expect(await a).toEqual(await b);
+    expect(g.fetcher.networkRequests).toBe(1);
+  });
+
+  it('forgets a download that failed, so asking again tries again', async () => {
+    let calls = 0;
+    const fetcher = new PoliteFetcher(
+      {
+        exists: () => false,
+        read: () => new Uint8Array(),
+        write: () => {},
+        download: async () => {
+          calls += 1;
+          if (calls === 1) throw new Error('HTTP 500');
+          return Uint8Array.from([7]);
+        },
+        sleep: async () => {},
+      },
+      { delayMs: 1, retries: 0, concurrency: 2 },
+    );
+    await expect(fetcher.get('u', 'c')).rejects.toThrow(/HTTP 500/);
+    expect((await fetcher.get('u', 'c')).data).toEqual(Uint8Array.from([7]));
+  });
+
+  it('is sequential by default, as before (no concurrency asked for)', async () => {
+    const g = gated(undefined);
+    const all = Promise.all([g.fetcher.get('a', 'ca'), g.fetcher.get('b', 'cb')]);
+    await g.settle();
+    expect(g.started).toBe(1);
+    g.finishOne();
+    await g.settle();
+    g.finishOne();
+    await all;
+    expect(g.peak).toBe(1);
+    expect(g.sleeps).toEqual([500]);
+  });
 });

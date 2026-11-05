@@ -8,9 +8,9 @@ jobs:
   # The only job that may download from PokéAPI. Sprites are never committed (ADR-018): every build
   # needs the files that tools/fetch-data generates. The cache keeps the raw responses (species,
   # names, moves) and the sprites between runs, so a warm build makes no network request at all.
-  # A cold one downloads about 430 responses, spaced by 700 ms (about 7 minutes), once. The key
-  # depends only on what decides WHICH responses are needed (the roster and the hand-made move
-  # table), not on the tool's code, and `restore-keys` starts from the closest older cache: adding
+  # A cold one downloads about 650 responses with 4 workers (about 6 a second, under two minutes), once. The key
+  # depends only on what decides WHICH responses are needed (the roster, the hand-made move
+  # table and the list of the 18 types in typechart.ts), not on the rest of the tool's code, and `restore-keys` starts from the closest older cache: adding
   # a species downloads only the new ones. Raw responses are keyed by URL, so changing how they
   # are parsed never downloads anything.
   # Every other job (the Node matrix below, the Pages deploy) only RESTORES this cache and fails
@@ -26,18 +26,42 @@ jobs:
           node-version: 22.x
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - uses: actions/cache@v4
+      # Restore, download, save: three steps instead of `actions/cache`, so that a download that is
+      # cut short is KEPT and the next run goes on from where it stopped (ADR-048). The partial cache
+      # has its own key (`-partial-<run>`) so that nothing mistakes it for a complete one: only the
+      # exact key `fetch-data-<hash>` means "complete", and only a green run saves it.
+      - id: data-cache
+        uses: actions/cache/restore@v4
         with:
           path: |
             tools/fetch-data/.cache
             src/assets/sprites
-          key: fetch-data-${{ hashFiles('tools/fetch-data/roster.json', 'tools/fetch-data/moves-overrides.json') }}
+          key: fetch-data-${{ hashFiles('tools/fetch-data/roster.json', 'tools/fetch-data/moves-overrides.json', 'tools/fetch-data/typechart.ts') }}
           restore-keys: |
+            fetch-data-${{ hashFiles('tools/fetch-data/roster.json', 'tools/fetch-data/moves-overrides.json', 'tools/fetch-data/typechart.ts') }}-partial-
             fetch-data-
+      # 4 workers with 500 ms each (about 6 requests a second): the step limit stays under the job's,
+      # so the partial save below always has time to run.
       - run: pnpm fetch-data
         timeout-minutes: 20
       # The committed species.json must be exactly what the tool generates.
       - run: git diff --exit-code -- src/data/generated
+      - name: Save the complete data cache
+        if: steps.data-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            tools/fetch-data/.cache
+            src/assets/sprites
+          key: fetch-data-${{ hashFiles('tools/fetch-data/roster.json', 'tools/fetch-data/moves-overrides.json', 'tools/fetch-data/typechart.ts') }}
+      - name: Save what was downloaded so far (the step failed or ran out of time)
+        if: failure()
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            tools/fetch-data/.cache
+            src/assets/sprites
+          key: fetch-data-${{ hashFiles('tools/fetch-data/roster.json', 'tools/fetch-data/moves-overrides.json', 'tools/fetch-data/typechart.ts') }}-partial-${{ github.run_id }}
 
   check:
     needs: data
@@ -65,7 +89,7 @@ jobs:
           path: |
             tools/fetch-data/.cache
             src/assets/sprites
-          key: fetch-data-${{ hashFiles('tools/fetch-data/roster.json', 'tools/fetch-data/moves-overrides.json') }}
+          key: fetch-data-${{ hashFiles('tools/fetch-data/roster.json', 'tools/fetch-data/moves-overrides.json', 'tools/fetch-data/typechart.ts') }}
       - name: Stop if the data cache is missing
         if: steps.data-cache.outputs.cache-hit != 'true'
         run: |

@@ -3,7 +3,13 @@
   "vcs": { "enabled": true, "clientKind": "git", "useIgnoreFile": true },
   "files": {
     "ignoreUnknown": false,
-    "includes": ["**", "!**/*.md", "!pnpm-lock.yaml", "!src/data/generated"]
+    "includes": [
+      "**",
+      "!**/*.md",
+      "!pnpm-lock.yaml",
+      "!src/data/generated",
+      "!tools/fetch-data/roster.generated.json"
+    ]
   },
   "formatter": { "enabled": true, "indentStyle": "space", "indentWidth": 2, "lineWidth": 100 },
   "linter": {
