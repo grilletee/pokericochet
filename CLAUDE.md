@@ -22,6 +22,13 @@ El usuario hace sus propios commit/pull/push. NO ejecutes git commit, push ni pu
 - Tests con Vitest para el dominio; sin lógica de juego en el render.
 - Código y comentarios en inglés; conversación en español.
 
+## Reglas de edición
+Regla permanente del usuario (2026-11-05), tras romperla cuatro veces:
+- Edita ficheros SOLO con las herramientas de edición (Edit/Write).
+- Nada de `sed -i`, scripts de Python ni ningún otro comando que reescriba ficheros (ni de código ni de notas).
+- Se permiten scripts de solo lectura (medir, listar, comprobar) y el formateador del proyecto (biome).
+- Antes de dar comandos de commit, revisa `git diff --stat` y confirma que no hay borrados inesperados.
+
 ## Fases
 0 validación, 1 GDD (1 página), 2 arquitectura (1 página), 3 vertical slice (2 semanas), 4 iteraciones, 5 publicación.
 
