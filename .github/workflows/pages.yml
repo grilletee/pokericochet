@@ -1,8 +1,14 @@
 name: Deploy to GitHub Pages
 
 # One-time setup in the repository: Settings > Pages > Build and deployment > Source: "GitHub Actions".
+#
+# It runs only AFTER the CI workflow has passed on main, and it only restores the fetch-data cache
+# that CI's `data` job filled: it never downloads from PokéAPI, so the two can no longer fight over
+# a cold download (deploy #10 failed after 16 minutes for that reason, ADR-040).
 on:
-  push:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
     branches: [main]
   workflow_dispatch:
 
@@ -18,9 +24,15 @@ concurrency:
 
 jobs:
   build:
+    # A manual run is allowed on its own; an automatic one needs a green CI on a push.
+    if: github.event_name == 'workflow_dispatch' || (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push')
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
+        with:
+          # The commit CI tested, not whatever main is by now.
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:
@@ -32,17 +44,23 @@ jobs:
       - run: pnpm typecheck
       - run: pnpm test
 
-      # Sprites are never committed (ADR-018): fetched on every build, cached between builds. Same
-      # key as ci.yml (see the note there), so both workflows share one cache.
-      - uses: actions/cache@v4
+      # Sprites are never committed (ADR-018). Same key as ci.yml: restore only, never fill.
+      - id: data-cache
+        uses: actions/cache/restore@v4
         with:
           path: |
             tools/fetch-data/.cache
             src/assets/sprites
           key: fetch-data-${{ hashFiles('tools/fetch-data/roster.json', 'tools/fetch-data/moves-overrides.json') }}
-          restore-keys: |
-            fetch-data-
+      - name: Stop if the data cache is missing
+        if: steps.data-cache.outputs.cache-hit != 'true'
+        run: |
+          echo "::error::The fetch-data cache is missing. Run the CI workflow on main first (its 'data' job fills it), then re-run this one."
+          exit 1
+      # With the cache restored this makes no request; the timeout makes sure it can never turn into
+      # a long cold download.
       - run: pnpm fetch-data
+        timeout-minutes: 3
       - run: git diff --exit-code -- src/data/generated
       # The page must carry the sprites and the affiliation notice: fail if either is missing.
       - run: test "$(ls src/assets/sprites/*.png | wc -l)" -ge 41
@@ -57,6 +75,7 @@ jobs:
   deploy:
     needs: build
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
