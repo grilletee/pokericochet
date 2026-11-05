@@ -181,6 +181,11 @@ export interface Command {
   readonly aimY?: number;
   /** Switches the assisted aim on or off; omitted = keep. */
   readonly autoAim?: boolean;
+  /**
+   * Place in the team of the Pokémon whose signature the player throws this tick (4F-D). Omitted =
+   * none. It does nothing if that Pokémon's signature is not ready.
+   */
+  readonly cast?: number;
   /** `pick` only means something in the level-up phase, `replace` and `release` in the replace phase. */
   readonly action?: PickAction | ReplaceAction;
 }
@@ -296,6 +301,10 @@ export type GameEvent =
       readonly species: string;
       /** True for the Pokémon the run began with: its moves get the label priority (ADR-039). */
       readonly starter: boolean;
+      /** True when the player threw it (the starter's signature, 4F-D); false when it went off. */
+      readonly manual: boolean;
+      /** True when the shape is a hand-made signature of the line rather than the tier's. */
+      readonly signature: boolean;
       readonly move: string;
       readonly tier: number;
       /** Type of the Pokémon that cast it (the colour of the shape). */

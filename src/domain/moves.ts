@@ -1,6 +1,7 @@
 import { hitDamage } from './combat';
 import type { GameConfig, MoveShapeDef } from './config';
 import { ballPower, damageEnemy, nearestOther } from './effects';
+import { stageForLevel } from './forms';
 import type { Run } from './run';
 import type { Ball, Enemy } from './types';
 
@@ -16,20 +17,40 @@ export function moveShape(
   base: string,
   stage: number,
 ): MoveShapeDef & { readonly power: number } {
-  const { tiers, signatures } = config.moves;
+  const { tiers } = config.moves;
   const tier = tiers[stage - 1] ?? tiers[tiers.length - 1] ?? { kind: 'burst', power: 1 };
-  const list = signatures[base];
-  // Past the end of the list the last entry repeats; an explicit null keeps the tier's shape.
-  const own =
-    list === undefined
-      ? undefined
-      : stage - 1 < list.length
-        ? list[stage - 1]
-        : list[list.length - 1];
+  const own = signatureOf(config, base, stage);
   // A signature is a whole shape of its own: it takes nothing of the tier's size, only its
   // strength when it does not give one (a cross must not inherit the radius of a nova).
-  if (own === undefined || own === null) return tier;
+  if (own === null) return tier;
   return { ...own, power: own.power ?? tier.power };
+}
+
+/**
+ * The hand-made shape of a species line at a stage, or null when it only has its tier's. Past the
+ * end of the list the last entry repeats; an explicit null keeps the tier's shape.
+ */
+export function signatureOf(config: GameConfig, base: string, stage: number): MoveShapeDef | null {
+  const list = config.moves.signatures[base];
+  if (list === undefined) return null;
+  const own = stage - 1 < list.length ? list[stage - 1] : list[list.length - 1];
+  return own ?? null;
+}
+
+/**
+ * True when the Pokémon at `index` can be told to cast its signature now (4F-D): it is the
+ * starter, its stage has a signature and its charge is full. The signature never goes off on its
+ * own; the player throws it.
+ */
+export function signatureReady(run: Run, config: GameConfig, index: number): boolean {
+  const member = run.team[index];
+  if (member === undefined || !member.starter) return false;
+  const stage = stageForLevel(config, member.level);
+  return (
+    signatureOf(config, member.species, stage) !== null &&
+    moveIdOf(config, member.species, stage) !== undefined &&
+    member.charge >= chargeNeed(config, stage)
+  );
 }
 
 /** The move id a species line has at a stage, if it has data for one. */
@@ -131,14 +152,72 @@ export function landHit(run: Run, config: GameConfig, ball: Ball, target: Enemy)
   if (member === undefined) return;
   const move = moveIdOf(config, member.species, ball.stage);
   if (move === undefined) return;
+  const need = chargeNeed(config, ball.stage);
   member.charge += 1;
-  if (member.charge < chargeNeed(config, ball.stage)) return;
+  if (member.charge < need) return;
+  if (member.starter && signatureOf(config, member.species, ball.stage) !== null) {
+    // The signature waits for the player (4F-D): the charge stays full, it does not pile up.
+    member.charge = need;
+    return;
+  }
   member.charge = 0;
+  castMove(run, config, ball, move, target.x, target.y, target, false);
+}
 
+/** The enemy nearest to a point (ties: the first in array order), or null if none lives. */
+function enemyNear(run: Run, x: number, y: number): Enemy | null {
+  let best: Enemy | null = null;
+  let bestD2 = Number.POSITIVE_INFINITY;
+  for (const enemy of run.enemies) {
+    if (enemy.hp <= 0) continue;
+    const d2 = (enemy.x - x) * (enemy.x - x) + (enemy.y - y) * (enemy.y - y);
+    if (d2 < bestD2) {
+      best = enemy;
+      bestD2 = d2;
+    }
+  }
+  return best;
+}
+
+/**
+ * The player throws the signature of the Pokémon at `index` (4F-D). It lands where the player aims
+ * (manual aim) or on the enemy nearest to the launcher (assisted aim), and does nothing, keeping
+ * the charge, when it is not ready or no enemy is alive. A command, so the run stays a function of
+ * its seed and its commands. Returns true if it was cast.
+ */
+export function castSignature(run: Run, config: GameConfig, index: number): boolean {
+  if (!signatureReady(run, config, index)) return false;
+  const ball = run.loadout.find((candidate) => candidate.owner === index);
+  const member = run.team[index];
+  if (ball === undefined || member === undefined) return false;
+  const move = moveIdOf(config, member.species, ball.stage);
+  if (move === undefined) return false;
+  const at = run.autoAim
+    ? enemyNear(run, run.player.x, config.player.y)
+    : enemyNear(run, run.aimX, run.aimY);
+  if (at === null) return false;
+  const x = run.autoAim ? at.x : run.aimX;
+  const y = run.autoAim ? at.y : run.aimY;
+  member.charge = 0;
+  castMove(run, config, ball, move, x, y, at, true);
+  return true;
+}
+
+/** The effect of one cast, shared by the moves that go off by themselves and the signature. */
+function castMove(
+  run: Run,
+  config: GameConfig,
+  ball: Ball,
+  move: string,
+  x: number,
+  y: number,
+  target: Enemy,
+  manual: boolean,
+): void {
+  const member = run.team[ball.owner];
+  if (member === undefined) return;
   const shape = moveShape(config, member.species, ball.stage);
   const power = ballPower(run, config, ball) * shape.power;
-  const x = target.x;
-  const y = target.y;
   tally.hits = 0;
   tally.damage = 0;
   if (shape.kind === 'chain') {
@@ -154,6 +233,8 @@ export function landHit(run: Run, config: GameConfig, ball: Ball, target: Enemy)
     member: ball.owner,
     species: member.species,
     starter: member.starter,
+    manual,
+    signature: signatureOf(config, member.species, ball.stage) !== null,
     move,
     tier: ball.stage,
     element: ball.type,

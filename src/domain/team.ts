@@ -147,17 +147,22 @@ export function addMember(
   return run.team.length - 1;
 }
 
-/** +1 level for a Pokémon (a card or a duplicate capture); false if it is already at the maximum. */
+/**
+ * +1 level for a Pokémon (a card or a duplicate capture); false if it is already at the maximum.
+ * `floor` is the level a duplicate capture is worth at least (4F-D, "you capture what you beat"):
+ * the Rapidash a boss drops lifts a Ponyta to the level of Rapidash's stage, not just one more.
+ */
 export function trainMember(
   run: Run,
   config: GameConfig,
   index: number,
   source: 'card' | 'capture',
+  floor = 0,
 ): boolean {
   const member = run.team[index];
   if (member === undefined || member.level >= config.team.maxLevel) return false;
   const before = stageOf(config, member.level);
-  member.level += 1;
+  member.level = Math.min(config.team.maxLevel, Math.max(member.level + 1, floor));
   syncMember(run, config, index);
   const after = stageOf(config, member.level);
   run.events.push({
@@ -200,7 +205,7 @@ export function joinTeam(
   const owned = memberIndexOf(run, species);
   if (owned >= 0) {
     run.captured.push({ species, level: stage });
-    trainMember(run, config, owned, 'capture');
+    trainMember(run, config, owned, 'capture', captureLevel(config, stage));
     return;
   }
   if (!teamIsFull(run, config)) {

@@ -51,7 +51,15 @@ export { SpatialGrid } from './grid';
 export type { MemberStats } from './inspect';
 export { guardAfterReplace, statsOf, statsOfMember } from './inspect';
 export { imul32 } from './int32';
-export { chargeNeed, landHit, moveIdOf, moveShape } from './moves';
+export {
+  castSignature,
+  chargeNeed,
+  landHit,
+  moveIdOf,
+  moveShape,
+  signatureOf,
+  signatureReady,
+} from './moves';
 export {
   bounceOffWalls,
   enforceMinVertical,

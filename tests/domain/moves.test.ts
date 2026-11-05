@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   type Ball,
+  castSignature,
   chargeNeed,
   cloneRun,
   createBall,
@@ -14,6 +15,8 @@ import {
   moveIdOf,
   moveShape,
   type Run,
+  signatureOf,
+  signatureReady,
   tick,
 } from '../../src/domain';
 import { makeBall, makeBody, makeEnemy, withConfig } from './fixtures';
@@ -128,6 +131,8 @@ describe('the event of a move', () => {
       member: 0,
       species: 'charmander',
       starter: true,
+      manual: false,
+      signature: false,
       move: 'ember',
       tier: 1,
       element: 'fire',
@@ -421,5 +426,174 @@ describe('signatures: a hand-made shape instead of the tier (ADR-039)', () => {
       expect(kind('pikachu', 3)).toBe('chain');
       expect(moveShape(gameConfig, 'pikachu', 3).count).toBe(5);
     });
+  });
+
+  it('every starter has its signature from stage 2 (4F-D); Pikachu has it from stage 1', () => {
+    return import('../../src/data').then(({ gameConfig }) => {
+      for (const id of ['charmander', 'squirtle', 'bulbasaur', 'pikachu']) {
+        expect(signatureOf(gameConfig, id, 2), id).not.toBeNull();
+        expect(signatureOf(gameConfig, id, 3), id).not.toBeNull();
+      }
+      expect(signatureOf(gameConfig, 'pikachu', 1)).not.toBeNull();
+      expect(signatureOf(gameConfig, 'charmander', 1)).toBeNull();
+      expect(signatureOf(gameConfig, 'psyduck', 3)).toBeNull();
+    });
+  });
+});
+
+describe("the starter's signature is thrown by the player (4F-D)", () => {
+  const cross: MoveShapeDef = { kind: 'cross', width: 40, power: 3 };
+  const sig = configWith(tiers, { charmander: [cross, cross, cross] }, [3, 3, 3]);
+
+  /** A run whose starter is fully charged, with manual aim at (aimX, aimY). */
+  function charged(enemies: Enemy[], aim = { x: 240, y: 300 }, autoAim = false): Run {
+    const run = createRun(sig, 1, 'charmander');
+    run.enemies = enemies;
+    run.autoAim = autoAim;
+    run.aimX = aim.x;
+    run.aimY = aim.y;
+    (run.team[0] as { charge: number }).charge = chargeNeed(sig, 1);
+    run.events.length = 0;
+    return run;
+  }
+  const moves = (run: Run) => run.events.filter((e) => e.type === 'move');
+
+  it('never goes off by itself: the charge fills up and waits, without piling up', () => {
+    const run = createRun(sig, 1, 'charmander');
+    const target = makeEnemy({ id: 7 });
+    run.enemies = [target];
+    const ball = createBall(sig, 'charmander', 1);
+    for (let i = 0; i < 10; i++) landHit(run, sig, ball, target);
+    expect(moves(run)).toHaveLength(0);
+    expect(run.team[0]?.charge).toBe(chargeNeed(sig, 1));
+    expect(signatureReady(run, sig, 0)).toBe(true);
+  });
+
+  it('a Pokémon that is not the starter casts its signature shape on its own', () => {
+    const run = createRun(sig, 1, 'charmander');
+    (run.team[0] as { starter: boolean }).starter = false;
+    const target = makeEnemy({ id: 7 });
+    run.enemies = [target];
+    const ball = createBall(sig, 'charmander', 1);
+    for (let i = 0; i < chargeNeed(sig, 1); i++) landHit(run, sig, ball, target);
+    expect(moves(run)).toHaveLength(1);
+    expect(signatureReady(run, sig, 0)).toBe(false);
+  });
+
+  it('is ready only for the starter, with a signature at its stage and a full charge', () => {
+    const run = charged([makeEnemy()]);
+    expect(signatureReady(run, sig, 0)).toBe(true);
+    expect(signatureReady(run, sig, 3)).toBe(false); // nobody there
+    (run.team[0] as { charge: number }).charge = chargeNeed(sig, 1) - 1;
+    expect(signatureReady(run, sig, 0)).toBe(false);
+    (run.team[0] as { charge: number }).charge = chargeNeed(sig, 1);
+    (run.team[0] as { starter: boolean }).starter = false;
+    expect(signatureReady(run, sig, 0)).toBe(false);
+    // Without a signature at its stage (the plain fixture) the starter never waits for the player.
+    const plain = createRun(cfg, 1, 'charmander');
+    (plain.team[0] as { charge: number }).charge = 99;
+    expect(signatureReady(plain, cfg, 0)).toBe(false);
+    // A signature shape without a move in the data has no name to show: it is never ready.
+    const nameless = withConfig({ moves: { ...sig.moves, byBase: {} } });
+    const unnamed = createRun(nameless, 1, 'charmander');
+    (unnamed.team[0] as { charge: number }).charge = 99;
+    expect(signatureReady(unnamed, nameless, 0)).toBe(false);
+  });
+
+  it('reads the charge it needs from the stage of the starter, not from stage 1', () => {
+    // Needs 3 hits at stage 1 and 6 at stage 2 (a Pokémon of level 3 shows its second stage).
+    const staged = configWith(tiers, { charmander: [cross, cross, cross] }, [3, 6, 6]);
+    const run = createRun(staged, 1, 'charmander');
+    (run.team[0] as { level: number }).level = 3;
+    (run.team[0] as { charge: number }).charge = 3;
+    expect(signatureReady(run, staged, 0)).toBe(false);
+    (run.team[0] as { charge: number }).charge = 6;
+    expect(signatureReady(run, staged, 0)).toBe(true);
+  });
+
+  it('lands where the player aims, empties the charge and says it was thrown', () => {
+    const near = makeEnemy({ id: 1, x: 100, y: 100 });
+    // Inside the column of the aim (|dx| <= 20) but not exactly on it: the cast is at the aim.
+    const onLine = makeEnemy({ id: 2, x: 310, y: 100 });
+    const far = makeEnemy({ id: 3, x: 380, y: 400 });
+    const run = charged([near, onLine, far], { x: 300, y: 250 });
+    expect(castSignature(run, sig, 0)).toBe(true);
+    expect(run.team[0]?.charge).toBe(0);
+    const [event] = moves(run);
+    expect(event).toMatchObject({
+      type: 'move',
+      manual: true,
+      signature: true,
+      shape: 'cross',
+      x: 300,
+      y: 250,
+      hits: 1, // only the one inside the column of the cross: |dx| <= 20 or |dy| <= 20
+    });
+    expect(onLine.hp).toBeLessThan(1000);
+    expect(near.hp).toBe(1000);
+    expect(far.hp).toBe(1000);
+  });
+
+  it('with the assisted aim it lands on the enemy nearest to the launcher', () => {
+    const closer = makeEnemy({ id: 1, x: 240, y: 500 });
+    const further = makeEnemy({ id: 2, x: 100, y: 100 });
+    const run = charged([further, closer], { x: 0, y: 0 }, true);
+    expect(castSignature(run, sig, 0)).toBe(true);
+    expect(moves(run)[0]).toMatchObject({ x: 240, y: 500, hits: 1 });
+  });
+
+  it('does nothing, and keeps the charge, if it is not ready or no enemy lives', () => {
+    const empty = charged([]);
+    expect(castSignature(empty, sig, 0)).toBe(false);
+    expect(empty.team[0]?.charge).toBe(chargeNeed(sig, 1));
+    expect(moves(empty)).toHaveLength(0);
+
+    const dead = charged([makeEnemy({ hp: 0 })]);
+    expect(castSignature(dead, sig, 0)).toBe(false);
+
+    const tired = charged([makeEnemy()]);
+    (tired.team[0] as { charge: number }).charge = 1;
+    expect(castSignature(tired, sig, 0)).toBe(false);
+    expect(tired.team[0]?.charge).toBe(1);
+    expect(castSignature(tired, sig, 5)).toBe(false); // a place nobody holds
+  });
+
+  it('is a command: `cast` in the tick throws it, anything else leaves the run alone', () => {
+    const run = charged([makeEnemy({ id: 1, x: 240, y: 300 })]);
+    tick(run, { moveX: 0 }, sig);
+    expect(run.team[0]?.charge).toBe(chargeNeed(sig, 1));
+    tick(run, { moveX: 0, cast: 2 }, sig); // not the starter's place
+    expect(run.team[0]?.charge).toBe(chargeNeed(sig, 1));
+    const { events } = tick(run, { moveX: 0, cast: 0 }, sig);
+    expect(events.filter((e) => e.type === 'move')).toHaveLength(1);
+    expect(run.team[0]?.charge).toBe(0);
+  });
+
+  it('keeps the run a function of its seed and its commands (same commands, same hash)', () => {
+    const build = (): Run => {
+      const run = charged([
+        makeEnemy({ id: 1, x: 240, y: 300 }),
+        makeEnemy({ id: 2, x: 200, y: 300 }),
+      ]);
+      for (let i = 0; i < 30; i++) tick(run, i === 10 ? { moveX: 0, cast: 0 } : { moveX: 0 }, sig);
+      return run;
+    };
+    expect(hashRun(build())).toBe(hashRun(build()));
+    const without = charged([
+      makeEnemy({ id: 1, x: 240, y: 300 }),
+      makeEnemy({ id: 2, x: 200, y: 300 }),
+    ]);
+    for (let i = 0; i < 30; i++) tick(without, { moveX: 0 }, sig);
+    expect(hashRun(without)).not.toBe(hashRun(build()));
+  });
+});
+
+describe('signatureOf', () => {
+  it('reads the list by stage, repeats the last entry and treats null as the tier', () => {
+    const c = configWith(tiers, { charmander: [null, { kind: 'wave', width: 30 }] });
+    expect(signatureOf(c, 'charmander', 1)).toBeNull();
+    expect(signatureOf(c, 'charmander', 2)).toEqual({ kind: 'wave', width: 30 });
+    expect(signatureOf(c, 'charmander', 3)).toEqual({ kind: 'wave', width: 30 });
+    expect(signatureOf(c, 'squirtle', 1)).toBeNull();
   });
 });

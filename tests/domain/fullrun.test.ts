@@ -56,7 +56,11 @@ function findInterestingRun(): { seed: number; starter: string; rec: Recording }
   throw new Error('no seed evolved and reached the boss');
 }
 
-describe('a whole run, with evolutions and the boss, is a function of (seed, commands)', () => {
+// Each test replays a whole run (up to 40 000 ticks): generous timeout so a loaded machine (a CI
+// worker, a mutation run in parallel) does not turn a slow replay into a false failure.
+describe('a whole run, with evolutions and the boss, is a function of (seed, commands)', {
+  timeout: 30_000,
+}, () => {
   const { seed, starter, rec } = findInterestingRun();
 
   it('the scenario is not vacuous: it evolves, summons and ends', () => {
@@ -65,6 +69,8 @@ describe('a whole run, with evolutions and the boss, is a function of (seed, com
     expect(rec.run.boss.spawned).toBe(true);
     expect(['won', 'lost']).toContain(rec.run.phase);
     expect(rec.commands.some((c) => c.action?.type === 'pick')).toBe(true);
+    // The player throws the starter's signature (4F-D): the recording holds those commands too.
+    expect(rec.commands.some((c) => c.cast !== undefined)).toBe(true);
     expect(rec.run.kills).toBeGreaterThan(20);
   });
 
@@ -102,6 +108,14 @@ describe('a whole run, with evolutions and the boss, is a function of (seed, com
       c.action?.type === 'pick' ? { moveX: c.moveX } : c,
     );
     expect(hashRun(replay(seed, starter, withoutPicks))).not.toBe(hashRun(rec.run));
+  });
+
+  it('dropping the signature throws changes the run: `cast` is part of the recorded commands (4F-D)', () => {
+    const withoutCasts = rec.commands.map((c) => {
+      const { cast: _cast, ...rest } = c;
+      return rest;
+    });
+    expect(hashRun(replay(seed, starter, withoutCasts))).not.toBe(hashRun(rec.run));
   });
 
   it('another seed with the same commands gives another run', () => {

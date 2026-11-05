@@ -3,7 +3,7 @@ import { applyCard } from './cards';
 import { ballSpeed, damagePlayer, hitDamage, leakDamage } from './combat';
 import type { GameConfig } from './config';
 import { applyHitEffects, ballPower, damageEnemy, pierceCount, tickBurning } from './effects';
-import { landHit } from './moves';
+import { castSignature, landHit } from './moves';
 import { bounceOffWalls, enforceMinVertical, findNearestOverlap, reflectOffEnemy } from './physics';
 import { advancePickups, dropBall } from './pickups';
 import { checkLevelUp } from './progression';
@@ -172,6 +172,8 @@ export function tick(run: Run, cmd: Command, config: GameConfig): TickOutput {
   if (cmd.aimX !== undefined) run.aimX = clamp(Math.floor(cmd.aimX + 0.5), 0, arena.width);
   if (cmd.aimY !== undefined) run.aimY = clamp(Math.floor(cmd.aimY + 0.5), 0, arena.height);
   if (cmd.autoAim !== undefined) run.autoAim = cmd.autoAim;
+  // The signature of the starter is thrown by the player (4F-D); it needs the aim of this tick.
+  if (cmd.cast !== undefined) castSignature(run, config, cmd.cast);
 
   // The wave clock stops while a boss lives (ADR-028).
   if (!isBossAlive(run)) advanceWave(run, config);

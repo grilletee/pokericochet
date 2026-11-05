@@ -317,6 +317,44 @@ describe('a capture reaches the team (joinTeam)', () => {
     );
   });
 
+  it('"you capture what you beat": a duplicate of a higher form lifts the Pokémon to that form\'s level (4F-D)', () => {
+    // The Rapidash a boss drops is stage 2: a Ponyta of level 1 must not just become level 2.
+    const run = teamRun(quietConfig, 'squirtle', 'bulbasaur', 'pikachu', 'vulpix', 'psyduck');
+    joinTeam(run, quietConfig, 'vulpix', 2, 10, false);
+    expect(member(run, 4).level).toBe(captureLevel(quietConfig, 2));
+    expect(captureLevel(quietConfig, 2)).toBeGreaterThan(2);
+    const events = run.events.filter((e) => e.type === 'train' || e.type === 'stage');
+    expect(events[0]).toMatchObject({ type: 'train', level: captureLevel(quietConfig, 2) });
+    // A stage 3 enemy is worth its own level too.
+    joinTeam(run, quietConfig, 'vulpix', 3, 10, false);
+    expect(member(run, 4).level).toBe(captureLevel(quietConfig, 3));
+  });
+
+  it('a duplicate never lowers a Pokémon, never skips the +1 and stops at the maximum level', () => {
+    const run = teamRun(quietConfig, 'squirtle', 'bulbasaur', 'pikachu', 'vulpix', 'psyduck');
+    (run.team[4] as { level: number }).level = 5;
+    joinTeam(run, quietConfig, 'vulpix', 2, 10, false); // worth level 3: it is already past it
+    expect(member(run, 4).level).toBe(6);
+    (run.team[4] as { level: number }).level = quietConfig.team.maxLevel;
+    joinTeam(run, quietConfig, 'vulpix', 3, 10, false);
+    expect(member(run, 4).level).toBe(quietConfig.team.maxLevel);
+  });
+
+  it('a duplicate is capped at the maximum level even if the form is worth more', () => {
+    const odd = withConfig({ team: { ...quietConfig.team, captureLevels: [1, 3, 12] } });
+    const run = teamRun(odd, 'squirtle', 'bulbasaur', 'pikachu', 'vulpix', 'psyduck');
+    joinTeam(run, odd, 'vulpix', 3, 10, false);
+    expect(member(run, 4).level).toBe(odd.team.maxLevel);
+  });
+
+  it('a duplicate that crosses a stage announces the step like a card does', () => {
+    const run = teamRun(quietConfig, 'squirtle', 'bulbasaur', 'pikachu', 'vulpix', 'psyduck');
+    joinTeam(run, quietConfig, 'vulpix', 3, 10, false); // level 1 -> captureLevel(3)
+    expect(run.events.some((e) => e.type === 'stage' && e.member === 4)).toBe(
+      stageOf(quietConfig, captureLevel(quietConfig, 3)) > 1,
+    );
+  });
+
   it('with the team full it opens the replace screen, or lets go of what waited too long', () => {
     const run = teamRun(quietConfig, 'squirtle', 'bulbasaur', 'pikachu', 'vulpix', 'psyduck');
     joinTeam(run, quietConfig, 'gyarados', 2, 10, true);
