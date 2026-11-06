@@ -1,8 +1,16 @@
 import { type AimDirection, aimDirection } from './aim';
+import { advanceBossFight, hitWeakPoint } from './bossFight';
 import { applyCard } from './cards';
-import { ballSpeed, damagePlayer, hitDamage, leakDamage } from './combat';
+import { ballSpeed, damagePlayer, effectivenessOn, hitDamage, leakDamage } from './combat';
 import type { GameConfig } from './config';
-import { applyHitEffects, ballPower, damageEnemy, pierceCount, tickBurning } from './effects';
+import {
+  applyHitEffects,
+  ballPower,
+  damageEnemy,
+  pierceCount,
+  tickAilments,
+  tickBurning,
+} from './effects';
 import { castSignature, landHit } from './moves';
 import { bounceOffWalls, enforceMinVertical, findNearestOverlap, reflectOffEnemy } from './physics';
 import { advancePickups, dropBall } from './pickups';
@@ -161,6 +169,7 @@ export function tick(run: Run, cmd: Command, config: GameConfig): TickOutput {
   if (run.phase !== 'playing') return { events: run.events };
 
   const { arena, ball: ballConfig } = config;
+  const guardBonus = config.effects.guardBonus ?? 0.15;
 
   run.player.x = clamp(
     run.player.x + cmd.moveX * config.player.speed,
@@ -178,16 +187,25 @@ export function tick(run: Run, cmd: Command, config: GameConfig): TickOutput {
   // The wave clock stops while a boss lives (ADR-028).
   if (!isBossAlive(run)) advanceWave(run, config);
   advanceBoss(run, config);
+  advanceBossFight(run, config);
 
   // Enemies advance; those that reach the defence line hurt the player and are removed.
   let kept = 0;
   for (const e of run.enemies) {
-    e.y += e.speed * (e.slowTicks > 0 ? 1 - e.slow : 1);
+    const halt = e.haltTicks ?? 0;
+    if (halt > 0) {
+      e.haltTicks = halt - 1; // stopped by ice or a stun: it does not advance this tick
+    } else {
+      e.y += e.speed * (e.slowTicks > 0 ? 1 - e.slow : 1);
+    }
     if (e.slowTicks > 0) e.slowTicks -= 1;
     if (e.y >= arena.defenseLineY) {
       // The boss reaching the line ends the run whatever the player's health (ADR-016); any other
-      // leak costs what the guard of the team lets through (ADR-038).
-      const cost = e.id === run.boss.id ? run.player.hp : leakDamage(config, run.team, e.threat);
+      // leak costs what the guard of the team lets through (ADR-038), plus the fairy guard.
+      const cost =
+        e.id === run.boss.id
+          ? run.player.hp
+          : leakDamage(config, run.team, e.threat, run.guardTicks > 0 ? guardBonus : 0);
       damagePlayer(run, cost);
       run.events.push({ type: 'leak', enemyId: e.id, damage: cost });
     } else {
@@ -221,16 +239,21 @@ export function tick(run: Run, cmd: Command, config: GameConfig): TickOutput {
     const hitIndex = findNearestOverlap(run.grid, run.enemies, body.x, body.y, radius, body.skipId);
     const target = hitIndex >= 0 ? run.enemies[hitIndex] : undefined;
     if (target !== undefined) {
-      const damage = hitDamage(config, ball, target.type) * ballPower(run, config, ball);
+      const damage =
+        hitDamage(config, ball, target.type, target.type2) * ballPower(run, config, ball);
       run.events.push({
         type: 'hit',
         ballId: ball.id,
         enemyId: target.id,
         damage,
-        effectiveness: config.typeChart[ball.type][target.type],
+        effectiveness: effectivenessOn(config, ball.type, target),
         x: target.x,
         y: target.y,
       });
+      // A ball on the weak point of a boss's shield breaks it down (ADR-046).
+      if (target.id === run.boss.id) {
+        hitWeakPoint(run, config, target, body.x, body.y, radius, damage);
+      }
       const killed = damageEnemy(run, config, target, damage);
       applyHitEffects(run, config, ball, target, damage, killed);
       landHit(run, config, ball, target);
@@ -250,6 +273,8 @@ export function tick(run: Run, cmd: Command, config: GameConfig): TickOutput {
   advancePickups(run, config);
 
   tickBurning(run, config);
+  tickAilments(run, config);
+  if (run.guardTicks > 0) run.guardTicks -= 1;
 
   // Remove the dead, keeping the order by id.
   let alive = 0;

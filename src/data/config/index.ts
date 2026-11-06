@@ -1,16 +1,64 @@
-import type { GameConfig, GameType, MovesDef } from '../../domain';
+import {
+  GAME_TYPES,
+  type GameConfig,
+  type GameType,
+  type MovesDef,
+  type ThemeDef,
+} from '../../domain';
+import typeChartFile from '../generated/typeChart.json';
+import { bossFight } from './bosses';
 
 /**
  * Game rules as data, kept out of the domain (ADR-005, ADR-006). Initial values, not balanced.
  * Species and the move of each species (generated from PokéAPI by tools/fetch-data) are merged in
  * later.
  */
-const ALL_TYPES: readonly GameType[] = ['fire', 'water', 'grass', 'electric'];
+const ALL_TYPES: readonly GameType[] = GAME_TYPES;
+
+/** One biome (ADR-049): its types, the first (the heaviest) being the main one. */
+function biome(
+  id: string,
+  name: string,
+  types: readonly [GameType, GameType] | readonly [GameType, GameType, GameType],
+): ThemeDef {
+  return {
+    id,
+    name,
+    type: types[0],
+    types: types.map((type, index) => ({ type, weight: 3 - index })),
+    purity: 0.8,
+  };
+}
+
+/**
+ * The 14 biomes of ADR-049: every one of the 18 types is in at least one. The main type of each is
+ * the one of the first table of the ADR; the other two were chosen by a search among thematic
+ * options so that T1 holds (the mean effectiveness of each attack type over the biomes within
+ * +-15 % of the global mean, measured by `tests/data/typeBalance.test.ts`): the first table had
+ * Rock at +19 %, Ice at +16 %, Normal at -20 % and Poison at -15 %.
+ */
+const BIOMES: readonly ThemeDef[] = [
+  biome('meadow', 'Pradera', ['normal', 'fairy', 'fighting']),
+  biome('forest', 'Bosque', ['grass', 'fairy', 'poison']),
+  biome('volcano', 'Volcán', ['fire', 'poison', 'dragon']),
+  biome('coast', 'Costa', ['water', 'ice', 'flying']),
+  biome('swamp', 'Pantano', ['water', 'poison', 'bug']),
+  biome('storm', 'Tormenta', ['electric', 'dragon', 'ice']),
+  biome('cave', 'Cueva', ['rock', 'ground', 'poison']),
+  biome('frozen-peak', 'Cumbre helada', ['ice', 'water', 'fighting']),
+  biome('dojo', 'Dojo', ['fighting', 'normal', 'dark']),
+  biome('ruins', 'Ruinas', ['psychic', 'ground', 'steel']),
+  biome('haunted-house', 'Casa encantada', ['ghost', 'psychic', 'poison']),
+  biome('power-plant', 'Central eléctrica', ['electric', 'normal', 'fighting']),
+  biome('fairy-glade', 'Claro de hadas', ['fairy', 'normal', 'grass']),
+  biome('dragon-sky', 'Cielo del dragón', ['dragon', 'ice', 'ground']),
+];
+const BIOME_IDS: readonly string[] = BIOMES.map((b) => b.id);
 
 export const baseConfig: Omit<
   GameConfig,
   'species' | 'enemySpecies' | 'ballSpecies' | 'lines' | 'forms' | 'moves'
-> & { readonly moves: Omit<MovesDef, 'byBase'> } = {
+> & { readonly moves: Omit<MovesDef, 'byBase' | 'types'> } = {
   // Moves with a real name, cast when a Pokémon has landed enough hits (ADR-039). PROVISIONAL:
   // the charge, the strength and the sizes are calibrated with the bots (M11-M13) and ?tune.
   moves: {
@@ -39,8 +87,8 @@ export const baseConfig: Omit<
       ],
       squirtle: [
         null,
-        { kind: 'wave', width: 56, power: 2.95 },
-        { kind: 'wave', width: 72, power: 3.9 },
+        { kind: 'wave', width: 56, power: 2.4 },
+        { kind: 'wave', width: 72, power: 3.35 },
       ],
       bulbasaur: [
         null,
@@ -49,8 +97,8 @@ export const baseConfig: Omit<
       ],
       pikachu: [
         { kind: 'chain', count: 1, power: 1 },
-        { kind: 'chain', count: 3, power: 2.1 },
-        { kind: 'chain', count: 5, power: 3.7 },
+        { kind: 'chain', count: 3, power: 2.35 },
+        { kind: 'chain', count: 5, power: 4.0 },
       ],
     },
     status: {
@@ -58,6 +106,9 @@ export const baseConfig: Omit<
       water: { slow: 0.3 },
       grass: { slow: 0.4 },
       electric: { slow: 0.6 },
+      ice: { slow: 0.5 },
+      poison: { burn: 1 },
+      ghost: { slow: 0.3 },
     },
   },
   // Hybrids are off (ADR-033): the code and its tests stay, the card is never offered.
@@ -118,6 +169,113 @@ export const baseConfig: Omit<
         [{ kind: 'chain', strength: 0.5 }],
         [{ kind: 'chain', strength: 0.5, count: 2 }],
         [{ kind: 'chain', strength: 0.6, count: 3 }],
+      ],
+      // The other 14 types (4H-B2, ADR-047): a row of data each, in the seven families. Provisional,
+      // calibrated with the type-balance bench (T2).
+      // direct: a base damage a little higher (typeDamage) and no effect.
+      normal: [[], [], []],
+      dragon: [[], [], []],
+      // damage over time
+      poison: [
+        [{ kind: 'poison', strength: 0.5 }],
+        [{ kind: 'poison', strength: 0.7 }],
+        [
+          { kind: 'poison', strength: 0.9 },
+          { kind: 'slow', strength: 0.2 },
+        ],
+      ],
+      ghost: [
+        [{ kind: 'curse', strength: 0.8 }],
+        [{ kind: 'curse', strength: 1.1 }],
+        [{ kind: 'curse', strength: 1.5 }],
+      ],
+      // jumps: more of them than Electric, weaker
+      bug: [
+        [{ kind: 'chain', strength: 0.3, count: 2 }],
+        [{ kind: 'chain', strength: 0.35, count: 3 }],
+        [{ kind: 'chain', strength: 0.4, count: 4 }],
+      ],
+      // pierce
+      flying: [
+        [{ kind: 'pierce', strength: 1 }],
+        [{ kind: 'pierce', strength: 2 }],
+        [{ kind: 'pierce', strength: 3 }],
+      ],
+      steel: [
+        [{ kind: 'pierce', strength: 0.5 }],
+        [{ kind: 'pierce', strength: 1 }],
+        [{ kind: 'pierce', strength: 1.5 }],
+      ],
+      // explosions
+      rock: [
+        [{ kind: 'blast', strength: 0.6, radius: 60 }],
+        [{ kind: 'blast', strength: 0.8, radius: 72 }],
+        [{ kind: 'blast', strength: 1, radius: 84 }],
+      ],
+      ground: [
+        [{ kind: 'quake', strength: 0.45, radius: 28 }],
+        [{ kind: 'quake', strength: 0.6, radius: 32 }],
+        [{ kind: 'quake', strength: 0.75, radius: 36 }],
+      ],
+      fighting: [
+        [
+          { kind: 'splash', strength: 0.3, radius: 40 },
+          { kind: 'push', strength: 18 },
+        ],
+        [
+          { kind: 'splash', strength: 0.4, radius: 44 },
+          { kind: 'push', strength: 26 },
+        ],
+        [
+          { kind: 'splash', strength: 0.5, radius: 48 },
+          { kind: 'push', strength: 34 },
+        ],
+      ],
+      // sustain
+      fairy: [
+        [
+          { kind: 'drain', strength: 0.6 },
+          { kind: 'guard', strength: 1 },
+        ],
+        [
+          { kind: 'drain', strength: 0.7 },
+          { kind: 'guard', strength: 1 },
+        ],
+        [
+          { kind: 'drain', strength: 0.9 },
+          { kind: 'guard', strength: 1 },
+        ],
+      ],
+      // control
+      ice: [
+        [
+          { kind: 'slow', strength: 0.3 },
+          { kind: 'freeze', strength: 1 },
+        ],
+        [
+          { kind: 'slow', strength: 0.4 },
+          { kind: 'freeze', strength: 1 },
+        ],
+        [
+          { kind: 'slow', strength: 0.5 },
+          { kind: 'freeze', strength: 1 },
+        ],
+      ],
+      psychic: [
+        [{ kind: 'stun', strength: 1 }],
+        [
+          { kind: 'stun', strength: 1 },
+          { kind: 'splash', strength: 0.25, radius: 40 },
+        ],
+        [
+          { kind: 'stun', strength: 1 },
+          { kind: 'splash', strength: 0.4, radius: 48 },
+        ],
+      ],
+      dark: [
+        [{ kind: 'mark', strength: 0.06 }],
+        [{ kind: 'mark', strength: 0.08 }],
+        [{ kind: 'mark', strength: 0.1 }],
       ],
     },
     signatures: {
@@ -189,8 +347,10 @@ export const baseConfig: Omit<
     // A leak hurts more with the form of the enemy: 1, 3, 5 (ADR-032).
     threatPerTier: 2,
     lanes: 7,
-    speedMin: 0.2,
-    speedMax: 0.5,
+    // 4H-B2: -10 % (0.2 / 0.5 before) after the 9th playtest, where the author had to lower speed
+    // and health with ?tune; the author, not the bot, is the difficulty reference (ADR-052).
+    speedMin: 0.18,
+    speedMax: 0.45,
     speedVariation: 0.15,
     // Tuned with the balance harness (pnpm bench:balance); GDD-v0 does not fix enemy hp.
     // 4F-C: stats of the form, moves and the stage growth add damage, so 0.88 -> 1.72 (bot win 98 %
@@ -199,15 +359,35 @@ export const baseConfig: Omit<
     // 4F-D: -10 % at the author's request (1.72 -> 1.55); with the signature thrown by the bot it
     // wins 59 % [56-62] (48 % without the signature), above the 35-50 % window of the bot; the
     // author tunes the final value with ?tune ("Vida enemiga").
-    hpScale: 1.55,
+    // 4H-B2: -20 % (1.55 -> 1.24), same reason; the bot is only a detector of abrupt changes now.
+    hpScale: 1.24,
   },
   // The final boss (ADR-016, ADR-028): a legendary of the type drawn by the run's seed. hpScale is
   // PROVISIONAL like the rest of the curve (4D-B): measured with bots (time to kill), to be
   // validated with a human playtest. `species` is only the fallback if the table is not used.
+  // 4H-B2: the final boss is a legendary drawn by type among the 15 types that have one (the roster
+  // rule keeps legendaries out of every line, so they only ever come as final bosses, ADR-048).
   boss: {
-    species: 'gyarados',
-    byType: { fire: 'moltres', water: 'kyogre', grass: 'virizion', electric: 'zapdos' },
-    hpScale: 44,
+    species: 'lugia',
+    byType: {
+      fire: 'moltres',
+      water: 'kyogre',
+      grass: 'virizion',
+      electric: 'zapdos',
+      ice: 'articuno',
+      psychic: 'mewtwo',
+      rock: 'regirock',
+      steel: 'registeel',
+      dragon: 'rayquaza',
+      ghost: 'giratina-altered',
+      ground: 'groudon',
+      dark: 'darkrai',
+      normal: 'arceus',
+      bug: 'genesect',
+    },
+    // 4G-B: 44 -> 26: the fight lasts through its shield, its stun and three phases now, so the
+    // health that made a sponge of it is not needed (B3), and the author asked for less health.
+    hpScale: 26,
     speed: 0.12,
     radius: 40,
     summonIntervalTicks: 480,
@@ -221,7 +401,7 @@ export const baseConfig: Omit<
     {
       after: 2,
       byType: { fire: 'rapidash', water: 'starmie', grass: 'victreebel', electric: 'electabuzz' },
-      hpScale: 5.5,
+      hpScale: 3.2, // 5.5 before the 4G-B, see the final boss
       speed: 0.12,
       radius: 28,
       summonIntervalTicks: 600,
@@ -233,7 +413,7 @@ export const baseConfig: Omit<
     {
       after: 4,
       byType: { fire: 'arcanine', water: 'gyarados', grass: 'exeggutor', electric: 'ampharos' },
-      hpScale: 12,
+      hpScale: 7, // 12 before
       speed: 0.13,
       radius: 34,
       summonIntervalTicks: 540,
@@ -245,7 +425,7 @@ export const baseConfig: Omit<
     {
       after: 6,
       byType: { fire: 'typhlosion', water: 'kingdra', grass: 'tangrowth', electric: 'luxray' },
-      hpScale: 28,
+      hpScale: 16, // 28 before
       speed: 0.14,
       radius: 38,
       summonIntervalTicks: 480,
@@ -255,93 +435,9 @@ export const baseConfig: Omit<
       healHp: 0, // bosses no longer heal (ADR-032): the reward is the capture
     },
   ],
-  // Wave themes (ADR-027). Species are base forms; the wave's `tier` picks the evolution form.
-  themes: {
-    'fire-pack': {
-      id: 'fire-pack',
-      name: 'Manada de fuego',
-      type: 'fire',
-      species: ['growlithe', 'ponyta', 'numel', 'magmar'],
-      purity: 0.8,
-    },
-    'fire-starters': {
-      id: 'fire-starters',
-      name: 'Iniciales ardientes',
-      type: 'fire',
-      species: ['cyndaquil', 'torchic', 'chimchar'],
-      purity: 0.8,
-    },
-    'fire-volcano': {
-      id: 'fire-volcano',
-      name: 'Volcán',
-      type: 'fire',
-      species: ['slugma', 'magmar', 'numel'],
-      purity: 0.8,
-    },
-    'growlithe-pack': {
-      id: 'growlithe-pack',
-      name: 'Manada de Growlithe',
-      type: 'fire',
-      species: ['growlithe'],
-      purity: 0.9,
-    },
-    'water-tide': {
-      id: 'water-tide',
-      name: 'Marea',
-      type: 'water',
-      species: ['poliwag', 'horsea', 'krabby', 'staryu', 'goldeen'],
-      purity: 0.8,
-    },
-    'water-pond': {
-      id: 'water-pond',
-      name: 'Estanque',
-      type: 'water',
-      species: ['poliwag', 'wooper', 'lotad', 'goldeen'],
-      purity: 0.8,
-    },
-    'water-shore': {
-      id: 'water-shore',
-      name: 'Costa',
-      type: 'water',
-      species: ['shellder', 'krabby', 'staryu', 'horsea'],
-      purity: 0.8,
-    },
-    'grass-garden': {
-      id: 'grass-garden',
-      name: 'Jardín',
-      type: 'grass',
-      species: ['bellsprout', 'hoppip', 'sunkern', 'chikorita'],
-      purity: 0.8,
-    },
-    'grass-forest': {
-      id: 'grass-forest',
-      name: 'Bosque',
-      type: 'grass',
-      species: ['seedot', 'shroomish', 'tangela', 'exeggcute'],
-      purity: 0.8,
-    },
-    'electric-storm': {
-      id: 'electric-storm',
-      name: 'Tormenta eléctrica',
-      type: 'electric',
-      species: ['voltorb', 'electabuzz', 'mareep', 'shinx'],
-      purity: 0.8,
-    },
-    'electric-meadow': {
-      id: 'electric-meadow',
-      name: 'Pradera',
-      type: 'electric',
-      species: ['mareep', 'blitzle', 'helioptile'],
-      purity: 0.8,
-    },
-    'voltorb-army': {
-      id: 'voltorb-army',
-      name: 'Ejército de Voltorb',
-      type: 'electric',
-      species: ['voltorb'],
-      purity: 0.9,
-    },
-  },
+  // The 14 biomes (ADR-049, which replaces the themes of ADR-027). They list no species: the pool of
+  // the run, filtered by their types, gives them. The wave's `tier` picks the evolution form.
+  themes: Object.fromEntries(BIOMES.map((b) => [b.id, b])),
   // 7 waves of 45 s (2700 ticks; 60 s before the 4H, eighth playtest "a bit long"): an explicit curve of density, health, speed and form (ADR-029).
   // Every wave may draw any of its themes; the general pool of its types fills the rest.
   waves: [
@@ -356,7 +452,7 @@ export const baseConfig: Omit<
       hpScale: 0.55,
       tier: 1,
       types: ALL_TYPES,
-      themes: ['fire-pack', 'water-pond', 'grass-garden', 'electric-meadow', 'growlithe-pack'],
+      themes: BIOME_IDS,
     },
     {
       durationTicks: 2700,
@@ -365,7 +461,7 @@ export const baseConfig: Omit<
       hpScale: 0.85,
       tier: 1,
       types: ALL_TYPES,
-      themes: ['fire-starters', 'water-tide', 'grass-forest', 'electric-storm', 'voltorb-army'],
+      themes: BIOME_IDS,
     },
     {
       durationTicks: 2700,
@@ -374,7 +470,7 @@ export const baseConfig: Omit<
       hpScale: 1.35,
       tier: 1,
       types: ALL_TYPES,
-      themes: ['fire-volcano', 'water-shore', 'grass-garden', 'electric-meadow'],
+      themes: BIOME_IDS,
     },
     {
       durationTicks: 2700,
@@ -383,7 +479,7 @@ export const baseConfig: Omit<
       hpScale: 1.7,
       tier: 2,
       types: ALL_TYPES,
-      themes: ['fire-pack', 'water-pond', 'grass-forest', 'electric-storm'],
+      themes: BIOME_IDS,
     },
     {
       durationTicks: 2700,
@@ -392,7 +488,7 @@ export const baseConfig: Omit<
       hpScale: 2.4,
       tier: 2,
       types: ALL_TYPES,
-      themes: ['fire-starters', 'water-tide', 'grass-garden', 'voltorb-army'],
+      themes: BIOME_IDS,
     },
     {
       durationTicks: 2700,
@@ -401,7 +497,7 @@ export const baseConfig: Omit<
       hpScale: 2.8,
       tier: 3,
       types: ALL_TYPES,
-      themes: ['fire-volcano', 'water-shore', 'grass-forest', 'electric-meadow'],
+      themes: BIOME_IDS,
     },
     {
       durationTicks: 2700,
@@ -410,7 +506,7 @@ export const baseConfig: Omit<
       hpScale: 3.1,
       tier: 3,
       types: ALL_TYPES,
-      themes: ['growlithe-pack', 'water-tide', 'grass-garden', 'electric-storm'],
+      themes: BIOME_IDS,
     },
   ],
   stats: {
@@ -446,10 +542,62 @@ export const baseConfig: Omit<
     // 4F-E: the stage 3 captures (level 6) and the new wave curve moved the starters apart again
     // (Squirtle 51 %, Bulbasaur 68 %): water 1.0 -> 1.15, grass 2.1 -> 1.95, electric 1.35 -> 1.3
     // give 65 / 62 / 65 / 65 % (300 runs per starter), a spread of 4.
-    typeDamage: { fire: 1.05, water: 1.15, grass: 1.95, electric: 1.3 },
+    // 4H-B2: the other 14 types start here and are calibrated by T2 (`pnpm bench:types`): the
+    // types with a weak effect (direct, sustain) get more base damage, the strong ones a little less.
+    typeDamage: {
+      fire: 1.05,
+      water: 1.15,
+      grass: 1.95,
+      electric: 1.3,
+      normal: 1.35,
+      dragon: 1.75,
+      poison: 1.2,
+      ghost: 1.1,
+      bug: 1.3,
+      flying: 1.15,
+      steel: 1.3,
+      rock: 1.05,
+      ground: 1.15,
+      fighting: 1.1,
+      fairy: 1.9,
+      ice: 1.2,
+      psychic: 1.25,
+      dark: 1.2,
+    },
+    // ADR-047: an immunity of the games (x0) counts x0.25 here, and the product over the two types
+    // of a defender stays between x0.25 and x3 (a deliberate departure from the games).
+    typeScale: { immune: 0.25, min: 0.25, max: 3 },
   },
   // Drain heals much less than in 4D: it gave back more than half of the health lost (ADR-032).
-  effects: { burnTicks: 180, drainPerHp: 30, chainRadius: 80, slowTicks: 120 },
+  effects: {
+    burnTicks: 180,
+    drainPerHp: 30,
+    chainRadius: 80,
+    slowTicks: 120,
+    // 4H-B2 (ADR-047): poison lasts longer than burn and stacks up to five layers; a curse lands
+    // after two seconds carrying at most three hits; ice stops every third hit for 1.5 s; a stun is
+    // half a second and cannot be chained; a mark lasts 5 s and adds up to +50 %; the fairy guard
+    // lasts 3 s after a hit and is worth +15 % of the guard of the team.
+    poisonTicks: 360,
+    poisonMaxStacks: 5,
+    curseTicks: 120,
+    curseMaxHits: 3,
+    freezeEvery: 3,
+    freezeTicks: 90,
+    stunTicks: 30,
+    markTicks: 300,
+    markMax: 0.5,
+    guardTicks: 180,
+    guardBonus: 0.15,
+  },
+  // Boss fights: ground attacks, shield with a weak point, stun and three phases (4G-B, ADR-046).
+  bossFight,
+  // The pool of each run (ADR-048): 3 lines per type (about 40 of the 214), the four starters in.
+  pool: {
+    linesPerType: 3,
+    always: ['charmander', 'squirtle', 'bulbasaur', 'pikachu'],
+    minBiomeLines: 4,
+  },
   progression: {
     // x0.8 of the 4F values, with the capture and loot chances x1.25: waves of 45 s instead of 60
     // (4H-B1) bring 25 % fewer kills per wave, so the growth per wave stays the same.
@@ -470,11 +618,7 @@ export const baseConfig: Omit<
     vitalityHp: 2,
   },
   grid: { cellSize: 48 },
-  // typeChart[attacker][defender]: x2 and x0.5 as in GDD-v0.
-  typeChart: {
-    fire: { fire: 0.5, water: 0.5, grass: 2, electric: 1 },
-    water: { fire: 2, water: 0.5, grass: 0.5, electric: 1 },
-    grass: { fire: 0.5, water: 2, grass: 0.5, electric: 1 },
-    electric: { fire: 1, water: 2, grass: 0.5, electric: 0.5 },
-  },
+  // typeChart[attacker][defender]: the raw 18 x 18 table generated from PokéAPI (0, 0.5, 1, 2);
+  // `stats.typeScale` softens it when it is read (ADR-047).
+  typeChart: typeChartFile.chart as GameConfig['typeChart'],
 };

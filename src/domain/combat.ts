@@ -1,6 +1,6 @@
 import { abilitiesFor } from './abilities';
 import type { GameConfig } from './config';
-import { formAt, formOfMember } from './forms';
+import { attackTypeOf, formAt, formOfMember } from './forms';
 import type { Run } from './run';
 import { stageOf } from './team';
 import type { Ball, GameType, Member, SpeciesDef } from './types';
@@ -23,8 +23,38 @@ export function mapStat(
   return outMin + (outMax - outMin) * t;
 }
 
-export function effectiveness(config: GameConfig, attacker: GameType, defender: GameType): number {
-  return config.typeChart[attacker][defender];
+/** How the raw chart is read when `config.stats.typeScale` is missing (ADR-047). */
+const DEFAULT_TYPE_SCALE = { immune: 0.25, min: 0.25, max: 3 } as const;
+
+/**
+ * Effectiveness of an attack type against a defender of one or two types (ADR-047): each cell of
+ * the raw chart counts as is (an immunity, 0, as `typeScale.immune`), the cells multiply and the
+ * product is clamped to [min, max], so Ground slows Electric to x0.25 but nothing ever does zero or
+ * more than x3. A missing cell counts as 1.
+ */
+export function effectiveness(
+  config: GameConfig,
+  attacker: GameType,
+  defender: GameType,
+  second?: GameType,
+): number {
+  const scale = config.stats.typeScale ?? DEFAULT_TYPE_SCALE;
+  const row = config.typeChart[attacker];
+  const cell = (type: GameType): number => {
+    const raw = row?.[type] ?? 1;
+    return raw === 0 ? scale.immune : raw;
+  };
+  const product = second === undefined ? cell(defender) : cell(defender) * cell(second);
+  return Math.max(scale.min, Math.min(scale.max, product));
+}
+
+/** Effectiveness of an attack type against a given enemy, with its second type. */
+export function effectivenessOn(
+  config: GameConfig,
+  attacker: GameType,
+  enemy: { readonly type: GameType; readonly type2?: GameType },
+): number {
+  return effectiveness(config, attacker, enemy.type, enemy.type2);
 }
 
 /** The species a ball shows now: the form of its line at its stage, whose stats it uses (ADR-038). */
@@ -64,7 +94,12 @@ export function stageBoost(config: GameConfig, base: string, stage: number): num
  * damage = powerRef / divisor x power of the form x stage boost x level multiplier x type damage x
  * effectiveness (first type only for hybrids).
  */
-export function hitDamage(config: GameConfig, ball: Ball, defender: GameType): number {
+export function hitDamage(
+  config: GameConfig,
+  ball: Ball,
+  defender: GameType,
+  second?: GameType,
+): number {
   const levels = config.stats.levelMultiplier;
   const levelMultiplier = levels[ball.level - 1] ?? levels[levels.length - 1] ?? 1;
   return (
@@ -72,8 +107,8 @@ export function hitDamage(config: GameConfig, ball: Ball, defender: GameType): n
     formPower(config, ballForm(config, ball)) *
     stageBoost(config, ball.species, ball.stage) *
     levelMultiplier *
-    config.stats.typeDamage[ball.type] *
-    effectiveness(config, ball.type, defender)
+    (config.stats.typeDamage[ball.type] ?? 1) *
+    effectiveness(config, ball.type, defender, second)
   );
 }
 
@@ -110,10 +145,19 @@ export function teamGuard(config: GameConfig, team: readonly Member[]): number {
   return mapStat(total / team.length, stats.guardStatMin, stats.guardStatMax, 0, stats.guardMax);
 }
 
-/** What a leak of `threat` really costs after the team's guard: whole points, at least 1 (ADR-038). */
-export function leakDamage(config: GameConfig, team: readonly Member[], threat: number): number {
+/**
+ * What a leak of `threat` really costs after the team's guard: whole points, at least 1 (ADR-038).
+ * `extraGuard` is the temporary guard of the fairy effect (ADR-047); the total never passes 0.75.
+ */
+export function leakDamage(
+  config: GameConfig,
+  team: readonly Member[],
+  threat: number,
+  extraGuard = 0,
+): number {
   if (threat <= 0) return 0;
-  return Math.max(1, Math.floor(threat * (1 - teamGuard(config, team)) + 0.5));
+  const guard = Math.min(0.75, teamGuard(config, team) + extraGuard);
+  return Math.max(1, Math.floor(threat * (1 - guard) + 0.5));
 }
 
 /** A ball of a species for the Pokémon at `owner`, at the given level (ADR-031). */
@@ -126,15 +170,16 @@ export function createBall(
 ): Ball {
   const species = getSpecies(config, speciesId);
   const stage = stageOf(config, level);
+  const type = attackTypeOf(config, species.id, stage, species.type);
   return {
     id,
     owner,
     stage,
     species: species.id,
-    type: species.type,
+    type,
     level,
     hybrid: false,
-    effects: abilitiesFor(config, species.id, species.type, stage),
+    effects: abilitiesFor(config, species.id, type, stage),
   };
 }
 

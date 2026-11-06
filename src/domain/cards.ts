@@ -1,3 +1,4 @@
+import { matchup, themeTypes } from './advice';
 import type { GameConfig } from './config';
 import { applyHybrid, previewHybrid } from './evolution';
 import { nextFloat, nextInt } from './rng';
@@ -84,7 +85,7 @@ function drawCard(
   switch (kind) {
     case 0: {
       // A species the team already has is not recruited again: a copy is a level, not a place.
-      const pool = (answers ?? config.ballSpecies).filter((id) => memberIndexOf(run, id) < 0);
+      const pool = (answers ?? recruitable(run, config)).filter((id) => memberIndexOf(run, id) < 0);
       const species = pool[nextInt(run.rng.cards, pool.length)];
       if (species !== undefined) return { kind: 'newBall', species };
       break;
@@ -121,15 +122,23 @@ function drawCard(
 function answersToNextWave(run: Run, config: GameConfig): readonly string[] | null {
   const waves = config.waves;
   const index = run.wave.index + 1 < waves.length ? run.wave.index + 1 : run.wave.index;
-  const target = config.themes?.[run.waveThemes[index] ?? '']?.type;
-  if (target === undefined) return null;
-  const beats = (type: GameType): boolean => config.typeChart[type][target] > 1;
+  const theme = config.themes?.[run.waveThemes[index] ?? ''];
+  if (theme === undefined) return null;
+  // A type beats a biome when it hits the types of the biome harder than normal on average.
+  const targets = themeTypes(config, theme.id);
+  const beats = (type: GameType): boolean => matchup(config, type, targets) > 1;
   if (run.team.some((member) => beats(member.type))) return null;
-  const answers = config.ballSpecies.filter((id) => {
+  const answers = recruitable(run, config).filter((id) => {
     const species = config.species[id];
     return species !== undefined && beats(species.type);
   });
   return answers.length > 0 ? answers : null;
+}
+
+/** The species a recruit card may name: the lines of the run's pool (ADR-048). */
+function recruitable(run: Run, config: GameConfig): readonly string[] {
+  const inPool = config.ballSpecies.filter((id) => run.pool.includes(id));
+  return inPool.length > 0 ? inPool : config.ballSpecies;
 }
 
 /**

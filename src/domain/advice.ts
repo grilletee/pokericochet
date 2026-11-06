@@ -1,3 +1,4 @@
+import { effectiveness } from './combat';
 import type { GameConfig } from './config';
 import type { Run } from './run';
 import type { GameType } from './types';
@@ -42,7 +43,8 @@ export interface WaveAdvice {
 
 /**
  * Mean effectiveness of an attack type against a list of defending types (1 when the list is
- * empty). The team bar uses it for its arrow: above 1 good, below 1 poor.
+ * empty), each read with the game's scale (an immunity counts as x0.25, ADR-047): above 1 the
+ * type is good against them, below 1 poor.
  */
 export function matchup(
   config: GameConfig,
@@ -51,7 +53,7 @@ export function matchup(
 ): number {
   if (defenders.length === 0) return 1;
   let sum = 0;
-  for (const defender of defenders) sum += config.typeChart[attack][defender];
+  for (const defender of defenders) sum += effectiveness(config, attack, defender);
   return sum / defenders.length;
 }
 
@@ -73,10 +75,15 @@ export function typeAdvice(
   };
 }
 
-/** The types a theme brings (empty for an unknown theme or none). */
+/** The types a theme (a biome of 2 or 3 types) brings, heaviest first; empty for none. */
 export function themeTypes(config: GameConfig, themeId: string): readonly GameType[] {
   const def = config.themes?.[themeId];
-  return def === undefined ? [] : [def.type];
+  if (def === undefined) return [];
+  if (def.types === undefined) return [def.type];
+  return def.types
+    .map((entry, index) => ({ entry, index }))
+    .sort((a, b) => b.entry.weight - a.entry.weight || a.index - b.index)
+    .map((s) => s.entry.type);
 }
 
 /** Wave clock ticks from now until the end of wave `last` (inclusive). */

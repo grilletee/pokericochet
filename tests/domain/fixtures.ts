@@ -34,9 +34,13 @@ const SPECIES: readonly SpeciesDef[] = [
 // The test species list is small: the final boss is a plain species (no legendary table) and there
 // are no bosses between waves unless a test adds them.
 const { byType: _legendaries, ...plainBoss } = baseConfig.boss ?? { species: 'gyarados' };
+// The pool of a run (ADR-048) has its own tests on the real data; the small fixtures keep every
+// species in the pool, as before.
+// The boss fight (ADR-046) has its own tests too: the older ones are about a plain boss.
+const { pool: _pool, bossFight: _fight, ...baseWithoutPool } = baseConfig;
 
 export const config: GameConfig = {
-  ...baseConfig,
+  ...baseWithoutPool,
   // The starter bonus, the stage boost, the guard and the moves have their own tests; the rest of
   // the damage tests count on exact numbers: damage = Attack / 10 x level x type, a leak = its
   // threat, no move is cast (no species has one) and no ball is capped.

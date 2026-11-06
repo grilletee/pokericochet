@@ -1,4 +1,5 @@
-import { effectiveness } from './combat';
+import { bossDamage } from './bossFight';
+import { effectivenessOn } from './combat';
 import type { GameConfig } from './config';
 import { baseOf } from './forms';
 import { dropCapture, MAX_PICKUPS } from './pickups';
@@ -15,7 +16,10 @@ import { onBossDefeated } from './waves';
  */
 export function damageEnemy(run: Run, config: GameConfig, enemy: Enemy, amount: number): boolean {
   if (enemy.hp <= 0) return false;
-  enemy.hp -= amount;
+  // A marked enemy takes more from every hit and every tick of damage (Dark, ADR-047).
+  const marked = (enemy.markTicks ?? 0) > 0 ? amount * (1 + (enemy.markBonus ?? 0)) : amount;
+  // A boss with a shield, a stun or a phase line to hold at takes what its fight lets through (ADR-046).
+  enemy.hp -= enemy.id === run.boss.id ? bossDamage(run, config, enemy, marked) : marked;
   if (enemy.hp > 0) return false;
   run.kills += 1;
   run.events.push({ type: 'kill', enemyId: enemy.id, x: enemy.x, y: enemy.y });
@@ -115,7 +119,7 @@ export function applyHitEffects(
     switch (effect.kind) {
       case 'burn': {
         if (target.hp <= 0) break;
-        const dps = effect.strength * effectiveness(config, ball.type, target.type) * power;
+        const dps = effect.strength * effectivenessOn(config, ball.type, target) * power;
         target.burnTicks = config.effects.burnTicks;
         target.burnDps = Math.max(target.burnDps, dps);
         break;
@@ -126,7 +130,7 @@ export function applyHitEffects(
         if (burn === undefined) break;
         forEachNear(run.enemies, target, effect.radius ?? 0, (other) => {
           const dps =
-            burn.strength * effect.strength * effectiveness(config, ball.type, other.type) * power;
+            burn.strength * effect.strength * effectivenessOn(config, ball.type, other) * power;
           other.burnTicks = config.effects.burnTicks;
           other.burnDps = Math.max(other.burnDps, dps);
         });
@@ -164,7 +168,7 @@ export function applyHitEffects(
             run,
             config,
             other,
-            damage * effect.strength * effectiveness(config, ball.type, other.type),
+            damage * effect.strength * effectivenessOn(config, ball.type, other),
           );
           from = other;
         }
@@ -176,7 +180,7 @@ export function applyHitEffects(
             run,
             config,
             other,
-            damage * effect.strength * effectiveness(config, ball.type, other.type),
+            damage * effect.strength * effectivenessOn(config, ball.type, other),
           );
         });
         break;
@@ -187,7 +191,7 @@ export function applyHitEffects(
             run,
             config,
             other,
-            damage * effect.strength * effectiveness(config, ball.type, other.type),
+            damage * effect.strength * effectivenessOn(config, ball.type, other),
           );
         });
         break;
@@ -198,7 +202,113 @@ export function applyHitEffects(
         break;
       case 'pierce':
         break; // decided at launch
+      case 'poison': {
+        // Layers add up to a cap, each one a damage over time; the clock restarts on every hit.
+        if (target.hp <= 0) break;
+        const layers = Math.min(
+          config.effects.poisonMaxStacks ?? 5,
+          (target.poisonStacks ?? 0) + 1,
+        );
+        const perLayer = effect.strength * effectivenessOn(config, ball.type, target) * power;
+        target.poisonStacks = layers;
+        target.poisonTicks = config.effects.poisonTicks ?? 360;
+        target.poisonDps = Math.max(target.poisonDps ?? 0, perLayer);
+        break;
+      }
+      case 'curse': {
+        // The damage is held back and lands all at once, whatever slows or stops the enemy. The
+        // clock starts with the first hit; the hits it carries are capped.
+        if (target.hp <= 0) break;
+        const cap = damage * effect.strength * (config.effects.curseMaxHits ?? 3);
+        target.curseDamage = Math.min(cap, (target.curseDamage ?? 0) + damage * effect.strength);
+        if ((target.curseTicks ?? 0) <= 0) target.curseTicks = config.effects.curseTicks ?? 120;
+        break;
+      }
+      case 'quake': {
+        // A wave that climbs the column of the impact: whoever is above it in the same lane.
+        const half = effect.radius ?? 0;
+        for (const other of run.enemies) {
+          if (other === target || other.hp <= 0 || other.y > target.y) continue;
+          if (Math.abs(other.x - target.x) > half) continue;
+          damageEnemy(
+            run,
+            config,
+            other,
+            damage * effect.strength * effectivenessOn(config, ball.type, other),
+          );
+        }
+        break;
+      }
+      case 'push':
+        // Pushes the target back up the arena; a boss does not move.
+        if (target.hp <= 0 || target.id === run.boss.id) break;
+        target.y = Math.max(-target.radius, target.y - effect.strength);
+        break;
+      case 'guard':
+        run.guardTicks = config.effects.guardTicks ?? 180;
+        break;
+      case 'freeze': {
+        // Every n-th hit stops the enemy for a moment (a boss is only slowed by other effects).
+        if (target.hp <= 0 || target.id === run.boss.id) break;
+        const hits = (target.chill ?? 0) + 1;
+        if (hits >= (config.effects.freezeEvery ?? 3)) {
+          target.chill = 0;
+          target.haltTicks = Math.max(target.haltTicks ?? 0, config.effects.freezeTicks ?? 90);
+        } else {
+          target.chill = hits;
+        }
+        break;
+      }
+      case 'stun': {
+        // A short stop that cannot be chained: after it the enemy is immune for twice as long.
+        if (target.hp <= 0 || target.id === run.boss.id) break;
+        if ((target.chill ?? 0) < 0 || (target.haltTicks ?? 0) > 0) break;
+        const ticks = config.effects.stunTicks ?? 30;
+        target.haltTicks = ticks;
+        target.chill = -2 * ticks;
+        break;
+      }
+      case 'mark': {
+        if (target.hp <= 0) break;
+        target.markTicks = config.effects.markTicks ?? 300;
+        target.markBonus = Math.min(
+          config.effects.markMax ?? 0.5,
+          (target.markBonus ?? 0) + effect.strength,
+        );
+        break;
+      }
     }
+  }
+}
+
+/** One tick of poison, of the curse waiting to land and of the marks and immunities running out. */
+export function tickAilments(run: Run, config: GameConfig): void {
+  for (const enemy of run.enemies) {
+    if (enemy.hp <= 0) continue;
+    const poison = enemy.poisonTicks ?? 0;
+    if (poison > 0) {
+      enemy.poisonTicks = poison - 1;
+      damageEnemy(run, config, enemy, ((enemy.poisonStacks ?? 0) * (enemy.poisonDps ?? 0)) / 60);
+      if (poison === 1) {
+        enemy.poisonStacks = 0;
+        enemy.poisonDps = 0;
+      }
+    }
+    const curse = enemy.curseTicks ?? 0;
+    if (curse > 0 && enemy.hp > 0) {
+      enemy.curseTicks = curse - 1;
+      if (curse === 1) {
+        const owed = enemy.curseDamage ?? 0;
+        enemy.curseDamage = 0;
+        damageEnemy(run, config, enemy, owed);
+      }
+    }
+    const mark = enemy.markTicks ?? 0;
+    if (mark > 0) {
+      enemy.markTicks = mark - 1;
+      if (mark === 1) enemy.markBonus = 0;
+    }
+    if ((enemy.chill ?? 0) < 0) enemy.chill = (enemy.chill ?? 0) + 1;
   }
 }
 

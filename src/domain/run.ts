@@ -1,10 +1,12 @@
+import { effectiveness } from './combat';
 import type { GameConfig } from './config';
 import { SpatialGrid } from './grid';
 import { imul32 } from './int32';
+import { biomeLines, drawPool, fairLines } from './pool';
 import { xpCost } from './progression';
 import { cloneRng, deriveRng, nextInt, type RngState } from './rng';
 import { addMember } from './team';
-import type { Ball, BallBody, Card, Enemy, GameEvent, GameType, Member, Pickup } from './types';
+import type { Ball, BallBody, Card, Enemy, GameEvent, Member, Pickup } from './types';
 
 /**
  * `levelup` pauses the simulation until a card is picked (ADR-014); `replace` until the player
@@ -40,6 +42,31 @@ export interface BossState {
   defeated: number;
   /** Type of the current boss's summons; '' = any type. */
   type: string;
+  /** The fight (ADR-046): phase 0..2, the shield left and its size, where the weak point is, and the stun. */
+  phase: number;
+  shieldHp: number;
+  shieldMax: number;
+  /** Offset of the weak point from the centre of the boss, and the way it is moving (+1 / -1). */
+  weakX: number;
+  weakDir: number;
+  stunTicks: number;
+  /** Ticks until the next attack; counts down while the boss is alive and not stunned. */
+  attackIn: number;
+}
+
+/** A column of the floor a boss attacked (ADR-046). */
+export interface Hazard {
+  x: number;
+  width: number;
+  /** Ticks left of the warning; the strike comes when it reaches 0. */
+  telegraph: number;
+  /** Ticks left of the strike. */
+  active: number;
+  damage: number;
+  /** Pixels per tick it moves while active (`sweep`). */
+  speed: number;
+  /** True once it hurt the player: a column hurts once. */
+  struck: boolean;
 }
 
 export interface RunRng {
@@ -55,6 +82,10 @@ export interface RunRng {
   loot: RngState;
   /** Wave themes and the species of the bosses (ADR-027, ADR-028): its own stream. */
   themes: RngState;
+  /** The pool of species of the run (ADR-048): drawn once, at the start. */
+  pool: RngState;
+  /** Where the boss attacks (ADR-046): its own stream, so the fight never moves another one. */
+  boss: RngState;
 }
 
 /**
@@ -90,6 +121,10 @@ export interface Run {
   autoAim: boolean;
   /** Theme id of each wave, drawn when the run starts ('' = none). */
   waveThemes: string[];
+  /** Base species of the run's pool (ADR-048): enemies, recruit cards and captures come from it. */
+  pool: string[];
+  /** Ticks left of the temporary guard that the fairy effect gives the team (ADR-047). */
+  guardTicks: number;
   /** Balls captured so far (species of the line and level), for the run summary (ADR-025). */
   captured: { species: string; level: number }[];
   nextBallId: number;
@@ -99,6 +134,8 @@ export interface Run {
   nextEnemyId: number;
   wave: { index: number; tick: number };
   boss: BossState;
+  /** Columns of the floor under attack, at most `bossFight.maxHazards` (ADR-046). */
+  hazards: Hazard[];
   /** Cards on offer while the phase is `levelup`; empty otherwise. */
   offers: Card[];
   events: GameEvent[];
@@ -120,33 +157,58 @@ function newGrid(config: GameConfig): SpatialGrid {
 }
 
 /**
- * One theme per wave, from the run's own `themes` stream (so spawns and cards are not disturbed).
- * The first wave only takes themes whose type does not resist the starter's (ADR-033): so no
- * starter begins against enemies it cannot hurt. It still draws one number, whatever is left.
+ * One theme (a biome, ADR-049) per wave, from the run's own `themes` stream (so spawns and cards
+ * are not disturbed): always exactly one number per wave. A biome does not repeat inside a run
+ * while another is left. The first wave only takes biomes where the pool has at least
+ * `pool.minBiomeLines` lines that the starter's attack does not resist (ADR-033): so no starter
+ * begins against enemies it cannot hurt.
  */
 function drawThemes(
   config: GameConfig,
   rng: RngState,
-  starterType: GameType | undefined,
+  pool: readonly string[],
+  starter: string,
 ): string[] {
+  const used = new Set<string>();
   return config.waves.map((wave, index) => {
     let candidates = wave.themes ?? [];
-    if (index === 0 && starterType !== undefined) {
+    const fresh = candidates.filter((id) => !used.has(id));
+    if (fresh.length > 0) candidates = fresh;
+    if (index === 0 && config.pool !== undefined) {
+      const need = config.pool.minBiomeLines;
+      const fair = candidates.filter((id) => {
+        const theme = config.themes?.[id];
+        return (
+          theme === undefined ||
+          fairLines(config, [...new Set(biomeLines(config, pool, theme))], starter).length >= need
+        );
+      });
+      if (fair.length > 0) candidates = fair;
+    } else if (index === 0) {
+      const starterType = config.species[starter]?.type;
       const fair = candidates.filter((id) => {
         const type = config.themes?.[id]?.type;
-        return type === undefined || config.typeChart[starterType][type] >= 1;
+        return (
+          starterType === undefined ||
+          type === undefined ||
+          effectiveness(config, starterType, type) >= 1
+        );
       });
       if (fair.length > 0) candidates = fair;
     }
     if (candidates.length === 0) return '';
-    return candidates[nextInt(rng, candidates.length)] ?? '';
+    const pick = candidates[nextInt(rng, candidates.length)] ?? '';
+    used.add(pick);
+    return pick;
   });
 }
 
 export function createRun(config: GameConfig, seed: number, starterSpecies: string): Run {
   const normalizedSeed = seed >>> 0;
   const themesRng = deriveRng(normalizedSeed, 'themes');
-  const waveThemes = drawThemes(config, themesRng, config.species[starterSpecies]?.type);
+  const poolRng = deriveRng(normalizedSeed, 'pool');
+  const pool = drawPool(config, poolRng);
+  const waveThemes = drawThemes(config, themesRng, pool, starterSpecies);
   const run: Run = {
     seed: normalizedSeed,
     starter: starterSpecies,
@@ -160,6 +222,8 @@ export function createRun(config: GameConfig, seed: number, starterSpecies: stri
       capture: deriveRng(normalizedSeed, 'capture'),
       loot: deriveRng(normalizedSeed, 'loot'),
       themes: themesRng,
+      pool: poolRng,
+      boss: deriveRng(normalizedSeed, 'boss'),
     },
     player: {
       x: config.arena.width / 2,
@@ -181,13 +245,31 @@ export function createRun(config: GameConfig, seed: number, starterSpecies: stri
     aimY: 0,
     autoAim: false,
     waveThemes,
+    pool,
+    guardTicks: 0,
     captured: [],
     nextBallId: 1,
     bodies: [],
     enemies: [],
     nextEnemyId: 1,
     wave: { index: 0, tick: 0 },
-    boss: { spawned: false, id: 0, maxHp: 0, tick: 0, next: 0, defeated: 0, type: '' },
+    boss: {
+      spawned: false,
+      id: 0,
+      maxHp: 0,
+      tick: 0,
+      next: 0,
+      defeated: 0,
+      type: '',
+      phase: 0,
+      shieldHp: 0,
+      shieldMax: 0,
+      weakX: 0,
+      weakDir: 1,
+      stunTicks: 0,
+      attackIn: 0,
+    },
+    hazards: [],
     offers: [],
     events: [],
     grid: newGrid(config),
@@ -210,6 +292,8 @@ export function cloneRun(run: Run): Run {
       capture: cloneRng(run.rng.capture),
       loot: cloneRng(run.rng.loot),
       themes: cloneRng(run.rng.themes),
+      pool: cloneRng(run.rng.pool),
+      boss: cloneRng(run.rng.boss),
     },
     player: { ...run.player },
     team: run.team.map((m) => ({ ...m })),
@@ -222,6 +306,8 @@ export function cloneRun(run: Run): Run {
     aimY: run.aimY,
     autoAim: run.autoAim,
     waveThemes: run.waveThemes.slice(),
+    pool: run.pool.slice(),
+    guardTicks: run.guardTicks,
     captured: run.captured.map((c) => ({ ...c })),
     nextBallId: run.nextBallId,
     bodies: run.bodies.map((b) => ({ ...b })),
@@ -229,6 +315,7 @@ export function cloneRun(run: Run): Run {
     nextEnemyId: run.nextEnemyId,
     wave: { ...run.wave },
     boss: { ...run.boss },
+    hazards: run.hazards.map((h) => ({ ...h })),
     offers: run.offers.slice(), // cards are immutable values
     events: run.events.slice(),
     grid: new SpatialGrid(run.grid.width, run.grid.height, run.grid.cellSize, run.grid.pad),
@@ -294,6 +381,10 @@ export function hashRun(run: Run): string {
   h.rng(run.rng.capture);
   h.rng(run.rng.loot);
   h.rng(run.rng.themes);
+  h.rng(run.rng.pool);
+  h.int(run.guardTicks);
+  h.int(run.pool.length);
+  for (const id of run.pool) h.str(id);
   const p = run.player;
   h.num(p.x);
   h.num(p.hp);
@@ -378,6 +469,16 @@ export function hashRun(run: Run): string {
     h.num(e.burnDps);
     h.int(e.slowTicks);
     h.num(e.slow);
+    h.str(e.type2 ?? '');
+    h.int(e.poisonTicks ?? 0);
+    h.int(e.poisonStacks ?? 0);
+    h.num(e.poisonDps ?? 0);
+    h.int(e.curseTicks ?? 0);
+    h.num(e.curseDamage ?? 0);
+    h.int(e.haltTicks ?? 0);
+    h.int(e.chill ?? 0);
+    h.int(e.markTicks ?? 0);
+    h.num(e.markBonus ?? 0);
   }
   h.int(run.nextEnemyId);
   h.int(run.wave.index);
@@ -389,6 +490,24 @@ export function hashRun(run: Run): string {
   h.int(run.boss.next);
   h.int(run.boss.defeated);
   h.str(run.boss.type);
+  h.rng(run.rng.boss);
+  h.int(run.boss.phase);
+  h.num(run.boss.shieldHp);
+  h.num(run.boss.shieldMax);
+  h.num(run.boss.weakX);
+  h.int(run.boss.weakDir);
+  h.int(run.boss.stunTicks);
+  h.int(run.boss.attackIn);
+  h.int(run.hazards.length);
+  for (const hz of run.hazards) {
+    h.num(hz.x);
+    h.num(hz.width);
+    h.int(hz.telegraph);
+    h.int(hz.active);
+    h.num(hz.damage);
+    h.num(hz.speed);
+    h.int(hz.struck ? 1 : 0);
+  }
   h.int(run.waveThemes.length);
   for (const theme of run.waveThemes) h.str(theme);
   h.int(run.captured.length);

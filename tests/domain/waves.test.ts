@@ -185,7 +185,10 @@ describe('waves: lanes, species and speeds', () => {
     expect(new Set(speeds).size).toBeGreaterThan(5); // same species, different speeds
     const spread = (Math.max(...speeds) - Math.min(...speeds)) / Math.min(...speeds);
     expect(spread).toBeGreaterThan(0.1);
-    expect(spread).toBeLessThan(2 * cfg.enemy.speedVariation + 0.05);
+    // The exact ceiling of a +-v variation: (1 + v) / (1 - v) - 1 = 2v / (1 - v).
+    expect(spread).toBeLessThanOrEqual(
+      (2 * cfg.enemy.speedVariation) / (1 - cfg.enemy.speedVariation) + 1e-9,
+    );
 
     const fast = withConfig({ waves: [wave({ spawnIntervalTicks: 10, speedScale: 2 })] });
     const fastSample = recordSpawns(createRun(fast, 11, 'charmander'), fast, 3000);

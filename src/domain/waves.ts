@@ -1,11 +1,13 @@
+import { startFight } from './bossFight';
 import { getSpecies, mapStat } from './combat';
 import type { GameConfig, ThemeDef } from './config';
 import { baseOf, formAt } from './forms';
 import { dropCapture } from './pickups';
+import { biomeLines, championOf, fairLines, typesOfLine } from './pool';
 import { enemyXp } from './progression';
 import { nextFloat, nextInt } from './rng';
 import type { Run } from './run';
-import { type Enemy, GAME_TYPES, type GameType } from './types';
+import { type Enemy, GAME_TYPES, type GameType, type SpeciesDef } from './types';
 
 /** Centre x of a lane (0-based), lanes being equal columns between the player's margins. */
 export function laneX(config: GameConfig, lane: number): number {
@@ -23,6 +25,14 @@ interface SpawnProfile {
   readonly theme?: ThemeDef | undefined;
   /** Evolution form of the enemies (1 = base species). */
   readonly tier: number;
+  /** The first wave of a run: only lines the starter does not resist. */
+  readonly fair?: boolean;
+}
+
+/** The second type of a species as the optional field an enemy carries (none for a single type). */
+function secondType(species: SpeciesDef): { type2?: GameType } {
+  const second = species.types?.[1];
+  return second === undefined ? {} : { type2: second };
 }
 
 /**
@@ -32,10 +42,23 @@ interface SpawnProfile {
  */
 function spawnEnemy(run: Run, config: GameConfig, wave: SpawnProfile): void {
   const { enemy, stats } = config;
-  const general = config.enemySpecies.filter((id) =>
-    wave.types.includes(getSpecies(config, id).type),
-  );
-  const themed = (wave.theme?.species ?? []).filter((id) => config.species[id] !== undefined);
+  // Enemies come from the pool of the run (ADR-048): the general ones by the wave's types, the
+  // themed ones by the types of the biome (ADR-049, a line enters if any of its types matches).
+  const inPool = config.enemySpecies.filter((id) => run.pool.includes(id));
+  const matches = (id: string): boolean =>
+    typesOfLine(config, id, wave.tier).some((type) => wave.types.includes(type));
+  let general = inPool.filter(matches);
+  if (general.length === 0) general = inPool; // nothing of those types in the pool: any line
+  let themed = wave.theme === undefined ? [] : biomeLines(config, run.pool, wave.theme, wave.tier);
+  // The first wave brings only what the starter's attack does not resist (ADR-033, ADR-049).
+  if (wave.fair) {
+    const fair = new Set(
+      fairLines(config, [...new Set([...general, ...themed])], run.starter, wave.tier),
+    );
+    const keep = (id: string): boolean => fair.has(id);
+    if (general.some(keep)) general = general.filter(keep);
+    if (themed.some(keep)) themed = themed.filter(keep);
+  }
   if (general.length === 0 && themed.length === 0) return;
 
   const mix = nextFloat(run.rng.spawn);
@@ -52,6 +75,7 @@ function spawnEnemy(run: Run, config: GameConfig, wave: SpawnProfile): void {
     id: run.nextEnemyId,
     species: species.id,
     type: species.type,
+    ...secondType(species),
     hp: species.baseStats.hp * enemy.hpScale * wave.hpScale,
     x: laneX(config, lane),
     y: -enemy.radius,
@@ -93,7 +117,12 @@ export function advanceWave(run: Run, config: GameConfig): void {
   run.wave.tick += 1;
   if (run.wave.tick % wave.spawnIntervalTicks === 0) {
     const theme = config.themes?.[run.waveThemes[run.wave.index] ?? ''];
-    spawnEnemy(run, config, { ...wave, theme, tier: wave.tier ?? 1 });
+    spawnEnemy(run, config, {
+      ...wave,
+      theme,
+      tier: wave.tier ?? 1,
+      fair: run.wave.index === 0 && config.pool !== undefined,
+    });
   }
   if (run.wave.tick >= wave.durationTicks) {
     run.wave.index += 1;
@@ -134,11 +163,15 @@ function placeBoss(
   isFinal: boolean,
 ): void {
   const species = getSpecies(config, speciesId);
-  const hp = species.baseStats.hp * config.enemy.hpScale * shape.hpScale;
+  // The health stat of a boss counts between 60 and 110 (4H-B2): the champion of a biome is the
+  // strongest line of its types, and a stat of 255 (Blissey) or 1 (Shedinja) must not decide the fight.
+  const bossHpStat = Math.max(60, Math.min(110, species.baseStats.hp));
+  const hp = bossHpStat * config.enemy.hpScale * shape.hpScale;
   const boss: Enemy = {
     id: run.nextEnemyId,
     species: species.id,
     type: species.type,
+    ...secondType(species),
     hp,
     x: config.arena.width / 2,
     y: -shape.radius,
@@ -156,6 +189,7 @@ function placeBoss(
   run.boss.id = boss.id;
   run.boss.maxHp = hp;
   run.boss.tick = 0;
+  startFight(run, config, boss);
   run.events.push({
     type: 'bossSpawn',
     enemyId: boss.id,
@@ -199,8 +233,19 @@ export function advanceBoss(run: Run, config: GameConfig): void {
     next !== undefined &&
     run.wave.index >= next.after
   ) {
-    const type = bossType(run, config, next.byType, next.after - 1);
-    placeBoss(run, config, next.byType[type], next, run.boss.next + 1, false);
+    // The champion of the biome of the wave that just ended (ADR-049); a theme without a type
+    // list (or a pool with nothing of it) falls back to the table by type of ADR-028.
+    const ended = config.themes?.[run.waveThemes[next.after - 1] ?? ''];
+    const champion = ended?.types === undefined ? undefined : championOf(config, run.pool, ended);
+    if (champion !== undefined) {
+      placeBoss(run, config, champion, next, run.boss.next + 1, false);
+      run.boss.next += 1;
+      run.boss.type = getSpecies(config, champion).type;
+      return;
+    }
+    const table = next.byType ?? {};
+    const type = bossType(run, config, table, next.after - 1);
+    placeBoss(run, config, table[type] ?? '', next, run.boss.next + 1, false);
     run.boss.next += 1;
     run.boss.type = type;
     return;

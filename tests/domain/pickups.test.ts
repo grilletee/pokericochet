@@ -8,6 +8,7 @@ import {
   dropBall,
   dropCapture,
   evolveTeam,
+  GAME_TYPES,
   hashRun,
   MAX_PICKUPS,
   type Run,
@@ -379,7 +380,16 @@ describe('capture on a kill', () => {
     const run = createRun(cfg, 1, 'charmander');
     const boss = makeEnemy({ id: 9, species: 'gyarados', hp: 1 });
     run.enemies = [boss];
-    run.boss = { spawned: true, id: 9, maxHp: 100, tick: 0, next: 0, defeated: 0, type: '' };
+    run.boss = {
+      ...run.boss,
+      spawned: true,
+      id: 9,
+      maxHp: 100,
+      tick: 0,
+      next: 0,
+      defeated: 0,
+      type: '',
+    };
     run.captureMisses = 3;
     damageEnemy(run, cfg, boss, 5);
     expect(run.pickups).toEqual([]);
@@ -466,7 +476,7 @@ describe('what the render sees', () => {
       snap.pickupCaptured[1],
       snap.pickupSpecies[1],
     ]).toEqual([300, 200, 1, 5]);
-    expect(snap.pickupType[1]).toBe(1); // water
+    expect(snap.pickupType[1]).toBe(GAME_TYPES.indexOf('water')); // the type code is the place in GAME_TYPES
     expect(snap.pickupTicks[0]).toBe(quietConfig.pickup.returnTicks);
     expect([snap.aimX, snap.aimY, snap.autoAim]).toEqual([77, 88, true]);
   });

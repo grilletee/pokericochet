@@ -1,5 +1,5 @@
 import type { GameConfig } from './config';
-import type { Member } from './types';
+import { type GameType, type Member, typesOfSpecies } from './types';
 
 /**
  * The species a line shows at evolution stage `stage` (ADR-037): the base itself, or the form of
@@ -10,6 +10,25 @@ export function formAt(config: GameConfig, base: string, stage: number): string 
   if (line === undefined || stage <= 1) return base;
   const form = line[Math.min(stage - 2, line.length - 1)];
   return form !== undefined && config.species[form] !== undefined ? form : base;
+}
+
+/**
+ * The type a Pokémon attacks with at a stage (ADR-047): the type of the move it shows there, which
+ * is always one of the species' own types, so a dual type brings coverage. Without a move table (or
+ * a move of another type) it is the type of the species.
+ */
+export function attackTypeOf(
+  config: GameConfig,
+  base: string,
+  stage: number,
+  fallback: GameType,
+): GameType {
+  const move = config.moves.byBase[base]?.[stage - 1];
+  const type = move === undefined ? undefined : config.moves.types?.[move];
+  if (type === undefined) return fallback;
+  const species = config.species[formAt(config, base, stage)];
+  const own = species === undefined ? [fallback] : typesOfSpecies(species);
+  return own.includes(type as GameType) ? (type as GameType) : fallback;
 }
 
 /** Base species and stage of an enemy species (an evolved form maps back to its line). */

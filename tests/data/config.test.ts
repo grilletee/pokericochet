@@ -1,45 +1,40 @@
 import { describe, expect, it } from 'vitest';
 import { gameConfig } from '../../src/data';
 import { baseConfig } from '../../src/data/config';
-import { GAME_TYPES, type GameType } from '../../src/domain';
+import { GAME_TYPES, type GameType, typesOfLine } from '../../src/domain';
 
-describe('type chart (GDD-v0)', () => {
+describe('type chart (ADR-047)', () => {
   const chart = baseConfig.typeChart;
 
-  it('has an entry for every attacker/defender pair, valued 0.5, 1 or 2', () => {
+  it('is the raw 18 x 18 table of the games: every pair is 0, 0.5, 1 or 2', () => {
     for (const attacker of GAME_TYPES) {
       for (const defender of GAME_TYPES) {
-        expect([0.5, 1, 2]).toContain(chart[attacker][defender]);
+        expect([0, 0.5, 1, 2]).toContain(chart[attacker][defender]);
       }
     }
   });
 
-  it('is x2 exactly for fire>grass, water>fire, grass>water, electric>water', () => {
-    const doubled: Array<[GameType, GameType]> = [];
-    for (const a of GAME_TYPES)
-      for (const d of GAME_TYPES) if (chart[a][d] === 2) doubled.push([a, d]);
-    expect(doubled).toEqual([
-      ['fire', 'grass'],
-      ['water', 'fire'],
-      ['grass', 'water'],
-      ['electric', 'water'],
-    ]);
+  it('keeps the four classic relations of the vertical slice', () => {
+    const cells: Array<[GameType, GameType, number]> = [
+      ['fire', 'grass', 2],
+      ['water', 'fire', 2],
+      ['grass', 'water', 2],
+      ['electric', 'water', 2],
+      ['fire', 'water', 0.5],
+      ['water', 'grass', 0.5],
+      ['grass', 'fire', 0.5],
+      ['electric', 'grass', 0.5],
+      ['electric', 'electric', 0.5],
+    ];
+    for (const [a, d, value] of cells) expect(chart[a][d], `${a} > ${d}`).toBe(value);
   });
 
-  it('is x0.5 exactly for same type, fire>water, water>grass, grass>fire, electric>grass', () => {
-    const halved: Array<[GameType, GameType]> = [];
-    for (const a of GAME_TYPES)
-      for (const d of GAME_TYPES) if (chart[a][d] === 0.5) halved.push([a, d]);
-    expect(halved).toEqual([
-      ['fire', 'fire'],
-      ['fire', 'water'],
-      ['water', 'water'],
-      ['water', 'grass'],
-      ['grass', 'fire'],
-      ['grass', 'grass'],
-      ['electric', 'grass'],
-      ['electric', 'electric'],
-    ]);
+  it('answers what was missing: Ground stops Electric and Electric cannot hurt Ground (8th playtest)', () => {
+    expect(chart.ground.electric).toBe(2);
+    expect(chart.electric.ground).toBe(0); // the raw immunity; the game reads it as x0.25
+    expect(chart.electric.flying).toBe(2);
+    expect(chart.electric.dragon).toBe(0.5);
+    expect(baseConfig.stats.typeScale).toEqual({ immune: 0.25, min: 0.25, max: 3 });
   });
 });
 
@@ -57,20 +52,33 @@ describe('stat mapping', () => {
     expect(baseConfig.ball.speedMax).toBeLessThan(baseConfig.enemy.radius);
   });
 
-  it('documents the deviations from damage = attack / 10: fire x1.05, water x1.15, grass x1.95, electric x1.3 (ADR-015, 4F-B..4F-E)', () => {
-    expect(baseConfig.stats.typeDamage).toEqual({
-      fire: 1.05,
-      water: 1.15,
-      grass: 1.95,
-      electric: 1.3,
-    });
+  it('documents the deviations from damage = attack / 10: fire x1.05, water x1.15, grass x1.95, electric x1.3 for the four starters (ADR-015, 4F-B..4F-E)', () => {
+    const damage = baseConfig.stats.typeDamage;
+    expect(damage.fire).toBe(1.05);
+    expect(damage.water).toBe(1.15);
+    expect(damage.grass).toBe(1.95);
+    expect(damage.electric).toBe(1.3);
+  });
+
+  it('gives each of the 18 types a base damage in a sane band (4H-B2, calibrated by T2)', () => {
+    for (const type of GAME_TYPES) {
+      const value = baseConfig.stats.typeDamage[type];
+      expect(value, type).toBeGreaterThan(0.8);
+      expect(value, type).toBeLessThanOrEqual(2);
+    }
   });
 
   it('exposes the enemy hp multiplier as the named, provisional parameter enemy.hpScale', () => {
-    expect(baseConfig.enemy.hpScale).toBe(1.55);
+    // 1.55 x 0.8 (9th playtest, ADR-052): the author is the difficulty reference, not the bot.
+    expect(baseConfig.enemy.hpScale).toBeCloseTo(1.24, 12);
   });
 
-  it('keeps the assisted aim a weaker aid than the manual one, but a usable one (ADR-021, M4)', () => {
+  it('slows the enemies by 10 % over the 4H-B1 values (9th playtest, ADR-052)', () => {
+    expect(baseConfig.enemy.speedMin).toBeCloseTo(0.18, 12);
+    expect(baseConfig.enemy.speedMax).toBeCloseTo(0.45, 12);
+  });
+
+  it('keeps the assisted aim a weaker aid than the manual one (ADR-021; an accessibility setting, no balance metric)', () => {
     expect(baseConfig.ball.autoCooldownMult).toBeGreaterThan(1);
     expect(baseConfig.ball.aimJitter).toBeGreaterThan(baseConfig.ball.manualAimJitter);
     expect(baseConfig.ball.autoCooldownMult).toBe(1.25);
@@ -109,11 +117,22 @@ describe('stat mapping', () => {
     const charge = moves.chargeByStage;
     expect(charge[0] ?? 0).toBeGreaterThan(charge[1] ?? 0);
     expect(charge[1] ?? 0).toBeGreaterThan(charge[2] ?? 0);
-    expect(Object.keys(moves.status).sort()).toEqual(['electric', 'fire', 'grass', 'water']);
+    // The status of a move (burn or slow of its type): the four of the slice plus Ice, Poison, Ghost.
+    expect(Object.keys(moves.status).sort()).toEqual([
+      'electric',
+      'fire',
+      'ghost',
+      'grass',
+      'ice',
+      'poison',
+      'water',
+    ]);
   });
 
   it('pins the provisional boss hp multiplier, so changing it is a conscious decision', () => {
-    expect(baseConfig.boss?.hpScale).toBe(44);
+    // 44 / 5.5 / 12 / 28 before the 4G-B: the fight now lasts through its shield, stun and phases.
+    expect(baseConfig.boss?.hpScale).toBe(26);
+    expect((baseConfig.interludes ?? []).map((b) => b.hpScale)).toEqual([3.2, 7, 16]);
   });
 
   it('gives every type an effect at each of the three stages, and the first stage is the old one', () => {
@@ -122,10 +141,42 @@ describe('stat mapping', () => {
     expect(byType.water?.[0]?.[0]?.kind).toBe('pierce');
     expect(byType.grass?.[0]?.[0]?.kind).toBe('drain');
     expect(byType.electric?.[0]?.[0]?.kind).toBe('chain');
-    for (const type of ['fire', 'water', 'grass', 'electric']) {
-      expect(byType[type]).toHaveLength(3);
-    }
+    for (const type of GAME_TYPES) expect(byType[type], type).toHaveLength(3);
     expect(baseConfig.abilities.generic).toHaveLength(3);
+  });
+
+  it('files the 18 types in the seven families of effects (ADR-047)', () => {
+    const FAMILY: Record<string, string> = {
+      burn: 'dot',
+      poison: 'dot',
+      curse: 'dot',
+      chain: 'chain',
+      pierce: 'pierce',
+      blast: 'blast',
+      splash: 'blast',
+      quake: 'blast',
+      push: 'blast',
+      drain: 'drain',
+      guard: 'drain',
+      slow: 'control',
+      freeze: 'control',
+      stun: 'control',
+      mark: 'control',
+    };
+    const first = (type: GameType): string => {
+      const kind = baseConfig.abilities.byType[type]?.[2]?.[0]?.kind;
+      return kind === undefined ? 'direct' : (FAMILY[kind] ?? kind);
+    };
+    const families = new Set(GAME_TYPES.map(first));
+    expect([...families].sort()).toEqual(
+      ['blast', 'chain', 'control', 'direct', 'dot', 'drain', 'pierce'].sort(),
+    );
+    // Normal and Dragon are the direct ones: no effect, more base damage instead.
+    expect(first('normal')).toBe('direct');
+    expect(first('dragon')).toBe('direct');
+    expect(baseConfig.stats.typeDamage.dragon ?? 0).toBeGreaterThan(
+      baseConfig.stats.typeDamage.fire ?? 0,
+    );
   });
 
   it('each stage adds to the one before: later stages have at least as many effects', () => {
@@ -163,24 +214,33 @@ describe('wave table (GDD-v0)', () => {
     expect(waves.every((w) => w.durationTicks === 2700)).toBe(true);
   });
 
-  it('every wave has a general pool of all four types and at least three themes to draw from (ADR-027)', () => {
+  it('every wave has a general pool of all 18 types and the 14 biomes to draw from (ADR-049)', () => {
     for (const w of waves) {
       expect(new Set(w.types)).toEqual(new Set(GAME_TYPES));
-      expect(w.themes?.length ?? 0).toBeGreaterThanOrEqual(3);
+      expect(w.themes?.length).toBe(14);
       for (const id of w.themes ?? []) expect(gameConfig.themes?.[id]).toBeDefined();
     }
   });
 
-  it('every theme names real enemy species of its own type, and purity is a share', () => {
-    for (const theme of Object.values(gameConfig.themes ?? {})) {
-      expect(theme.species.length).toBeGreaterThan(0);
-      expect(theme.purity).toBeGreaterThan(0);
-      expect(theme.purity).toBeLessThanOrEqual(1);
-      for (const id of theme.species) {
-        expect(gameConfig.enemySpecies, id).toContain(id);
-        expect(gameConfig.species[id]?.type, id).toBe(theme.type);
-      }
+  it('has 14 biomes of 2 or 3 types, every one of the 18 types in at least one (ADR-049)', () => {
+    const biomes = Object.values(gameConfig.themes ?? {});
+    expect(biomes).toHaveLength(14);
+    const seen = new Set<string>();
+    for (const biome of biomes) {
+      const types = biome.types ?? [];
+      expect(types.length, biome.id).toBeGreaterThanOrEqual(2);
+      expect(types.length, biome.id).toBeLessThanOrEqual(3);
+      expect(biome.type, biome.id).toBe(types[0]?.type);
+      expect(new Set(types.map((t) => t.type)).size, biome.id).toBe(types.length);
+      expect(
+        biome.species,
+        `${biome.id} lists no species: they come from the pool`,
+      ).toBeUndefined();
+      expect(biome.purity).toBeGreaterThan(0);
+      expect(biome.purity).toBeLessThanOrEqual(1);
+      for (const t of types) seen.add(t.type);
     }
+    expect([...seen].sort()).toEqual([...GAME_TYPES].sort());
   });
 
   it('the tier never goes down, and only the base form is used in the first waves', () => {
@@ -200,35 +260,27 @@ describe('wave table (GDD-v0)', () => {
     }
   });
 
-  it('every wave has at least one enemy species of each of its types', () => {
+  it('every wave has at least one enemy line of each of its types', () => {
     for (const w of waves) {
       for (const type of w.types) {
-        const species = gameConfig.enemySpecies.filter(
-          (id) => gameConfig.species[id]?.type === type,
+        const lines = gameConfig.enemySpecies.filter((id) =>
+          typesOfLine(gameConfig, id).includes(type),
         );
-        expect(species.length).toBeGreaterThan(0);
+        expect(lines.length, type).toBeGreaterThan(0);
       }
     }
   });
 
-  it('the species lists are consistent', () => {
-    expect(gameConfig.enemySpecies).toHaveLength(31);
-    // Every ball and enemy has an evolution line, and every form maps back to it.
-    for (const id of [...gameConfig.enemySpecies, ...gameConfig.ballSpecies]) {
-      expect(gameConfig.lines?.[id]?.length, id).toBeGreaterThanOrEqual(1);
-    }
+  it('the species lists are consistent: 214 lines by rule, every form maps back to its line', () => {
+    expect(gameConfig.enemySpecies).toHaveLength(214);
+    expect(gameConfig.ballSpecies).toHaveLength(214);
     for (const [form, info] of Object.entries(gameConfig.forms ?? {})) {
       expect(gameConfig.lines?.[info.base]?.[info.level - 2]).toBe(form);
     }
-    expect(gameConfig.ballSpecies).toHaveLength(8);
     for (const id of [...gameConfig.enemySpecies, ...gameConfig.ballSpecies]) {
       expect(gameConfig.species[id]).toBeDefined();
     }
-    for (const type of GAME_TYPES) {
-      expect(
-        gameConfig.ballSpecies.filter((id) => gameConfig.species[id]?.type === type),
-      ).toHaveLength(2);
-    }
+    expect(gameConfig.pool?.always.every((id) => gameConfig.enemySpecies.includes(id))).toBe(true);
   });
 });
 
@@ -250,7 +302,7 @@ describe('progression and card tables', () => {
   });
 
   it('effects: burn 2/s for 3 s, chain at 80 px for 50 %, and drain that costs twice as much as in 4D', () => {
-    expect(gameConfig.effects).toEqual({
+    expect(gameConfig.effects).toMatchObject({
       burnTicks: 180,
       drainPerHp: 30,
       chainRadius: 80,

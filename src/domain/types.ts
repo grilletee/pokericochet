@@ -1,9 +1,32 @@
-export type GameType = 'fire' | 'water' | 'grass' | 'electric';
-export const GAME_TYPES: readonly GameType[] = ['fire', 'water', 'grass', 'electric'];
+/** The 18 types of the games (4H-B2, ADR-047), in the order PokéAPI lists them. */
+export const GAME_TYPES = [
+  'normal',
+  'fighting',
+  'flying',
+  'poison',
+  'ground',
+  'rock',
+  'bug',
+  'ghost',
+  'steel',
+  'fire',
+  'water',
+  'grass',
+  'electric',
+  'psychic',
+  'ice',
+  'dragon',
+  'dark',
+  'fairy',
+] as const;
+export type GameType = (typeof GAME_TYPES)[number];
 
 /**
- * `burnArea`, `splash`, `slow` and `blast` arrive with the evolution phases (ADR-031); `chain` may
- * jump `count` times. `radius` is in arena pixels.
+ * What a ball can do when it hits, in seven families (ADR-047): damage over time (`burn`,
+ * `burnArea`, `poison`, `curse`), jumps (`chain`), pierce (`pierce`), explosions (`splash`,
+ * `blast`, `quake`, `push`), sustain (`drain`, `guard`), control (`slow`, `freeze`, `stun`, `mark`)
+ * and direct damage (no effect: the type multiplier). `chain` may jump `count` times. `radius` is
+ * in arena pixels.
  */
 export type EffectKind =
   | 'burn'
@@ -13,7 +36,15 @@ export type EffectKind =
   | 'burnArea'
   | 'splash'
   | 'slow'
-  | 'blast';
+  | 'blast'
+  | 'poison'
+  | 'curse'
+  | 'quake'
+  | 'push'
+  | 'guard'
+  | 'freeze'
+  | 'stun'
+  | 'mark';
 
 /** Shapes a move can take (ADR-039). */
 export type MoveShapeKind = 'burst' | 'beam' | 'nova' | 'cross' | 'wave' | 'chain';
@@ -40,8 +71,16 @@ export interface BaseStats {
 /** Base data of a species. In the game it is generated from PokéAPI by tools/fetch-data. */
 export interface SpeciesDef {
   readonly id: string;
+  /** The first type: a shortcut for `types[0]` (ADR-047). */
   readonly type: GameType;
+  /** One or two types in the order of PokéAPI; a species without the list has only `type`. */
+  readonly types?: readonly GameType[];
   readonly baseStats: BaseStats;
+}
+
+/** Every type of a species, the first one first. */
+export function typesOfSpecies(species: SpeciesDef): readonly GameType[] {
+  return species.types ?? [species.type];
 }
 
 /**
@@ -115,6 +154,22 @@ export interface Enemy {
   /** Ticks left slowed and the fraction of speed lost meanwhile (`slow`, ADR-031). */
   slowTicks: number;
   slow: number;
+  /**
+   * The state of the 4H-B2 effects, all optional so an enemy made by hand needs none of it (missing
+   * = 0): the second type; poison layers, ticks left and damage per second per layer; the pending
+   * curse (ticks until it lands and the damage it carries); ticks stopped by ice or a stun and the
+   * hits counted towards the next freeze; the mark (ticks left and extra damage taken).
+   */
+  type2?: GameType;
+  poisonTicks?: number;
+  poisonStacks?: number;
+  poisonDps?: number;
+  curseTicks?: number;
+  curseDamage?: number;
+  haltTicks?: number;
+  chill?: number;
+  markTicks?: number;
+  markBonus?: number;
 }
 
 /** A reward offered when the player levels up. */
@@ -288,6 +343,31 @@ export type GameEvent =
       readonly final: boolean;
     }
   | { readonly type: 'bossSummon'; readonly count: number }
+  /** The boss entered phase `phase` (1 or 2; the first is 0) at 66 % or 33 % of its health (ADR-046). */
+  | { readonly type: 'bossPhase'; readonly phase: number }
+  /** A ground attack was announced: a column of `width` at `x` that strikes in `ticks` (ADR-046). */
+  | {
+      readonly type: 'bossTelegraph';
+      readonly x: number;
+      readonly width: number;
+      readonly ticks: number;
+    }
+  /**
+   * The column struck; `hit` says whether the player stood in it. A moving column that catches the
+   * player later reports it with a `leak` event of the boss instead.
+   */
+  | {
+      readonly type: 'bossStrike';
+      readonly x: number;
+      readonly width: number;
+      readonly hit: boolean;
+    }
+  /** The player lost `damage` health to a column of the boss (after the guard of the team). */
+  | { readonly type: 'bossHurt'; readonly damage: number }
+  /** The shield of the boss went up (`broken` false) or was broken at its weak point (true). */
+  | { readonly type: 'bossShield'; readonly broken: boolean }
+  /** The boss was stunned for `ticks`: the window for the Ultimate. */
+  | { readonly type: 'bossStun'; readonly ticks: number }
   /** A boss died; `index` counts the bosses defeated so far, this one included (ADR-028). */
   | { readonly type: 'bossDefeated'; readonly species: string; readonly index: number }
   /**

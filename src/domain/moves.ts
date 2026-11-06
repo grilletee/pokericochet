@@ -1,4 +1,5 @@
-import { hitDamage } from './combat';
+import { ultimateOnBoss } from './bossFight';
+import { effectivenessOn, hitDamage } from './combat';
 import type { GameConfig, MoveShapeDef } from './config';
 import { ballPower, damageEnemy, nearestOther } from './effects';
 import { stageForLevel } from './forms';
@@ -67,7 +68,7 @@ function applyStatus(config: GameConfig, ball: Ball, enemy: Enemy, power: number
   const status = config.moves.status[ball.type];
   if (status === undefined) return;
   if (status.burn !== undefined) {
-    const dps = status.burn * config.typeChart[ball.type][enemy.type] * power;
+    const dps = status.burn * effectivenessOn(config, ball.type, enemy) * power;
     enemy.burnTicks = config.effects.burnTicks;
     enemy.burnDps = Math.max(enemy.burnDps, dps);
   }
@@ -105,7 +106,9 @@ const tally = { hits: 0, damage: 0 };
 
 /** One enemy struck by a move: its damage, its status and the tally. */
 function strike(run: Run, config: GameConfig, ball: Ball, enemy: Enemy, power: number): void {
-  const damage = hitDamage(config, ball, enemy.type) * power;
+  // An Ultimate on a boss: it takes a share of an intact shield, and hits extra during the stun.
+  const onBoss = enemy.id === run.boss.id ? ultimateOnBoss(run, config, enemy) : 1;
+  const damage = hitDamage(config, ball, enemy.type, enemy.type2) * power * onBoss;
   damageEnemy(run, config, enemy, damage);
   applyStatus(config, ball, enemy, power);
   tally.hits += 1;

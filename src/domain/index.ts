@@ -3,6 +3,16 @@ export type { BossAdvice, WaveAdvice } from './advice';
 export { matchup, themeTypes, typeAdvice, waveAdvice } from './advice';
 export type { AimDirection } from './aim';
 export { aimDirection } from './aim';
+export {
+  advanceBossFight,
+  bossDamage,
+  hitWeakPoint,
+  liveBoss,
+  MIN_TELEGRAPH_TICKS,
+  patternFor,
+  startFight,
+  ultimateOnBoss,
+} from './bossFight';
 export { applyCard, drawOffers } from './cards';
 export {
   ballForm,
@@ -11,6 +21,7 @@ export {
   createBall,
   damagePlayer,
   effectiveness,
+  effectivenessOn,
   formPower,
   getSpecies,
   hitDamage,
@@ -21,7 +32,11 @@ export {
 } from './combat';
 export type {
   AbilitiesDef,
+  BossAttackDef,
   BossDef,
+  BossFightDef,
+  BossPatternDef,
+  BossPhaseDef,
   GameConfig,
   InterludeDef,
   MoveShapeDef,
@@ -39,6 +54,7 @@ export {
 } from './effects';
 export { applyHybrid, evolveTeam, mergeBalls, previewHybrid } from './evolution';
 export {
+  attackTypeOf,
   baseOf,
   formAt,
   formOfMember,
@@ -69,10 +85,19 @@ export {
   reflectOffEnemy,
 } from './physics';
 export { advancePickups, dropBall, dropCapture, MAX_PICKUPS, reloadTicks } from './pickups';
+export {
+  biomeLines,
+  biomeTypes,
+  championOf,
+  drawPool,
+  fairLines,
+  statTotal,
+  typesOfLine,
+} from './pool';
 export { awardKill, checkLevelUp, enemyXp, xpCost } from './progression';
 export type { RngState } from './rng';
 export { cloneRng, createRng, deriveRng, nextFloat, nextInt, nextU32 } from './rng';
-export type { BossState, Phase, Player, Run, RunRng } from './run';
+export type { BossState, Hazard, Phase, Player, Run, RunRng } from './run';
 export { cloneRun, createRun, hashRun } from './run';
 export type { Snapshot } from './snapshot';
 export {
@@ -124,7 +149,7 @@ export type {
   ReplaceAction,
   SpeciesDef,
 } from './types';
-export { GAME_TYPES } from './types';
+export { GAME_TYPES, typesOfSpecies } from './types';
 export {
   advanceBoss,
   advanceWave,

@@ -35,14 +35,21 @@ describe('waveAdvice: what the player is told about the wave and the next boss (
   });
 
   it('orders the types by how much they beat or fall short, ties in the order of the types', () => {
-    // Against water + fire: electric 1.5, water and grass 1.25, fire 0.5 (mean of the two cells).
+    // Against water + fire (mean of the two cells, 18-type chart): Ground and Rock hit both (x2 and
+    // x2 on fire, x2 and x1 on water) before Electric and Grass.
     const both = typeAdvice(gameConfig, ['water', 'fire']);
-    expect(both.effective).toEqual(['electric', 'water', 'grass']);
-    expect(both.resisted).toEqual(['fire']);
-    // Against grass + electric: electric 0.5 falls shortest, then water and grass 0.75.
+    expect(both.effective).toEqual(['ground', 'rock', 'electric', 'water', 'grass']);
+    expect(both.resisted).toEqual(['steel', 'fire', 'ice', 'bug', 'fairy']);
+    // Against grass + electric: Electric and Steel fall shortest.
     const other = typeAdvice(gameConfig, ['grass', 'electric']);
-    expect(other.resisted).toEqual(['electric', 'water', 'grass']);
-    expect(other.effective).toEqual(['fire']);
+    expect(other.resisted).toEqual(['electric', 'steel', 'water', 'grass']);
+    expect(other.effective).toEqual(['poison', 'bug', 'fire', 'ice', 'flying', 'ground']);
+  });
+
+  it('reads an immunity as x0.25, not zero, and a double type as the product (ADR-047)', () => {
+    expect(matchup(gameConfig, 'electric', ['ground'])).toBe(0.25);
+    expect(matchup(gameConfig, 'normal', ['ghost'])).toBe(0.25);
+    expect(matchup(gameConfig, 'ground', ['electric'])).toBe(2);
   });
 
   it('says 0 once the wave that brings the boss has started (the boss is about to appear)', () => {
@@ -112,17 +119,19 @@ describe('waveAdvice: what the player is told about the wave and the next boss (
 
   it('lists the attack types that beat the wave and the ones that fall short, strongest first', () => {
     const run = fresh();
-    run.waveThemes[0] = 'fire-pack';
+    run.waveThemes[0] = 'volcano'; // fire, poison, dragon
     const advice = waveAdvice(run, gameConfig);
-    expect(advice.types).toEqual(['fire']);
-    expect(advice.effective).toEqual(['water']);
-    expect(advice.resisted).toEqual(['fire', 'grass']);
-    run.waveThemes[0] = 'electric-storm';
+    expect(advice.types).toEqual(['fire', 'poison', 'dragon']);
+    expect(advice.effective).toContain('ground');
+    expect(advice.resisted).toContain('electric');
+    expect(advice.resisted).not.toContain('ground');
+    run.waveThemes[0] = 'power-plant'; // electric, normal, fighting
     const electric = waveAdvice(run, gameConfig);
-    expect(electric.effective).toEqual([]);
-    // Nothing beats the electric wave on the 4×4 chart and only electric falls short: the very
-    // hole the eighth playtest found ("Electric is broken"); the 18×18 chart of the 4H-B2 fills it.
-    expect(electric.resisted).toEqual(['electric']);
+    // The hole of the eighth playtest ("Electric is broken") is filled: Ground beats a wave of
+    // Electric (x2 on it), and Electric itself falls short.
+    expect(electric.effective).toContain('ground');
+    expect(electric.effective).toContain('fighting');
+    expect(electric.resisted).toContain('electric');
   });
 
   it('has no types, and nothing effective, for a wave without a theme', () => {

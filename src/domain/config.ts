@@ -17,15 +17,94 @@ export interface WaveDef {
   readonly tier?: number;
 }
 
-/** A themed wave (ADR-027): most of its enemies come from `species`, the rest from the wave's types. */
+/**
+ * A biome (ADR-049, which replaces the themes of ADR-027): 2 or 3 types with a weight. Its species
+ * are not written down: they come from the pool of the run, filtered by these types. A theme with
+ * `species` (tests, hand-made scenarios) still uses that list instead.
+ */
 export interface ThemeDef {
   readonly id: string;
   readonly name: string;
+  /** The main type: the first of `types`. It names the biome and picks its boss template. */
   readonly type: GameType;
-  /** Base species ids; unknown ones are ignored. */
-  readonly species: readonly string[];
-  /** Share of the wave's enemies drawn from `species`, 0..1. */
+  /** The types of the biome with their weight; a line enters if any of its types is here. */
+  readonly types?: readonly { readonly type: GameType; readonly weight: number }[];
+  /** Base species ids; unknown ones are ignored. Without it, the pool of the run is used. */
+  readonly species?: readonly string[];
+  /** Share of the wave's enemies drawn from the biome's own species, 0..1. */
   readonly purity: number;
+}
+
+/** The pool of species of a run (ADR-048): lines drawn per type with the `pool` stream. */
+export interface PoolDef {
+  /** Lines drawn for each of the 18 types (fewer if the roster has fewer). */
+  readonly linesPerType: number;
+  /** Lines that are always in the pool: the starters of the title screen. */
+  readonly always: readonly string[];
+  /** A biome needs at least this many lines in the pool (V3); the first wave also needs them fair. */
+  readonly minBiomeLines: number;
+}
+
+/**
+ * One ground attack of a boss (ADR-046): the player only moves along the floor, so an attack is a
+ * column (or several) of the floor. It is announced for `telegraphTicks` (never under 60) and
+ * strikes once; the player is hit if they stand inside at that moment.
+ */
+export interface BossAttackDef {
+  /** `column`: one; `comb`: `count` columns with gaps; `sweep`: one that moves; `rain`: `count` narrow ones in a row. */
+  readonly kind: 'column' | 'comb' | 'sweep' | 'rain';
+  readonly width: number;
+  readonly count?: number;
+  readonly telegraphTicks: number;
+  readonly activeTicks: number;
+  /** Health points of the leak it costs, before the guard of the team. */
+  readonly damage: number;
+  /** `sweep` only: pixels per tick it moves while active. */
+  readonly sweepSpeed?: number;
+}
+
+/** What a phase of a boss does (ADR-046). */
+export interface BossPhaseDef {
+  /** The phase starts when the boss is at or under this share of its health (1, 0.66, 0.33). */
+  readonly fromHp: number;
+  readonly attacks: readonly BossAttackDef[];
+  /** Ticks between one attack and the next. */
+  readonly intervalTicks: number;
+  /** A shield that has to be broken at the weak point before the boss can be hurt much. */
+  readonly shield?: {
+    /** Health of the shield as a share of the boss's health, so every boss has the fight of its size. */
+    readonly share: number;
+    /** Radius of the weak point, which moves from side to side over the body. */
+    readonly weakRadius: number;
+    /** Pixels per tick of the weak point, over +-`reach`. */
+    readonly weakSpeed: number;
+  };
+}
+
+/** The pattern table of one boss: three phases and the numbers they share (ADR-046). */
+export interface BossPatternDef {
+  readonly phases: readonly BossPhaseDef[];
+}
+
+/** The boss fight rules that do not depend on the boss (ADR-046). */
+export interface BossFightDef {
+  /** Damage multiplier while the shield stands (not at the weak point: that one breaks it). */
+  readonly shieldMult: number;
+  /** A broken shield stuns the boss for this many ticks, and every hit counts x`stunMult`. */
+  readonly stunTicks: number;
+  readonly stunMult: number;
+  /** An Ultimate that lands during the stun does this much extra on top. */
+  readonly ultimateStunBonus: number;
+  /** An Ultimate that lands on an intact shield takes this share of it. */
+  readonly ultimateShieldShare: number;
+  /** Ticks the fight waits after a phase change before attacking again (the player's breath). */
+  readonly phasePauseTicks: number;
+  /** The most columns on the field at once. */
+  readonly maxHazards: number;
+  /** Pattern of a boss by species id; `byType` is the template of its main type; `default` the rest. */
+  readonly bySpecies: Readonly<Record<string, BossPatternDef>>;
+  readonly byType: Readonly<Partial<Record<GameType, BossPatternDef>>>;
+  readonly default: BossPatternDef;
 }
 
 /** The final boss: it appears when the last wave ends and summons small enemies until it dies. */
@@ -55,7 +134,11 @@ export interface BossDef {
  */
 export interface InterludeDef extends Omit<BossDef, 'species' | 'byType'> {
   readonly after: number;
-  readonly byType: Readonly<Record<GameType, string>>;
+  /**
+   * Species by type, the fallback when the ended wave has no biome (ADR-028). With biomes the boss
+   * is the champion of the biome of the wave that just ended (ADR-049) and this is not needed.
+   */
+  readonly byType?: Readonly<Partial<Record<GameType, string>>>;
   readonly healHp: number;
 }
 
@@ -110,6 +193,11 @@ export interface MovesDef {
    * effect) and slow (fraction of speed lost). A type without an entry adds nothing.
    */
   readonly status: Readonly<Record<string, { readonly burn?: number; readonly slow?: number }>>;
+  /**
+   * Type of every move in `byBase` (generated from PokéAPI). The type of a Pokémon's balls at a
+   * stage is the type of the move it shows there (ADR-047), so a dual type brings coverage.
+   */
+  readonly types?: Readonly<Record<string, string>>;
 }
 
 /** What a ball does, by type and stage, with signatures per species (ADR-031). */
@@ -250,7 +338,13 @@ export interface GameConfig {
      * Base damage multiplier per ball type. All 1 follows GDD-v0 (damage = attack / 10); a
      * different value is a balance decision (see the balance harness).
      */
-    readonly typeDamage: Readonly<Record<GameType, number>>;
+    readonly typeDamage: Readonly<Partial<Record<GameType, number>>>;
+    /**
+     * How the raw chart (0, 0.5, 1, 2 as in the games) is read (ADR-047): an immunity (0) counts as
+     * `immune` (a deliberate departure from the games: a ball that does nothing is frustrating) and
+     * the product over the defender's types is clamped to [min, max]. Missing = 0.25, 0.25, 3.
+     */
+    readonly typeScale?: { readonly immune: number; readonly min: number; readonly max: number };
   };
   readonly effects: {
     /** Duration of the burn status. */
@@ -261,7 +355,27 @@ export interface GameConfig {
     readonly chainRadius: number;
     /** Ticks an enemy stays slowed. */
     readonly slowTicks: number;
+    /** Poison: ticks it lasts and the most layers that add up (each hit adds one). */
+    readonly poisonTicks?: number;
+    readonly poisonMaxStacks?: number;
+    /** Curse: ticks until the delayed damage lands and the most hits it can carry. */
+    readonly curseTicks?: number;
+    readonly curseMaxHits?: number;
+    /** Ice: every `freezeEvery`-th hit stops the enemy for `haltTicks`; a stun stops it for `stunTicks`. */
+    readonly freezeEvery?: number;
+    readonly freezeTicks?: number;
+    readonly stunTicks?: number;
+    /** Mark: ticks it lasts and the most extra damage it can add up to (0.5 = +50 %). */
+    readonly markTicks?: number;
+    readonly markMax?: number;
+    /** Fairy guard: ticks it lasts after a hit and the extra guard of the team meanwhile. */
+    readonly guardTicks?: number;
+    readonly guardBonus?: number;
   };
+  /** The pool of species of each run (ADR-048). Without it every species is in the pool. */
+  readonly pool?: PoolDef;
+  /** Boss fights with patterns, shield, stun and phases (ADR-046). Without it a boss is a sponge. */
+  readonly bossFight?: BossFightDef;
   readonly progression: {
     /** xp needed to go from level n to n + 1, indexed by n - 1; the last value repeats. */
     readonly levelCosts: readonly number[];
@@ -297,7 +411,7 @@ export interface GameConfig {
     readonly vitalityHp: number;
   };
   readonly grid: { readonly cellSize: number };
-  /** typeChart[attacker][defender] */
+  /** typeChart[attacker][defender]: the raw values of the games (0, 0.5, 1, 2), all 18 x 18. */
   readonly typeChart: Readonly<Record<GameType, Readonly<Record<GameType, number>>>>;
   readonly species: Readonly<Record<string, SpeciesDef>>;
   /** Species ids that spawn as wild enemies. */

@@ -23,11 +23,12 @@ import {
 
 /**
  * Fun metrics of GDD-v2 (ADR-033), measured with bots that USE the mechanics. Targets (hypotheses,
- * to be validated with the author's own play; the 35-50 % is the ACTIVE BOT's, not the player's):
+ * to be validated with the author's own play. Since ADR-052 the bot's win rate is a REFERENCE to
+ * compare variants and to spot abrupt changes, not a target: the author is the difficulty reference):
  *  M1  agency            active - still win rate                      >= 30 points
  *  M2  decisions         level-ups + replace screens per minute       >= 3, longest gap <= 45 s
  *  M3  visible stages    stage changes per run, the first before 2:00 >= 4
- *  M4  aim               active - active-auto win rate                >= 15 points
+ *  M4  aim               active - active-auto win rate                informative only (ADR-052: the assisted aim is an accessibility setting now)
  *  M6  identity          damage share of the starter's line / top 2   >= 25 % / >= 55 %
  *  M7  starters          best - worst win rate                        <= 10 points
  *  M8  real choice       win rate of 4 card tastes, spread            <= 15 points; balanced takes upgrades/train >= 35 %
@@ -144,7 +145,7 @@ function parityLines(config: GameConfig): string[] {
       return (
         hitDamage(cfg, ball, 'electric') /
         (levels[level - 1] ?? 1) /
-        cfg.stats.typeDamage[ball.type]
+        (cfg.stats.typeDamage[ball.type] ?? 1)
       );
     };
     return value(stage) / value(1);

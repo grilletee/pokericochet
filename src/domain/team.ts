@@ -1,6 +1,6 @@
 import { abilitiesFor } from './abilities';
 import type { GameConfig } from './config';
-import { formAt, formOfMember, stageForLevel, stageKind } from './forms';
+import { attackTypeOf, formAt, formOfMember, stageForLevel, stageKind } from './forms';
 import type { Run } from './run';
 import type { Ball, Member, ReplaceAction, SpeciesDef } from './types';
 
@@ -102,14 +102,16 @@ export function syncMember(run: Run, config: GameConfig, index: number): void {
   const member = run.team[index];
   if (member === undefined) return;
   const stage = stageOf(config, member.level);
-  const effects = abilitiesFor(config, member.species, member.type, stage);
+  // The balls attack with the type of the move shown at this stage (ADR-047).
+  const type = attackTypeOf(config, member.species, stage, member.type);
+  const effects = abilitiesFor(config, member.species, type, stage);
   let have = 0;
   for (let slot = 0; slot < run.loadout.length; slot++) {
     const ball = run.loadout[slot];
     if (ball === undefined || ball.owner !== index) continue;
     have += 1;
     if (ball.level !== member.level || ball.stage !== stage) {
-      run.loadout[slot] = { ...ball, level: member.level, stage, effects };
+      run.loadout[slot] = { ...ball, level: member.level, stage, type, effects };
     }
   }
   for (const want = ballsFor(config, member.level); have < want; have++) {
@@ -118,7 +120,7 @@ export function syncMember(run: Run, config: GameConfig, index: number): void {
       owner: index,
       stage,
       species: member.species,
-      type: member.type,
+      type,
       level: member.level,
       hybrid: false,
       effects,
