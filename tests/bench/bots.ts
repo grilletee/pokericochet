@@ -5,6 +5,7 @@ import {
   createRng,
   createRun,
   type GameConfig,
+  liveBoss,
   nextInt,
   type ReplaceAction,
   type Run,
@@ -35,6 +36,8 @@ export interface Policy {
    * shows what the signature is worth.
    */
   readonly signatureDelay?: number;
+  /** True while the bot keeps its ready Ultimate for a better moment (the stun of a boss, ADR-046). */
+  holdSignature?(run: Run): boolean;
 }
 
 /** About 0.75 s: the time a player takes to see the glow and tap the portrait. */
@@ -51,6 +54,7 @@ function signatureToCast(policy: Policy, run: Run, config: GameConfig): number |
     readySince.delete(run);
     return null;
   }
+  if (policy.holdSignature?.(run) === true) return null;
   const since = readySince.get(run) ?? run.tickCount;
   readySince.set(run, since);
   return run.tickCount - since >= delay ? index : null;
@@ -262,15 +266,93 @@ function collectingMove(run: Run, config: GameConfig): -1 | 0 | 1 {
 }
 
 /**
- * The player that uses everything: aims by hand at the most dangerous enemy (leading it),
- * collects every ball that falls or drops, spends level-ups with the balanced scores and answers the
- * replace screen sensibly.
+ * Ticks the bot takes to start dodging a column once it appears: a human reaction (ADR-046, B5). A
+ * column is announced for 60 to 100 ticks, so 30 leaves a person time to get out of most of them.
+ */
+export const DODGE_REACTION_TICKS = 45;
+
+/** The tick each column of a run was first seen on, so the bot reacts after a human delay. */
+const seenAt = new WeakMap<object, number>();
+
+/**
+ * Where to go to leave the columns the bot has already noticed, or null when it is not standing in
+ * one (or has noticed none). It goes to the nearest free point of the floor; a column it cannot
+ * leave in time simply hits it, like a person who is too late.
+ */
+export function dodgeMove(
+  run: Run,
+  config: GameConfig,
+  reaction = DODGE_REACTION_TICKS,
+): -1 | 0 | 1 | null {
+  const margin = config.player.margin;
+  const widthOfFloor = config.arena.width;
+  const spans: { lo: number; hi: number }[] = [];
+  for (const h of run.hazards) {
+    if (!seenAt.has(h)) seenAt.set(h, run.tickCount);
+    if (run.tickCount - (seenAt.get(h) ?? 0) < reaction) continue;
+    // A moving column is avoided where it is going to be, not only where it is.
+    const ahead = h.speed * Math.min(40, h.telegraph + h.active);
+    spans.push({
+      lo: Math.min(h.x, h.x + ahead) - h.width / 2 - 8,
+      hi: Math.max(h.x, h.x + ahead) + h.width / 2 + 8,
+    });
+  }
+  const here = run.player.x;
+  if (!spans.some((s) => here >= s.lo && here <= s.hi)) return null;
+  const free = (x: number): boolean =>
+    x >= margin && x <= widthOfFloor - margin && !spans.some((s) => x >= s.lo && x <= s.hi);
+  let best: number | null = null;
+  for (const s of spans) {
+    for (const x of [s.lo - 1, s.hi + 1, margin, widthOfFloor - margin]) {
+      if (free(x) && (best === null || Math.abs(x - here) < Math.abs(best - here))) best = x;
+    }
+  }
+  if (best === null) return null;
+  return best > here + 2 ? 1 : best < here - 2 ? -1 : 0;
+}
+
+/**
+ * Aims at where the weak point of a boss's shield will be when the ball arrives (ADR-046): it
+ * slides over the body, so the bot leads it like it leads any target; otherwise at the most
+ * dangerous enemy.
+ */
+function bossAwareAim(run: Run, config: GameConfig): AimPoint | null {
+  const boss = liveBoss(run);
+  if (boss === undefined || run.boss.shieldHp <= 0) return dangerousTarget(run, config);
+  const dx = boss.x - run.player.x;
+  const dy = boss.y - config.player.y;
+  const flight = Math.sqrt(dx * dx + dy * dy) / ((config.ball.speedMin + config.ball.speedMax) / 2);
+  const reach = Math.max(0, boss.radius - 22);
+  const lead = run.boss.weakX + run.boss.weakDir * 1.7 * flight;
+  // The weak point turns back at the edges of the body: follow it there.
+  const folded = Math.abs(lead) <= reach ? lead : Math.sign(lead) * (2 * reach - Math.abs(lead));
+  return { x: boss.x + folded, y: boss.y };
+}
+
+/** Dodges the columns of a boss, collects, and otherwise goes under the most dangerous enemy. */
+function dodgingMove(run: Run, config: GameConfig): -1 | 0 | 1 {
+  return dodgeMove(run, config) ?? collectingMove(run, config);
+}
+
+/**
+ * The player that uses everything: aims by hand at the most dangerous enemy (leading it) and at the
+ * weak point of a boss's shield, dodges the columns with a human reaction, keeps the Ultimate for
+ * the stun of a shielded boss, collects every ball that falls or drops, spends level-ups with the
+ * balanced scores and answers the replace screen sensibly.
  */
 export const activePolicy: Policy = {
   name: 'active',
-  move: collectingMove,
-  aim: dangerousTarget,
+  move: dodgingMove,
+  aim: bossAwareAim,
   pick: balancedPick,
+  holdSignature: (run) => liveBoss(run) !== undefined && run.boss.shieldHp > 0,
+};
+
+/** The same bot that never dodges (ADR-046): shows that the health of the player matters. */
+export const activeNoDodgePolicy: Policy = {
+  ...activePolicy,
+  name: 'active-no-dodge',
+  move: collectingMove,
 };
 
 /** The same bot that never throws the signature: shows what throwing it is worth (4F-D, M17). */
