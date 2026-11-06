@@ -1,9 +1,23 @@
 {
   "defaults": {
+    "normal": ["tackle", "body-slam", "hyper-beam"],
+    "fighting": ["karate-chop", "brick-break", "close-combat"],
+    "flying": ["wing-attack", "air-slash", "brave-bird"],
+    "poison": ["smog", "sludge-bomb", "gunk-shot"],
+    "ground": ["mud-shot", "dig", "earthquake"],
+    "rock": ["rock-throw", "rock-slide", "stone-edge"],
+    "bug": ["bug-bite", "x-scissor", "megahorn"],
+    "ghost": ["lick", "shadow-ball", "shadow-force"],
+    "steel": ["metal-claw", "flash-cannon", "iron-tail"],
     "fire": ["ember", "flamethrower", "fire-blast"],
     "water": ["water-gun", "surf", "hydro-pump"],
     "grass": ["vine-whip", "giga-drain", "solar-beam"],
-    "electric": ["thunder-shock", "thunderbolt", "thunder"]
+    "electric": ["thunder-shock", "thunderbolt", "thunder"],
+    "psychic": ["confusion", "psychic", "future-sight"],
+    "ice": ["ice-shard", "ice-beam", "blizzard"],
+    "dragon": ["dragon-breath", "dragon-claw", "outrage"],
+    "dark": ["bite", "crunch", "dark-pulse"],
+    "fairy": ["fairy-wind", "dazzling-gleam", "moonblast"]
   },
   "signatures": {
     "charmander": ["ember", "flamethrower", "fire-blast"],

@@ -2,120 +2,645 @@
 
 | species | stage | form | move | name | power | source |
 |---|---|---|---|---|---|---|
-| charmander | 1 | charmander | ember | Ascuas | 40 | signature |
-| charmander | 2 | charmeleon | flamethrower | Lanzallamas | 90 | signature |
-| charmander | 3 | charizard | fire-blast | Llamarada | 110 | signature |
-| vulpix | 1 | vulpix | flame-wheel | Rueda Fuego | 60 | auto |
-| vulpix | 2 | ninetales | flamethrower | Lanzallamas | 90 | auto |
-| vulpix | 3 | ninetales | fire-blast | Llamarada | 110 | auto |
-| squirtle | 1 | squirtle | water-gun | Pistola Agua | 40 | signature |
-| squirtle | 2 | wartortle | surf | Surf | 90 | signature |
-| squirtle | 3 | blastoise | hydro-pump | Hidrobomba | 110 | signature |
-| psyduck | 1 | psyduck | water-pulse | Hidropulso | 60 | auto |
-| psyduck | 2 | golduck | aqua-tail | Acua Cola | 90 | auto |
-| psyduck | 3 | golduck | hydro-pump | Hidrobomba | 110 | auto |
 | bulbasaur | 1 | bulbasaur | vine-whip | Látigo Cepa | 45 | signature |
 | bulbasaur | 2 | ivysaur | razor-leaf | Hoja Afilada | 55 | signature |
 | bulbasaur | 3 | venusaur | solar-beam | Rayo Solar | 120 | signature |
-| oddish | 1 | oddish | razor-leaf | Hoja Afilada | 55 | auto |
-| oddish | 2 | gloom | petal-blizzard | Tormenta Floral | 90 | auto |
-| oddish | 3 | vileplume | petal-dance | Danza Pétalo | 120 | auto |
+| charmander | 1 | charmander | ember | Ascuas | 40 | signature |
+| charmander | 2 | charmeleon | flamethrower | Lanzallamas | 90 | signature |
+| charmander | 3 | charizard | fire-blast | Llamarada | 110 | signature |
+| squirtle | 1 | squirtle | water-gun | Pistola Agua | 40 | signature |
+| squirtle | 2 | wartortle | surf | Surf | 90 | signature |
+| squirtle | 3 | blastoise | hydro-pump | Hidrobomba | 110 | signature |
+| caterpie | 1 | caterpie | bug-bite | Picadura | 60 | auto |
+| caterpie | 2 | metapod | x-scissor | Tijera X | 80 | default |
+| caterpie | 3 | butterfree | megahorn | Megacuerno | 120 | default |
+| weedle | 1 | weedle | bug-bite | Picadura | 60 | auto |
+| weedle | 2 | kakuna | x-scissor | Tijera X | 80 | default |
+| weedle | 3 | beedrill | megahorn | Megacuerno | 120 | default |
+| pidgey | 1 | pidgey | aerial-ace | Golpe Aéreo | 60 | auto |
+| pidgey | 2 | pidgeotto | razor-wind | Viento Cortante | 80 | auto |
+| pidgey | 3 | pidgeot | sky-attack | Ataque Aéreo | 140 | auto |
+| rattata | 1 | rattata | quick-attack | Ataque Rápido | 40 | auto |
+| rattata | 2 | raticate | take-down | Derribo | 90 | auto |
+| rattata | 3 | raticate | double-edge | Doble Filo | 120 | auto |
+| spearow | 1 | spearow | aerial-ace | Golpe Aéreo | 60 | auto |
+| spearow | 2 | fearow | take-down | Derribo | 90 | auto |
+| spearow | 3 | fearow | sky-attack | Ataque Aéreo | 140 | auto |
+| ekans | 1 | ekans | acid | Ácido | 40 | auto |
+| ekans | 2 | arbok | sludge-bomb | Bomba Lodo | 90 | auto |
+| ekans | 3 | arbok | belch | Eructo | 120 | auto |
 | pikachu | 1 | pikachu | thunder-shock | Impactrueno | 40 | signature |
 | pikachu | 2 | raichu | thunderbolt | Rayo | 90 | signature |
 | pikachu | 3 | raichu | thunder | Trueno | 110 | signature |
-| magnemite | 1 | magnemite | thunder-shock | Impactrueno | 40 | auto |
-| magnemite | 2 | magneton | thunderbolt | Rayo | 90 | auto |
-| magnemite | 3 | magnezone | zap-cannon | Electrocañón | 120 | auto |
+| sandshrew | 1 | sandshrew | bulldoze | Terratemblor | 60 | auto |
+| sandshrew | 2 | sandslash | dig | Excavar | 80 | auto |
+| sandshrew | 3 | sandslash | earthquake | Terremoto | 100 | auto |
+| nidoran-f | 1 | nidoran-f | poison-fang | Colmillo Veneno | 50 | auto |
+| nidoran-f | 2 | nidorina | sludge-bomb | Bomba Lodo | 90 | default |
+| nidoran-f | 3 | nidoqueen | gunk-shot | Lanzamugre | 120 | default |
+| nidoran-m | 1 | nidoran-m | smog | Polución | 30 | default |
+| nidoran-m | 2 | nidorino | poison-jab | Puya Nociva | 80 | auto |
+| nidoran-m | 3 | nidoking | gunk-shot | Lanzamugre | 120 | default |
+| clefairy | 1 | clefairy | draining-kiss | Beso Drenaje | 50 | auto |
+| clefairy | 2 | clefable | moonblast | Fuerza Lunar | 95 | auto |
+| clefairy | 3 | clefable | moonblast | Fuerza Lunar | 95 | default |
+| vulpix | 1 | vulpix | flame-wheel | Rueda Fuego | 60 | auto |
+| vulpix | 2 | ninetales | flamethrower | Lanzallamas | 90 | auto |
+| vulpix | 3 | ninetales | fire-blast | Llamarada | 110 | auto |
+| jigglypuff | 1 | jigglypuff | covet | Antojo | 60 | auto |
+| jigglypuff | 2 | wigglytuff | hyper-voice | Vozarrón | 90 | auto |
+| jigglypuff | 3 | wigglytuff | double-edge | Doble Filo | 120 | auto |
+| zubat | 1 | zubat | air-cutter | Aire Afilado | 60 | auto |
+| zubat | 2 | golbat | air-slash | Tajo Aéreo | 75 | auto |
+| zubat | 3 | crobat | gunk-shot | Lanzamugre | 120 | default |
+| oddish | 1 | oddish | razor-leaf | Hoja Afilada | 55 | auto |
+| oddish | 2 | gloom | petal-blizzard | Tormenta Floral | 90 | auto |
+| oddish | 3 | vileplume | petal-dance | Danza Pétalo | 120 | auto |
+| paras | 1 | paras | fury-cutter | Corte Furia | 40 | auto |
+| paras | 2 | parasect | energy-ball | Energibola | 90 | auto |
+| paras | 3 | parasect | megahorn | Megacuerno | 120 | default |
+| venonat | 1 | venonat | poison-fang | Colmillo Veneno | 50 | auto |
+| venonat | 2 | venomoth | bug-buzz | Zumbido | 90 | auto |
+| venonat | 3 | venomoth | megahorn | Megacuerno | 120 | default |
+| diglett | 1 | diglett | bulldoze | Terratemblor | 60 | auto |
+| diglett | 2 | dugtrio | earth-power | Tierra Viva | 90 | auto |
+| diglett | 3 | dugtrio | earthquake | Terremoto | 100 | auto |
+| meowth | 1 | meowth | fake-out | Sorpresa | 40 | auto |
+| meowth | 2 | persian | slash | Cuchillada | 70 | auto |
+| meowth | 3 | persian | hyper-beam | Hiperrayo | 150 | default |
+| psyduck | 1 | psyduck | water-pulse | Hidropulso | 60 | auto |
+| psyduck | 2 | golduck | aqua-tail | Acua Cola | 90 | auto |
+| psyduck | 3 | golduck | hydro-pump | Hidrobomba | 110 | auto |
+| mankey | 1 | mankey | karate-chop | Golpe Kárate | 50 | auto |
+| mankey | 2 | primeape | brick-break | Demolición | 75 | default |
+| mankey | 3 | primeape | close-combat | A Bocajarro | 120 | auto |
 | growlithe | 1 | growlithe | flame-wheel | Rueda Fuego | 60 | auto |
 | growlithe | 2 | arcanine | flamethrower | Lanzallamas | 90 | auto |
 | growlithe | 3 | arcanine | burn-up | Llama Final | 130 | auto |
-| ponyta | 1 | ponyta | flame-wheel | Rueda Fuego | 60 | auto |
-| ponyta | 2 | rapidash | flamethrower | Lanzallamas | 90 | default |
-| ponyta | 3 | rapidash | flare-blitz | Envite Ígneo | 120 | auto |
 | poliwag | 1 | poliwag | bubble | Burbuja | 40 | auto |
 | poliwag | 2 | poliwhirl | bubble-beam | Rayo Burbuja | 65 | auto |
 | poliwag | 3 | poliwrath | hydro-pump | Hidrobomba | 110 | auto |
-| horsea | 1 | horsea | water-pulse | Hidropulso | 60 | auto |
-| horsea | 2 | seadra | waterfall | Cascada | 80 | auto |
-| horsea | 3 | kingdra | wave-crash | Envite Acuático | 120 | auto |
+| abra | 1 | abra | confusion | Confusión | 50 | default |
+| abra | 2 | kadabra | psychic | Psíquico | 90 | auto |
+| abra | 3 | alakazam | future-sight | Premonición | 120 | auto |
+| machop | 1 | machop | revenge | Desquite | 60 | auto |
+| machop | 2 | machoke | submission | Sumisión | 80 | auto |
+| machop | 3 | machamp | close-combat | A Bocajarro | 120 | auto |
 | bellsprout | 1 | bellsprout | razor-leaf | Hoja Afilada | 55 | auto |
-| bellsprout | 2 | weepinbell | giga-drain | Gigadrenado | 75 | default |
+| bellsprout | 2 | weepinbell | poison-jab | Puya Nociva | 80 | auto |
 | bellsprout | 3 | victreebel | leaf-storm | Lluevehojas | 130 | auto |
-| exeggcute | 1 | exeggcute | mega-drain | Megaagotar | 40 | auto |
-| exeggcute | 2 | exeggutor | seed-bomb | Bomba Germen | 80 | auto |
-| exeggcute | 3 | exeggutor | leaf-storm | Lluevehojas | 130 | auto |
+| tentacool | 1 | tentacool | water-pulse | Hidropulso | 60 | auto |
+| tentacool | 2 | tentacruel | sludge-wave | Onda Tóxica | 95 | auto |
+| tentacool | 3 | tentacruel | hydro-pump | Hidrobomba | 110 | auto |
+| geodude | 1 | geodude | bulldoze | Terratemblor | 60 | auto |
+| geodude | 2 | graveler | rock-slide | Avalancha | 75 | auto |
+| geodude | 3 | golem | earthquake | Terremoto | 100 | auto |
+| ponyta | 1 | ponyta | flame-wheel | Rueda Fuego | 60 | auto |
+| ponyta | 2 | rapidash | flamethrower | Lanzallamas | 90 | default |
+| ponyta | 3 | rapidash | flare-blitz | Envite Ígneo | 120 | auto |
+| slowpoke | 1 | slowpoke | water-pulse | Hidropulso | 60 | auto |
+| slowpoke | 2 | slowbro | psychic | Psíquico | 90 | auto |
+| slowpoke | 3 | slowbro | hydro-pump | Hidrobomba | 110 | default |
+| magnemite | 1 | magnemite | magnet-bomb | Bomba Imán | 60 | auto |
+| magnemite | 2 | magneton | thunderbolt | Rayo | 90 | auto |
+| magnemite | 3 | magnezone | zap-cannon | Electrocañón | 120 | auto |
+| farfetchd | 1 | farfetchd | aerial-ace | Golpe Aéreo | 60 | auto |
+| farfetchd | 2 | farfetchd | air-slash | Tajo Aéreo | 75 | auto |
+| farfetchd | 3 | farfetchd | sky-attack | Ataque Aéreo | 140 | auto |
+| doduo | 1 | doduo | pluck | Picoteo | 60 | auto |
+| doduo | 2 | dodrio | uproar | Alboroto | 90 | auto |
+| doduo | 3 | dodrio | thrash | Saña | 120 | auto |
+| seel | 1 | seel | aqua-jet | Acua Jet | 40 | auto |
+| seel | 2 | dewgong | aqua-tail | Acua Cola | 90 | auto |
+| seel | 3 | dewgong | hydro-pump | Hidrobomba | 110 | default |
+| grimer | 1 | grimer | smog | Polución | 30 | auto |
+| grimer | 2 | muk | sludge-wave | Onda Tóxica | 95 | auto |
+| grimer | 3 | muk | belch | Eructo | 120 | auto |
+| shellder | 1 | shellder | water-gun | Pistola Agua | 40 | auto |
+| shellder | 2 | cloyster | razor-shell | Concha Filo | 75 | auto |
+| shellder | 3 | cloyster | hydro-pump | Hidrobomba | 110 | auto |
+| gastly | 1 | gastly | astonish | Impresionar | 30 | auto |
+| gastly | 2 | haunter | shadow-ball | Bola Sombra | 80 | auto |
+| gastly | 3 | gengar | shadow-force | Golpe Umbrío | 120 | default |
+| onix | 1 | onix | bulldoze | Terratemblor | 60 | auto |
+| onix | 2 | steelix | high-horsepower | Fuerza Equina | 95 | auto |
+| onix | 3 | steelix | stone-edge | Roca Afilada | 100 | auto |
+| drowzee | 1 | drowzee | confusion | Confusión | 50 | auto |
+| drowzee | 2 | hypno | psychic | Psíquico | 90 | auto |
+| drowzee | 3 | hypno | future-sight | Premonición | 120 | auto |
+| krabby | 1 | krabby | bubble | Burbuja | 40 | auto |
+| krabby | 2 | kingler | razor-shell | Concha Filo | 75 | auto |
+| krabby | 3 | kingler | crabhammer | Martillazo | 100 | auto |
 | voltorb | 1 | voltorb | charge-beam | Rayo Carga | 50 | auto |
 | voltorb | 2 | electrode | thunderbolt | Rayo | 90 | auto |
 | voltorb | 3 | electrode | thunder | Trueno | 110 | default |
+| exeggcute | 1 | exeggcute | confusion | Confusión | 50 | auto |
+| exeggcute | 2 | exeggutor | extrasensory | Paranormal | 80 | auto |
+| exeggcute | 3 | exeggutor | leaf-storm | Lluevehojas | 130 | auto |
+| cubone | 1 | cubone | bonemerang | Huesomerang | 50 | auto |
+| cubone | 2 | marowak | stomping-tantrum | Pataleta | 75 | auto |
+| cubone | 3 | marowak | earthquake | Terremoto | 100 | default |
+| hitmonlee | 1 | hitmonlee | revenge | Desquite | 60 | auto |
+| hitmonlee | 2 | hitmonlee | brick-break | Demolición | 75 | auto |
+| hitmonlee | 3 | hitmonlee | high-jump-kick | Patada Salto Alta | 130 | auto |
+| hitmonchan | 1 | hitmonchan | revenge | Desquite | 60 | auto |
+| hitmonchan | 2 | hitmonchan | sky-uppercut | Gancho Alto | 85 | auto |
+| hitmonchan | 3 | hitmonchan | focus-punch | Puño Certero | 150 | auto |
+| lickitung | 1 | lickitung | tackle | Placaje | 40 | auto |
+| lickitung | 2 | lickilicky | slam | Atizar | 80 | auto |
+| lickitung | 3 | lickilicky | giga-impact | Gigaimpacto | 150 | auto |
+| koffing | 1 | koffing | clear-smog | Niebla Clara | 50 | auto |
+| koffing | 2 | weezing | sludge-bomb | Bomba Lodo | 90 | auto |
+| koffing | 3 | weezing | belch | Eructo | 120 | auto |
+| rhyhorn | 1 | rhyhorn | bulldoze | Terratemblor | 60 | auto |
+| rhyhorn | 2 | rhydon | high-horsepower | Fuerza Equina | 95 | auto |
+| rhyhorn | 3 | rhyperior | rock-wrecker | Romperrocas | 150 | auto |
+| chansey | 1 | chansey | covet | Antojo | 60 | auto |
+| chansey | 2 | blissey | take-down | Derribo | 90 | auto |
+| chansey | 3 | blissey | last-resort | Última Baza | 140 | auto |
+| tangela | 1 | tangela | vine-whip | Látigo Cepa | 45 | auto |
+| tangela | 2 | tangrowth | energy-ball | Energibola | 90 | auto |
+| tangela | 3 | tangrowth | power-whip | Latigazo | 120 | auto |
+| kangaskhan | 1 | kangaskhan | fake-out | Sorpresa | 40 | auto |
+| kangaskhan | 2 | kangaskhan | mega-punch | Megapuño | 80 | auto |
+| kangaskhan | 3 | kangaskhan | last-resort | Última Baza | 140 | auto |
+| horsea | 1 | horsea | water-pulse | Hidropulso | 60 | auto |
+| horsea | 2 | seadra | waterfall | Cascada | 80 | auto |
+| horsea | 3 | kingdra | wave-crash | Envite Acuático | 120 | auto |
+| goldeen | 1 | goldeen | water-pulse | Hidropulso | 60 | auto |
+| goldeen | 2 | seaking | waterfall | Cascada | 80 | auto |
+| goldeen | 3 | seaking | hydro-pump | Hidrobomba | 110 | default |
+| staryu | 1 | staryu | water-gun | Pistola Agua | 40 | auto |
+| staryu | 2 | starmie | surf | Surf | 90 | auto |
+| staryu | 3 | starmie | hydro-pump | Hidrobomba | 110 | auto |
+| mr-mime | 1 | mr-mime | confusion | Confusión | 50 | auto |
+| mr-mime | 2 | mr-mime | psychic | Psíquico | 90 | auto |
+| mr-mime | 3 | mr-mime | future-sight | Premonición | 120 | default |
+| scyther | 1 | scyther | aerial-ace | Golpe Aéreo | 60 | auto |
+| scyther | 2 | scizor | x-scissor | Tijera X | 80 | auto |
+| scyther | 3 | scizor | megahorn | Megacuerno | 120 | default |
+| jynx | 1 | jynx | avalanche | Alud | 60 | auto |
+| jynx | 2 | jynx | psychic | Psíquico | 90 | auto |
+| jynx | 3 | jynx | blizzard | Ventisca | 110 | auto |
 | electabuzz | 1 | electabuzz | shock-wave | Onda Voltio | 60 | auto |
 | electabuzz | 2 | electivire | thunderbolt | Rayo | 90 | auto |
 | electabuzz | 3 | electivire | thunder | Trueno | 110 | auto |
 | magmar | 1 | magmar | flame-wheel | Rueda Fuego | 60 | auto |
 | magmar | 2 | magmortar | flamethrower | Lanzallamas | 90 | auto |
 | magmar | 3 | magmortar | fire-blast | Llamarada | 110 | auto |
-| slugma | 1 | slugma | incinerate | Calcinación | 60 | auto |
-| slugma | 2 | magcargo | flamethrower | Lanzallamas | 90 | auto |
-| slugma | 3 | magcargo | fire-blast | Llamarada | 110 | default |
-| numel | 1 | numel | flame-wheel | Rueda Fuego | 60 | auto |
-| numel | 2 | camerupt | flamethrower | Lanzallamas | 90 | auto |
-| numel | 3 | camerupt | eruption | Estallido | 150 | auto |
-| cyndaquil | 1 | cyndaquil | flame-wheel | Rueda Fuego | 60 | auto |
-| cyndaquil | 2 | quilava | flamethrower | Lanzallamas | 90 | auto |
-| cyndaquil | 3 | typhlosion | eruption | Estallido | 150 | auto |
-| torchic | 1 | torchic | flame-charge | Nitrocarga | 50 | auto |
-| torchic | 2 | combusken | flamethrower | Lanzallamas | 90 | auto |
-| torchic | 3 | blaziken | flare-blitz | Envite Ígneo | 120 | auto |
-| chimchar | 1 | chimchar | flame-wheel | Rueda Fuego | 60 | auto |
-| chimchar | 2 | monferno | flamethrower | Lanzallamas | 90 | auto |
-| chimchar | 3 | infernape | flare-blitz | Envite Ígneo | 120 | auto |
-| krabby | 1 | krabby | bubble | Burbuja | 40 | auto |
-| krabby | 2 | kingler | razor-shell | Concha Filo | 75 | auto |
-| krabby | 3 | kingler | crabhammer | Martillazo | 100 | auto |
-| staryu | 1 | staryu | water-gun | Pistola Agua | 40 | auto |
-| staryu | 2 | starmie | surf | Surf | 90 | auto |
-| staryu | 3 | starmie | hydro-pump | Hidrobomba | 110 | auto |
-| goldeen | 1 | goldeen | water-pulse | Hidropulso | 60 | auto |
-| goldeen | 2 | seaking | waterfall | Cascada | 80 | auto |
-| goldeen | 3 | seaking | hydro-pump | Hidrobomba | 110 | default |
-| shellder | 1 | shellder | water-gun | Pistola Agua | 40 | auto |
-| shellder | 2 | cloyster | razor-shell | Concha Filo | 75 | auto |
-| shellder | 3 | cloyster | hydro-pump | Hidrobomba | 110 | auto |
-| wooper | 1 | wooper | water-gun | Pistola Agua | 40 | auto |
-| wooper | 2 | quagsire | aqua-tail | Acua Cola | 90 | auto |
-| wooper | 3 | quagsire | hydro-pump | Hidrobomba | 110 | default |
-| lotad | 1 | lotad | bubble | Burbuja | 40 | auto |
-| lotad | 2 | lombre | bubble-beam | Rayo Burbuja | 65 | auto |
-| lotad | 3 | ludicolo | hydro-pump | Hidrobomba | 110 | auto |
-| tangela | 1 | tangela | vine-whip | Látigo Cepa | 45 | auto |
-| tangela | 2 | tangrowth | energy-ball | Energibola | 90 | auto |
-| tangela | 3 | tangrowth | power-whip | Latigazo | 120 | auto |
-| hoppip | 1 | hoppip | mega-drain | Megaagotar | 40 | auto |
-| hoppip | 2 | skiploom | giga-drain | Gigadrenado | 75 | auto |
-| hoppip | 3 | jumpluff | solar-beam | Rayo Solar | 120 | default |
-| seedot | 1 | seedot | mega-drain | Megaagotar | 40 | auto |
-| seedot | 2 | nuzleaf | leaf-blade | Hoja Aguda | 90 | auto |
-| seedot | 3 | shiftry | leaf-storm | Lluevehojas | 130 | auto |
-| shroomish | 1 | shroomish | mega-drain | Megaagotar | 40 | auto |
-| shroomish | 2 | breloom | seed-bomb | Bomba Germen | 80 | auto |
-| shroomish | 3 | breloom | solar-beam | Rayo Solar | 120 | default |
-| sunkern | 1 | sunkern | razor-leaf | Hoja Afilada | 55 | auto |
-| sunkern | 2 | sunflora | petal-blizzard | Tormenta Floral | 90 | auto |
-| sunkern | 3 | sunflora | leaf-storm | Lluevehojas | 130 | auto |
+| pinsir | 1 | pinsir | bug-bite | Picadura | 60 | auto |
+| pinsir | 2 | pinsir | x-scissor | Tijera X | 80 | auto |
+| pinsir | 3 | pinsir | megahorn | Megacuerno | 120 | default |
+| tauros | 1 | tauros | tackle | Placaje | 40 | auto |
+| tauros | 2 | tauros | raging-bull | Furia Taurina | 90 | auto |
+| tauros | 3 | tauros | giga-impact | Gigaimpacto | 150 | auto |
+| magikarp | 1 | magikarp | water-gun | Pistola Agua | 40 | default |
+| magikarp | 2 | gyarados | aqua-tail | Acua Cola | 90 | auto |
+| magikarp | 3 | gyarados | hydro-pump | Hidrobomba | 110 | auto |
+| lapras | 1 | lapras | water-pulse | Hidropulso | 60 | auto |
+| lapras | 2 | lapras | ice-beam | Rayo Hielo | 90 | auto |
+| lapras | 3 | lapras | blizzard | Ventisca | 110 | auto |
+| ditto | 1 | ditto | tackle | Placaje | 40 | default |
+| ditto | 2 | ditto | body-slam | Golpe Cuerpo | 85 | default |
+| ditto | 3 | ditto | hyper-beam | Hiperrayo | 150 | default |
+| eevee | 1 | eevee | covet | Antojo | 60 | auto |
+| eevee | 2 | vaporeon | take-down | Derribo | 90 | auto |
+| eevee | 3 | vaporeon | last-resort | Última Baza | 140 | auto |
+| porygon | 1 | porygon | tackle | Placaje | 40 | auto |
+| porygon | 2 | porygon2 | tri-attack | Triataque | 80 | auto |
+| porygon | 3 | porygon-z | hyper-beam | Hiperrayo | 150 | auto |
+| omanyte | 1 | omanyte | ancient-power | Poder Pasado | 60 | auto |
+| omanyte | 2 | omastar | surf | Surf | 90 | auto |
+| omanyte | 3 | omastar | hydro-pump | Hidrobomba | 110 | auto |
+| kabuto | 1 | kabuto | ancient-power | Poder Pasado | 60 | auto |
+| kabuto | 2 | kabutops | liquidation | Hidroariete | 85 | auto |
+| kabuto | 3 | kabutops | hydro-pump | Hidrobomba | 110 | auto |
+| aerodactyl | 1 | aerodactyl | ancient-power | Poder Pasado | 60 | auto |
+| aerodactyl | 2 | aerodactyl | fly | Vuelo | 90 | auto |
+| aerodactyl | 3 | aerodactyl | stone-edge | Roca Afilada | 100 | auto |
+| snorlax | 1 | snorlax | covet | Antojo | 60 | auto |
+| snorlax | 2 | snorlax | body-slam | Golpe Cuerpo | 85 | auto |
+| snorlax | 3 | snorlax | giga-impact | Gigaimpacto | 150 | auto |
+| dratini | 1 | dratini | dragon-tail | Cola Dragón | 60 | auto |
+| dratini | 2 | dragonair | dragon-claw | Garra Dragón | 80 | default |
+| dratini | 3 | dragonite | outrage | Enfado | 120 | auto |
 | chikorita | 1 | chikorita | magical-leaf | Hoja Mágica | 60 | auto |
 | chikorita | 2 | bayleef | giga-drain | Gigadrenado | 75 | auto |
 | chikorita | 3 | meganium | petal-dance | Danza Pétalo | 120 | auto |
+| cyndaquil | 1 | cyndaquil | flame-wheel | Rueda Fuego | 60 | auto |
+| cyndaquil | 2 | quilava | flamethrower | Lanzallamas | 90 | auto |
+| cyndaquil | 3 | typhlosion | eruption | Estallido | 150 | auto |
+| totodile | 1 | totodile | water-gun | Pistola Agua | 40 | auto |
+| totodile | 2 | croconaw | aqua-tail | Acua Cola | 90 | auto |
+| totodile | 3 | feraligatr | hydro-pump | Hidrobomba | 110 | auto |
+| sentret | 1 | sentret | quick-attack | Ataque Rápido | 40 | auto |
+| sentret | 2 | furret | hyper-voice | Vozarrón | 90 | auto |
+| sentret | 3 | furret | double-edge | Doble Filo | 120 | auto |
+| hoothoot | 1 | hoothoot | echoed-voice | Eco Voz | 40 | auto |
+| hoothoot | 2 | noctowl | take-down | Derribo | 90 | auto |
+| hoothoot | 3 | noctowl | sky-attack | Ataque Aéreo | 140 | auto |
+| ledyba | 1 | ledyba | silver-wind | Viento Plata | 60 | auto |
+| ledyba | 2 | ledian | bug-buzz | Zumbido | 90 | auto |
+| ledyba | 3 | ledian | megahorn | Megacuerno | 120 | default |
+| spinarak | 1 | spinarak | bug-bite | Picadura | 60 | default |
+| spinarak | 2 | ariados | leech-life | Chupavidas | 80 | auto |
+| spinarak | 3 | ariados | megahorn | Megacuerno | 120 | default |
+| chinchou | 1 | chinchou | bubble | Burbuja | 40 | auto |
+| chinchou | 2 | lanturn | discharge | Chispazo | 80 | auto |
+| chinchou | 3 | lanturn | hydro-pump | Hidrobomba | 110 | auto |
+| togetic | 1 | togetic | air-cutter | Aire Afilado | 60 | auto |
+| togetic | 2 | togekiss | moonblast | Fuerza Lunar | 95 | auto |
+| togetic | 3 | togekiss | sky-attack | Ataque Aéreo | 140 | auto |
+| natu | 1 | natu | peck | Picotazo | 35 | auto |
+| natu | 2 | xatu | psychic | Psíquico | 90 | auto |
+| natu | 3 | xatu | future-sight | Premonición | 120 | auto |
 | mareep | 1 | mareep | charge-beam | Rayo Carga | 50 | auto |
 | mareep | 2 | flaaffy | discharge | Chispazo | 80 | auto |
 | mareep | 3 | ampharos | zap-cannon | Electrocañón | 120 | auto |
+| marill | 1 | marill | bubble | Burbuja | 40 | auto |
+| marill | 2 | azumarill | aqua-tail | Acua Cola | 90 | auto |
+| marill | 3 | azumarill | hydro-pump | Hidrobomba | 110 | auto |
+| sudowoodo | 1 | sudowoodo | rock-tomb | Tumba Rocas | 60 | auto |
+| sudowoodo | 2 | sudowoodo | rock-slide | Avalancha | 75 | auto |
+| sudowoodo | 3 | sudowoodo | head-smash | Testarazo | 150 | auto |
+| hoppip | 1 | hoppip | acrobatics | Acróbata | 55 | auto |
+| hoppip | 2 | skiploom | bounce | Bote | 85 | auto |
+| hoppip | 3 | jumpluff | solar-beam | Rayo Solar | 120 | default |
+| aipom | 1 | aipom | swift | Meteoros | 60 | auto |
+| aipom | 2 | ambipom | body-slam | Golpe Cuerpo | 85 | default |
+| aipom | 3 | ambipom | last-resort | Última Baza | 140 | auto |
+| sunkern | 1 | sunkern | razor-leaf | Hoja Afilada | 55 | auto |
+| sunkern | 2 | sunflora | petal-blizzard | Tormenta Floral | 90 | auto |
+| sunkern | 3 | sunflora | leaf-storm | Lluevehojas | 130 | auto |
+| yanma | 1 | yanma | aerial-ace | Golpe Aéreo | 60 | auto |
+| yanma | 2 | yanmega | bug-buzz | Zumbido | 90 | auto |
+| yanma | 3 | yanmega | megahorn | Megacuerno | 120 | default |
+| wooper | 1 | wooper | mud-shot | Disparo Lodo | 55 | auto |
+| wooper | 2 | quagsire | aqua-tail | Acua Cola | 90 | auto |
+| wooper | 3 | quagsire | earthquake | Terremoto | 100 | auto |
+| murkrow | 1 | murkrow | aerial-ace | Golpe Aéreo | 60 | auto |
+| murkrow | 2 | honchkrow | foul-play | Juego Sucio | 95 | auto |
+| murkrow | 3 | honchkrow | brave-bird | Pájaro Osado | 120 | auto |
+| misdreavus | 1 | misdreavus | shadow-sneak | Sombra Vil | 40 | auto |
+| misdreavus | 2 | mismagius | phantom-force | Golpe Fantasma | 90 | auto |
+| misdreavus | 3 | mismagius | shadow-force | Golpe Umbrío | 120 | default |
+| unown | 1 | unown | confusion | Confusión | 50 | default |
+| unown | 2 | unown | psychic | Psíquico | 90 | default |
+| unown | 3 | unown | future-sight | Premonición | 120 | default |
+| wobbuffet | 1 | wobbuffet | confusion | Confusión | 50 | default |
+| wobbuffet | 2 | wobbuffet | psychic | Psíquico | 90 | default |
+| wobbuffet | 3 | wobbuffet | future-sight | Premonición | 120 | default |
+| girafarig | 1 | girafarig | confusion | Confusión | 50 | auto |
+| girafarig | 2 | girafarig | psychic | Psíquico | 90 | auto |
+| girafarig | 3 | girafarig | hyper-beam | Hiperrayo | 150 | default |
+| pineco | 1 | pineco | bug-bite | Picadura | 60 | auto |
+| pineco | 2 | forretress | x-scissor | Tijera X | 80 | default |
+| pineco | 3 | forretress | megahorn | Megacuerno | 120 | default |
+| dunsparce | 1 | dunsparce | tackle | Placaje | 40 | default |
+| dunsparce | 2 | dunsparce | take-down | Derribo | 90 | auto |
+| dunsparce | 3 | dunsparce | double-edge | Doble Filo | 120 | auto |
+| gligar | 1 | gligar | aerial-ace | Golpe Aéreo | 60 | auto |
+| gligar | 2 | gliscor | earth-power | Tierra Viva | 90 | auto |
+| gligar | 3 | gliscor | earthquake | Terremoto | 100 | auto |
+| snubbull | 1 | snubbull | fairy-wind | Viento Feérico | 40 | default |
+| snubbull | 2 | granbull | play-rough | Carantoña | 90 | auto |
+| snubbull | 3 | granbull | moonblast | Fuerza Lunar | 95 | default |
+| qwilfish | 1 | qwilfish | bubble | Burbuja | 40 | auto |
+| qwilfish | 2 | qwilfish | aqua-tail | Acua Cola | 90 | auto |
+| qwilfish | 3 | qwilfish | hydro-pump | Hidrobomba | 110 | auto |
+| shuckle | 1 | shuckle | bug-bite | Picadura | 60 | auto |
+| shuckle | 2 | shuckle | rock-slide | Avalancha | 75 | auto |
+| shuckle | 3 | shuckle | stone-edge | Roca Afilada | 100 | auto |
+| heracross | 1 | heracross | rock-smash | Golpe Roca | 40 | auto |
+| heracross | 2 | heracross | brick-break | Demolición | 75 | auto |
+| heracross | 3 | heracross | close-combat | A Bocajarro | 120 | auto |
+| sneasel | 1 | sneasel | feint-attack | Finta | 60 | auto |
+| sneasel | 2 | weavile | dark-pulse | Pulso Umbrío | 80 | auto |
+| sneasel | 3 | weavile | blizzard | Ventisca | 110 | auto |
+| teddiursa | 1 | teddiursa | covet | Antojo | 60 | auto |
+| teddiursa | 2 | ursaring | slash | Cuchillada | 70 | auto |
+| teddiursa | 3 | ursaring | double-edge | Doble Filo | 120 | auto |
+| slugma | 1 | slugma | incinerate | Calcinación | 60 | auto |
+| slugma | 2 | magcargo | flamethrower | Lanzallamas | 90 | auto |
+| slugma | 3 | magcargo | fire-blast | Llamarada | 110 | default |
+| swinub | 1 | swinub | bulldoze | Terratemblor | 60 | auto |
+| swinub | 2 | piloswine | high-horsepower | Fuerza Equina | 95 | auto |
+| swinub | 3 | mamoswine | blizzard | Ventisca | 110 | auto |
+| corsola | 1 | corsola | ancient-power | Poder Pasado | 60 | auto |
+| corsola | 2 | corsola | power-gem | Joya de Luz | 80 | auto |
+| corsola | 3 | corsola | hydro-pump | Hidrobomba | 110 | default |
+| remoraid | 1 | remoraid | water-pulse | Hidropulso | 60 | auto |
+| remoraid | 2 | octillery | bubble-beam | Rayo Burbuja | 65 | auto |
+| remoraid | 3 | octillery | hydro-pump | Hidrobomba | 110 | auto |
+| delibird | 1 | delibird | ice-shard | Esquirla Helada | 40 | default |
+| delibird | 2 | delibird | drill-peck | Pico Taladro | 80 | auto |
+| delibird | 3 | delibird | blizzard | Ventisca | 110 | default |
+| mantine | 1 | mantine | aerial-ace | Golpe Aéreo | 60 | auto |
+| mantine | 2 | mantine | bounce | Bote | 85 | auto |
+| mantine | 3 | mantine | hydro-pump | Hidrobomba | 110 | auto |
+| skarmory | 1 | skarmory | air-cutter | Aire Afilado | 60 | auto |
+| skarmory | 2 | skarmory | drill-peck | Pico Taladro | 80 | auto |
+| skarmory | 3 | skarmory | brave-bird | Pájaro Osado | 120 | auto |
+| houndour | 1 | houndour | bite | Mordisco | 60 | auto |
+| houndour | 2 | houndoom | foul-play | Juego Sucio | 95 | auto |
+| houndour | 3 | houndoom | inferno | Infierno | 100 | auto |
+| phanpy | 1 | phanpy | bulldoze | Terratemblor | 60 | auto |
+| phanpy | 2 | donphan | stomping-tantrum | Pataleta | 75 | auto |
+| phanpy | 3 | donphan | earthquake | Terremoto | 100 | auto |
+| stantler | 1 | stantler | tackle | Placaje | 40 | auto |
+| stantler | 2 | stantler | take-down | Derribo | 90 | auto |
+| stantler | 3 | stantler | double-edge | Doble Filo | 120 | auto |
+| smeargle | 1 | smeargle | tackle | Placaje | 40 | default |
+| smeargle | 2 | smeargle | body-slam | Golpe Cuerpo | 85 | default |
+| smeargle | 3 | smeargle | hyper-beam | Hiperrayo | 150 | default |
+| hitmontop | 1 | hitmontop | revenge | Desquite | 60 | auto |
+| hitmontop | 2 | hitmontop | brick-break | Demolición | 75 | default |
+| hitmontop | 3 | hitmontop | close-combat | A Bocajarro | 120 | auto |
+| miltank | 1 | miltank | tackle | Placaje | 40 | auto |
+| miltank | 2 | miltank | body-slam | Golpe Cuerpo | 85 | auto |
+| miltank | 3 | miltank | hyper-beam | Hiperrayo | 150 | default |
+| larvitar | 1 | larvitar | rock-throw | Lanzarrocas | 50 | auto |
+| larvitar | 2 | pupitar | rock-slide | Avalancha | 75 | auto |
+| larvitar | 3 | tyranitar | earthquake | Terremoto | 100 | auto |
+| treecko | 1 | treecko | leafage | Follaje | 40 | auto |
+| treecko | 2 | grovyle | energy-ball | Energibola | 90 | auto |
+| treecko | 3 | sceptile | leaf-storm | Lluevehojas | 130 | auto |
+| torchic | 1 | torchic | flame-charge | Nitrocarga | 50 | auto |
+| torchic | 2 | combusken | flamethrower | Lanzallamas | 90 | auto |
+| torchic | 3 | blaziken | flare-blitz | Envite Ígneo | 120 | auto |
+| mudkip | 1 | mudkip | water-pulse | Hidropulso | 60 | auto |
+| mudkip | 2 | marshtomp | muddy-water | Agua Lodosa | 90 | auto |
+| mudkip | 3 | swampert | hydro-pump | Hidrobomba | 110 | auto |
+| poochyena | 1 | poochyena | assurance | Buena Baza | 60 | auto |
+| poochyena | 2 | mightyena | crunch | Triturar | 80 | auto |
+| poochyena | 3 | mightyena | dark-pulse | Pulso Umbrío | 80 | default |
+| zigzagoon | 1 | zigzagoon | covet | Antojo | 60 | auto |
+| zigzagoon | 2 | linoone | take-down | Derribo | 90 | auto |
+| zigzagoon | 3 | linoone | double-edge | Doble Filo | 120 | auto |
+| wurmple | 1 | wurmple | bug-bite | Picadura | 60 | auto |
+| wurmple | 2 | silcoon | x-scissor | Tijera X | 80 | default |
+| wurmple | 3 | beautifly | megahorn | Megacuerno | 120 | default |
+| lotad | 1 | lotad | bubble | Burbuja | 40 | auto |
+| lotad | 2 | lombre | energy-ball | Energibola | 90 | auto |
+| lotad | 3 | ludicolo | hydro-pump | Hidrobomba | 110 | auto |
+| seedot | 1 | seedot | mega-drain | Megaagotar | 40 | auto |
+| seedot | 2 | nuzleaf | leaf-blade | Hoja Aguda | 90 | auto |
+| seedot | 3 | shiftry | leaf-storm | Lluevehojas | 130 | auto |
+| taillow | 1 | taillow | aerial-ace | Golpe Aéreo | 60 | auto |
+| taillow | 2 | swellow | air-slash | Tajo Aéreo | 75 | auto |
+| taillow | 3 | swellow | brave-bird | Pájaro Osado | 120 | auto |
+| wingull | 1 | wingull | aerial-ace | Golpe Aéreo | 60 | auto |
+| wingull | 2 | pelipper | air-slash | Tajo Aéreo | 75 | auto |
+| wingull | 3 | pelipper | hurricane | Vendaval | 110 | auto |
+| ralts | 1 | ralts | confusion | Confusión | 50 | auto |
+| ralts | 2 | kirlia | psychic | Psíquico | 90 | auto |
+| ralts | 3 | gardevoir | future-sight | Premonición | 120 | auto |
+| surskit | 1 | surskit | aqua-jet | Acua Jet | 40 | auto |
+| surskit | 2 | masquerain | bug-buzz | Zumbido | 90 | auto |
+| surskit | 3 | masquerain | megahorn | Megacuerno | 120 | default |
+| shroomish | 1 | shroomish | mega-drain | Megaagotar | 40 | auto |
+| shroomish | 2 | breloom | seed-bomb | Bomba Germen | 80 | auto |
+| shroomish | 3 | breloom | solar-beam | Rayo Solar | 120 | default |
+| slakoth | 1 | slakoth | covet | Antojo | 60 | auto |
+| slakoth | 2 | vigoroth | uproar | Alboroto | 90 | auto |
+| slakoth | 3 | slaking | mega-kick | Megapatada | 120 | auto |
+| nincada | 1 | nincada | bug-bite | Picadura | 60 | default |
+| nincada | 2 | ninjask | dig | Excavar | 80 | auto |
+| nincada | 3 | ninjask | megahorn | Megacuerno | 120 | default |
+| whismur | 1 | whismur | echoed-voice | Eco Voz | 40 | auto |
+| whismur | 2 | loudred | hyper-voice | Vozarrón | 90 | auto |
+| whismur | 3 | exploud | hyper-beam | Hiperrayo | 150 | auto |
+| makuhita | 1 | makuhita | force-palm | Palmeo | 60 | auto |
+| makuhita | 2 | hariyama | vital-throw | Llave Vital | 70 | auto |
+| makuhita | 3 | hariyama | focus-punch | Puño Certero | 150 | auto |
+| nosepass | 1 | nosepass | rock-throw | Lanzarrocas | 50 | auto |
+| nosepass | 2 | probopass | power-gem | Joya de Luz | 80 | auto |
+| nosepass | 3 | probopass | stone-edge | Roca Afilada | 100 | auto |
+| skitty | 1 | skitty | covet | Antojo | 60 | auto |
+| skitty | 2 | delcatty | facade | Fachada | 70 | auto |
+| skitty | 3 | delcatty | double-edge | Doble Filo | 120 | auto |
+| sableye | 1 | sableye | feint-attack | Finta | 60 | auto |
+| sableye | 2 | sableye | foul-play | Juego Sucio | 95 | auto |
+| sableye | 3 | sableye | dark-pulse | Pulso Umbrío | 80 | default |
+| mawile | 1 | mawile | fairy-wind | Viento Feérico | 40 | auto |
+| mawile | 2 | mawile | play-rough | Carantoña | 90 | auto |
+| mawile | 3 | mawile | iron-tail | Cola Férrea | 100 | default |
+| aron | 1 | aron | rock-tomb | Tumba Rocas | 60 | auto |
+| aron | 2 | lairon | iron-head | Cabeza de Hierro | 80 | auto |
+| aron | 3 | aggron | iron-tail | Cola Férrea | 100 | auto |
+| meditite | 1 | meditite | force-palm | Palmeo | 60 | auto |
+| meditite | 2 | medicham | zen-headbutt | Cabezazo Zen | 80 | auto |
+| meditite | 3 | medicham | high-jump-kick | Patada Salto Alta | 130 | auto |
+| electrike | 1 | electrike | shock-wave | Onda Voltio | 60 | auto |
+| electrike | 2 | manectric | wild-charge | Voltio Cruel | 90 | auto |
+| electrike | 3 | manectric | thunder | Trueno | 110 | auto |
+| plusle | 1 | plusle | thunder-shock | Impactrueno | 40 | default |
+| plusle | 2 | plusle | discharge | Chispazo | 80 | auto |
+| plusle | 3 | plusle | thunder | Trueno | 110 | auto |
+| minun | 1 | minun | thunder-shock | Impactrueno | 40 | default |
+| minun | 2 | minun | discharge | Chispazo | 80 | auto |
+| minun | 3 | minun | thunder | Trueno | 110 | auto |
+| volbeat | 1 | volbeat | struggle-bug | Estoicismo | 50 | auto |
+| volbeat | 2 | volbeat | bug-buzz | Zumbido | 90 | auto |
+| volbeat | 3 | volbeat | megahorn | Megacuerno | 120 | default |
+| illumise | 1 | illumise | struggle-bug | Estoicismo | 50 | auto |
+| illumise | 2 | illumise | bug-buzz | Zumbido | 90 | auto |
+| illumise | 3 | illumise | megahorn | Megacuerno | 120 | default |
+| roselia | 1 | roselia | magical-leaf | Hoja Mágica | 60 | auto |
+| roselia | 2 | roserade | energy-ball | Energibola | 90 | auto |
+| roselia | 3 | roserade | petal-dance | Danza Pétalo | 120 | auto |
+| gulpin | 1 | gulpin | acid-spray | Bomba Ácida | 40 | auto |
+| gulpin | 2 | swalot | sludge-bomb | Bomba Lodo | 90 | auto |
+| gulpin | 3 | swalot | belch | Eructo | 120 | auto |
+| carvanha | 1 | carvanha | assurance | Buena Baza | 60 | auto |
+| carvanha | 2 | sharpedo | liquidation | Hidroariete | 85 | auto |
+| carvanha | 3 | sharpedo | hydro-pump | Hidrobomba | 110 | default |
+| wailmer | 1 | wailmer | water-pulse | Hidropulso | 60 | auto |
+| wailmer | 2 | wailord | dive | Buceo | 80 | auto |
+| wailmer | 3 | wailord | water-spout | Salpicar | 150 | auto |
+| numel | 1 | numel | bulldoze | Terratemblor | 60 | auto |
+| numel | 2 | camerupt | earth-power | Tierra Viva | 90 | auto |
+| numel | 3 | camerupt | eruption | Estallido | 150 | auto |
+| torkoal | 1 | torkoal | flame-wheel | Rueda Fuego | 60 | auto |
+| torkoal | 2 | torkoal | heat-wave | Onda Ígnea | 95 | auto |
+| torkoal | 3 | torkoal | eruption | Estallido | 150 | auto |
+| spoink | 1 | spoink | confusion | Confusión | 50 | auto |
+| spoink | 2 | grumpig | psychic | Psíquico | 90 | auto |
+| spoink | 3 | grumpig | future-sight | Premonición | 120 | default |
+| spinda | 1 | spinda | tackle | Placaje | 40 | auto |
+| spinda | 2 | spinda | uproar | Alboroto | 90 | auto |
+| spinda | 3 | spinda | double-edge | Doble Filo | 120 | auto |
+| trapinch | 1 | trapinch | bulldoze | Terratemblor | 60 | auto |
+| trapinch | 2 | vibrava | earth-power | Tierra Viva | 90 | auto |
+| trapinch | 3 | flygon | earthquake | Terremoto | 100 | auto |
+| cacnea | 1 | cacnea | needle-arm | Brazo Pincho | 60 | auto |
+| cacnea | 2 | cacturne | energy-ball | Energibola | 90 | auto |
+| cacnea | 3 | cacturne | solar-beam | Rayo Solar | 120 | default |
+| swablu | 1 | swablu | round | Canon | 60 | auto |
+| swablu | 2 | altaria | take-down | Derribo | 90 | auto |
+| swablu | 3 | altaria | sky-attack | Ataque Aéreo | 140 | auto |
+| zangoose | 1 | zangoose | false-swipe | Falso Tortazo | 40 | auto |
+| zangoose | 2 | zangoose | crush-claw | Garra Brutal | 75 | auto |
+| zangoose | 3 | zangoose | hyper-beam | Hiperrayo | 150 | default |
+| seviper | 1 | seviper | poison-fang | Colmillo Veneno | 50 | auto |
+| seviper | 2 | seviper | sludge-bomb | Bomba Lodo | 90 | auto |
+| seviper | 3 | seviper | belch | Eructo | 120 | auto |
+| lunatone | 1 | lunatone | confusion | Confusión | 50 | auto |
+| lunatone | 2 | lunatone | psychic | Psíquico | 90 | auto |
+| lunatone | 3 | lunatone | future-sight | Premonición | 120 | auto |
+| solrock | 1 | solrock | confusion | Confusión | 50 | auto |
+| solrock | 2 | solrock | psychic | Psíquico | 90 | auto |
+| solrock | 3 | solrock | stone-edge | Roca Afilada | 100 | auto |
+| barboach | 1 | barboach | water-pulse | Hidropulso | 60 | auto |
+| barboach | 2 | whiscash | aqua-tail | Acua Cola | 90 | auto |
+| barboach | 3 | whiscash | earthquake | Terremoto | 100 | auto |
+| corphish | 1 | corphish | bubble | Burbuja | 40 | auto |
+| corphish | 2 | crawdaunt | razor-shell | Concha Filo | 75 | auto |
+| corphish | 3 | crawdaunt | crabhammer | Martillazo | 100 | auto |
+| baltoy | 1 | baltoy | confusion | Confusión | 50 | auto |
+| baltoy | 2 | claydol | earth-power | Tierra Viva | 90 | auto |
+| baltoy | 3 | claydol | earthquake | Terremoto | 100 | default |
+| lileep | 1 | lileep | ancient-power | Poder Pasado | 60 | auto |
+| lileep | 2 | cradily | energy-ball | Energibola | 90 | auto |
+| lileep | 3 | cradily | stone-edge | Roca Afilada | 100 | default |
+| anorith | 1 | anorith | ancient-power | Poder Pasado | 60 | auto |
+| anorith | 2 | armaldo | x-scissor | Tijera X | 80 | auto |
+| anorith | 3 | armaldo | stone-edge | Roca Afilada | 100 | default |
+| feebas | 1 | feebas | water-gun | Pistola Agua | 40 | default |
+| feebas | 2 | milotic | aqua-tail | Acua Cola | 90 | auto |
+| feebas | 3 | milotic | hydro-pump | Hidrobomba | 110 | auto |
+| castform | 1 | castform | weather-ball | Meteorobola | 50 | auto |
+| castform | 2 | castform | headbutt | Golpe Cabeza | 70 | auto |
+| castform | 3 | castform | hyper-beam | Hiperrayo | 150 | default |
+| kecleon | 1 | kecleon | scratch | Arañazo | 40 | auto |
+| kecleon | 2 | kecleon | slash | Cuchillada | 70 | auto |
+| kecleon | 3 | kecleon | hyper-beam | Hiperrayo | 150 | default |
+| shuppet | 1 | shuppet | shadow-sneak | Sombra Vil | 40 | auto |
+| shuppet | 2 | banette | phantom-force | Golpe Fantasma | 90 | auto |
+| shuppet | 3 | banette | shadow-force | Golpe Umbrío | 120 | default |
+| duskull | 1 | duskull | shadow-sneak | Sombra Vil | 40 | auto |
+| duskull | 2 | dusclops | shadow-ball | Bola Sombra | 80 | auto |
+| duskull | 3 | dusknoir | shadow-force | Golpe Umbrío | 120 | default |
+| tropius | 1 | tropius | magical-leaf | Hoja Mágica | 60 | auto |
+| tropius | 2 | tropius | air-slash | Tajo Aéreo | 75 | auto |
+| tropius | 3 | tropius | leaf-storm | Lluevehojas | 130 | auto |
+| chimecho | 1 | chimecho | confusion | Confusión | 50 | auto |
+| chimecho | 2 | chimecho | psychic | Psíquico | 90 | auto |
+| chimecho | 3 | chimecho | synchronoise | Sincrorruido | 120 | auto |
+| absol | 1 | absol | bite | Mordisco | 60 | auto |
+| absol | 2 | absol | night-slash | Tajo Umbrío | 70 | auto |
+| absol | 3 | absol | dark-pulse | Pulso Umbrío | 80 | default |
+| snorunt | 1 | snorunt | frost-breath | Vaho Gélido | 60 | auto |
+| snorunt | 2 | glalie | ice-beam | Rayo Hielo | 90 | auto |
+| snorunt | 3 | glalie | blizzard | Ventisca | 110 | auto |
+| spheal | 1 | spheal | water-pulse | Hidropulso | 60 | auto |
+| spheal | 2 | sealeo | ice-beam | Rayo Hielo | 90 | auto |
+| spheal | 3 | walrein | blizzard | Ventisca | 110 | auto |
+| clamperl | 1 | clamperl | water-gun | Pistola Agua | 40 | auto |
+| clamperl | 2 | huntail | aqua-tail | Acua Cola | 90 | auto |
+| clamperl | 3 | huntail | hydro-pump | Hidrobomba | 110 | auto |
+| relicanth | 1 | relicanth | ancient-power | Poder Pasado | 60 | auto |
+| relicanth | 2 | relicanth | aqua-tail | Acua Cola | 90 | auto |
+| relicanth | 3 | relicanth | head-smash | Testarazo | 150 | auto |
+| luvdisc | 1 | luvdisc | water-pulse | Hidropulso | 60 | auto |
+| luvdisc | 2 | luvdisc | brine | Salmuera | 65 | auto |
+| luvdisc | 3 | luvdisc | hydro-pump | Hidrobomba | 110 | auto |
+| bagon | 1 | bagon | dragon-breath | Dragoaliento | 60 | auto |
+| bagon | 2 | shelgon | dragon-claw | Garra Dragón | 80 | auto |
+| bagon | 3 | salamence | outrage | Enfado | 120 | auto |
+| beldum | 1 | beldum | metal-claw | Garra Metal | 50 | default |
+| beldum | 2 | metang | meteor-mash | Puño Meteoro | 90 | auto |
+| beldum | 3 | metagross | iron-tail | Cola Férrea | 100 | default |
+| turtwig | 1 | turtwig | razor-leaf | Hoja Afilada | 55 | auto |
+| turtwig | 2 | grotle | leaf-blade | Hoja Aguda | 90 | auto |
+| turtwig | 3 | torterra | leaf-storm | Lluevehojas | 130 | auto |
+| chimchar | 1 | chimchar | flame-wheel | Rueda Fuego | 60 | auto |
+| chimchar | 2 | monferno | flamethrower | Lanzallamas | 90 | auto |
+| chimchar | 3 | infernape | flare-blitz | Envite Ígneo | 120 | auto |
+| piplup | 1 | piplup | water-pulse | Hidropulso | 60 | auto |
+| piplup | 2 | prinplup | liquidation | Hidroariete | 85 | auto |
+| piplup | 3 | empoleon | wave-crash | Envite Acuático | 120 | auto |
+| starly | 1 | starly | aerial-ace | Golpe Aéreo | 60 | auto |
+| starly | 2 | staravia | take-down | Derribo | 90 | auto |
+| starly | 3 | staraptor | giga-impact | Gigaimpacto | 150 | auto |
+| bidoof | 1 | bidoof | tackle | Placaje | 40 | auto |
+| bidoof | 2 | bibarel | take-down | Derribo | 90 | auto |
+| bidoof | 3 | bibarel | double-edge | Doble Filo | 120 | auto |
+| kricketot | 1 | kricketot | bug-bite | Picadura | 60 | auto |
+| kricketot | 2 | kricketune | bug-buzz | Zumbido | 90 | auto |
+| kricketot | 3 | kricketune | megahorn | Megacuerno | 120 | default |
 | shinx | 1 | shinx | thunder-shock | Impactrueno | 40 | auto |
 | shinx | 2 | luxio | wild-charge | Voltio Cruel | 90 | auto |
 | shinx | 3 | luxray | thunder | Trueno | 110 | auto |
-| blitzle | 1 | blitzle | shock-wave | Onda Voltio | 60 | auto |
-| blitzle | 2 | zebstrika | wild-charge | Voltio Cruel | 90 | auto |
-| blitzle | 3 | zebstrika | thunder | Trueno | 110 | default |
-| tynamo | 1 | tynamo | charge-beam | Rayo Carga | 50 | auto |
-| tynamo | 2 | eelektrik | thunderbolt | Rayo | 90 | auto |
-| tynamo | 3 | eelektross | zap-cannon | Electrocañón | 120 | auto |
-| helioptile | 1 | helioptile | thunder-shock | Impactrueno | 40 | auto |
-| helioptile | 2 | heliolisk | thunderbolt | Rayo | 90 | auto |
-| helioptile | 3 | heliolisk | thunder | Trueno | 110 | auto |
+| cranidos | 1 | cranidos | ancient-power | Poder Pasado | 60 | auto |
+| cranidos | 2 | rampardos | rock-slide | Avalancha | 75 | auto |
+| cranidos | 3 | rampardos | head-smash | Testarazo | 150 | auto |
+| shieldon | 1 | shieldon | ancient-power | Poder Pasado | 60 | auto |
+| shieldon | 2 | bastiodon | iron-head | Cabeza de Hierro | 80 | auto |
+| shieldon | 3 | bastiodon | stone-edge | Roca Afilada | 100 | default |
+| burmy | 1 | burmy | bug-bite | Picadura | 60 | auto |
+| burmy | 2 | wormadam-plant | bug-buzz | Zumbido | 90 | auto |
+| burmy | 3 | wormadam-plant | megahorn | Megacuerno | 120 | default |
+| combee | 1 | combee | bug-bite | Picadura | 60 | auto |
+| combee | 2 | vespiquen | attack-order | Al Ataque | 90 | auto |
+| combee | 3 | vespiquen | megahorn | Megacuerno | 120 | default |
+| pachirisu | 1 | pachirisu | thunder-shock | Impactrueno | 40 | auto |
+| pachirisu | 2 | pachirisu | discharge | Chispazo | 80 | auto |
+| pachirisu | 3 | pachirisu | thunder | Trueno | 110 | auto |
+| buizel | 1 | buizel | water-pulse | Hidropulso | 60 | auto |
+| buizel | 2 | floatzel | aqua-tail | Acua Cola | 90 | auto |
+| buizel | 3 | floatzel | wave-crash | Envite Acuático | 120 | auto |
+| cherubi | 1 | cherubi | magical-leaf | Hoja Mágica | 60 | auto |
+| cherubi | 2 | cherrim | energy-ball | Energibola | 90 | auto |
+| cherubi | 3 | cherrim | petal-dance | Danza Pétalo | 120 | auto |
+| shellos | 1 | shellos | water-pulse | Hidropulso | 60 | auto |
+| shellos | 2 | gastrodon | muddy-water | Agua Lodosa | 90 | auto |
+| shellos | 3 | gastrodon | hydro-pump | Hidrobomba | 110 | auto |
+| drifloon | 1 | drifloon | ominous-wind | Viento Aciago | 60 | auto |
+| drifloon | 2 | drifblim | phantom-force | Golpe Fantasma | 90 | auto |
+| drifloon | 3 | drifblim | shadow-force | Golpe Umbrío | 120 | default |
+| buneary | 1 | buneary | swift | Meteoros | 60 | auto |
+| buneary | 2 | lopunny | dizzy-punch | Puño Mareo | 70 | auto |
+| buneary | 3 | lopunny | double-edge | Doble Filo | 120 | auto |
+| glameow | 1 | glameow | fake-out | Sorpresa | 40 | auto |
+| glameow | 2 | purugly | body-slam | Golpe Cuerpo | 85 | auto |
+| glameow | 3 | purugly | double-edge | Doble Filo | 120 | auto |
+| stunky | 1 | stunky | bite | Mordisco | 60 | auto |
+| stunky | 2 | skuntank | poison-jab | Puya Nociva | 80 | auto |
+| stunky | 3 | skuntank | belch | Eructo | 120 | auto |
+| bronzor | 1 | bronzor | confusion | Confusión | 50 | auto |
+| bronzor | 2 | bronzong | extrasensory | Paranormal | 80 | auto |
+| bronzor | 3 | bronzong | future-sight | Premonición | 120 | auto |
+| chatot | 1 | chatot | air-cutter | Aire Afilado | 60 | auto |
+| chatot | 2 | chatot | hyper-voice | Vozarrón | 90 | auto |
+| chatot | 3 | chatot | hurricane | Vendaval | 110 | auto |
+| spiritomb | 1 | spiritomb | feint-attack | Finta | 60 | auto |
+| spiritomb | 2 | spiritomb | dark-pulse | Pulso Umbrío | 80 | auto |
+| spiritomb | 3 | spiritomb | shadow-force | Golpe Umbrío | 120 | default |
+| gible | 1 | gible | bulldoze | Terratemblor | 60 | auto |
+| gible | 2 | gabite | earth-power | Tierra Viva | 90 | auto |
+| gible | 3 | garchomp | outrage | Enfado | 120 | auto |
+| lucario | 1 | lucario | force-palm | Palmeo | 60 | auto |
+| lucario | 2 | lucario | meteor-mash | Puño Meteoro | 90 | auto |
+| lucario | 3 | lucario | close-combat | A Bocajarro | 120 | auto |
+| hippopotas | 1 | hippopotas | sand-tomb | Bucle Arena | 35 | auto |
+| hippopotas | 2 | hippowdon | high-horsepower | Fuerza Equina | 95 | auto |
+| hippopotas | 3 | hippowdon | earthquake | Terremoto | 100 | auto |
+| skorupi | 1 | skorupi | bug-bite | Picadura | 60 | auto |
+| skorupi | 2 | drapion | x-scissor | Tijera X | 80 | auto |
+| skorupi | 3 | drapion | gunk-shot | Lanzamugre | 120 | default |
+| croagunk | 1 | croagunk | revenge | Desquite | 60 | auto |
+| croagunk | 2 | toxicroak | sludge-bomb | Bomba Lodo | 90 | auto |
+| croagunk | 3 | toxicroak | belch | Eructo | 120 | auto |
+| carnivine | 1 | carnivine | vine-whip | Látigo Cepa | 45 | auto |
+| carnivine | 2 | carnivine | energy-ball | Energibola | 90 | auto |
+| carnivine | 3 | carnivine | power-whip | Latigazo | 120 | auto |
+| finneon | 1 | finneon | water-pulse | Hidropulso | 60 | auto |
+| finneon | 2 | lumineon | surf | Surf | 90 | default |
+| finneon | 3 | lumineon | hydro-pump | Hidrobomba | 110 | auto |
+| snover | 1 | snover | icy-wind | Viento Hielo | 55 | auto |
+| snover | 2 | abomasnow | energy-ball | Energibola | 90 | auto |
+| snover | 3 | abomasnow | wood-hammer | Mazazo | 120 | auto |
+| rotom | 1 | rotom | ominous-wind | Viento Aciago | 60 | auto |
+| rotom | 2 | rotom | thunderbolt | Rayo | 90 | auto |
+| rotom | 3 | rotom | thunder | Trueno | 110 | auto |

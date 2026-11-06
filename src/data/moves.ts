@@ -22,6 +22,11 @@ export const MOVE_NAMES: Readonly<Record<string, string>> = Object.fromEntries(
   Object.entries(file.moves).map(([id, move]) => [id, move.name]),
 );
 
+/** Type of every move the table uses, for the attack type of a stage (ADR-047). */
+export const MOVE_TYPES: Readonly<Record<string, string>> = Object.fromEntries(
+  Object.entries(file.moves).map(([id, move]) => [id, move.type]),
+);
+
 /** Type and power of every move the table uses. */
 export const MOVE_INFO: Readonly<
   Record<string, { readonly type: string; readonly power: number | null }>

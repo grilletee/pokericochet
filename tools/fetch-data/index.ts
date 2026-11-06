@@ -126,6 +126,20 @@ async function buildRosterCandidate(): Promise<void> {
     resolve(here, 'roster.generated.json'),
     new TextEncoder().encode(serialize({ rules, ...built })),
   );
+  // What the game reads (ADR-048): every line of the rule is both a ball and a wild species; the
+  // run's pool decides which ones a game uses. Starters, legendaries and the fallback boss are
+  // curated in `roster.rules.json`.
+  const bases = Object.keys(built.lines);
+  const generated: Roster = {
+    balls: bases,
+    enemies: bases,
+    boss: rules.boss ?? 'lugia',
+    legendaries: rules.legendaries ?? [],
+    starters: rules.starters ?? [],
+    lines: built.lines,
+  };
+  validateRoster(generated);
+  deps.write(resolve(here, 'roster.json'), new TextEncoder().encode(serialize(generated)));
   const seconds = ((Date.now() - startedAt) / 1000).toFixed(0);
   console.log(
     `roster candidate: ${built.counts.lines} lines, ${built.counts.forms} forms ` +
@@ -213,9 +227,9 @@ const speciesById = new Map(species.map((s) => [s.id, s]));
 const byBase: Record<string, readonly string[]> = {};
 const rows = bases.map((base) => {
   const forms = stageForms(base, roster.lines[base]);
-  const type = speciesById.get(base)?.type;
-  if (type === undefined) throw new Error(`no data for "${base}"`);
-  const chosen = chooseMoves(base, type, forms, used, infos, overrides);
+  const types = speciesById.get(base)?.types;
+  if (types === undefined) throw new Error(`no data for "${base}"`);
+  const chosen = chooseMoves(base, types, forms, used, infos, overrides);
   byBase[base] = chosen.moves;
   return { base, forms, chosen };
 });

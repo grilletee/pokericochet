@@ -1,6 +1,9 @@
 // Pure parts of fetch-data: no network, no files. Everything here is unit-tested.
 
-export const GAME_TYPES = ['fire', 'water', 'grass', 'electric'] as const;
+import { ALL_TYPES } from './typechart';
+
+/** The 18 types of the games (4H-B2, ADR-047). */
+export const GAME_TYPES = ALL_TYPES;
 export type GameType = (typeof GAME_TYPES)[number];
 
 /** Which species the slice uses, and in which role. Game design, not PokéAPI data. */
@@ -32,7 +35,10 @@ export interface GeneratedSpecies {
   readonly pokedexId: number;
   /** Name in Spanish (ADR-036), straight from PokéAPI. */
   readonly name: string;
+  /** The first of `types`, kept as a shortcut (ADR-047). */
   readonly type: GameType;
+  /** One or two types, in the order of PokéAPI. */
+  readonly types: readonly GameType[];
   readonly baseStats: BaseStats;
 }
 
@@ -83,21 +89,26 @@ function readLearnset(raw: unknown): Learn[] {
 }
 
 /**
- * Reads what the game needs out of a PokéAPI `/pokemon/{name}` response: the first listed type
- * (it must be one of the four the game has), the six base stats and the level-up moves.
+ * Reads what the game needs out of a PokéAPI `/pokemon/{name}` response: its one or two types in
+ * slot order (each must be one of the 18 the game has), the six base stats and the level-up moves.
  */
 export function parsePokemon(name: string, raw: unknown): ParsedPokemon {
   if (!isRecord(raw)) return fail(name, 'not an object');
   const { id, types, stats, sprites } = raw;
   if (typeof id !== 'number') return fail(name, 'missing id');
   if (!Array.isArray(types)) return fail(name, 'missing types');
-  const first = types
+  const listed = types
     .filter(isRecord)
     .sort((a, b) => Number(a.slot) - Number(b.slot))
-    .map((t) => (isRecord(t.type) ? t.type.name : undefined))[0];
-  if (!GAME_TYPES.includes(first as GameType)) {
-    return fail(name, `first type "${String(first)}" is not one of ${GAME_TYPES.join(', ')}`);
+    .map((t) => (isRecord(t.type) ? t.type.name : undefined));
+  for (const type of listed) {
+    if (!GAME_TYPES.includes(type as GameType)) {
+      return fail(name, `type "${String(type)}" is not one of ${GAME_TYPES.join(', ')}`);
+    }
   }
+  const gameTypes = listed.slice(0, 2) as GameType[];
+  const first = gameTypes[0];
+  if (first === undefined) return fail(name, 'has no type');
   if (!Array.isArray(stats)) return fail(name, 'missing stats');
   const stat = (key: string): number => {
     const entry = stats.filter(isRecord).find((s) => isRecord(s.stat) && s.stat.name === key);
@@ -112,7 +123,8 @@ export function parsePokemon(name: string, raw: unknown): ParsedPokemon {
     species: {
       id: name,
       pokedexId: id,
-      type: first as GameType,
+      type: first,
+      types: gameTypes,
       baseStats: {
         hp: stat('hp'),
         attack: stat('attack'),
@@ -272,7 +284,7 @@ export type MoveSource = 'auto' | 'default' | 'signature';
 /** Hand-written part of the move data (tools/fetch-data/moves-overrides.json). */
 export interface MoveOverrides {
   /** Fallback ladder per game type, used when a power band has no candidate. */
-  readonly defaults: Readonly<Record<GameType, readonly [string, string, string]>>;
+  readonly defaults: Readonly<Record<string, readonly [string, string, string]>>;
   /** Signature moves per base species; null keeps the automatic choice for that tier. */
   readonly signatures: Readonly<Record<string, readonly (string | null)[]>>;
 }
@@ -284,23 +296,27 @@ export interface ChosenMoves {
 
 /**
  * One move per stage for a species line (ADR-039): the signature if there is one; else the
- * strongest damaging move of the species type that the form of that stage learns by level-up,
- * inside the power band of the tier (ties: lower id), and stronger than the move of the tier
- * before; else the default move of the type.
+ * strongest damaging move of ANY of the species' types that the form of that stage learns by
+ * level-up (ADR-047: a dual type brings coverage), inside the power band of the tier (ties: lower
+ * id), and stronger than the move of the tier before; else the default move of its first type.
  */
 export function chooseMoves(
   base: string,
-  type: GameType,
+  speciesTypes: GameType | readonly GameType[],
   forms: readonly [string, string, string],
   learnsets: Readonly<Record<string, readonly Learn[]>>,
   infos: Readonly<Record<string, MoveInfo>>,
   overrides: MoveOverrides,
 ): ChosenMoves {
+  const types: readonly GameType[] =
+    typeof speciesTypes === 'string' ? [speciesTypes] : speciesTypes;
   const moves: string[] = [];
   const sources: MoveSource[] = [];
   let previousPower = 0;
   for (let tier = 0; tier < 3; tier++) {
-    const fallback = overrides.defaults[type][tier] as string;
+    const ladder = overrides.defaults[types[0] as GameType];
+    if (ladder === undefined) throw new Error(`no default moves for the type of "${base}"`);
+    const fallback = ladder[tier] as string;
     const signature = overrides.signatures[base]?.[tier];
     let pick: string | undefined;
     let source: MoveSource = 'auto';
@@ -312,7 +328,9 @@ export function chooseMoves(
       let best: MoveInfo | undefined;
       for (const { move } of learnsets[forms[tier] as string] ?? []) {
         const info = infos[move];
-        if (info === undefined || info.type !== type || info.power === null) continue;
+        if (info === undefined || !types.includes(info.type as GameType) || info.power === null) {
+          continue;
+        }
         if (info.power < low || info.power > high || info.power <= previousPower) continue;
         const better =
           best === undefined ||

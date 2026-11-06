@@ -13,7 +13,7 @@ import {
   STARTER_SPECIES,
 } from '../../src/data';
 import generated from '../../src/data/generated/species.json';
-import { formAt, stageKind } from '../../src/domain';
+import { formAt, GAME_TYPES, stageKind, typesOfLine, typesOfSpecies } from '../../src/domain';
 import roster from '../../tools/fetch-data/roster.json';
 
 describe('generated species data (tools/fetch-data)', () => {
@@ -25,12 +25,46 @@ describe('generated species data (tools/fetch-data)', () => {
     expect(generated.roster).toEqual(roster);
   });
 
-  it('has two ball species per type, one boss, and starters that are balls of four different types', () => {
-    for (const type of ['fire', 'water', 'grass', 'electric']) {
-      expect(BALL_SPECIES.filter((s) => s.type === type)).toHaveLength(2);
+  it('covers the 18 types with at least 6 lines each as the type of one of their forms (ADR-048), and the starters are four types', () => {
+    for (const type of GAME_TYPES) {
+      const lines = BALL_SPECIES.filter((s) => typesOfLine(gameConfig, s.id).includes(type));
+      expect(lines.length, type).toBeGreaterThanOrEqual(6);
     }
     const starterTypes = STARTER_SPECIES.map((id) => gameConfig.species[id]?.type);
     expect(new Set(starterTypes).size).toBe(4);
+  });
+
+  it('keeps one or two types per species, the first being `type`, and the 18 only', () => {
+    for (const s of generated.species) {
+      expect(s.types.length, s.id).toBeGreaterThanOrEqual(1);
+      expect(s.types.length, s.id).toBeLessThanOrEqual(2);
+      expect(s.type, s.id).toBe(s.types[0]);
+      for (const type of s.types) expect(GAME_TYPES as readonly string[], s.id).toContain(type);
+    }
+    expect(generated.species.filter((s) => s.types.length === 2).length).toBeGreaterThan(100);
+  });
+
+  it('keeps the legendaries out of every line and available as final bosses (ADR-048)', () => {
+    const lines = new Set([
+      ...roster.balls,
+      ...roster.enemies,
+      ...Object.values(roster.lines).flat(),
+    ]);
+    for (const id of roster.legendaries) {
+      expect(lines.has(id), `${id} is in a line`).toBe(false);
+      expect(gameConfig.species[id], `${id} has data`).toBeDefined();
+      expect(ART_SPECIES_IDS, id).toContain(id);
+    }
+    expect(lines.has(roster.boss)).toBe(false);
+    // Every legendary of the final boss table is one of them, of the type it is filed under.
+    const table = gameConfig.boss?.byType ?? {};
+    for (const [type, id] of Object.entries(table)) {
+      expect(roster.legendaries, id).toContain(id);
+      expect(gameConfig.species[id as string]?.type, id).toBe(type);
+    }
+    // 14 of the 18 types have a legendary or mythical of their own among the final bosses; fighting,
+    // poison, flying and fairy have none in generations 1-4 (or none of that primary type).
+    expect(Object.keys(table).length).toBeGreaterThanOrEqual(14);
   });
 
   it('keeps the six real base stats of every species: positive numbers (ADR-038)', () => {
@@ -75,15 +109,16 @@ describe('evolution lines (ADR-024)', () => {
     const ids = new Set(ART_SPECIES_IDS);
     for (const base of [...BALL_SPECIES, ...ENEMY_SPECIES]) {
       const line = EVOLUTION_LINES[base.id] ?? [];
-      expect(line.length, base.id).toBeGreaterThanOrEqual(1);
+      // Some lines have no evolution (Farfetch'd, Absol...): they just keep their form.
       expect(line.length, base.id).toBeLessThanOrEqual(2);
       for (const form of line) {
         expect(ids.has(form), form).toBe(true);
-        // A form keeps the type of its line, so an evolved ball does not change type.
+        // A form may gain or change a type (Charmander -> Charizard adds Flying); it always has one.
         const data = generated.species.find((sp) => sp.id === form);
-        expect(data?.type, form).toBe(base.type);
+        expect(data?.types.length, form).toBeGreaterThanOrEqual(1);
       }
     }
+    expect(Object.values(EVOLUTION_LINES).filter((l) => l.length > 0).length).toBeGreaterThan(150);
   });
 
   it('shows the base species at stage 1, the first form at 2 and the last one at 3', () => {
@@ -117,7 +152,8 @@ describe('evolution lines (ADR-024)', () => {
 });
 
 describe('moves (ADR-039)', () => {
-  const bases = [...BALL_SPECIES, ...ENEMY_SPECIES];
+  // Every line is both a ball and a wild species since the roster is built by rule (ADR-048).
+  const bases = [...new Map([...BALL_SPECIES, ...ENEMY_SPECIES].map((s) => [s.id, s])).values()];
 
   it('gives every ball and enemy line a move at each of the three stages, with a name', () => {
     expect(Object.keys(MOVES_BY_BASE).sort()).toEqual(bases.map((s) => s.id).sort());
@@ -128,17 +164,36 @@ describe('moves (ADR-039)', () => {
     }
   });
 
-  it('only uses damaging moves of the type of the species, stronger at each stage', () => {
+  it('only uses damaging moves of one of the species types (ADR-047), growing with the stage', () => {
+    let strictlyStronger = 0;
     for (const base of bases) {
       const powers = (MOVES_BY_BASE[base.id] ?? []).map((move) => {
         const info = MOVE_INFO[move];
-        expect(info?.type, `${base.id} ${move}`).toBe(base.type);
+        // The move is of either type of the species: a dual type brings coverage.
+        expect(typesOfSpecies(base) as readonly string[], `${base.id} ${move}`).toContain(
+          info?.type,
+        );
         return info?.power ?? 0;
       });
       expect(powers[0], base.id).toBeGreaterThan(0);
-      expect(powers[1] ?? 0, base.id).toBeGreaterThan(powers[0] ?? 0);
-      expect(powers[2] ?? 0, base.id).toBeGreaterThan(powers[1] ?? 0);
+      // Three lines (Clefairy, Poochyena, Sableye) have no stronger move of their types at some
+      // stage and fall back to the default one of the type, which can repeat or dip a little.
+      expect(powers[1] ?? 0, base.id).toBeGreaterThanOrEqual((powers[0] ?? 0) * 0.99);
+      expect(powers[2] ?? 0, base.id).toBeGreaterThanOrEqual((powers[1] ?? 0) * 0.8);
+      if ((powers[1] ?? 0) > (powers[0] ?? 0) && (powers[2] ?? 0) > (powers[1] ?? 0)) {
+        strictlyStronger += 1;
+      }
     }
+    expect(strictlyStronger).toBeGreaterThan(bases.length - 6);
+  });
+
+  it('attack types: every type attacks as the first move of at least two lines (ADR-047)', () => {
+    const attackers = new Map<string, number>();
+    for (const base of bases) {
+      const type = MOVE_INFO[MOVES_BY_BASE[base.id]?.[0] ?? '']?.type ?? '';
+      attackers.set(type, (attackers.get(type) ?? 0) + 1);
+    }
+    for (const type of GAME_TYPES) expect(attackers.get(type) ?? 0, type).toBeGreaterThanOrEqual(2);
   });
 
   it('gives the four starters their signature moves, in Spanish', () => {

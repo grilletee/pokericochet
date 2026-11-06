@@ -2,10 +2,10 @@ import type { SpeciesDef } from '../domain';
 import generated from './generated/species.json';
 
 /**
- * Species data generated from PokéAPI by tools/fetch-data (ADR-018): type = first listed type,
- * the six base stats (ADR-038) and the name in Spanish (ADR-036). Which species play which role
- * (ball, wild enemy, boss, starter) is game design and lives in tools/fetch-data/roster.json,
- * copied into the file.
+ * Species data generated from PokéAPI by tools/fetch-data (ADR-018): its one or two types
+ * (`type` = the first, ADR-047), the six base stats (ADR-038) and the name in Spanish (ADR-036).
+ * Which species play which role (ball, wild enemy, boss, starter) lives in
+ * tools/fetch-data/roster.json, which the tool builds by rule (ADR-048) and copies into the file.
  */
 interface GeneratedFile {
   readonly roster: {
@@ -29,13 +29,18 @@ function species(id: string): SpeciesDef {
   const found = byId.get(id);
   if (found === undefined)
     throw new Error(`species "${id}" is missing from generated/species.json`);
-  return { id: found.id, type: found.type, baseStats: found.baseStats };
+  return {
+    id: found.id,
+    type: found.type,
+    types: found.types ?? [found.type],
+    baseStats: found.baseStats,
+  };
 }
 
-/** The 8 species the player can use as balls (2 per type). */
+/** Every line the player can be offered as a ball (the run's pool decides which ones, ADR-048). */
 export const BALL_SPECIES: readonly SpeciesDef[] = file.roster.balls.map(species);
 
-/** The 8 wild species that spawn as enemies. */
+/** Every line that can spawn as a wild enemy (again, filtered by the pool of the run). */
 export const ENEMY_SPECIES: readonly SpeciesDef[] = file.roster.enemies.map(species);
 
 /** Every species of the generated file: bases, evolution forms, the boss and the legendaries. */

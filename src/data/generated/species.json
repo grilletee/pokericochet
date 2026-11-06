@@ -2,54 +2,453 @@
   "source": "https://pokeapi.co",
   "roster": {
     "balls": [
-      "charmander",
-      "vulpix",
-      "squirtle",
-      "psyduck",
       "bulbasaur",
-      "oddish",
+      "charmander",
+      "squirtle",
+      "caterpie",
+      "weedle",
+      "pidgey",
+      "rattata",
+      "spearow",
+      "ekans",
       "pikachu",
-      "magnemite"
-    ],
-    "enemies": [
+      "sandshrew",
+      "nidoran-f",
+      "nidoran-m",
+      "clefairy",
+      "vulpix",
+      "jigglypuff",
+      "zubat",
+      "oddish",
+      "paras",
+      "venonat",
+      "diglett",
+      "meowth",
+      "psyduck",
+      "mankey",
       "growlithe",
-      "ponyta",
       "poliwag",
-      "horsea",
+      "abra",
+      "machop",
       "bellsprout",
-      "exeggcute",
+      "tentacool",
+      "geodude",
+      "ponyta",
+      "slowpoke",
+      "magnemite",
+      "farfetchd",
+      "doduo",
+      "seel",
+      "grimer",
+      "shellder",
+      "gastly",
+      "onix",
+      "drowzee",
+      "krabby",
       "voltorb",
+      "exeggcute",
+      "cubone",
+      "hitmonlee",
+      "hitmonchan",
+      "lickitung",
+      "koffing",
+      "rhyhorn",
+      "chansey",
+      "tangela",
+      "kangaskhan",
+      "horsea",
+      "goldeen",
+      "staryu",
+      "mr-mime",
+      "scyther",
+      "jynx",
       "electabuzz",
       "magmar",
-      "slugma",
-      "numel",
-      "cyndaquil",
-      "torchic",
-      "chimchar",
-      "krabby",
-      "staryu",
-      "goldeen",
-      "shellder",
-      "wooper",
-      "lotad",
-      "tangela",
-      "hoppip",
-      "seedot",
-      "shroomish",
-      "sunkern",
+      "pinsir",
+      "tauros",
+      "magikarp",
+      "lapras",
+      "ditto",
+      "eevee",
+      "porygon",
+      "omanyte",
+      "kabuto",
+      "aerodactyl",
+      "snorlax",
+      "dratini",
       "chikorita",
+      "cyndaquil",
+      "totodile",
+      "sentret",
+      "hoothoot",
+      "ledyba",
+      "spinarak",
+      "chinchou",
+      "togetic",
+      "natu",
       "mareep",
+      "marill",
+      "sudowoodo",
+      "hoppip",
+      "aipom",
+      "sunkern",
+      "yanma",
+      "wooper",
+      "murkrow",
+      "misdreavus",
+      "unown",
+      "wobbuffet",
+      "girafarig",
+      "pineco",
+      "dunsparce",
+      "gligar",
+      "snubbull",
+      "qwilfish",
+      "shuckle",
+      "heracross",
+      "sneasel",
+      "teddiursa",
+      "slugma",
+      "swinub",
+      "corsola",
+      "remoraid",
+      "delibird",
+      "mantine",
+      "skarmory",
+      "houndour",
+      "phanpy",
+      "stantler",
+      "smeargle",
+      "hitmontop",
+      "miltank",
+      "larvitar",
+      "treecko",
+      "torchic",
+      "mudkip",
+      "poochyena",
+      "zigzagoon",
+      "wurmple",
+      "lotad",
+      "seedot",
+      "taillow",
+      "wingull",
+      "ralts",
+      "surskit",
+      "shroomish",
+      "slakoth",
+      "nincada",
+      "whismur",
+      "makuhita",
+      "nosepass",
+      "skitty",
+      "sableye",
+      "mawile",
+      "aron",
+      "meditite",
+      "electrike",
+      "plusle",
+      "minun",
+      "volbeat",
+      "illumise",
+      "roselia",
+      "gulpin",
+      "carvanha",
+      "wailmer",
+      "numel",
+      "torkoal",
+      "spoink",
+      "spinda",
+      "trapinch",
+      "cacnea",
+      "swablu",
+      "zangoose",
+      "seviper",
+      "lunatone",
+      "solrock",
+      "barboach",
+      "corphish",
+      "baltoy",
+      "lileep",
+      "anorith",
+      "feebas",
+      "castform",
+      "kecleon",
+      "shuppet",
+      "duskull",
+      "tropius",
+      "chimecho",
+      "absol",
+      "snorunt",
+      "spheal",
+      "clamperl",
+      "relicanth",
+      "luvdisc",
+      "bagon",
+      "beldum",
+      "turtwig",
+      "chimchar",
+      "piplup",
+      "starly",
+      "bidoof",
+      "kricketot",
       "shinx",
-      "blitzle",
-      "tynamo",
-      "helioptile"
+      "cranidos",
+      "shieldon",
+      "burmy",
+      "combee",
+      "pachirisu",
+      "buizel",
+      "cherubi",
+      "shellos",
+      "drifloon",
+      "buneary",
+      "glameow",
+      "stunky",
+      "bronzor",
+      "chatot",
+      "spiritomb",
+      "gible",
+      "lucario",
+      "hippopotas",
+      "skorupi",
+      "croagunk",
+      "carnivine",
+      "finneon",
+      "snover",
+      "rotom"
     ],
-    "boss": "gyarados",
+    "enemies": [
+      "bulbasaur",
+      "charmander",
+      "squirtle",
+      "caterpie",
+      "weedle",
+      "pidgey",
+      "rattata",
+      "spearow",
+      "ekans",
+      "pikachu",
+      "sandshrew",
+      "nidoran-f",
+      "nidoran-m",
+      "clefairy",
+      "vulpix",
+      "jigglypuff",
+      "zubat",
+      "oddish",
+      "paras",
+      "venonat",
+      "diglett",
+      "meowth",
+      "psyduck",
+      "mankey",
+      "growlithe",
+      "poliwag",
+      "abra",
+      "machop",
+      "bellsprout",
+      "tentacool",
+      "geodude",
+      "ponyta",
+      "slowpoke",
+      "magnemite",
+      "farfetchd",
+      "doduo",
+      "seel",
+      "grimer",
+      "shellder",
+      "gastly",
+      "onix",
+      "drowzee",
+      "krabby",
+      "voltorb",
+      "exeggcute",
+      "cubone",
+      "hitmonlee",
+      "hitmonchan",
+      "lickitung",
+      "koffing",
+      "rhyhorn",
+      "chansey",
+      "tangela",
+      "kangaskhan",
+      "horsea",
+      "goldeen",
+      "staryu",
+      "mr-mime",
+      "scyther",
+      "jynx",
+      "electabuzz",
+      "magmar",
+      "pinsir",
+      "tauros",
+      "magikarp",
+      "lapras",
+      "ditto",
+      "eevee",
+      "porygon",
+      "omanyte",
+      "kabuto",
+      "aerodactyl",
+      "snorlax",
+      "dratini",
+      "chikorita",
+      "cyndaquil",
+      "totodile",
+      "sentret",
+      "hoothoot",
+      "ledyba",
+      "spinarak",
+      "chinchou",
+      "togetic",
+      "natu",
+      "mareep",
+      "marill",
+      "sudowoodo",
+      "hoppip",
+      "aipom",
+      "sunkern",
+      "yanma",
+      "wooper",
+      "murkrow",
+      "misdreavus",
+      "unown",
+      "wobbuffet",
+      "girafarig",
+      "pineco",
+      "dunsparce",
+      "gligar",
+      "snubbull",
+      "qwilfish",
+      "shuckle",
+      "heracross",
+      "sneasel",
+      "teddiursa",
+      "slugma",
+      "swinub",
+      "corsola",
+      "remoraid",
+      "delibird",
+      "mantine",
+      "skarmory",
+      "houndour",
+      "phanpy",
+      "stantler",
+      "smeargle",
+      "hitmontop",
+      "miltank",
+      "larvitar",
+      "treecko",
+      "torchic",
+      "mudkip",
+      "poochyena",
+      "zigzagoon",
+      "wurmple",
+      "lotad",
+      "seedot",
+      "taillow",
+      "wingull",
+      "ralts",
+      "surskit",
+      "shroomish",
+      "slakoth",
+      "nincada",
+      "whismur",
+      "makuhita",
+      "nosepass",
+      "skitty",
+      "sableye",
+      "mawile",
+      "aron",
+      "meditite",
+      "electrike",
+      "plusle",
+      "minun",
+      "volbeat",
+      "illumise",
+      "roselia",
+      "gulpin",
+      "carvanha",
+      "wailmer",
+      "numel",
+      "torkoal",
+      "spoink",
+      "spinda",
+      "trapinch",
+      "cacnea",
+      "swablu",
+      "zangoose",
+      "seviper",
+      "lunatone",
+      "solrock",
+      "barboach",
+      "corphish",
+      "baltoy",
+      "lileep",
+      "anorith",
+      "feebas",
+      "castform",
+      "kecleon",
+      "shuppet",
+      "duskull",
+      "tropius",
+      "chimecho",
+      "absol",
+      "snorunt",
+      "spheal",
+      "clamperl",
+      "relicanth",
+      "luvdisc",
+      "bagon",
+      "beldum",
+      "turtwig",
+      "chimchar",
+      "piplup",
+      "starly",
+      "bidoof",
+      "kricketot",
+      "shinx",
+      "cranidos",
+      "shieldon",
+      "burmy",
+      "combee",
+      "pachirisu",
+      "buizel",
+      "cherubi",
+      "shellos",
+      "drifloon",
+      "buneary",
+      "glameow",
+      "stunky",
+      "bronzor",
+      "chatot",
+      "spiritomb",
+      "gible",
+      "lucario",
+      "hippopotas",
+      "skorupi",
+      "croagunk",
+      "carnivine",
+      "finneon",
+      "snover",
+      "rotom"
+    ],
+    "boss": "lugia",
     "legendaries": [
       "moltres",
       "kyogre",
       "virizion",
-      "zapdos"
+      "zapdos",
+      "articuno",
+      "mewtwo",
+      "regirock",
+      "registeel",
+      "rayquaza",
+      "giratina-altered",
+      "groudon",
+      "darkrai",
+      "arceus",
+      "genesect"
     ],
     "starters": [
       "charmander",
@@ -58,204 +457,602 @@
       "pikachu"
     ],
     "lines": {
+      "bulbasaur": [
+        "ivysaur",
+        "venusaur"
+      ],
       "charmander": [
         "charmeleon",
         "charizard"
-      ],
-      "vulpix": [
-        "ninetales"
       ],
       "squirtle": [
         "wartortle",
         "blastoise"
       ],
-      "psyduck": [
-        "golduck"
+      "caterpie": [
+        "metapod",
+        "butterfree"
       ],
-      "bulbasaur": [
-        "ivysaur",
-        "venusaur"
+      "weedle": [
+        "kakuna",
+        "beedrill"
+      ],
+      "pidgey": [
+        "pidgeotto",
+        "pidgeot"
+      ],
+      "rattata": [
+        "raticate"
+      ],
+      "spearow": [
+        "fearow"
+      ],
+      "ekans": [
+        "arbok"
+      ],
+      "pikachu": [
+        "raichu"
+      ],
+      "sandshrew": [
+        "sandslash"
+      ],
+      "nidoran-f": [
+        "nidorina",
+        "nidoqueen"
+      ],
+      "nidoran-m": [
+        "nidorino",
+        "nidoking"
+      ],
+      "clefairy": [
+        "clefable"
+      ],
+      "vulpix": [
+        "ninetales"
+      ],
+      "jigglypuff": [
+        "wigglytuff"
+      ],
+      "zubat": [
+        "golbat",
+        "crobat"
       ],
       "oddish": [
         "gloom",
         "vileplume"
       ],
-      "pikachu": [
-        "raichu"
+      "paras": [
+        "parasect"
       ],
-      "magnemite": [
-        "magneton",
-        "magnezone"
+      "venonat": [
+        "venomoth"
+      ],
+      "diglett": [
+        "dugtrio"
+      ],
+      "meowth": [
+        "persian"
+      ],
+      "psyduck": [
+        "golduck"
+      ],
+      "mankey": [
+        "primeape"
       ],
       "growlithe": [
         "arcanine"
-      ],
-      "ponyta": [
-        "rapidash"
       ],
       "poliwag": [
         "poliwhirl",
         "poliwrath"
       ],
-      "horsea": [
-        "seadra",
-        "kingdra"
+      "abra": [
+        "kadabra",
+        "alakazam"
+      ],
+      "machop": [
+        "machoke",
+        "machamp"
       ],
       "bellsprout": [
         "weepinbell",
         "victreebel"
       ],
-      "exeggcute": [
-        "exeggutor"
+      "tentacool": [
+        "tentacruel"
+      ],
+      "geodude": [
+        "graveler",
+        "golem"
+      ],
+      "ponyta": [
+        "rapidash"
+      ],
+      "slowpoke": [
+        "slowbro"
+      ],
+      "magnemite": [
+        "magneton",
+        "magnezone"
+      ],
+      "farfetchd": [],
+      "doduo": [
+        "dodrio"
+      ],
+      "seel": [
+        "dewgong"
+      ],
+      "grimer": [
+        "muk"
+      ],
+      "shellder": [
+        "cloyster"
+      ],
+      "gastly": [
+        "haunter",
+        "gengar"
+      ],
+      "onix": [
+        "steelix"
+      ],
+      "drowzee": [
+        "hypno"
+      ],
+      "krabby": [
+        "kingler"
       ],
       "voltorb": [
         "electrode"
       ],
+      "exeggcute": [
+        "exeggutor"
+      ],
+      "cubone": [
+        "marowak"
+      ],
+      "hitmonlee": [],
+      "hitmonchan": [],
+      "lickitung": [
+        "lickilicky"
+      ],
+      "koffing": [
+        "weezing"
+      ],
+      "rhyhorn": [
+        "rhydon",
+        "rhyperior"
+      ],
+      "chansey": [
+        "blissey"
+      ],
+      "tangela": [
+        "tangrowth"
+      ],
+      "kangaskhan": [],
+      "horsea": [
+        "seadra",
+        "kingdra"
+      ],
+      "goldeen": [
+        "seaking"
+      ],
+      "staryu": [
+        "starmie"
+      ],
+      "mr-mime": [],
+      "scyther": [
+        "scizor"
+      ],
+      "jynx": [],
       "electabuzz": [
         "electivire"
       ],
       "magmar": [
         "magmortar"
       ],
-      "slugma": [
-        "magcargo"
+      "pinsir": [],
+      "tauros": [],
+      "magikarp": [
+        "gyarados"
       ],
-      "numel": [
-        "camerupt"
+      "lapras": [],
+      "ditto": [],
+      "eevee": [
+        "vaporeon"
       ],
-      "cyndaquil": [
-        "quilava",
-        "typhlosion"
+      "porygon": [
+        "porygon2",
+        "porygon-z"
       ],
-      "torchic": [
-        "combusken",
-        "blaziken"
+      "omanyte": [
+        "omastar"
       ],
-      "chimchar": [
-        "monferno",
-        "infernape"
+      "kabuto": [
+        "kabutops"
       ],
-      "krabby": [
-        "kingler"
-      ],
-      "staryu": [
-        "starmie"
-      ],
-      "goldeen": [
-        "seaking"
-      ],
-      "shellder": [
-        "cloyster"
-      ],
-      "wooper": [
-        "quagsire"
-      ],
-      "lotad": [
-        "lombre",
-        "ludicolo"
-      ],
-      "tangela": [
-        "tangrowth"
-      ],
-      "hoppip": [
-        "skiploom",
-        "jumpluff"
-      ],
-      "seedot": [
-        "nuzleaf",
-        "shiftry"
-      ],
-      "shroomish": [
-        "breloom"
-      ],
-      "sunkern": [
-        "sunflora"
+      "aerodactyl": [],
+      "snorlax": [],
+      "dratini": [
+        "dragonair",
+        "dragonite"
       ],
       "chikorita": [
         "bayleef",
         "meganium"
       ],
+      "cyndaquil": [
+        "quilava",
+        "typhlosion"
+      ],
+      "totodile": [
+        "croconaw",
+        "feraligatr"
+      ],
+      "sentret": [
+        "furret"
+      ],
+      "hoothoot": [
+        "noctowl"
+      ],
+      "ledyba": [
+        "ledian"
+      ],
+      "spinarak": [
+        "ariados"
+      ],
+      "chinchou": [
+        "lanturn"
+      ],
+      "togetic": [
+        "togekiss"
+      ],
+      "natu": [
+        "xatu"
+      ],
       "mareep": [
         "flaaffy",
         "ampharos"
+      ],
+      "marill": [
+        "azumarill"
+      ],
+      "sudowoodo": [],
+      "hoppip": [
+        "skiploom",
+        "jumpluff"
+      ],
+      "aipom": [
+        "ambipom"
+      ],
+      "sunkern": [
+        "sunflora"
+      ],
+      "yanma": [
+        "yanmega"
+      ],
+      "wooper": [
+        "quagsire"
+      ],
+      "murkrow": [
+        "honchkrow"
+      ],
+      "misdreavus": [
+        "mismagius"
+      ],
+      "unown": [],
+      "wobbuffet": [],
+      "girafarig": [],
+      "pineco": [
+        "forretress"
+      ],
+      "dunsparce": [],
+      "gligar": [
+        "gliscor"
+      ],
+      "snubbull": [
+        "granbull"
+      ],
+      "qwilfish": [],
+      "shuckle": [],
+      "heracross": [],
+      "sneasel": [
+        "weavile"
+      ],
+      "teddiursa": [
+        "ursaring"
+      ],
+      "slugma": [
+        "magcargo"
+      ],
+      "swinub": [
+        "piloswine",
+        "mamoswine"
+      ],
+      "corsola": [],
+      "remoraid": [
+        "octillery"
+      ],
+      "delibird": [],
+      "mantine": [],
+      "skarmory": [],
+      "houndour": [
+        "houndoom"
+      ],
+      "phanpy": [
+        "donphan"
+      ],
+      "stantler": [],
+      "smeargle": [],
+      "hitmontop": [],
+      "miltank": [],
+      "larvitar": [
+        "pupitar",
+        "tyranitar"
+      ],
+      "treecko": [
+        "grovyle",
+        "sceptile"
+      ],
+      "torchic": [
+        "combusken",
+        "blaziken"
+      ],
+      "mudkip": [
+        "marshtomp",
+        "swampert"
+      ],
+      "poochyena": [
+        "mightyena"
+      ],
+      "zigzagoon": [
+        "linoone"
+      ],
+      "wurmple": [
+        "silcoon",
+        "beautifly"
+      ],
+      "lotad": [
+        "lombre",
+        "ludicolo"
+      ],
+      "seedot": [
+        "nuzleaf",
+        "shiftry"
+      ],
+      "taillow": [
+        "swellow"
+      ],
+      "wingull": [
+        "pelipper"
+      ],
+      "ralts": [
+        "kirlia",
+        "gardevoir"
+      ],
+      "surskit": [
+        "masquerain"
+      ],
+      "shroomish": [
+        "breloom"
+      ],
+      "slakoth": [
+        "vigoroth",
+        "slaking"
+      ],
+      "nincada": [
+        "ninjask"
+      ],
+      "whismur": [
+        "loudred",
+        "exploud"
+      ],
+      "makuhita": [
+        "hariyama"
+      ],
+      "nosepass": [
+        "probopass"
+      ],
+      "skitty": [
+        "delcatty"
+      ],
+      "sableye": [],
+      "mawile": [],
+      "aron": [
+        "lairon",
+        "aggron"
+      ],
+      "meditite": [
+        "medicham"
+      ],
+      "electrike": [
+        "manectric"
+      ],
+      "plusle": [],
+      "minun": [],
+      "volbeat": [],
+      "illumise": [],
+      "roselia": [
+        "roserade"
+      ],
+      "gulpin": [
+        "swalot"
+      ],
+      "carvanha": [
+        "sharpedo"
+      ],
+      "wailmer": [
+        "wailord"
+      ],
+      "numel": [
+        "camerupt"
+      ],
+      "torkoal": [],
+      "spoink": [
+        "grumpig"
+      ],
+      "spinda": [],
+      "trapinch": [
+        "vibrava",
+        "flygon"
+      ],
+      "cacnea": [
+        "cacturne"
+      ],
+      "swablu": [
+        "altaria"
+      ],
+      "zangoose": [],
+      "seviper": [],
+      "lunatone": [],
+      "solrock": [],
+      "barboach": [
+        "whiscash"
+      ],
+      "corphish": [
+        "crawdaunt"
+      ],
+      "baltoy": [
+        "claydol"
+      ],
+      "lileep": [
+        "cradily"
+      ],
+      "anorith": [
+        "armaldo"
+      ],
+      "feebas": [
+        "milotic"
+      ],
+      "castform": [],
+      "kecleon": [],
+      "shuppet": [
+        "banette"
+      ],
+      "duskull": [
+        "dusclops",
+        "dusknoir"
+      ],
+      "tropius": [],
+      "chimecho": [],
+      "absol": [],
+      "snorunt": [
+        "glalie"
+      ],
+      "spheal": [
+        "sealeo",
+        "walrein"
+      ],
+      "clamperl": [
+        "huntail"
+      ],
+      "relicanth": [],
+      "luvdisc": [],
+      "bagon": [
+        "shelgon",
+        "salamence"
+      ],
+      "beldum": [
+        "metang",
+        "metagross"
+      ],
+      "turtwig": [
+        "grotle",
+        "torterra"
+      ],
+      "chimchar": [
+        "monferno",
+        "infernape"
+      ],
+      "piplup": [
+        "prinplup",
+        "empoleon"
+      ],
+      "starly": [
+        "staravia",
+        "staraptor"
+      ],
+      "bidoof": [
+        "bibarel"
+      ],
+      "kricketot": [
+        "kricketune"
       ],
       "shinx": [
         "luxio",
         "luxray"
       ],
-      "blitzle": [
-        "zebstrika"
+      "cranidos": [
+        "rampardos"
       ],
-      "tynamo": [
-        "eelektrik",
-        "eelektross"
+      "shieldon": [
+        "bastiodon"
       ],
-      "helioptile": [
-        "heliolisk"
-      ]
+      "burmy": [
+        "wormadam-plant"
+      ],
+      "combee": [
+        "vespiquen"
+      ],
+      "pachirisu": [],
+      "buizel": [
+        "floatzel"
+      ],
+      "cherubi": [
+        "cherrim"
+      ],
+      "shellos": [
+        "gastrodon"
+      ],
+      "drifloon": [
+        "drifblim"
+      ],
+      "buneary": [
+        "lopunny"
+      ],
+      "glameow": [
+        "purugly"
+      ],
+      "stunky": [
+        "skuntank"
+      ],
+      "bronzor": [
+        "bronzong"
+      ],
+      "chatot": [],
+      "spiritomb": [],
+      "gible": [
+        "gabite",
+        "garchomp"
+      ],
+      "lucario": [],
+      "hippopotas": [
+        "hippowdon"
+      ],
+      "skorupi": [
+        "drapion"
+      ],
+      "croagunk": [
+        "toxicroak"
+      ],
+      "carnivine": [],
+      "finneon": [
+        "lumineon"
+      ],
+      "snover": [
+        "abomasnow"
+      ],
+      "rotom": []
     }
   },
   "species": [
     {
-      "id": "charmander",
-      "pokedexId": 4,
-      "type": "fire",
-      "baseStats": {
-        "hp": 39,
-        "attack": 52,
-        "defense": 43,
-        "specialAttack": 60,
-        "specialDefense": 50,
-        "speed": 65
-      },
-      "name": "Charmander"
-    },
-    {
-      "id": "vulpix",
-      "pokedexId": 37,
-      "type": "fire",
-      "baseStats": {
-        "hp": 38,
-        "attack": 41,
-        "defense": 40,
-        "specialAttack": 50,
-        "specialDefense": 65,
-        "speed": 65
-      },
-      "name": "Vulpix"
-    },
-    {
-      "id": "squirtle",
-      "pokedexId": 7,
-      "type": "water",
-      "baseStats": {
-        "hp": 44,
-        "attack": 48,
-        "defense": 65,
-        "specialAttack": 50,
-        "specialDefense": 64,
-        "speed": 43
-      },
-      "name": "Squirtle"
-    },
-    {
-      "id": "psyduck",
-      "pokedexId": 54,
-      "type": "water",
-      "baseStats": {
-        "hp": 50,
-        "attack": 52,
-        "defense": 48,
-        "specialAttack": 65,
-        "specialDefense": 50,
-        "speed": 55
-      },
-      "name": "Psyduck"
-    },
-    {
       "id": "bulbasaur",
       "pokedexId": 1,
       "type": "grass",
+      "types": [
+        "grass",
+        "poison"
+      ],
       "baseStats": {
         "hp": 45,
         "attack": 49,
@@ -267,23 +1064,151 @@
       "name": "Bulbasaur"
     },
     {
-      "id": "oddish",
-      "pokedexId": 43,
-      "type": "grass",
+      "id": "charmander",
+      "pokedexId": 4,
+      "type": "fire",
+      "types": [
+        "fire"
+      ],
+      "baseStats": {
+        "hp": 39,
+        "attack": 52,
+        "defense": 43,
+        "specialAttack": 60,
+        "specialDefense": 50,
+        "speed": 65
+      },
+      "name": "Charmander"
+    },
+    {
+      "id": "squirtle",
+      "pokedexId": 7,
+      "type": "water",
+      "types": [
+        "water"
+      ],
+      "baseStats": {
+        "hp": 44,
+        "attack": 48,
+        "defense": 65,
+        "specialAttack": 50,
+        "specialDefense": 64,
+        "speed": 43
+      },
+      "name": "Squirtle"
+    },
+    {
+      "id": "caterpie",
+      "pokedexId": 10,
+      "type": "bug",
+      "types": [
+        "bug"
+      ],
       "baseStats": {
         "hp": 45,
-        "attack": 50,
-        "defense": 55,
-        "specialAttack": 75,
-        "specialDefense": 65,
-        "speed": 30
+        "attack": 30,
+        "defense": 35,
+        "specialAttack": 20,
+        "specialDefense": 20,
+        "speed": 45
       },
-      "name": "Oddish"
+      "name": "Caterpie"
+    },
+    {
+      "id": "weedle",
+      "pokedexId": 13,
+      "type": "bug",
+      "types": [
+        "bug",
+        "poison"
+      ],
+      "baseStats": {
+        "hp": 40,
+        "attack": 35,
+        "defense": 30,
+        "specialAttack": 20,
+        "specialDefense": 20,
+        "speed": 50
+      },
+      "name": "Weedle"
+    },
+    {
+      "id": "pidgey",
+      "pokedexId": 16,
+      "type": "normal",
+      "types": [
+        "normal",
+        "flying"
+      ],
+      "baseStats": {
+        "hp": 40,
+        "attack": 45,
+        "defense": 40,
+        "specialAttack": 35,
+        "specialDefense": 35,
+        "speed": 56
+      },
+      "name": "Pidgey"
+    },
+    {
+      "id": "rattata",
+      "pokedexId": 19,
+      "type": "normal",
+      "types": [
+        "normal"
+      ],
+      "baseStats": {
+        "hp": 30,
+        "attack": 56,
+        "defense": 35,
+        "specialAttack": 25,
+        "specialDefense": 35,
+        "speed": 72
+      },
+      "name": "Rattata"
+    },
+    {
+      "id": "spearow",
+      "pokedexId": 21,
+      "type": "normal",
+      "types": [
+        "normal",
+        "flying"
+      ],
+      "baseStats": {
+        "hp": 40,
+        "attack": 60,
+        "defense": 30,
+        "specialAttack": 31,
+        "specialDefense": 31,
+        "speed": 70
+      },
+      "name": "Spearow"
+    },
+    {
+      "id": "ekans",
+      "pokedexId": 23,
+      "type": "poison",
+      "types": [
+        "poison"
+      ],
+      "baseStats": {
+        "hp": 35,
+        "attack": 60,
+        "defense": 44,
+        "specialAttack": 40,
+        "specialDefense": 54,
+        "speed": 55
+      },
+      "name": "Ekans"
     },
     {
       "id": "pikachu",
       "pokedexId": 25,
       "type": "electric",
+      "types": [
+        "electric"
+      ],
       "baseStats": {
         "hp": 35,
         "attack": 55,
@@ -295,23 +1220,255 @@
       "name": "Pikachu"
     },
     {
-      "id": "magnemite",
-      "pokedexId": 81,
-      "type": "electric",
+      "id": "sandshrew",
+      "pokedexId": 27,
+      "type": "ground",
+      "types": [
+        "ground"
+      ],
       "baseStats": {
-        "hp": 25,
-        "attack": 35,
-        "defense": 70,
-        "specialAttack": 95,
+        "hp": 50,
+        "attack": 75,
+        "defense": 85,
+        "specialAttack": 20,
+        "specialDefense": 30,
+        "speed": 40
+      },
+      "name": "Sandshrew"
+    },
+    {
+      "id": "nidoran-f",
+      "pokedexId": 29,
+      "type": "poison",
+      "types": [
+        "poison"
+      ],
+      "baseStats": {
+        "hp": 55,
+        "attack": 47,
+        "defense": 52,
+        "specialAttack": 40,
+        "specialDefense": 40,
+        "speed": 41
+      },
+      "name": "Nidoran♀"
+    },
+    {
+      "id": "nidoran-m",
+      "pokedexId": 32,
+      "type": "poison",
+      "types": [
+        "poison"
+      ],
+      "baseStats": {
+        "hp": 46,
+        "attack": 57,
+        "defense": 40,
+        "specialAttack": 40,
+        "specialDefense": 40,
+        "speed": 50
+      },
+      "name": "Nidoran♂"
+    },
+    {
+      "id": "clefairy",
+      "pokedexId": 35,
+      "type": "fairy",
+      "types": [
+        "fairy"
+      ],
+      "baseStats": {
+        "hp": 70,
+        "attack": 45,
+        "defense": 48,
+        "specialAttack": 60,
+        "specialDefense": 65,
+        "speed": 35
+      },
+      "name": "Clefairy"
+    },
+    {
+      "id": "vulpix",
+      "pokedexId": 37,
+      "type": "fire",
+      "types": [
+        "fire"
+      ],
+      "baseStats": {
+        "hp": 38,
+        "attack": 41,
+        "defense": 40,
+        "specialAttack": 50,
+        "specialDefense": 65,
+        "speed": 65
+      },
+      "name": "Vulpix"
+    },
+    {
+      "id": "jigglypuff",
+      "pokedexId": 39,
+      "type": "normal",
+      "types": [
+        "normal",
+        "fairy"
+      ],
+      "baseStats": {
+        "hp": 115,
+        "attack": 45,
+        "defense": 20,
+        "specialAttack": 45,
+        "specialDefense": 25,
+        "speed": 20
+      },
+      "name": "Jigglypuff"
+    },
+    {
+      "id": "zubat",
+      "pokedexId": 41,
+      "type": "poison",
+      "types": [
+        "poison",
+        "flying"
+      ],
+      "baseStats": {
+        "hp": 40,
+        "attack": 45,
+        "defense": 35,
+        "specialAttack": 30,
+        "specialDefense": 40,
+        "speed": 55
+      },
+      "name": "Zubat"
+    },
+    {
+      "id": "oddish",
+      "pokedexId": 43,
+      "type": "grass",
+      "types": [
+        "grass",
+        "poison"
+      ],
+      "baseStats": {
+        "hp": 45,
+        "attack": 50,
+        "defense": 55,
+        "specialAttack": 75,
+        "specialDefense": 65,
+        "speed": 30
+      },
+      "name": "Oddish"
+    },
+    {
+      "id": "paras",
+      "pokedexId": 46,
+      "type": "bug",
+      "types": [
+        "bug",
+        "grass"
+      ],
+      "baseStats": {
+        "hp": 35,
+        "attack": 70,
+        "defense": 55,
+        "specialAttack": 45,
+        "specialDefense": 55,
+        "speed": 25
+      },
+      "name": "Paras"
+    },
+    {
+      "id": "venonat",
+      "pokedexId": 48,
+      "type": "bug",
+      "types": [
+        "bug",
+        "poison"
+      ],
+      "baseStats": {
+        "hp": 60,
+        "attack": 55,
+        "defense": 50,
+        "specialAttack": 40,
         "specialDefense": 55,
         "speed": 45
       },
-      "name": "Magnemite"
+      "name": "Venonat"
+    },
+    {
+      "id": "diglett",
+      "pokedexId": 50,
+      "type": "ground",
+      "types": [
+        "ground"
+      ],
+      "baseStats": {
+        "hp": 10,
+        "attack": 55,
+        "defense": 25,
+        "specialAttack": 35,
+        "specialDefense": 45,
+        "speed": 95
+      },
+      "name": "Diglett"
+    },
+    {
+      "id": "meowth",
+      "pokedexId": 52,
+      "type": "normal",
+      "types": [
+        "normal"
+      ],
+      "baseStats": {
+        "hp": 40,
+        "attack": 45,
+        "defense": 35,
+        "specialAttack": 40,
+        "specialDefense": 40,
+        "speed": 90
+      },
+      "name": "Meowth"
+    },
+    {
+      "id": "psyduck",
+      "pokedexId": 54,
+      "type": "water",
+      "types": [
+        "water"
+      ],
+      "baseStats": {
+        "hp": 50,
+        "attack": 52,
+        "defense": 48,
+        "specialAttack": 65,
+        "specialDefense": 50,
+        "speed": 55
+      },
+      "name": "Psyduck"
+    },
+    {
+      "id": "mankey",
+      "pokedexId": 56,
+      "type": "fighting",
+      "types": [
+        "fighting"
+      ],
+      "baseStats": {
+        "hp": 40,
+        "attack": 80,
+        "defense": 35,
+        "specialAttack": 35,
+        "specialDefense": 45,
+        "speed": 70
+      },
+      "name": "Mankey"
     },
     {
       "id": "growlithe",
       "pokedexId": 58,
       "type": "fire",
+      "types": [
+        "fire"
+      ],
       "baseStats": {
         "hp": 55,
         "attack": 70,
@@ -323,23 +1480,12 @@
       "name": "Growlithe"
     },
     {
-      "id": "ponyta",
-      "pokedexId": 77,
-      "type": "fire",
-      "baseStats": {
-        "hp": 50,
-        "attack": 85,
-        "defense": 55,
-        "specialAttack": 65,
-        "specialDefense": 65,
-        "speed": 90
-      },
-      "name": "Ponyta"
-    },
-    {
       "id": "poliwag",
       "pokedexId": 60,
       "type": "water",
+      "types": [
+        "water"
+      ],
       "baseStats": {
         "hp": 40,
         "attack": 50,
@@ -351,23 +1497,47 @@
       "name": "Poliwag"
     },
     {
-      "id": "horsea",
-      "pokedexId": 116,
-      "type": "water",
+      "id": "abra",
+      "pokedexId": 63,
+      "type": "psychic",
+      "types": [
+        "psychic"
+      ],
       "baseStats": {
-        "hp": 30,
-        "attack": 40,
-        "defense": 70,
-        "specialAttack": 70,
-        "specialDefense": 25,
-        "speed": 60
+        "hp": 25,
+        "attack": 20,
+        "defense": 15,
+        "specialAttack": 105,
+        "specialDefense": 55,
+        "speed": 90
       },
-      "name": "Horsea"
+      "name": "Abra"
+    },
+    {
+      "id": "machop",
+      "pokedexId": 66,
+      "type": "fighting",
+      "types": [
+        "fighting"
+      ],
+      "baseStats": {
+        "hp": 70,
+        "attack": 80,
+        "defense": 50,
+        "specialAttack": 35,
+        "specialDefense": 35,
+        "speed": 35
+      },
+      "name": "Machop"
     },
     {
       "id": "bellsprout",
       "pokedexId": 69,
       "type": "grass",
+      "types": [
+        "grass",
+        "poison"
+      ],
       "baseStats": {
         "hp": 50,
         "attack": 75,
@@ -379,23 +1549,258 @@
       "name": "Bellsprout"
     },
     {
-      "id": "exeggcute",
-      "pokedexId": 102,
-      "type": "grass",
+      "id": "tentacool",
+      "pokedexId": 72,
+      "type": "water",
+      "types": [
+        "water",
+        "poison"
+      ],
       "baseStats": {
-        "hp": 60,
+        "hp": 40,
         "attack": 40,
-        "defense": 80,
-        "specialAttack": 60,
-        "specialDefense": 45,
+        "defense": 35,
+        "specialAttack": 50,
+        "specialDefense": 100,
+        "speed": 70
+      },
+      "name": "Tentacool"
+    },
+    {
+      "id": "geodude",
+      "pokedexId": 74,
+      "type": "rock",
+      "types": [
+        "rock",
+        "ground"
+      ],
+      "baseStats": {
+        "hp": 40,
+        "attack": 80,
+        "defense": 100,
+        "specialAttack": 30,
+        "specialDefense": 30,
+        "speed": 20
+      },
+      "name": "Geodude"
+    },
+    {
+      "id": "ponyta",
+      "pokedexId": 77,
+      "type": "fire",
+      "types": [
+        "fire"
+      ],
+      "baseStats": {
+        "hp": 50,
+        "attack": 85,
+        "defense": 55,
+        "specialAttack": 65,
+        "specialDefense": 65,
+        "speed": 90
+      },
+      "name": "Ponyta"
+    },
+    {
+      "id": "slowpoke",
+      "pokedexId": 79,
+      "type": "water",
+      "types": [
+        "water",
+        "psychic"
+      ],
+      "baseStats": {
+        "hp": 90,
+        "attack": 65,
+        "defense": 65,
+        "specialAttack": 40,
+        "specialDefense": 40,
+        "speed": 15
+      },
+      "name": "Slowpoke"
+    },
+    {
+      "id": "magnemite",
+      "pokedexId": 81,
+      "type": "electric",
+      "types": [
+        "electric",
+        "steel"
+      ],
+      "baseStats": {
+        "hp": 25,
+        "attack": 35,
+        "defense": 70,
+        "specialAttack": 95,
+        "specialDefense": 55,
+        "speed": 45
+      },
+      "name": "Magnemite"
+    },
+    {
+      "id": "farfetchd",
+      "pokedexId": 83,
+      "type": "normal",
+      "types": [
+        "normal",
+        "flying"
+      ],
+      "baseStats": {
+        "hp": 52,
+        "attack": 90,
+        "defense": 55,
+        "specialAttack": 58,
+        "specialDefense": 62,
+        "speed": 60
+      },
+      "name": "Farfetch’d"
+    },
+    {
+      "id": "doduo",
+      "pokedexId": 84,
+      "type": "normal",
+      "types": [
+        "normal",
+        "flying"
+      ],
+      "baseStats": {
+        "hp": 35,
+        "attack": 85,
+        "defense": 45,
+        "specialAttack": 35,
+        "specialDefense": 35,
+        "speed": 75
+      },
+      "name": "Doduo"
+    },
+    {
+      "id": "seel",
+      "pokedexId": 86,
+      "type": "water",
+      "types": [
+        "water"
+      ],
+      "baseStats": {
+        "hp": 65,
+        "attack": 45,
+        "defense": 55,
+        "specialAttack": 45,
+        "specialDefense": 70,
+        "speed": 45
+      },
+      "name": "Seel"
+    },
+    {
+      "id": "grimer",
+      "pokedexId": 88,
+      "type": "poison",
+      "types": [
+        "poison"
+      ],
+      "baseStats": {
+        "hp": 80,
+        "attack": 80,
+        "defense": 50,
+        "specialAttack": 40,
+        "specialDefense": 50,
+        "speed": 25
+      },
+      "name": "Grimer"
+    },
+    {
+      "id": "shellder",
+      "pokedexId": 90,
+      "type": "water",
+      "types": [
+        "water"
+      ],
+      "baseStats": {
+        "hp": 30,
+        "attack": 65,
+        "defense": 100,
+        "specialAttack": 45,
+        "specialDefense": 25,
         "speed": 40
       },
-      "name": "Exeggcute"
+      "name": "Shellder"
+    },
+    {
+      "id": "gastly",
+      "pokedexId": 92,
+      "type": "ghost",
+      "types": [
+        "ghost",
+        "poison"
+      ],
+      "baseStats": {
+        "hp": 30,
+        "attack": 35,
+        "defense": 30,
+        "specialAttack": 100,
+        "specialDefense": 35,
+        "speed": 80
+      },
+      "name": "Gastly"
+    },
+    {
+      "id": "onix",
+      "pokedexId": 95,
+      "type": "rock",
+      "types": [
+        "rock",
+        "ground"
+      ],
+      "baseStats": {
+        "hp": 35,
+        "attack": 45,
+        "defense": 160,
+        "specialAttack": 30,
+        "specialDefense": 45,
+        "speed": 70
+      },
+      "name": "Onix"
+    },
+    {
+      "id": "drowzee",
+      "pokedexId": 96,
+      "type": "psychic",
+      "types": [
+        "psychic"
+      ],
+      "baseStats": {
+        "hp": 60,
+        "attack": 48,
+        "defense": 45,
+        "specialAttack": 43,
+        "specialDefense": 90,
+        "speed": 42
+      },
+      "name": "Drowzee"
+    },
+    {
+      "id": "krabby",
+      "pokedexId": 98,
+      "type": "water",
+      "types": [
+        "water"
+      ],
+      "baseStats": {
+        "hp": 30,
+        "attack": 105,
+        "defense": 90,
+        "specialAttack": 25,
+        "specialDefense": 25,
+        "speed": 50
+      },
+      "name": "Krabby"
     },
     {
       "id": "voltorb",
       "pokedexId": 100,
       "type": "electric",
+      "types": [
+        "electric"
+      ],
       "baseStats": {
         "hp": 40,
         "attack": 30,
@@ -407,9 +1812,289 @@
       "name": "Voltorb"
     },
     {
+      "id": "exeggcute",
+      "pokedexId": 102,
+      "type": "grass",
+      "types": [
+        "grass",
+        "psychic"
+      ],
+      "baseStats": {
+        "hp": 60,
+        "attack": 40,
+        "defense": 80,
+        "specialAttack": 60,
+        "specialDefense": 45,
+        "speed": 40
+      },
+      "name": "Exeggcute"
+    },
+    {
+      "id": "cubone",
+      "pokedexId": 104,
+      "type": "ground",
+      "types": [
+        "ground"
+      ],
+      "baseStats": {
+        "hp": 50,
+        "attack": 50,
+        "defense": 95,
+        "specialAttack": 40,
+        "specialDefense": 50,
+        "speed": 35
+      },
+      "name": "Cubone"
+    },
+    {
+      "id": "hitmonlee",
+      "pokedexId": 106,
+      "type": "fighting",
+      "types": [
+        "fighting"
+      ],
+      "baseStats": {
+        "hp": 50,
+        "attack": 120,
+        "defense": 53,
+        "specialAttack": 35,
+        "specialDefense": 110,
+        "speed": 87
+      },
+      "name": "Hitmonlee"
+    },
+    {
+      "id": "hitmonchan",
+      "pokedexId": 107,
+      "type": "fighting",
+      "types": [
+        "fighting"
+      ],
+      "baseStats": {
+        "hp": 50,
+        "attack": 105,
+        "defense": 79,
+        "specialAttack": 35,
+        "specialDefense": 110,
+        "speed": 76
+      },
+      "name": "Hitmonchan"
+    },
+    {
+      "id": "lickitung",
+      "pokedexId": 108,
+      "type": "normal",
+      "types": [
+        "normal"
+      ],
+      "baseStats": {
+        "hp": 90,
+        "attack": 55,
+        "defense": 75,
+        "specialAttack": 60,
+        "specialDefense": 75,
+        "speed": 30
+      },
+      "name": "Lickitung"
+    },
+    {
+      "id": "koffing",
+      "pokedexId": 109,
+      "type": "poison",
+      "types": [
+        "poison"
+      ],
+      "baseStats": {
+        "hp": 40,
+        "attack": 65,
+        "defense": 95,
+        "specialAttack": 60,
+        "specialDefense": 45,
+        "speed": 35
+      },
+      "name": "Koffing"
+    },
+    {
+      "id": "rhyhorn",
+      "pokedexId": 111,
+      "type": "ground",
+      "types": [
+        "ground",
+        "rock"
+      ],
+      "baseStats": {
+        "hp": 80,
+        "attack": 85,
+        "defense": 95,
+        "specialAttack": 30,
+        "specialDefense": 30,
+        "speed": 25
+      },
+      "name": "Rhyhorn"
+    },
+    {
+      "id": "chansey",
+      "pokedexId": 113,
+      "type": "normal",
+      "types": [
+        "normal"
+      ],
+      "baseStats": {
+        "hp": 250,
+        "attack": 5,
+        "defense": 5,
+        "specialAttack": 35,
+        "specialDefense": 105,
+        "speed": 50
+      },
+      "name": "Chansey"
+    },
+    {
+      "id": "tangela",
+      "pokedexId": 114,
+      "type": "grass",
+      "types": [
+        "grass"
+      ],
+      "baseStats": {
+        "hp": 65,
+        "attack": 55,
+        "defense": 115,
+        "specialAttack": 100,
+        "specialDefense": 40,
+        "speed": 60
+      },
+      "name": "Tangela"
+    },
+    {
+      "id": "kangaskhan",
+      "pokedexId": 115,
+      "type": "normal",
+      "types": [
+        "normal"
+      ],
+      "baseStats": {
+        "hp": 105,
+        "attack": 95,
+        "defense": 80,
+        "specialAttack": 40,
+        "specialDefense": 80,
+        "speed": 90
+      },
+      "name": "Kangaskhan"
+    },
+    {
+      "id": "horsea",
+      "pokedexId": 116,
+      "type": "water",
+      "types": [
+        "water"
+      ],
+      "baseStats": {
+        "hp": 30,
+        "attack": 40,
+        "defense": 70,
+        "specialAttack": 70,
+        "specialDefense": 25,
+        "speed": 60
+      },
+      "name": "Horsea"
+    },
+    {
+      "id": "goldeen",
+      "pokedexId": 118,
+      "type": "water",
+      "types": [
+        "water"
+      ],
+      "baseStats": {
+        "hp": 45,
+        "attack": 67,
+        "defense": 60,
+        "specialAttack": 35,
+        "specialDefense": 50,
+        "speed": 63
+      },
+      "name": "Goldeen"
+    },
+    {
+      "id": "staryu",
+      "pokedexId": 120,
+      "type": "water",
+      "types": [
+        "water"
+      ],
+      "baseStats": {
+        "hp": 30,
+        "attack": 45,
+        "defense": 55,
+        "specialAttack": 70,
+        "specialDefense": 55,
+        "speed": 85
+      },
+      "name": "Staryu"
+    },
+    {
+      "id": "mr-mime",
+      "pokedexId": 122,
+      "type": "psychic",
+      "types": [
+        "psychic",
+        "fairy"
+      ],
+      "baseStats": {
+        "hp": 40,
+        "attack": 45,
+        "defense": 65,
+        "specialAttack": 100,
+        "specialDefense": 120,
+        "speed": 90
+      },
+      "name": "Mr. Mime"
+    },
+    {
+      "id": "scyther",
+      "pokedexId": 123,
+      "type": "bug",
+      "types": [
+        "bug",
+        "flying"
+      ],
+      "baseStats": {
+        "hp": 70,
+        "attack": 110,
+        "defense": 80,
+        "specialAttack": 55,
+        "specialDefense": 80,
+        "speed": 105
+      },
+      "name": "Scyther"
+    },
+    {
+      "id": "jynx",
+      "pokedexId": 124,
+      "type": "ice",
+      "types": [
+        "ice",
+        "psychic"
+      ],
+      "baseStats": {
+        "hp": 65,
+        "attack": 50,
+        "defense": 35,
+        "specialAttack": 115,
+        "specialDefense": 95,
+        "speed": 95
+      },
+      "name": "Jynx"
+    },
+    {
       "id": "electabuzz",
       "pokedexId": 125,
       "type": "electric",
+      "types": [
+        "electric"
+      ],
       "baseStats": {
         "hp": 65,
         "attack": 83,
@@ -424,6 +2109,9 @@
       "id": "magmar",
       "pokedexId": 126,
       "type": "fire",
+      "types": [
+        "fire"
+      ],
       "baseStats": {
         "hp": 65,
         "attack": 95,
@@ -435,233 +2123,220 @@
       "name": "Magmar"
     },
     {
-      "id": "slugma",
-      "pokedexId": 218,
-      "type": "fire",
-      "baseStats": {
-        "hp": 40,
-        "attack": 40,
-        "defense": 40,
-        "specialAttack": 70,
-        "specialDefense": 40,
-        "speed": 20
-      },
-      "name": "Slugma"
-    },
-    {
-      "id": "numel",
-      "pokedexId": 322,
-      "type": "fire",
-      "baseStats": {
-        "hp": 60,
-        "attack": 60,
-        "defense": 40,
-        "specialAttack": 65,
-        "specialDefense": 45,
-        "speed": 35
-      },
-      "name": "Numel"
-    },
-    {
-      "id": "cyndaquil",
-      "pokedexId": 155,
-      "type": "fire",
-      "baseStats": {
-        "hp": 39,
-        "attack": 52,
-        "defense": 43,
-        "specialAttack": 60,
-        "specialDefense": 50,
-        "speed": 65
-      },
-      "name": "Cyndaquil"
-    },
-    {
-      "id": "torchic",
-      "pokedexId": 255,
-      "type": "fire",
-      "baseStats": {
-        "hp": 45,
-        "attack": 60,
-        "defense": 40,
-        "specialAttack": 70,
-        "specialDefense": 50,
-        "speed": 45
-      },
-      "name": "Torchic"
-    },
-    {
-      "id": "chimchar",
-      "pokedexId": 390,
-      "type": "fire",
-      "baseStats": {
-        "hp": 44,
-        "attack": 58,
-        "defense": 44,
-        "specialAttack": 58,
-        "specialDefense": 44,
-        "speed": 61
-      },
-      "name": "Chimchar"
-    },
-    {
-      "id": "krabby",
-      "pokedexId": 98,
-      "type": "water",
-      "baseStats": {
-        "hp": 30,
-        "attack": 105,
-        "defense": 90,
-        "specialAttack": 25,
-        "specialDefense": 25,
-        "speed": 50
-      },
-      "name": "Krabby"
-    },
-    {
-      "id": "staryu",
-      "pokedexId": 120,
-      "type": "water",
-      "baseStats": {
-        "hp": 30,
-        "attack": 45,
-        "defense": 55,
-        "specialAttack": 70,
-        "specialDefense": 55,
-        "speed": 85
-      },
-      "name": "Staryu"
-    },
-    {
-      "id": "goldeen",
-      "pokedexId": 118,
-      "type": "water",
-      "baseStats": {
-        "hp": 45,
-        "attack": 67,
-        "defense": 60,
-        "specialAttack": 35,
-        "specialDefense": 50,
-        "speed": 63
-      },
-      "name": "Goldeen"
-    },
-    {
-      "id": "shellder",
-      "pokedexId": 90,
-      "type": "water",
-      "baseStats": {
-        "hp": 30,
-        "attack": 65,
-        "defense": 100,
-        "specialAttack": 45,
-        "specialDefense": 25,
-        "speed": 40
-      },
-      "name": "Shellder"
-    },
-    {
-      "id": "wooper",
-      "pokedexId": 194,
-      "type": "water",
-      "baseStats": {
-        "hp": 55,
-        "attack": 45,
-        "defense": 45,
-        "specialAttack": 25,
-        "specialDefense": 25,
-        "speed": 15
-      },
-      "name": "Wooper"
-    },
-    {
-      "id": "lotad",
-      "pokedexId": 270,
-      "type": "water",
-      "baseStats": {
-        "hp": 40,
-        "attack": 30,
-        "defense": 30,
-        "specialAttack": 40,
-        "specialDefense": 50,
-        "speed": 30
-      },
-      "name": "Lotad"
-    },
-    {
-      "id": "tangela",
-      "pokedexId": 114,
-      "type": "grass",
+      "id": "pinsir",
+      "pokedexId": 127,
+      "type": "bug",
+      "types": [
+        "bug"
+      ],
       "baseStats": {
         "hp": 65,
-        "attack": 55,
-        "defense": 115,
-        "specialAttack": 100,
-        "specialDefense": 40,
+        "attack": 125,
+        "defense": 100,
+        "specialAttack": 55,
+        "specialDefense": 70,
+        "speed": 85
+      },
+      "name": "Pinsir"
+    },
+    {
+      "id": "tauros",
+      "pokedexId": 128,
+      "type": "normal",
+      "types": [
+        "normal"
+      ],
+      "baseStats": {
+        "hp": 75,
+        "attack": 100,
+        "defense": 95,
+        "specialAttack": 40,
+        "specialDefense": 70,
+        "speed": 110
+      },
+      "name": "Tauros"
+    },
+    {
+      "id": "magikarp",
+      "pokedexId": 129,
+      "type": "water",
+      "types": [
+        "water"
+      ],
+      "baseStats": {
+        "hp": 20,
+        "attack": 10,
+        "defense": 55,
+        "specialAttack": 15,
+        "specialDefense": 20,
+        "speed": 80
+      },
+      "name": "Magikarp"
+    },
+    {
+      "id": "lapras",
+      "pokedexId": 131,
+      "type": "water",
+      "types": [
+        "water",
+        "ice"
+      ],
+      "baseStats": {
+        "hp": 130,
+        "attack": 85,
+        "defense": 80,
+        "specialAttack": 85,
+        "specialDefense": 95,
         "speed": 60
       },
-      "name": "Tangela"
+      "name": "Lapras"
     },
     {
-      "id": "hoppip",
-      "pokedexId": 187,
-      "type": "grass",
+      "id": "ditto",
+      "pokedexId": 132,
+      "type": "normal",
+      "types": [
+        "normal"
+      ],
+      "baseStats": {
+        "hp": 48,
+        "attack": 48,
+        "defense": 48,
+        "specialAttack": 48,
+        "specialDefense": 48,
+        "speed": 48
+      },
+      "name": "Ditto"
+    },
+    {
+      "id": "eevee",
+      "pokedexId": 133,
+      "type": "normal",
+      "types": [
+        "normal"
+      ],
+      "baseStats": {
+        "hp": 55,
+        "attack": 55,
+        "defense": 50,
+        "specialAttack": 45,
+        "specialDefense": 65,
+        "speed": 55
+      },
+      "name": "Eevee"
+    },
+    {
+      "id": "porygon",
+      "pokedexId": 137,
+      "type": "normal",
+      "types": [
+        "normal"
+      ],
+      "baseStats": {
+        "hp": 65,
+        "attack": 60,
+        "defense": 70,
+        "specialAttack": 85,
+        "specialDefense": 75,
+        "speed": 40
+      },
+      "name": "Porygon"
+    },
+    {
+      "id": "omanyte",
+      "pokedexId": 138,
+      "type": "rock",
+      "types": [
+        "rock",
+        "water"
+      ],
       "baseStats": {
         "hp": 35,
-        "attack": 35,
-        "defense": 40,
-        "specialAttack": 35,
+        "attack": 40,
+        "defense": 100,
+        "specialAttack": 90,
         "specialDefense": 55,
-        "speed": 50
-      },
-      "name": "Hoppip"
-    },
-    {
-      "id": "seedot",
-      "pokedexId": 273,
-      "type": "grass",
-      "baseStats": {
-        "hp": 40,
-        "attack": 40,
-        "defense": 50,
-        "specialAttack": 30,
-        "specialDefense": 30,
-        "speed": 30
-      },
-      "name": "Seedot"
-    },
-    {
-      "id": "shroomish",
-      "pokedexId": 285,
-      "type": "grass",
-      "baseStats": {
-        "hp": 60,
-        "attack": 40,
-        "defense": 60,
-        "specialAttack": 40,
-        "specialDefense": 60,
         "speed": 35
       },
-      "name": "Shroomish"
+      "name": "Omanyte"
     },
     {
-      "id": "sunkern",
-      "pokedexId": 191,
-      "type": "grass",
+      "id": "kabuto",
+      "pokedexId": 140,
+      "type": "rock",
+      "types": [
+        "rock",
+        "water"
+      ],
       "baseStats": {
         "hp": 30,
-        "attack": 30,
-        "defense": 30,
-        "specialAttack": 30,
-        "specialDefense": 30,
+        "attack": 80,
+        "defense": 90,
+        "specialAttack": 55,
+        "specialDefense": 45,
+        "speed": 55
+      },
+      "name": "Kabuto"
+    },
+    {
+      "id": "aerodactyl",
+      "pokedexId": 142,
+      "type": "rock",
+      "types": [
+        "rock",
+        "flying"
+      ],
+      "baseStats": {
+        "hp": 80,
+        "attack": 105,
+        "defense": 65,
+        "specialAttack": 60,
+        "specialDefense": 75,
+        "speed": 130
+      },
+      "name": "Aerodactyl"
+    },
+    {
+      "id": "snorlax",
+      "pokedexId": 143,
+      "type": "normal",
+      "types": [
+        "normal"
+      ],
+      "baseStats": {
+        "hp": 160,
+        "attack": 110,
+        "defense": 65,
+        "specialAttack": 65,
+        "specialDefense": 110,
         "speed": 30
       },
-      "name": "Sunkern"
+      "name": "Snorlax"
+    },
+    {
+      "id": "dratini",
+      "pokedexId": 147,
+      "type": "dragon",
+      "types": [
+        "dragon"
+      ],
+      "baseStats": {
+        "hp": 41,
+        "attack": 64,
+        "defense": 45,
+        "specialAttack": 50,
+        "specialDefense": 50,
+        "speed": 50
+      },
+      "name": "Dratini"
     },
     {
       "id": "chikorita",
       "pokedexId": 152,
       "type": "grass",
+      "types": [
+        "grass"
+      ],
       "baseStats": {
         "hp": 45,
         "attack": 49,
@@ -673,9 +2348,171 @@
       "name": "Chikorita"
     },
     {
+      "id": "cyndaquil",
+      "pokedexId": 155,
+      "type": "fire",
+      "types": [
+        "fire"
+      ],
+      "baseStats": {
+        "hp": 39,
+        "attack": 52,
+        "defense": 43,
+        "specialAttack": 60,
+        "specialDefense": 50,
+        "speed": 65
+      },
+      "name": "Cyndaquil"
+    },
+    {
+      "id": "totodile",
+      "pokedexId": 158,
+      "type": "water",
+      "types": [
+        "water"
+      ],
+      "baseStats": {
+        "hp": 50,
+        "attack": 65,
+        "defense": 64,
+        "specialAttack": 44,
+        "specialDefense": 48,
+        "speed": 43
+      },
+      "name": "Totodile"
+    },
+    {
+      "id": "sentret",
+      "pokedexId": 161,
+      "type": "normal",
+      "types": [
+        "normal"
+      ],
+      "baseStats": {
+        "hp": 35,
+        "attack": 46,
+        "defense": 34,
+        "specialAttack": 35,
+        "specialDefense": 45,
+        "speed": 20
+      },
+      "name": "Sentret"
+    },
+    {
+      "id": "hoothoot",
+      "pokedexId": 163,
+      "type": "normal",
+      "types": [
+        "normal",
+        "flying"
+      ],
+      "baseStats": {
+        "hp": 60,
+        "attack": 30,
+        "defense": 30,
+        "specialAttack": 36,
+        "specialDefense": 56,
+        "speed": 50
+      },
+      "name": "Hoothoot"
+    },
+    {
+      "id": "ledyba",
+      "pokedexId": 165,
+      "type": "bug",
+      "types": [
+        "bug",
+        "flying"
+      ],
+      "baseStats": {
+        "hp": 40,
+        "attack": 20,
+        "defense": 30,
+        "specialAttack": 40,
+        "specialDefense": 80,
+        "speed": 55
+      },
+      "name": "Ledyba"
+    },
+    {
+      "id": "spinarak",
+      "pokedexId": 167,
+      "type": "bug",
+      "types": [
+        "bug",
+        "poison"
+      ],
+      "baseStats": {
+        "hp": 40,
+        "attack": 60,
+        "defense": 40,
+        "specialAttack": 40,
+        "specialDefense": 40,
+        "speed": 30
+      },
+      "name": "Spinarak"
+    },
+    {
+      "id": "chinchou",
+      "pokedexId": 170,
+      "type": "water",
+      "types": [
+        "water",
+        "electric"
+      ],
+      "baseStats": {
+        "hp": 75,
+        "attack": 38,
+        "defense": 38,
+        "specialAttack": 56,
+        "specialDefense": 56,
+        "speed": 67
+      },
+      "name": "Chinchou"
+    },
+    {
+      "id": "togetic",
+      "pokedexId": 176,
+      "type": "fairy",
+      "types": [
+        "fairy",
+        "flying"
+      ],
+      "baseStats": {
+        "hp": 55,
+        "attack": 40,
+        "defense": 85,
+        "specialAttack": 80,
+        "specialDefense": 105,
+        "speed": 40
+      },
+      "name": "Togetic"
+    },
+    {
+      "id": "natu",
+      "pokedexId": 177,
+      "type": "psychic",
+      "types": [
+        "psychic",
+        "flying"
+      ],
+      "baseStats": {
+        "hp": 40,
+        "attack": 50,
+        "defense": 45,
+        "specialAttack": 70,
+        "specialDefense": 45,
+        "speed": 70
+      },
+      "name": "Natu"
+    },
+    {
       "id": "mareep",
       "pokedexId": 179,
       "type": "electric",
+      "types": [
+        "electric"
+      ],
       "baseStats": {
         "hp": 55,
         "attack": 40,
@@ -687,9 +2524,1823 @@
       "name": "Mareep"
     },
     {
+      "id": "marill",
+      "pokedexId": 183,
+      "type": "water",
+      "types": [
+        "water",
+        "fairy"
+      ],
+      "baseStats": {
+        "hp": 70,
+        "attack": 20,
+        "defense": 50,
+        "specialAttack": 20,
+        "specialDefense": 50,
+        "speed": 40
+      },
+      "name": "Marill"
+    },
+    {
+      "id": "sudowoodo",
+      "pokedexId": 185,
+      "type": "rock",
+      "types": [
+        "rock"
+      ],
+      "baseStats": {
+        "hp": 70,
+        "attack": 100,
+        "defense": 115,
+        "specialAttack": 30,
+        "specialDefense": 65,
+        "speed": 30
+      },
+      "name": "Sudowoodo"
+    },
+    {
+      "id": "hoppip",
+      "pokedexId": 187,
+      "type": "grass",
+      "types": [
+        "grass",
+        "flying"
+      ],
+      "baseStats": {
+        "hp": 35,
+        "attack": 35,
+        "defense": 40,
+        "specialAttack": 35,
+        "specialDefense": 55,
+        "speed": 50
+      },
+      "name": "Hoppip"
+    },
+    {
+      "id": "aipom",
+      "pokedexId": 190,
+      "type": "normal",
+      "types": [
+        "normal"
+      ],
+      "baseStats": {
+        "hp": 55,
+        "attack": 70,
+        "defense": 55,
+        "specialAttack": 40,
+        "specialDefense": 55,
+        "speed": 85
+      },
+      "name": "Aipom"
+    },
+    {
+      "id": "sunkern",
+      "pokedexId": 191,
+      "type": "grass",
+      "types": [
+        "grass"
+      ],
+      "baseStats": {
+        "hp": 30,
+        "attack": 30,
+        "defense": 30,
+        "specialAttack": 30,
+        "specialDefense": 30,
+        "speed": 30
+      },
+      "name": "Sunkern"
+    },
+    {
+      "id": "yanma",
+      "pokedexId": 193,
+      "type": "bug",
+      "types": [
+        "bug",
+        "flying"
+      ],
+      "baseStats": {
+        "hp": 65,
+        "attack": 65,
+        "defense": 45,
+        "specialAttack": 75,
+        "specialDefense": 45,
+        "speed": 95
+      },
+      "name": "Yanma"
+    },
+    {
+      "id": "wooper",
+      "pokedexId": 194,
+      "type": "water",
+      "types": [
+        "water",
+        "ground"
+      ],
+      "baseStats": {
+        "hp": 55,
+        "attack": 45,
+        "defense": 45,
+        "specialAttack": 25,
+        "specialDefense": 25,
+        "speed": 15
+      },
+      "name": "Wooper"
+    },
+    {
+      "id": "murkrow",
+      "pokedexId": 198,
+      "type": "dark",
+      "types": [
+        "dark",
+        "flying"
+      ],
+      "baseStats": {
+        "hp": 60,
+        "attack": 85,
+        "defense": 42,
+        "specialAttack": 85,
+        "specialDefense": 42,
+        "speed": 91
+      },
+      "name": "Murkrow"
+    },
+    {
+      "id": "misdreavus",
+      "pokedexId": 200,
+      "type": "ghost",
+      "types": [
+        "ghost"
+      ],
+      "baseStats": {
+        "hp": 60,
+        "attack": 60,
+        "defense": 60,
+        "specialAttack": 85,
+        "specialDefense": 85,
+        "speed": 85
+      },
+      "name": "Misdreavus"
+    },
+    {
+      "id": "unown",
+      "pokedexId": 201,
+      "type": "psychic",
+      "types": [
+        "psychic"
+      ],
+      "baseStats": {
+        "hp": 48,
+        "attack": 72,
+        "defense": 48,
+        "specialAttack": 72,
+        "specialDefense": 48,
+        "speed": 48
+      },
+      "name": "Unown"
+    },
+    {
+      "id": "wobbuffet",
+      "pokedexId": 202,
+      "type": "psychic",
+      "types": [
+        "psychic"
+      ],
+      "baseStats": {
+        "hp": 190,
+        "attack": 33,
+        "defense": 58,
+        "specialAttack": 33,
+        "specialDefense": 58,
+        "speed": 33
+      },
+      "name": "Wobbuffet"
+    },
+    {
+      "id": "girafarig",
+      "pokedexId": 203,
+      "type": "normal",
+      "types": [
+        "normal",
+        "psychic"
+      ],
+      "baseStats": {
+        "hp": 70,
+        "attack": 80,
+        "defense": 65,
+        "specialAttack": 90,
+        "specialDefense": 65,
+        "speed": 85
+      },
+      "name": "Girafarig"
+    },
+    {
+      "id": "pineco",
+      "pokedexId": 204,
+      "type": "bug",
+      "types": [
+        "bug"
+      ],
+      "baseStats": {
+        "hp": 50,
+        "attack": 65,
+        "defense": 90,
+        "specialAttack": 35,
+        "specialDefense": 35,
+        "speed": 15
+      },
+      "name": "Pineco"
+    },
+    {
+      "id": "dunsparce",
+      "pokedexId": 206,
+      "type": "normal",
+      "types": [
+        "normal"
+      ],
+      "baseStats": {
+        "hp": 100,
+        "attack": 70,
+        "defense": 70,
+        "specialAttack": 65,
+        "specialDefense": 65,
+        "speed": 45
+      },
+      "name": "Dunsparce"
+    },
+    {
+      "id": "gligar",
+      "pokedexId": 207,
+      "type": "ground",
+      "types": [
+        "ground",
+        "flying"
+      ],
+      "baseStats": {
+        "hp": 65,
+        "attack": 75,
+        "defense": 105,
+        "specialAttack": 35,
+        "specialDefense": 65,
+        "speed": 85
+      },
+      "name": "Gligar"
+    },
+    {
+      "id": "snubbull",
+      "pokedexId": 209,
+      "type": "fairy",
+      "types": [
+        "fairy"
+      ],
+      "baseStats": {
+        "hp": 60,
+        "attack": 80,
+        "defense": 50,
+        "specialAttack": 40,
+        "specialDefense": 40,
+        "speed": 30
+      },
+      "name": "Snubbull"
+    },
+    {
+      "id": "qwilfish",
+      "pokedexId": 211,
+      "type": "water",
+      "types": [
+        "water",
+        "poison"
+      ],
+      "baseStats": {
+        "hp": 65,
+        "attack": 95,
+        "defense": 85,
+        "specialAttack": 55,
+        "specialDefense": 55,
+        "speed": 85
+      },
+      "name": "Qwilfish"
+    },
+    {
+      "id": "shuckle",
+      "pokedexId": 213,
+      "type": "bug",
+      "types": [
+        "bug",
+        "rock"
+      ],
+      "baseStats": {
+        "hp": 20,
+        "attack": 10,
+        "defense": 230,
+        "specialAttack": 10,
+        "specialDefense": 230,
+        "speed": 5
+      },
+      "name": "Shuckle"
+    },
+    {
+      "id": "heracross",
+      "pokedexId": 214,
+      "type": "bug",
+      "types": [
+        "bug",
+        "fighting"
+      ],
+      "baseStats": {
+        "hp": 80,
+        "attack": 125,
+        "defense": 75,
+        "specialAttack": 40,
+        "specialDefense": 95,
+        "speed": 85
+      },
+      "name": "Heracross"
+    },
+    {
+      "id": "sneasel",
+      "pokedexId": 215,
+      "type": "dark",
+      "types": [
+        "dark",
+        "ice"
+      ],
+      "baseStats": {
+        "hp": 55,
+        "attack": 95,
+        "defense": 55,
+        "specialAttack": 35,
+        "specialDefense": 75,
+        "speed": 115
+      },
+      "name": "Sneasel"
+    },
+    {
+      "id": "teddiursa",
+      "pokedexId": 216,
+      "type": "normal",
+      "types": [
+        "normal"
+      ],
+      "baseStats": {
+        "hp": 60,
+        "attack": 80,
+        "defense": 50,
+        "specialAttack": 50,
+        "specialDefense": 50,
+        "speed": 40
+      },
+      "name": "Teddiursa"
+    },
+    {
+      "id": "slugma",
+      "pokedexId": 218,
+      "type": "fire",
+      "types": [
+        "fire"
+      ],
+      "baseStats": {
+        "hp": 40,
+        "attack": 40,
+        "defense": 40,
+        "specialAttack": 70,
+        "specialDefense": 40,
+        "speed": 20
+      },
+      "name": "Slugma"
+    },
+    {
+      "id": "swinub",
+      "pokedexId": 220,
+      "type": "ice",
+      "types": [
+        "ice",
+        "ground"
+      ],
+      "baseStats": {
+        "hp": 50,
+        "attack": 50,
+        "defense": 40,
+        "specialAttack": 30,
+        "specialDefense": 30,
+        "speed": 50
+      },
+      "name": "Swinub"
+    },
+    {
+      "id": "corsola",
+      "pokedexId": 222,
+      "type": "water",
+      "types": [
+        "water",
+        "rock"
+      ],
+      "baseStats": {
+        "hp": 65,
+        "attack": 55,
+        "defense": 95,
+        "specialAttack": 65,
+        "specialDefense": 95,
+        "speed": 35
+      },
+      "name": "Corsola"
+    },
+    {
+      "id": "remoraid",
+      "pokedexId": 223,
+      "type": "water",
+      "types": [
+        "water"
+      ],
+      "baseStats": {
+        "hp": 35,
+        "attack": 65,
+        "defense": 35,
+        "specialAttack": 65,
+        "specialDefense": 35,
+        "speed": 65
+      },
+      "name": "Remoraid"
+    },
+    {
+      "id": "delibird",
+      "pokedexId": 225,
+      "type": "ice",
+      "types": [
+        "ice",
+        "flying"
+      ],
+      "baseStats": {
+        "hp": 45,
+        "attack": 55,
+        "defense": 45,
+        "specialAttack": 65,
+        "specialDefense": 45,
+        "speed": 75
+      },
+      "name": "Delibird"
+    },
+    {
+      "id": "mantine",
+      "pokedexId": 226,
+      "type": "water",
+      "types": [
+        "water",
+        "flying"
+      ],
+      "baseStats": {
+        "hp": 85,
+        "attack": 40,
+        "defense": 70,
+        "specialAttack": 80,
+        "specialDefense": 140,
+        "speed": 70
+      },
+      "name": "Mantine"
+    },
+    {
+      "id": "skarmory",
+      "pokedexId": 227,
+      "type": "steel",
+      "types": [
+        "steel",
+        "flying"
+      ],
+      "baseStats": {
+        "hp": 65,
+        "attack": 80,
+        "defense": 140,
+        "specialAttack": 40,
+        "specialDefense": 70,
+        "speed": 70
+      },
+      "name": "Skarmory"
+    },
+    {
+      "id": "houndour",
+      "pokedexId": 228,
+      "type": "dark",
+      "types": [
+        "dark",
+        "fire"
+      ],
+      "baseStats": {
+        "hp": 45,
+        "attack": 60,
+        "defense": 30,
+        "specialAttack": 80,
+        "specialDefense": 50,
+        "speed": 65
+      },
+      "name": "Houndour"
+    },
+    {
+      "id": "phanpy",
+      "pokedexId": 231,
+      "type": "ground",
+      "types": [
+        "ground"
+      ],
+      "baseStats": {
+        "hp": 90,
+        "attack": 60,
+        "defense": 60,
+        "specialAttack": 40,
+        "specialDefense": 40,
+        "speed": 40
+      },
+      "name": "Phanpy"
+    },
+    {
+      "id": "stantler",
+      "pokedexId": 234,
+      "type": "normal",
+      "types": [
+        "normal"
+      ],
+      "baseStats": {
+        "hp": 73,
+        "attack": 95,
+        "defense": 62,
+        "specialAttack": 85,
+        "specialDefense": 65,
+        "speed": 85
+      },
+      "name": "Stantler"
+    },
+    {
+      "id": "smeargle",
+      "pokedexId": 235,
+      "type": "normal",
+      "types": [
+        "normal"
+      ],
+      "baseStats": {
+        "hp": 55,
+        "attack": 20,
+        "defense": 35,
+        "specialAttack": 20,
+        "specialDefense": 45,
+        "speed": 75
+      },
+      "name": "Smeargle"
+    },
+    {
+      "id": "hitmontop",
+      "pokedexId": 237,
+      "type": "fighting",
+      "types": [
+        "fighting"
+      ],
+      "baseStats": {
+        "hp": 50,
+        "attack": 95,
+        "defense": 95,
+        "specialAttack": 35,
+        "specialDefense": 110,
+        "speed": 70
+      },
+      "name": "Hitmontop"
+    },
+    {
+      "id": "miltank",
+      "pokedexId": 241,
+      "type": "normal",
+      "types": [
+        "normal"
+      ],
+      "baseStats": {
+        "hp": 95,
+        "attack": 80,
+        "defense": 105,
+        "specialAttack": 40,
+        "specialDefense": 70,
+        "speed": 100
+      },
+      "name": "Miltank"
+    },
+    {
+      "id": "larvitar",
+      "pokedexId": 246,
+      "type": "rock",
+      "types": [
+        "rock",
+        "ground"
+      ],
+      "baseStats": {
+        "hp": 50,
+        "attack": 64,
+        "defense": 50,
+        "specialAttack": 45,
+        "specialDefense": 50,
+        "speed": 41
+      },
+      "name": "Larvitar"
+    },
+    {
+      "id": "treecko",
+      "pokedexId": 252,
+      "type": "grass",
+      "types": [
+        "grass"
+      ],
+      "baseStats": {
+        "hp": 40,
+        "attack": 45,
+        "defense": 35,
+        "specialAttack": 65,
+        "specialDefense": 55,
+        "speed": 70
+      },
+      "name": "Treecko"
+    },
+    {
+      "id": "torchic",
+      "pokedexId": 255,
+      "type": "fire",
+      "types": [
+        "fire"
+      ],
+      "baseStats": {
+        "hp": 45,
+        "attack": 60,
+        "defense": 40,
+        "specialAttack": 70,
+        "specialDefense": 50,
+        "speed": 45
+      },
+      "name": "Torchic"
+    },
+    {
+      "id": "mudkip",
+      "pokedexId": 258,
+      "type": "water",
+      "types": [
+        "water"
+      ],
+      "baseStats": {
+        "hp": 50,
+        "attack": 70,
+        "defense": 50,
+        "specialAttack": 50,
+        "specialDefense": 50,
+        "speed": 40
+      },
+      "name": "Mudkip"
+    },
+    {
+      "id": "poochyena",
+      "pokedexId": 261,
+      "type": "dark",
+      "types": [
+        "dark"
+      ],
+      "baseStats": {
+        "hp": 35,
+        "attack": 55,
+        "defense": 35,
+        "specialAttack": 30,
+        "specialDefense": 30,
+        "speed": 35
+      },
+      "name": "Poochyena"
+    },
+    {
+      "id": "zigzagoon",
+      "pokedexId": 263,
+      "type": "normal",
+      "types": [
+        "normal"
+      ],
+      "baseStats": {
+        "hp": 38,
+        "attack": 30,
+        "defense": 41,
+        "specialAttack": 30,
+        "specialDefense": 41,
+        "speed": 60
+      },
+      "name": "Zigzagoon"
+    },
+    {
+      "id": "wurmple",
+      "pokedexId": 265,
+      "type": "bug",
+      "types": [
+        "bug"
+      ],
+      "baseStats": {
+        "hp": 45,
+        "attack": 45,
+        "defense": 35,
+        "specialAttack": 20,
+        "specialDefense": 30,
+        "speed": 20
+      },
+      "name": "Wurmple"
+    },
+    {
+      "id": "lotad",
+      "pokedexId": 270,
+      "type": "water",
+      "types": [
+        "water",
+        "grass"
+      ],
+      "baseStats": {
+        "hp": 40,
+        "attack": 30,
+        "defense": 30,
+        "specialAttack": 40,
+        "specialDefense": 50,
+        "speed": 30
+      },
+      "name": "Lotad"
+    },
+    {
+      "id": "seedot",
+      "pokedexId": 273,
+      "type": "grass",
+      "types": [
+        "grass"
+      ],
+      "baseStats": {
+        "hp": 40,
+        "attack": 40,
+        "defense": 50,
+        "specialAttack": 30,
+        "specialDefense": 30,
+        "speed": 30
+      },
+      "name": "Seedot"
+    },
+    {
+      "id": "taillow",
+      "pokedexId": 276,
+      "type": "normal",
+      "types": [
+        "normal",
+        "flying"
+      ],
+      "baseStats": {
+        "hp": 40,
+        "attack": 55,
+        "defense": 30,
+        "specialAttack": 30,
+        "specialDefense": 30,
+        "speed": 85
+      },
+      "name": "Taillow"
+    },
+    {
+      "id": "wingull",
+      "pokedexId": 278,
+      "type": "water",
+      "types": [
+        "water",
+        "flying"
+      ],
+      "baseStats": {
+        "hp": 40,
+        "attack": 30,
+        "defense": 30,
+        "specialAttack": 55,
+        "specialDefense": 30,
+        "speed": 85
+      },
+      "name": "Wingull"
+    },
+    {
+      "id": "ralts",
+      "pokedexId": 280,
+      "type": "psychic",
+      "types": [
+        "psychic",
+        "fairy"
+      ],
+      "baseStats": {
+        "hp": 28,
+        "attack": 25,
+        "defense": 25,
+        "specialAttack": 45,
+        "specialDefense": 35,
+        "speed": 40
+      },
+      "name": "Ralts"
+    },
+    {
+      "id": "surskit",
+      "pokedexId": 283,
+      "type": "bug",
+      "types": [
+        "bug",
+        "water"
+      ],
+      "baseStats": {
+        "hp": 40,
+        "attack": 30,
+        "defense": 32,
+        "specialAttack": 50,
+        "specialDefense": 52,
+        "speed": 65
+      },
+      "name": "Surskit"
+    },
+    {
+      "id": "shroomish",
+      "pokedexId": 285,
+      "type": "grass",
+      "types": [
+        "grass"
+      ],
+      "baseStats": {
+        "hp": 60,
+        "attack": 40,
+        "defense": 60,
+        "specialAttack": 40,
+        "specialDefense": 60,
+        "speed": 35
+      },
+      "name": "Shroomish"
+    },
+    {
+      "id": "slakoth",
+      "pokedexId": 287,
+      "type": "normal",
+      "types": [
+        "normal"
+      ],
+      "baseStats": {
+        "hp": 60,
+        "attack": 60,
+        "defense": 60,
+        "specialAttack": 35,
+        "specialDefense": 35,
+        "speed": 30
+      },
+      "name": "Slakoth"
+    },
+    {
+      "id": "nincada",
+      "pokedexId": 290,
+      "type": "bug",
+      "types": [
+        "bug",
+        "ground"
+      ],
+      "baseStats": {
+        "hp": 31,
+        "attack": 45,
+        "defense": 90,
+        "specialAttack": 30,
+        "specialDefense": 30,
+        "speed": 40
+      },
+      "name": "Nincada"
+    },
+    {
+      "id": "whismur",
+      "pokedexId": 293,
+      "type": "normal",
+      "types": [
+        "normal"
+      ],
+      "baseStats": {
+        "hp": 64,
+        "attack": 51,
+        "defense": 23,
+        "specialAttack": 51,
+        "specialDefense": 23,
+        "speed": 28
+      },
+      "name": "Whismur"
+    },
+    {
+      "id": "makuhita",
+      "pokedexId": 296,
+      "type": "fighting",
+      "types": [
+        "fighting"
+      ],
+      "baseStats": {
+        "hp": 72,
+        "attack": 60,
+        "defense": 30,
+        "specialAttack": 20,
+        "specialDefense": 30,
+        "speed": 25
+      },
+      "name": "Makuhita"
+    },
+    {
+      "id": "nosepass",
+      "pokedexId": 299,
+      "type": "rock",
+      "types": [
+        "rock"
+      ],
+      "baseStats": {
+        "hp": 30,
+        "attack": 45,
+        "defense": 135,
+        "specialAttack": 45,
+        "specialDefense": 90,
+        "speed": 30
+      },
+      "name": "Nosepass"
+    },
+    {
+      "id": "skitty",
+      "pokedexId": 300,
+      "type": "normal",
+      "types": [
+        "normal"
+      ],
+      "baseStats": {
+        "hp": 50,
+        "attack": 45,
+        "defense": 45,
+        "specialAttack": 35,
+        "specialDefense": 35,
+        "speed": 50
+      },
+      "name": "Skitty"
+    },
+    {
+      "id": "sableye",
+      "pokedexId": 302,
+      "type": "dark",
+      "types": [
+        "dark",
+        "ghost"
+      ],
+      "baseStats": {
+        "hp": 50,
+        "attack": 75,
+        "defense": 75,
+        "specialAttack": 65,
+        "specialDefense": 65,
+        "speed": 50
+      },
+      "name": "Sableye"
+    },
+    {
+      "id": "mawile",
+      "pokedexId": 303,
+      "type": "steel",
+      "types": [
+        "steel",
+        "fairy"
+      ],
+      "baseStats": {
+        "hp": 50,
+        "attack": 85,
+        "defense": 85,
+        "specialAttack": 55,
+        "specialDefense": 55,
+        "speed": 50
+      },
+      "name": "Mawile"
+    },
+    {
+      "id": "aron",
+      "pokedexId": 304,
+      "type": "steel",
+      "types": [
+        "steel",
+        "rock"
+      ],
+      "baseStats": {
+        "hp": 50,
+        "attack": 70,
+        "defense": 100,
+        "specialAttack": 40,
+        "specialDefense": 40,
+        "speed": 30
+      },
+      "name": "Aron"
+    },
+    {
+      "id": "meditite",
+      "pokedexId": 307,
+      "type": "fighting",
+      "types": [
+        "fighting",
+        "psychic"
+      ],
+      "baseStats": {
+        "hp": 30,
+        "attack": 40,
+        "defense": 55,
+        "specialAttack": 40,
+        "specialDefense": 55,
+        "speed": 60
+      },
+      "name": "Meditite"
+    },
+    {
+      "id": "electrike",
+      "pokedexId": 309,
+      "type": "electric",
+      "types": [
+        "electric"
+      ],
+      "baseStats": {
+        "hp": 40,
+        "attack": 45,
+        "defense": 40,
+        "specialAttack": 65,
+        "specialDefense": 40,
+        "speed": 65
+      },
+      "name": "Electrike"
+    },
+    {
+      "id": "plusle",
+      "pokedexId": 311,
+      "type": "electric",
+      "types": [
+        "electric"
+      ],
+      "baseStats": {
+        "hp": 60,
+        "attack": 50,
+        "defense": 40,
+        "specialAttack": 85,
+        "specialDefense": 75,
+        "speed": 95
+      },
+      "name": "Plusle"
+    },
+    {
+      "id": "minun",
+      "pokedexId": 312,
+      "type": "electric",
+      "types": [
+        "electric"
+      ],
+      "baseStats": {
+        "hp": 60,
+        "attack": 40,
+        "defense": 50,
+        "specialAttack": 75,
+        "specialDefense": 85,
+        "speed": 95
+      },
+      "name": "Minun"
+    },
+    {
+      "id": "volbeat",
+      "pokedexId": 313,
+      "type": "bug",
+      "types": [
+        "bug"
+      ],
+      "baseStats": {
+        "hp": 65,
+        "attack": 73,
+        "defense": 75,
+        "specialAttack": 47,
+        "specialDefense": 85,
+        "speed": 85
+      },
+      "name": "Volbeat"
+    },
+    {
+      "id": "illumise",
+      "pokedexId": 314,
+      "type": "bug",
+      "types": [
+        "bug"
+      ],
+      "baseStats": {
+        "hp": 65,
+        "attack": 47,
+        "defense": 75,
+        "specialAttack": 73,
+        "specialDefense": 85,
+        "speed": 85
+      },
+      "name": "Illumise"
+    },
+    {
+      "id": "roselia",
+      "pokedexId": 315,
+      "type": "grass",
+      "types": [
+        "grass",
+        "poison"
+      ],
+      "baseStats": {
+        "hp": 50,
+        "attack": 60,
+        "defense": 45,
+        "specialAttack": 100,
+        "specialDefense": 80,
+        "speed": 65
+      },
+      "name": "Roselia"
+    },
+    {
+      "id": "gulpin",
+      "pokedexId": 316,
+      "type": "poison",
+      "types": [
+        "poison"
+      ],
+      "baseStats": {
+        "hp": 70,
+        "attack": 43,
+        "defense": 53,
+        "specialAttack": 43,
+        "specialDefense": 53,
+        "speed": 40
+      },
+      "name": "Gulpin"
+    },
+    {
+      "id": "carvanha",
+      "pokedexId": 318,
+      "type": "water",
+      "types": [
+        "water",
+        "dark"
+      ],
+      "baseStats": {
+        "hp": 45,
+        "attack": 90,
+        "defense": 20,
+        "specialAttack": 65,
+        "specialDefense": 20,
+        "speed": 65
+      },
+      "name": "Carvanha"
+    },
+    {
+      "id": "wailmer",
+      "pokedexId": 320,
+      "type": "water",
+      "types": [
+        "water"
+      ],
+      "baseStats": {
+        "hp": 130,
+        "attack": 70,
+        "defense": 35,
+        "specialAttack": 70,
+        "specialDefense": 35,
+        "speed": 60
+      },
+      "name": "Wailmer"
+    },
+    {
+      "id": "numel",
+      "pokedexId": 322,
+      "type": "fire",
+      "types": [
+        "fire",
+        "ground"
+      ],
+      "baseStats": {
+        "hp": 60,
+        "attack": 60,
+        "defense": 40,
+        "specialAttack": 65,
+        "specialDefense": 45,
+        "speed": 35
+      },
+      "name": "Numel"
+    },
+    {
+      "id": "torkoal",
+      "pokedexId": 324,
+      "type": "fire",
+      "types": [
+        "fire"
+      ],
+      "baseStats": {
+        "hp": 70,
+        "attack": 85,
+        "defense": 140,
+        "specialAttack": 85,
+        "specialDefense": 70,
+        "speed": 20
+      },
+      "name": "Torkoal"
+    },
+    {
+      "id": "spoink",
+      "pokedexId": 325,
+      "type": "psychic",
+      "types": [
+        "psychic"
+      ],
+      "baseStats": {
+        "hp": 60,
+        "attack": 25,
+        "defense": 35,
+        "specialAttack": 70,
+        "specialDefense": 80,
+        "speed": 60
+      },
+      "name": "Spoink"
+    },
+    {
+      "id": "spinda",
+      "pokedexId": 327,
+      "type": "normal",
+      "types": [
+        "normal"
+      ],
+      "baseStats": {
+        "hp": 60,
+        "attack": 60,
+        "defense": 60,
+        "specialAttack": 60,
+        "specialDefense": 60,
+        "speed": 60
+      },
+      "name": "Spinda"
+    },
+    {
+      "id": "trapinch",
+      "pokedexId": 328,
+      "type": "ground",
+      "types": [
+        "ground"
+      ],
+      "baseStats": {
+        "hp": 45,
+        "attack": 100,
+        "defense": 45,
+        "specialAttack": 45,
+        "specialDefense": 45,
+        "speed": 10
+      },
+      "name": "Trapinch"
+    },
+    {
+      "id": "cacnea",
+      "pokedexId": 331,
+      "type": "grass",
+      "types": [
+        "grass"
+      ],
+      "baseStats": {
+        "hp": 50,
+        "attack": 85,
+        "defense": 40,
+        "specialAttack": 85,
+        "specialDefense": 40,
+        "speed": 35
+      },
+      "name": "Cacnea"
+    },
+    {
+      "id": "swablu",
+      "pokedexId": 333,
+      "type": "normal",
+      "types": [
+        "normal",
+        "flying"
+      ],
+      "baseStats": {
+        "hp": 45,
+        "attack": 40,
+        "defense": 60,
+        "specialAttack": 40,
+        "specialDefense": 75,
+        "speed": 50
+      },
+      "name": "Swablu"
+    },
+    {
+      "id": "zangoose",
+      "pokedexId": 335,
+      "type": "normal",
+      "types": [
+        "normal"
+      ],
+      "baseStats": {
+        "hp": 73,
+        "attack": 115,
+        "defense": 60,
+        "specialAttack": 60,
+        "specialDefense": 60,
+        "speed": 90
+      },
+      "name": "Zangoose"
+    },
+    {
+      "id": "seviper",
+      "pokedexId": 336,
+      "type": "poison",
+      "types": [
+        "poison"
+      ],
+      "baseStats": {
+        "hp": 73,
+        "attack": 100,
+        "defense": 60,
+        "specialAttack": 100,
+        "specialDefense": 60,
+        "speed": 65
+      },
+      "name": "Seviper"
+    },
+    {
+      "id": "lunatone",
+      "pokedexId": 337,
+      "type": "rock",
+      "types": [
+        "rock",
+        "psychic"
+      ],
+      "baseStats": {
+        "hp": 90,
+        "attack": 55,
+        "defense": 65,
+        "specialAttack": 95,
+        "specialDefense": 85,
+        "speed": 70
+      },
+      "name": "Lunatone"
+    },
+    {
+      "id": "solrock",
+      "pokedexId": 338,
+      "type": "rock",
+      "types": [
+        "rock",
+        "psychic"
+      ],
+      "baseStats": {
+        "hp": 90,
+        "attack": 95,
+        "defense": 85,
+        "specialAttack": 55,
+        "specialDefense": 65,
+        "speed": 70
+      },
+      "name": "Solrock"
+    },
+    {
+      "id": "barboach",
+      "pokedexId": 339,
+      "type": "water",
+      "types": [
+        "water",
+        "ground"
+      ],
+      "baseStats": {
+        "hp": 50,
+        "attack": 48,
+        "defense": 43,
+        "specialAttack": 46,
+        "specialDefense": 41,
+        "speed": 60
+      },
+      "name": "Barboach"
+    },
+    {
+      "id": "corphish",
+      "pokedexId": 341,
+      "type": "water",
+      "types": [
+        "water"
+      ],
+      "baseStats": {
+        "hp": 43,
+        "attack": 80,
+        "defense": 65,
+        "specialAttack": 50,
+        "specialDefense": 35,
+        "speed": 35
+      },
+      "name": "Corphish"
+    },
+    {
+      "id": "baltoy",
+      "pokedexId": 343,
+      "type": "ground",
+      "types": [
+        "ground",
+        "psychic"
+      ],
+      "baseStats": {
+        "hp": 40,
+        "attack": 40,
+        "defense": 55,
+        "specialAttack": 40,
+        "specialDefense": 70,
+        "speed": 55
+      },
+      "name": "Baltoy"
+    },
+    {
+      "id": "lileep",
+      "pokedexId": 345,
+      "type": "rock",
+      "types": [
+        "rock",
+        "grass"
+      ],
+      "baseStats": {
+        "hp": 66,
+        "attack": 41,
+        "defense": 77,
+        "specialAttack": 61,
+        "specialDefense": 87,
+        "speed": 23
+      },
+      "name": "Lileep"
+    },
+    {
+      "id": "anorith",
+      "pokedexId": 347,
+      "type": "rock",
+      "types": [
+        "rock",
+        "bug"
+      ],
+      "baseStats": {
+        "hp": 45,
+        "attack": 95,
+        "defense": 50,
+        "specialAttack": 40,
+        "specialDefense": 50,
+        "speed": 75
+      },
+      "name": "Anorith"
+    },
+    {
+      "id": "feebas",
+      "pokedexId": 349,
+      "type": "water",
+      "types": [
+        "water"
+      ],
+      "baseStats": {
+        "hp": 20,
+        "attack": 15,
+        "defense": 20,
+        "specialAttack": 10,
+        "specialDefense": 55,
+        "speed": 80
+      },
+      "name": "Feebas"
+    },
+    {
+      "id": "castform",
+      "pokedexId": 351,
+      "type": "normal",
+      "types": [
+        "normal"
+      ],
+      "baseStats": {
+        "hp": 70,
+        "attack": 70,
+        "defense": 70,
+        "specialAttack": 70,
+        "specialDefense": 70,
+        "speed": 70
+      },
+      "name": "Castform"
+    },
+    {
+      "id": "kecleon",
+      "pokedexId": 352,
+      "type": "normal",
+      "types": [
+        "normal"
+      ],
+      "baseStats": {
+        "hp": 60,
+        "attack": 90,
+        "defense": 70,
+        "specialAttack": 60,
+        "specialDefense": 120,
+        "speed": 40
+      },
+      "name": "Kecleon"
+    },
+    {
+      "id": "shuppet",
+      "pokedexId": 353,
+      "type": "ghost",
+      "types": [
+        "ghost"
+      ],
+      "baseStats": {
+        "hp": 44,
+        "attack": 75,
+        "defense": 35,
+        "specialAttack": 63,
+        "specialDefense": 33,
+        "speed": 45
+      },
+      "name": "Shuppet"
+    },
+    {
+      "id": "duskull",
+      "pokedexId": 355,
+      "type": "ghost",
+      "types": [
+        "ghost"
+      ],
+      "baseStats": {
+        "hp": 20,
+        "attack": 40,
+        "defense": 90,
+        "specialAttack": 30,
+        "specialDefense": 90,
+        "speed": 25
+      },
+      "name": "Duskull"
+    },
+    {
+      "id": "tropius",
+      "pokedexId": 357,
+      "type": "grass",
+      "types": [
+        "grass",
+        "flying"
+      ],
+      "baseStats": {
+        "hp": 99,
+        "attack": 68,
+        "defense": 83,
+        "specialAttack": 72,
+        "specialDefense": 87,
+        "speed": 51
+      },
+      "name": "Tropius"
+    },
+    {
+      "id": "chimecho",
+      "pokedexId": 358,
+      "type": "psychic",
+      "types": [
+        "psychic"
+      ],
+      "baseStats": {
+        "hp": 75,
+        "attack": 50,
+        "defense": 80,
+        "specialAttack": 95,
+        "specialDefense": 90,
+        "speed": 65
+      },
+      "name": "Chimecho"
+    },
+    {
+      "id": "absol",
+      "pokedexId": 359,
+      "type": "dark",
+      "types": [
+        "dark"
+      ],
+      "baseStats": {
+        "hp": 65,
+        "attack": 130,
+        "defense": 60,
+        "specialAttack": 75,
+        "specialDefense": 60,
+        "speed": 75
+      },
+      "name": "Absol"
+    },
+    {
+      "id": "snorunt",
+      "pokedexId": 361,
+      "type": "ice",
+      "types": [
+        "ice"
+      ],
+      "baseStats": {
+        "hp": 50,
+        "attack": 50,
+        "defense": 50,
+        "specialAttack": 50,
+        "specialDefense": 50,
+        "speed": 50
+      },
+      "name": "Snorunt"
+    },
+    {
+      "id": "spheal",
+      "pokedexId": 363,
+      "type": "ice",
+      "types": [
+        "ice",
+        "water"
+      ],
+      "baseStats": {
+        "hp": 70,
+        "attack": 40,
+        "defense": 50,
+        "specialAttack": 55,
+        "specialDefense": 50,
+        "speed": 25
+      },
+      "name": "Spheal"
+    },
+    {
+      "id": "clamperl",
+      "pokedexId": 366,
+      "type": "water",
+      "types": [
+        "water"
+      ],
+      "baseStats": {
+        "hp": 35,
+        "attack": 64,
+        "defense": 85,
+        "specialAttack": 74,
+        "specialDefense": 55,
+        "speed": 32
+      },
+      "name": "Clamperl"
+    },
+    {
+      "id": "relicanth",
+      "pokedexId": 369,
+      "type": "water",
+      "types": [
+        "water",
+        "rock"
+      ],
+      "baseStats": {
+        "hp": 100,
+        "attack": 90,
+        "defense": 130,
+        "specialAttack": 45,
+        "specialDefense": 65,
+        "speed": 55
+      },
+      "name": "Relicanth"
+    },
+    {
+      "id": "luvdisc",
+      "pokedexId": 370,
+      "type": "water",
+      "types": [
+        "water"
+      ],
+      "baseStats": {
+        "hp": 43,
+        "attack": 30,
+        "defense": 55,
+        "specialAttack": 40,
+        "specialDefense": 65,
+        "speed": 97
+      },
+      "name": "Luvdisc"
+    },
+    {
+      "id": "bagon",
+      "pokedexId": 371,
+      "type": "dragon",
+      "types": [
+        "dragon"
+      ],
+      "baseStats": {
+        "hp": 45,
+        "attack": 75,
+        "defense": 60,
+        "specialAttack": 40,
+        "specialDefense": 30,
+        "speed": 50
+      },
+      "name": "Bagon"
+    },
+    {
+      "id": "beldum",
+      "pokedexId": 374,
+      "type": "steel",
+      "types": [
+        "steel",
+        "psychic"
+      ],
+      "baseStats": {
+        "hp": 40,
+        "attack": 55,
+        "defense": 80,
+        "specialAttack": 35,
+        "specialDefense": 60,
+        "speed": 30
+      },
+      "name": "Beldum"
+    },
+    {
+      "id": "turtwig",
+      "pokedexId": 387,
+      "type": "grass",
+      "types": [
+        "grass"
+      ],
+      "baseStats": {
+        "hp": 55,
+        "attack": 68,
+        "defense": 64,
+        "specialAttack": 45,
+        "specialDefense": 55,
+        "speed": 31
+      },
+      "name": "Turtwig"
+    },
+    {
+      "id": "chimchar",
+      "pokedexId": 390,
+      "type": "fire",
+      "types": [
+        "fire"
+      ],
+      "baseStats": {
+        "hp": 44,
+        "attack": 58,
+        "defense": 44,
+        "specialAttack": 58,
+        "specialDefense": 44,
+        "speed": 61
+      },
+      "name": "Chimchar"
+    },
+    {
+      "id": "piplup",
+      "pokedexId": 393,
+      "type": "water",
+      "types": [
+        "water"
+      ],
+      "baseStats": {
+        "hp": 53,
+        "attack": 51,
+        "defense": 53,
+        "specialAttack": 61,
+        "specialDefense": 56,
+        "speed": 40
+      },
+      "name": "Piplup"
+    },
+    {
+      "id": "starly",
+      "pokedexId": 396,
+      "type": "normal",
+      "types": [
+        "normal",
+        "flying"
+      ],
+      "baseStats": {
+        "hp": 40,
+        "attack": 55,
+        "defense": 30,
+        "specialAttack": 30,
+        "specialDefense": 30,
+        "speed": 60
+      },
+      "name": "Starly"
+    },
+    {
+      "id": "bidoof",
+      "pokedexId": 399,
+      "type": "normal",
+      "types": [
+        "normal"
+      ],
+      "baseStats": {
+        "hp": 59,
+        "attack": 45,
+        "defense": 40,
+        "specialAttack": 35,
+        "specialDefense": 40,
+        "speed": 31
+      },
+      "name": "Bidoof"
+    },
+    {
+      "id": "kricketot",
+      "pokedexId": 401,
+      "type": "bug",
+      "types": [
+        "bug"
+      ],
+      "baseStats": {
+        "hp": 37,
+        "attack": 25,
+        "defense": 41,
+        "specialAttack": 25,
+        "specialDefense": 41,
+        "speed": 25
+      },
+      "name": "Kricketot"
+    },
+    {
       "id": "shinx",
       "pokedexId": 403,
       "type": "electric",
+      "types": [
+        "electric"
+      ],
       "baseStats": {
         "hp": 45,
         "attack": 65,
@@ -701,65 +4352,452 @@
       "name": "Shinx"
     },
     {
-      "id": "blitzle",
-      "pokedexId": 522,
-      "type": "electric",
+      "id": "cranidos",
+      "pokedexId": 408,
+      "type": "rock",
+      "types": [
+        "rock"
+      ],
       "baseStats": {
-        "hp": 45,
-        "attack": 60,
-        "defense": 32,
-        "specialAttack": 50,
-        "specialDefense": 32,
-        "speed": 76
-      },
-      "name": "Blitzle"
-    },
-    {
-      "id": "tynamo",
-      "pokedexId": 602,
-      "type": "electric",
-      "baseStats": {
-        "hp": 35,
-        "attack": 55,
+        "hp": 67,
+        "attack": 125,
         "defense": 40,
-        "specialAttack": 45,
-        "specialDefense": 40,
-        "speed": 60
+        "specialAttack": 30,
+        "specialDefense": 30,
+        "speed": 58
       },
-      "name": "Tynamo"
+      "name": "Cranidos"
     },
     {
-      "id": "helioptile",
-      "pokedexId": 694,
-      "type": "electric",
+      "id": "shieldon",
+      "pokedexId": 410,
+      "type": "rock",
+      "types": [
+        "rock",
+        "steel"
+      ],
       "baseStats": {
-        "hp": 44,
-        "attack": 38,
-        "defense": 33,
-        "specialAttack": 61,
-        "specialDefense": 43,
+        "hp": 30,
+        "attack": 42,
+        "defense": 118,
+        "specialAttack": 42,
+        "specialDefense": 88,
+        "speed": 30
+      },
+      "name": "Shieldon"
+    },
+    {
+      "id": "burmy",
+      "pokedexId": 412,
+      "type": "bug",
+      "types": [
+        "bug"
+      ],
+      "baseStats": {
+        "hp": 40,
+        "attack": 29,
+        "defense": 45,
+        "specialAttack": 29,
+        "specialDefense": 45,
+        "speed": 36
+      },
+      "name": "Burmy"
+    },
+    {
+      "id": "combee",
+      "pokedexId": 415,
+      "type": "bug",
+      "types": [
+        "bug",
+        "flying"
+      ],
+      "baseStats": {
+        "hp": 30,
+        "attack": 30,
+        "defense": 42,
+        "specialAttack": 30,
+        "specialDefense": 42,
         "speed": 70
       },
-      "name": "Helioptile"
+      "name": "Combee"
     },
     {
-      "id": "gyarados",
-      "pokedexId": 130,
-      "type": "water",
+      "id": "pachirisu",
+      "pokedexId": 417,
+      "type": "electric",
+      "types": [
+        "electric"
+      ],
       "baseStats": {
-        "hp": 95,
-        "attack": 125,
-        "defense": 79,
-        "specialAttack": 60,
-        "specialDefense": 100,
-        "speed": 81
+        "hp": 60,
+        "attack": 45,
+        "defense": 70,
+        "specialAttack": 45,
+        "specialDefense": 90,
+        "speed": 95
       },
-      "name": "Gyarados"
+      "name": "Pachirisu"
+    },
+    {
+      "id": "buizel",
+      "pokedexId": 418,
+      "type": "water",
+      "types": [
+        "water"
+      ],
+      "baseStats": {
+        "hp": 55,
+        "attack": 65,
+        "defense": 35,
+        "specialAttack": 60,
+        "specialDefense": 30,
+        "speed": 85
+      },
+      "name": "Buizel"
+    },
+    {
+      "id": "cherubi",
+      "pokedexId": 420,
+      "type": "grass",
+      "types": [
+        "grass"
+      ],
+      "baseStats": {
+        "hp": 45,
+        "attack": 35,
+        "defense": 45,
+        "specialAttack": 62,
+        "specialDefense": 53,
+        "speed": 35
+      },
+      "name": "Cherubi"
+    },
+    {
+      "id": "shellos",
+      "pokedexId": 422,
+      "type": "water",
+      "types": [
+        "water"
+      ],
+      "baseStats": {
+        "hp": 76,
+        "attack": 48,
+        "defense": 48,
+        "specialAttack": 57,
+        "specialDefense": 62,
+        "speed": 34
+      },
+      "name": "Shellos"
+    },
+    {
+      "id": "drifloon",
+      "pokedexId": 425,
+      "type": "ghost",
+      "types": [
+        "ghost",
+        "flying"
+      ],
+      "baseStats": {
+        "hp": 90,
+        "attack": 50,
+        "defense": 34,
+        "specialAttack": 60,
+        "specialDefense": 44,
+        "speed": 70
+      },
+      "name": "Drifloon"
+    },
+    {
+      "id": "buneary",
+      "pokedexId": 427,
+      "type": "normal",
+      "types": [
+        "normal"
+      ],
+      "baseStats": {
+        "hp": 55,
+        "attack": 66,
+        "defense": 44,
+        "specialAttack": 44,
+        "specialDefense": 56,
+        "speed": 85
+      },
+      "name": "Buneary"
+    },
+    {
+      "id": "glameow",
+      "pokedexId": 431,
+      "type": "normal",
+      "types": [
+        "normal"
+      ],
+      "baseStats": {
+        "hp": 49,
+        "attack": 55,
+        "defense": 42,
+        "specialAttack": 42,
+        "specialDefense": 37,
+        "speed": 85
+      },
+      "name": "Glameow"
+    },
+    {
+      "id": "stunky",
+      "pokedexId": 434,
+      "type": "poison",
+      "types": [
+        "poison",
+        "dark"
+      ],
+      "baseStats": {
+        "hp": 63,
+        "attack": 63,
+        "defense": 47,
+        "specialAttack": 41,
+        "specialDefense": 41,
+        "speed": 74
+      },
+      "name": "Stunky"
+    },
+    {
+      "id": "bronzor",
+      "pokedexId": 436,
+      "type": "steel",
+      "types": [
+        "steel",
+        "psychic"
+      ],
+      "baseStats": {
+        "hp": 57,
+        "attack": 24,
+        "defense": 86,
+        "specialAttack": 24,
+        "specialDefense": 86,
+        "speed": 23
+      },
+      "name": "Bronzor"
+    },
+    {
+      "id": "chatot",
+      "pokedexId": 441,
+      "type": "normal",
+      "types": [
+        "normal",
+        "flying"
+      ],
+      "baseStats": {
+        "hp": 76,
+        "attack": 65,
+        "defense": 45,
+        "specialAttack": 92,
+        "specialDefense": 42,
+        "speed": 91
+      },
+      "name": "Chatot"
+    },
+    {
+      "id": "spiritomb",
+      "pokedexId": 442,
+      "type": "ghost",
+      "types": [
+        "ghost",
+        "dark"
+      ],
+      "baseStats": {
+        "hp": 50,
+        "attack": 92,
+        "defense": 108,
+        "specialAttack": 92,
+        "specialDefense": 108,
+        "speed": 35
+      },
+      "name": "Spiritomb"
+    },
+    {
+      "id": "gible",
+      "pokedexId": 443,
+      "type": "dragon",
+      "types": [
+        "dragon",
+        "ground"
+      ],
+      "baseStats": {
+        "hp": 58,
+        "attack": 70,
+        "defense": 45,
+        "specialAttack": 40,
+        "specialDefense": 45,
+        "speed": 42
+      },
+      "name": "Gible"
+    },
+    {
+      "id": "lucario",
+      "pokedexId": 448,
+      "type": "fighting",
+      "types": [
+        "fighting",
+        "steel"
+      ],
+      "baseStats": {
+        "hp": 70,
+        "attack": 110,
+        "defense": 70,
+        "specialAttack": 115,
+        "specialDefense": 70,
+        "speed": 90
+      },
+      "name": "Lucario"
+    },
+    {
+      "id": "hippopotas",
+      "pokedexId": 449,
+      "type": "ground",
+      "types": [
+        "ground"
+      ],
+      "baseStats": {
+        "hp": 68,
+        "attack": 72,
+        "defense": 78,
+        "specialAttack": 38,
+        "specialDefense": 42,
+        "speed": 32
+      },
+      "name": "Hippopotas"
+    },
+    {
+      "id": "skorupi",
+      "pokedexId": 451,
+      "type": "poison",
+      "types": [
+        "poison",
+        "bug"
+      ],
+      "baseStats": {
+        "hp": 40,
+        "attack": 50,
+        "defense": 90,
+        "specialAttack": 30,
+        "specialDefense": 55,
+        "speed": 65
+      },
+      "name": "Skorupi"
+    },
+    {
+      "id": "croagunk",
+      "pokedexId": 453,
+      "type": "poison",
+      "types": [
+        "poison",
+        "fighting"
+      ],
+      "baseStats": {
+        "hp": 48,
+        "attack": 61,
+        "defense": 40,
+        "specialAttack": 61,
+        "specialDefense": 40,
+        "speed": 50
+      },
+      "name": "Croagunk"
+    },
+    {
+      "id": "carnivine",
+      "pokedexId": 455,
+      "type": "grass",
+      "types": [
+        "grass"
+      ],
+      "baseStats": {
+        "hp": 74,
+        "attack": 100,
+        "defense": 72,
+        "specialAttack": 90,
+        "specialDefense": 72,
+        "speed": 46
+      },
+      "name": "Carnivine"
+    },
+    {
+      "id": "finneon",
+      "pokedexId": 456,
+      "type": "water",
+      "types": [
+        "water"
+      ],
+      "baseStats": {
+        "hp": 49,
+        "attack": 49,
+        "defense": 56,
+        "specialAttack": 49,
+        "specialDefense": 61,
+        "speed": 66
+      },
+      "name": "Finneon"
+    },
+    {
+      "id": "snover",
+      "pokedexId": 459,
+      "type": "grass",
+      "types": [
+        "grass",
+        "ice"
+      ],
+      "baseStats": {
+        "hp": 60,
+        "attack": 62,
+        "defense": 50,
+        "specialAttack": 62,
+        "specialDefense": 60,
+        "speed": 40
+      },
+      "name": "Snover"
+    },
+    {
+      "id": "rotom",
+      "pokedexId": 479,
+      "type": "electric",
+      "types": [
+        "electric",
+        "ghost"
+      ],
+      "baseStats": {
+        "hp": 50,
+        "attack": 50,
+        "defense": 77,
+        "specialAttack": 95,
+        "specialDefense": 77,
+        "speed": 91
+      },
+      "name": "Rotom"
+    },
+    {
+      "id": "lugia",
+      "pokedexId": 249,
+      "type": "psychic",
+      "types": [
+        "psychic",
+        "flying"
+      ],
+      "baseStats": {
+        "hp": 106,
+        "attack": 90,
+        "defense": 130,
+        "specialAttack": 90,
+        "specialDefense": 154,
+        "speed": 110
+      },
+      "name": "Lugia"
     },
     {
       "id": "moltres",
       "pokedexId": 146,
       "type": "fire",
+      "types": [
+        "fire",
+        "flying"
+      ],
       "baseStats": {
         "hp": 90,
         "attack": 100,
@@ -774,6 +4812,9 @@
       "id": "kyogre",
       "pokedexId": 382,
       "type": "water",
+      "types": [
+        "water"
+      ],
       "baseStats": {
         "hp": 100,
         "attack": 100,
@@ -788,6 +4829,10 @@
       "id": "virizion",
       "pokedexId": 640,
       "type": "grass",
+      "types": [
+        "grass",
+        "fighting"
+      ],
       "baseStats": {
         "hp": 91,
         "attack": 90,
@@ -802,6 +4847,10 @@
       "id": "zapdos",
       "pokedexId": 145,
       "type": "electric",
+      "types": [
+        "electric",
+        "flying"
+      ],
       "baseStats": {
         "hp": 90,
         "attack": 90,
@@ -813,93 +4862,187 @@
       "name": "Zapdos"
     },
     {
-      "id": "charmeleon",
-      "pokedexId": 5,
-      "type": "fire",
+      "id": "articuno",
+      "pokedexId": 144,
+      "type": "ice",
+      "types": [
+        "ice",
+        "flying"
+      ],
       "baseStats": {
-        "hp": 58,
-        "attack": 64,
-        "defense": 58,
-        "specialAttack": 80,
-        "specialDefense": 65,
-        "speed": 80
-      },
-      "name": "Charmeleon"
-    },
-    {
-      "id": "charizard",
-      "pokedexId": 6,
-      "type": "fire",
-      "baseStats": {
-        "hp": 78,
-        "attack": 84,
-        "defense": 78,
-        "specialAttack": 109,
-        "specialDefense": 85,
-        "speed": 100
-      },
-      "name": "Charizard"
-    },
-    {
-      "id": "ninetales",
-      "pokedexId": 38,
-      "type": "fire",
-      "baseStats": {
-        "hp": 73,
-        "attack": 76,
-        "defense": 75,
-        "specialAttack": 81,
-        "specialDefense": 100,
-        "speed": 100
-      },
-      "name": "Ninetales"
-    },
-    {
-      "id": "wartortle",
-      "pokedexId": 8,
-      "type": "water",
-      "baseStats": {
-        "hp": 59,
-        "attack": 63,
-        "defense": 80,
-        "specialAttack": 65,
-        "specialDefense": 80,
-        "speed": 58
-      },
-      "name": "Wartortle"
-    },
-    {
-      "id": "blastoise",
-      "pokedexId": 9,
-      "type": "water",
-      "baseStats": {
-        "hp": 79,
-        "attack": 83,
+        "hp": 90,
+        "attack": 85,
         "defense": 100,
-        "specialAttack": 85,
-        "specialDefense": 105,
-        "speed": 78
-      },
-      "name": "Blastoise"
-    },
-    {
-      "id": "golduck",
-      "pokedexId": 55,
-      "type": "water",
-      "baseStats": {
-        "hp": 80,
-        "attack": 82,
-        "defense": 78,
         "specialAttack": 95,
-        "specialDefense": 80,
+        "specialDefense": 125,
         "speed": 85
       },
-      "name": "Golduck"
+      "name": "Articuno"
+    },
+    {
+      "id": "mewtwo",
+      "pokedexId": 150,
+      "type": "psychic",
+      "types": [
+        "psychic"
+      ],
+      "baseStats": {
+        "hp": 106,
+        "attack": 110,
+        "defense": 90,
+        "specialAttack": 154,
+        "specialDefense": 90,
+        "speed": 130
+      },
+      "name": "Mewtwo"
+    },
+    {
+      "id": "regirock",
+      "pokedexId": 377,
+      "type": "rock",
+      "types": [
+        "rock"
+      ],
+      "baseStats": {
+        "hp": 80,
+        "attack": 100,
+        "defense": 200,
+        "specialAttack": 50,
+        "specialDefense": 100,
+        "speed": 50
+      },
+      "name": "Regirock"
+    },
+    {
+      "id": "registeel",
+      "pokedexId": 379,
+      "type": "steel",
+      "types": [
+        "steel"
+      ],
+      "baseStats": {
+        "hp": 80,
+        "attack": 75,
+        "defense": 150,
+        "specialAttack": 75,
+        "specialDefense": 150,
+        "speed": 50
+      },
+      "name": "Registeel"
+    },
+    {
+      "id": "rayquaza",
+      "pokedexId": 384,
+      "type": "dragon",
+      "types": [
+        "dragon",
+        "flying"
+      ],
+      "baseStats": {
+        "hp": 105,
+        "attack": 150,
+        "defense": 90,
+        "specialAttack": 150,
+        "specialDefense": 90,
+        "speed": 95
+      },
+      "name": "Rayquaza"
+    },
+    {
+      "id": "giratina-altered",
+      "pokedexId": 487,
+      "type": "ghost",
+      "types": [
+        "ghost",
+        "dragon"
+      ],
+      "baseStats": {
+        "hp": 150,
+        "attack": 100,
+        "defense": 120,
+        "specialAttack": 100,
+        "specialDefense": 120,
+        "speed": 90
+      },
+      "name": "Giratina"
+    },
+    {
+      "id": "groudon",
+      "pokedexId": 383,
+      "type": "ground",
+      "types": [
+        "ground"
+      ],
+      "baseStats": {
+        "hp": 100,
+        "attack": 150,
+        "defense": 140,
+        "specialAttack": 100,
+        "specialDefense": 90,
+        "speed": 90
+      },
+      "name": "Groudon"
+    },
+    {
+      "id": "darkrai",
+      "pokedexId": 491,
+      "type": "dark",
+      "types": [
+        "dark"
+      ],
+      "baseStats": {
+        "hp": 70,
+        "attack": 90,
+        "defense": 90,
+        "specialAttack": 135,
+        "specialDefense": 90,
+        "speed": 125
+      },
+      "name": "Darkrai"
+    },
+    {
+      "id": "arceus",
+      "pokedexId": 493,
+      "type": "normal",
+      "types": [
+        "normal"
+      ],
+      "baseStats": {
+        "hp": 120,
+        "attack": 120,
+        "defense": 120,
+        "specialAttack": 120,
+        "specialDefense": 120,
+        "speed": 120
+      },
+      "name": "Arceus"
+    },
+    {
+      "id": "genesect",
+      "pokedexId": 649,
+      "type": "bug",
+      "types": [
+        "bug",
+        "steel"
+      ],
+      "baseStats": {
+        "hp": 71,
+        "attack": 120,
+        "defense": 95,
+        "specialAttack": 120,
+        "specialDefense": 95,
+        "speed": 99
+      },
+      "name": "Genesect"
     },
     {
       "id": "ivysaur",
       "pokedexId": 2,
       "type": "grass",
+      "types": [
+        "grass",
+        "poison"
+      ],
       "baseStats": {
         "hp": 60,
         "attack": 62,
@@ -914,6 +5057,10 @@
       "id": "venusaur",
       "pokedexId": 3,
       "type": "grass",
+      "types": [
+        "grass",
+        "poison"
+      ],
       "baseStats": {
         "hp": 80,
         "attack": 82,
@@ -925,9 +5072,433 @@
       "name": "Venusaur"
     },
     {
+      "id": "charmeleon",
+      "pokedexId": 5,
+      "type": "fire",
+      "types": [
+        "fire"
+      ],
+      "baseStats": {
+        "hp": 58,
+        "attack": 64,
+        "defense": 58,
+        "specialAttack": 80,
+        "specialDefense": 65,
+        "speed": 80
+      },
+      "name": "Charmeleon"
+    },
+    {
+      "id": "charizard",
+      "pokedexId": 6,
+      "type": "fire",
+      "types": [
+        "fire",
+        "flying"
+      ],
+      "baseStats": {
+        "hp": 78,
+        "attack": 84,
+        "defense": 78,
+        "specialAttack": 109,
+        "specialDefense": 85,
+        "speed": 100
+      },
+      "name": "Charizard"
+    },
+    {
+      "id": "wartortle",
+      "pokedexId": 8,
+      "type": "water",
+      "types": [
+        "water"
+      ],
+      "baseStats": {
+        "hp": 59,
+        "attack": 63,
+        "defense": 80,
+        "specialAttack": 65,
+        "specialDefense": 80,
+        "speed": 58
+      },
+      "name": "Wartortle"
+    },
+    {
+      "id": "blastoise",
+      "pokedexId": 9,
+      "type": "water",
+      "types": [
+        "water"
+      ],
+      "baseStats": {
+        "hp": 79,
+        "attack": 83,
+        "defense": 100,
+        "specialAttack": 85,
+        "specialDefense": 105,
+        "speed": 78
+      },
+      "name": "Blastoise"
+    },
+    {
+      "id": "metapod",
+      "pokedexId": 11,
+      "type": "bug",
+      "types": [
+        "bug"
+      ],
+      "baseStats": {
+        "hp": 50,
+        "attack": 20,
+        "defense": 55,
+        "specialAttack": 25,
+        "specialDefense": 25,
+        "speed": 30
+      },
+      "name": "Metapod"
+    },
+    {
+      "id": "butterfree",
+      "pokedexId": 12,
+      "type": "bug",
+      "types": [
+        "bug",
+        "flying"
+      ],
+      "baseStats": {
+        "hp": 60,
+        "attack": 45,
+        "defense": 50,
+        "specialAttack": 90,
+        "specialDefense": 80,
+        "speed": 70
+      },
+      "name": "Butterfree"
+    },
+    {
+      "id": "kakuna",
+      "pokedexId": 14,
+      "type": "bug",
+      "types": [
+        "bug",
+        "poison"
+      ],
+      "baseStats": {
+        "hp": 45,
+        "attack": 25,
+        "defense": 50,
+        "specialAttack": 25,
+        "specialDefense": 25,
+        "speed": 35
+      },
+      "name": "Kakuna"
+    },
+    {
+      "id": "beedrill",
+      "pokedexId": 15,
+      "type": "bug",
+      "types": [
+        "bug",
+        "poison"
+      ],
+      "baseStats": {
+        "hp": 65,
+        "attack": 90,
+        "defense": 40,
+        "specialAttack": 45,
+        "specialDefense": 80,
+        "speed": 75
+      },
+      "name": "Beedrill"
+    },
+    {
+      "id": "pidgeotto",
+      "pokedexId": 17,
+      "type": "normal",
+      "types": [
+        "normal",
+        "flying"
+      ],
+      "baseStats": {
+        "hp": 63,
+        "attack": 60,
+        "defense": 55,
+        "specialAttack": 50,
+        "specialDefense": 50,
+        "speed": 71
+      },
+      "name": "Pidgeotto"
+    },
+    {
+      "id": "pidgeot",
+      "pokedexId": 18,
+      "type": "normal",
+      "types": [
+        "normal",
+        "flying"
+      ],
+      "baseStats": {
+        "hp": 83,
+        "attack": 80,
+        "defense": 75,
+        "specialAttack": 70,
+        "specialDefense": 70,
+        "speed": 101
+      },
+      "name": "Pidgeot"
+    },
+    {
+      "id": "raticate",
+      "pokedexId": 20,
+      "type": "normal",
+      "types": [
+        "normal"
+      ],
+      "baseStats": {
+        "hp": 55,
+        "attack": 81,
+        "defense": 60,
+        "specialAttack": 50,
+        "specialDefense": 70,
+        "speed": 97
+      },
+      "name": "Raticate"
+    },
+    {
+      "id": "fearow",
+      "pokedexId": 22,
+      "type": "normal",
+      "types": [
+        "normal",
+        "flying"
+      ],
+      "baseStats": {
+        "hp": 65,
+        "attack": 90,
+        "defense": 65,
+        "specialAttack": 61,
+        "specialDefense": 61,
+        "speed": 100
+      },
+      "name": "Fearow"
+    },
+    {
+      "id": "arbok",
+      "pokedexId": 24,
+      "type": "poison",
+      "types": [
+        "poison"
+      ],
+      "baseStats": {
+        "hp": 60,
+        "attack": 95,
+        "defense": 69,
+        "specialAttack": 65,
+        "specialDefense": 79,
+        "speed": 80
+      },
+      "name": "Arbok"
+    },
+    {
+      "id": "raichu",
+      "pokedexId": 26,
+      "type": "electric",
+      "types": [
+        "electric"
+      ],
+      "baseStats": {
+        "hp": 60,
+        "attack": 90,
+        "defense": 55,
+        "specialAttack": 90,
+        "specialDefense": 80,
+        "speed": 110
+      },
+      "name": "Raichu"
+    },
+    {
+      "id": "sandslash",
+      "pokedexId": 28,
+      "type": "ground",
+      "types": [
+        "ground"
+      ],
+      "baseStats": {
+        "hp": 75,
+        "attack": 100,
+        "defense": 110,
+        "specialAttack": 45,
+        "specialDefense": 55,
+        "speed": 65
+      },
+      "name": "Sandslash"
+    },
+    {
+      "id": "nidorina",
+      "pokedexId": 30,
+      "type": "poison",
+      "types": [
+        "poison"
+      ],
+      "baseStats": {
+        "hp": 70,
+        "attack": 62,
+        "defense": 67,
+        "specialAttack": 55,
+        "specialDefense": 55,
+        "speed": 56
+      },
+      "name": "Nidorina"
+    },
+    {
+      "id": "nidoqueen",
+      "pokedexId": 31,
+      "type": "poison",
+      "types": [
+        "poison",
+        "ground"
+      ],
+      "baseStats": {
+        "hp": 90,
+        "attack": 92,
+        "defense": 87,
+        "specialAttack": 75,
+        "specialDefense": 85,
+        "speed": 76
+      },
+      "name": "Nidoqueen"
+    },
+    {
+      "id": "nidorino",
+      "pokedexId": 33,
+      "type": "poison",
+      "types": [
+        "poison"
+      ],
+      "baseStats": {
+        "hp": 61,
+        "attack": 72,
+        "defense": 57,
+        "specialAttack": 55,
+        "specialDefense": 55,
+        "speed": 65
+      },
+      "name": "Nidorino"
+    },
+    {
+      "id": "nidoking",
+      "pokedexId": 34,
+      "type": "poison",
+      "types": [
+        "poison",
+        "ground"
+      ],
+      "baseStats": {
+        "hp": 81,
+        "attack": 102,
+        "defense": 77,
+        "specialAttack": 85,
+        "specialDefense": 75,
+        "speed": 85
+      },
+      "name": "Nidoking"
+    },
+    {
+      "id": "clefable",
+      "pokedexId": 36,
+      "type": "fairy",
+      "types": [
+        "fairy"
+      ],
+      "baseStats": {
+        "hp": 95,
+        "attack": 70,
+        "defense": 73,
+        "specialAttack": 95,
+        "specialDefense": 90,
+        "speed": 60
+      },
+      "name": "Clefable"
+    },
+    {
+      "id": "ninetales",
+      "pokedexId": 38,
+      "type": "fire",
+      "types": [
+        "fire"
+      ],
+      "baseStats": {
+        "hp": 73,
+        "attack": 76,
+        "defense": 75,
+        "specialAttack": 81,
+        "specialDefense": 100,
+        "speed": 100
+      },
+      "name": "Ninetales"
+    },
+    {
+      "id": "wigglytuff",
+      "pokedexId": 40,
+      "type": "normal",
+      "types": [
+        "normal",
+        "fairy"
+      ],
+      "baseStats": {
+        "hp": 140,
+        "attack": 70,
+        "defense": 45,
+        "specialAttack": 85,
+        "specialDefense": 50,
+        "speed": 45
+      },
+      "name": "Wigglytuff"
+    },
+    {
+      "id": "golbat",
+      "pokedexId": 42,
+      "type": "poison",
+      "types": [
+        "poison",
+        "flying"
+      ],
+      "baseStats": {
+        "hp": 75,
+        "attack": 80,
+        "defense": 70,
+        "specialAttack": 65,
+        "specialDefense": 75,
+        "speed": 90
+      },
+      "name": "Golbat"
+    },
+    {
+      "id": "crobat",
+      "pokedexId": 169,
+      "type": "poison",
+      "types": [
+        "poison",
+        "flying"
+      ],
+      "baseStats": {
+        "hp": 85,
+        "attack": 90,
+        "defense": 80,
+        "specialAttack": 70,
+        "specialDefense": 80,
+        "speed": 130
+      },
+      "name": "Crobat"
+    },
+    {
       "id": "gloom",
       "pokedexId": 44,
       "type": "grass",
+      "types": [
+        "grass",
+        "poison"
+      ],
       "baseStats": {
         "hp": 60,
         "attack": 65,
@@ -942,6 +5513,10 @@
       "id": "vileplume",
       "pokedexId": 45,
       "type": "grass",
+      "types": [
+        "grass",
+        "poison"
+      ],
       "baseStats": {
         "hp": 75,
         "attack": 80,
@@ -953,51 +5528,116 @@
       "name": "Vileplume"
     },
     {
-      "id": "raichu",
-      "pokedexId": 26,
-      "type": "electric",
+      "id": "parasect",
+      "pokedexId": 47,
+      "type": "bug",
+      "types": [
+        "bug",
+        "grass"
+      ],
       "baseStats": {
         "hp": 60,
-        "attack": 90,
-        "defense": 55,
-        "specialAttack": 90,
+        "attack": 95,
+        "defense": 80,
+        "specialAttack": 60,
         "specialDefense": 80,
-        "speed": 110
+        "speed": 30
       },
-      "name": "Raichu"
+      "name": "Parasect"
     },
     {
-      "id": "magneton",
-      "pokedexId": 82,
-      "type": "electric",
-      "baseStats": {
-        "hp": 50,
-        "attack": 60,
-        "defense": 95,
-        "specialAttack": 120,
-        "specialDefense": 70,
-        "speed": 70
-      },
-      "name": "Magneton"
-    },
-    {
-      "id": "magnezone",
-      "pokedexId": 462,
-      "type": "electric",
+      "id": "venomoth",
+      "pokedexId": 49,
+      "type": "bug",
+      "types": [
+        "bug",
+        "poison"
+      ],
       "baseStats": {
         "hp": 70,
-        "attack": 70,
-        "defense": 115,
-        "specialAttack": 130,
-        "specialDefense": 90,
-        "speed": 60
+        "attack": 65,
+        "defense": 60,
+        "specialAttack": 90,
+        "specialDefense": 75,
+        "speed": 90
       },
-      "name": "Magnezone"
+      "name": "Venomoth"
+    },
+    {
+      "id": "dugtrio",
+      "pokedexId": 51,
+      "type": "ground",
+      "types": [
+        "ground"
+      ],
+      "baseStats": {
+        "hp": 35,
+        "attack": 100,
+        "defense": 50,
+        "specialAttack": 50,
+        "specialDefense": 70,
+        "speed": 120
+      },
+      "name": "Dugtrio"
+    },
+    {
+      "id": "persian",
+      "pokedexId": 53,
+      "type": "normal",
+      "types": [
+        "normal"
+      ],
+      "baseStats": {
+        "hp": 65,
+        "attack": 70,
+        "defense": 60,
+        "specialAttack": 65,
+        "specialDefense": 65,
+        "speed": 115
+      },
+      "name": "Persian"
+    },
+    {
+      "id": "golduck",
+      "pokedexId": 55,
+      "type": "water",
+      "types": [
+        "water"
+      ],
+      "baseStats": {
+        "hp": 80,
+        "attack": 82,
+        "defense": 78,
+        "specialAttack": 95,
+        "specialDefense": 80,
+        "speed": 85
+      },
+      "name": "Golduck"
+    },
+    {
+      "id": "primeape",
+      "pokedexId": 57,
+      "type": "fighting",
+      "types": [
+        "fighting"
+      ],
+      "baseStats": {
+        "hp": 65,
+        "attack": 105,
+        "defense": 60,
+        "specialAttack": 60,
+        "specialDefense": 70,
+        "speed": 95
+      },
+      "name": "Primeape"
     },
     {
       "id": "arcanine",
       "pokedexId": 59,
       "type": "fire",
+      "types": [
+        "fire"
+      ],
       "baseStats": {
         "hp": 90,
         "attack": 110,
@@ -1009,23 +5649,12 @@
       "name": "Arcanine"
     },
     {
-      "id": "rapidash",
-      "pokedexId": 78,
-      "type": "fire",
-      "baseStats": {
-        "hp": 65,
-        "attack": 100,
-        "defense": 70,
-        "specialAttack": 80,
-        "specialDefense": 80,
-        "speed": 105
-      },
-      "name": "Rapidash"
-    },
-    {
       "id": "poliwhirl",
       "pokedexId": 61,
       "type": "water",
+      "types": [
+        "water"
+      ],
       "baseStats": {
         "hp": 65,
         "attack": 65,
@@ -1040,6 +5669,10 @@
       "id": "poliwrath",
       "pokedexId": 62,
       "type": "water",
+      "types": [
+        "water",
+        "fighting"
+      ],
       "baseStats": {
         "hp": 90,
         "attack": 95,
@@ -1051,37 +5684,81 @@
       "name": "Poliwrath"
     },
     {
-      "id": "seadra",
-      "pokedexId": 117,
-      "type": "water",
+      "id": "kadabra",
+      "pokedexId": 64,
+      "type": "psychic",
+      "types": [
+        "psychic"
+      ],
       "baseStats": {
-        "hp": 55,
-        "attack": 65,
-        "defense": 95,
-        "specialAttack": 95,
-        "specialDefense": 45,
-        "speed": 85
+        "hp": 40,
+        "attack": 35,
+        "defense": 30,
+        "specialAttack": 120,
+        "specialDefense": 70,
+        "speed": 105
       },
-      "name": "Seadra"
+      "name": "Kadabra"
     },
     {
-      "id": "kingdra",
-      "pokedexId": 230,
-      "type": "water",
+      "id": "alakazam",
+      "pokedexId": 65,
+      "type": "psychic",
+      "types": [
+        "psychic"
+      ],
       "baseStats": {
-        "hp": 75,
-        "attack": 95,
-        "defense": 95,
-        "specialAttack": 95,
+        "hp": 55,
+        "attack": 50,
+        "defense": 45,
+        "specialAttack": 135,
         "specialDefense": 95,
-        "speed": 85
+        "speed": 120
       },
-      "name": "Kingdra"
+      "name": "Alakazam"
+    },
+    {
+      "id": "machoke",
+      "pokedexId": 67,
+      "type": "fighting",
+      "types": [
+        "fighting"
+      ],
+      "baseStats": {
+        "hp": 80,
+        "attack": 100,
+        "defense": 70,
+        "specialAttack": 50,
+        "specialDefense": 60,
+        "speed": 45
+      },
+      "name": "Machoke"
+    },
+    {
+      "id": "machamp",
+      "pokedexId": 68,
+      "type": "fighting",
+      "types": [
+        "fighting"
+      ],
+      "baseStats": {
+        "hp": 90,
+        "attack": 130,
+        "defense": 80,
+        "specialAttack": 65,
+        "specialDefense": 85,
+        "speed": 55
+      },
+      "name": "Machamp"
     },
     {
       "id": "weepinbell",
       "pokedexId": 70,
       "type": "grass",
+      "types": [
+        "grass",
+        "poison"
+      ],
       "baseStats": {
         "hp": 65,
         "attack": 90,
@@ -1096,6 +5773,10 @@
       "id": "victreebel",
       "pokedexId": 71,
       "type": "grass",
+      "types": [
+        "grass",
+        "poison"
+      ],
       "baseStats": {
         "hp": 80,
         "attack": 105,
@@ -1107,23 +5788,296 @@
       "name": "Victreebel"
     },
     {
-      "id": "exeggutor",
-      "pokedexId": 103,
-      "type": "grass",
+      "id": "tentacruel",
+      "pokedexId": 73,
+      "type": "water",
+      "types": [
+        "water",
+        "poison"
+      ],
+      "baseStats": {
+        "hp": 80,
+        "attack": 70,
+        "defense": 65,
+        "specialAttack": 80,
+        "specialDefense": 120,
+        "speed": 100
+      },
+      "name": "Tentacruel"
+    },
+    {
+      "id": "graveler",
+      "pokedexId": 75,
+      "type": "rock",
+      "types": [
+        "rock",
+        "ground"
+      ],
+      "baseStats": {
+        "hp": 55,
+        "attack": 95,
+        "defense": 115,
+        "specialAttack": 45,
+        "specialDefense": 45,
+        "speed": 35
+      },
+      "name": "Graveler"
+    },
+    {
+      "id": "golem",
+      "pokedexId": 76,
+      "type": "rock",
+      "types": [
+        "rock",
+        "ground"
+      ],
+      "baseStats": {
+        "hp": 80,
+        "attack": 120,
+        "defense": 130,
+        "specialAttack": 55,
+        "specialDefense": 65,
+        "speed": 45
+      },
+      "name": "Golem"
+    },
+    {
+      "id": "rapidash",
+      "pokedexId": 78,
+      "type": "fire",
+      "types": [
+        "fire"
+      ],
+      "baseStats": {
+        "hp": 65,
+        "attack": 100,
+        "defense": 70,
+        "specialAttack": 80,
+        "specialDefense": 80,
+        "speed": 105
+      },
+      "name": "Rapidash"
+    },
+    {
+      "id": "slowbro",
+      "pokedexId": 80,
+      "type": "water",
+      "types": [
+        "water",
+        "psychic"
+      ],
       "baseStats": {
         "hp": 95,
-        "attack": 95,
-        "defense": 85,
-        "specialAttack": 125,
-        "specialDefense": 75,
-        "speed": 55
+        "attack": 75,
+        "defense": 110,
+        "specialAttack": 100,
+        "specialDefense": 80,
+        "speed": 30
       },
-      "name": "Exeggutor"
+      "name": "Slowbro"
+    },
+    {
+      "id": "magneton",
+      "pokedexId": 82,
+      "type": "electric",
+      "types": [
+        "electric",
+        "steel"
+      ],
+      "baseStats": {
+        "hp": 50,
+        "attack": 60,
+        "defense": 95,
+        "specialAttack": 120,
+        "specialDefense": 70,
+        "speed": 70
+      },
+      "name": "Magneton"
+    },
+    {
+      "id": "magnezone",
+      "pokedexId": 462,
+      "type": "electric",
+      "types": [
+        "electric",
+        "steel"
+      ],
+      "baseStats": {
+        "hp": 70,
+        "attack": 70,
+        "defense": 115,
+        "specialAttack": 130,
+        "specialDefense": 90,
+        "speed": 60
+      },
+      "name": "Magnezone"
+    },
+    {
+      "id": "dodrio",
+      "pokedexId": 85,
+      "type": "normal",
+      "types": [
+        "normal",
+        "flying"
+      ],
+      "baseStats": {
+        "hp": 60,
+        "attack": 110,
+        "defense": 70,
+        "specialAttack": 60,
+        "specialDefense": 60,
+        "speed": 110
+      },
+      "name": "Dodrio"
+    },
+    {
+      "id": "dewgong",
+      "pokedexId": 87,
+      "type": "water",
+      "types": [
+        "water",
+        "ice"
+      ],
+      "baseStats": {
+        "hp": 90,
+        "attack": 70,
+        "defense": 80,
+        "specialAttack": 70,
+        "specialDefense": 95,
+        "speed": 70
+      },
+      "name": "Dewgong"
+    },
+    {
+      "id": "muk",
+      "pokedexId": 89,
+      "type": "poison",
+      "types": [
+        "poison"
+      ],
+      "baseStats": {
+        "hp": 105,
+        "attack": 105,
+        "defense": 75,
+        "specialAttack": 65,
+        "specialDefense": 100,
+        "speed": 50
+      },
+      "name": "Muk"
+    },
+    {
+      "id": "cloyster",
+      "pokedexId": 91,
+      "type": "water",
+      "types": [
+        "water",
+        "ice"
+      ],
+      "baseStats": {
+        "hp": 50,
+        "attack": 95,
+        "defense": 180,
+        "specialAttack": 85,
+        "specialDefense": 45,
+        "speed": 70
+      },
+      "name": "Cloyster"
+    },
+    {
+      "id": "haunter",
+      "pokedexId": 93,
+      "type": "ghost",
+      "types": [
+        "ghost",
+        "poison"
+      ],
+      "baseStats": {
+        "hp": 45,
+        "attack": 50,
+        "defense": 45,
+        "specialAttack": 115,
+        "specialDefense": 55,
+        "speed": 95
+      },
+      "name": "Haunter"
+    },
+    {
+      "id": "gengar",
+      "pokedexId": 94,
+      "type": "ghost",
+      "types": [
+        "ghost",
+        "poison"
+      ],
+      "baseStats": {
+        "hp": 60,
+        "attack": 65,
+        "defense": 60,
+        "specialAttack": 130,
+        "specialDefense": 75,
+        "speed": 110
+      },
+      "name": "Gengar"
+    },
+    {
+      "id": "steelix",
+      "pokedexId": 208,
+      "type": "steel",
+      "types": [
+        "steel",
+        "ground"
+      ],
+      "baseStats": {
+        "hp": 75,
+        "attack": 85,
+        "defense": 200,
+        "specialAttack": 55,
+        "specialDefense": 65,
+        "speed": 30
+      },
+      "name": "Steelix"
+    },
+    {
+      "id": "hypno",
+      "pokedexId": 97,
+      "type": "psychic",
+      "types": [
+        "psychic"
+      ],
+      "baseStats": {
+        "hp": 85,
+        "attack": 73,
+        "defense": 70,
+        "specialAttack": 73,
+        "specialDefense": 115,
+        "speed": 67
+      },
+      "name": "Hypno"
+    },
+    {
+      "id": "kingler",
+      "pokedexId": 99,
+      "type": "water",
+      "types": [
+        "water"
+      ],
+      "baseStats": {
+        "hp": 55,
+        "attack": 130,
+        "defense": 115,
+        "specialAttack": 50,
+        "specialDefense": 50,
+        "speed": 75
+      },
+      "name": "Kingler"
     },
     {
       "id": "electrode",
       "pokedexId": 101,
       "type": "electric",
+      "types": [
+        "electric"
+      ],
       "baseStats": {
         "hp": 60,
         "attack": 50,
@@ -1135,9 +6089,239 @@
       "name": "Electrode"
     },
     {
+      "id": "exeggutor",
+      "pokedexId": 103,
+      "type": "grass",
+      "types": [
+        "grass",
+        "psychic"
+      ],
+      "baseStats": {
+        "hp": 95,
+        "attack": 95,
+        "defense": 85,
+        "specialAttack": 125,
+        "specialDefense": 75,
+        "speed": 55
+      },
+      "name": "Exeggutor"
+    },
+    {
+      "id": "marowak",
+      "pokedexId": 105,
+      "type": "ground",
+      "types": [
+        "ground"
+      ],
+      "baseStats": {
+        "hp": 60,
+        "attack": 80,
+        "defense": 110,
+        "specialAttack": 50,
+        "specialDefense": 80,
+        "speed": 45
+      },
+      "name": "Marowak"
+    },
+    {
+      "id": "lickilicky",
+      "pokedexId": 463,
+      "type": "normal",
+      "types": [
+        "normal"
+      ],
+      "baseStats": {
+        "hp": 110,
+        "attack": 85,
+        "defense": 95,
+        "specialAttack": 80,
+        "specialDefense": 95,
+        "speed": 50
+      },
+      "name": "Lickilicky"
+    },
+    {
+      "id": "weezing",
+      "pokedexId": 110,
+      "type": "poison",
+      "types": [
+        "poison"
+      ],
+      "baseStats": {
+        "hp": 65,
+        "attack": 90,
+        "defense": 120,
+        "specialAttack": 85,
+        "specialDefense": 70,
+        "speed": 60
+      },
+      "name": "Weezing"
+    },
+    {
+      "id": "rhydon",
+      "pokedexId": 112,
+      "type": "ground",
+      "types": [
+        "ground",
+        "rock"
+      ],
+      "baseStats": {
+        "hp": 105,
+        "attack": 130,
+        "defense": 120,
+        "specialAttack": 45,
+        "specialDefense": 45,
+        "speed": 40
+      },
+      "name": "Rhydon"
+    },
+    {
+      "id": "rhyperior",
+      "pokedexId": 464,
+      "type": "ground",
+      "types": [
+        "ground",
+        "rock"
+      ],
+      "baseStats": {
+        "hp": 115,
+        "attack": 140,
+        "defense": 130,
+        "specialAttack": 55,
+        "specialDefense": 55,
+        "speed": 40
+      },
+      "name": "Rhyperior"
+    },
+    {
+      "id": "blissey",
+      "pokedexId": 242,
+      "type": "normal",
+      "types": [
+        "normal"
+      ],
+      "baseStats": {
+        "hp": 255,
+        "attack": 10,
+        "defense": 10,
+        "specialAttack": 75,
+        "specialDefense": 135,
+        "speed": 55
+      },
+      "name": "Blissey"
+    },
+    {
+      "id": "tangrowth",
+      "pokedexId": 465,
+      "type": "grass",
+      "types": [
+        "grass"
+      ],
+      "baseStats": {
+        "hp": 100,
+        "attack": 100,
+        "defense": 125,
+        "specialAttack": 110,
+        "specialDefense": 50,
+        "speed": 50
+      },
+      "name": "Tangrowth"
+    },
+    {
+      "id": "seadra",
+      "pokedexId": 117,
+      "type": "water",
+      "types": [
+        "water"
+      ],
+      "baseStats": {
+        "hp": 55,
+        "attack": 65,
+        "defense": 95,
+        "specialAttack": 95,
+        "specialDefense": 45,
+        "speed": 85
+      },
+      "name": "Seadra"
+    },
+    {
+      "id": "kingdra",
+      "pokedexId": 230,
+      "type": "water",
+      "types": [
+        "water",
+        "dragon"
+      ],
+      "baseStats": {
+        "hp": 75,
+        "attack": 95,
+        "defense": 95,
+        "specialAttack": 95,
+        "specialDefense": 95,
+        "speed": 85
+      },
+      "name": "Kingdra"
+    },
+    {
+      "id": "seaking",
+      "pokedexId": 119,
+      "type": "water",
+      "types": [
+        "water"
+      ],
+      "baseStats": {
+        "hp": 80,
+        "attack": 92,
+        "defense": 65,
+        "specialAttack": 65,
+        "specialDefense": 80,
+        "speed": 68
+      },
+      "name": "Seaking"
+    },
+    {
+      "id": "starmie",
+      "pokedexId": 121,
+      "type": "water",
+      "types": [
+        "water",
+        "psychic"
+      ],
+      "baseStats": {
+        "hp": 60,
+        "attack": 75,
+        "defense": 85,
+        "specialAttack": 100,
+        "specialDefense": 85,
+        "speed": 115
+      },
+      "name": "Starmie"
+    },
+    {
+      "id": "scizor",
+      "pokedexId": 212,
+      "type": "bug",
+      "types": [
+        "bug",
+        "steel"
+      ],
+      "baseStats": {
+        "hp": 70,
+        "attack": 130,
+        "defense": 100,
+        "specialAttack": 55,
+        "specialDefense": 80,
+        "speed": 65
+      },
+      "name": "Scizor"
+    },
+    {
       "id": "electivire",
       "pokedexId": 466,
       "type": "electric",
+      "types": [
+        "electric"
+      ],
       "baseStats": {
         "hp": 75,
         "attack": 123,
@@ -1152,6 +6336,9 @@
       "id": "magmortar",
       "pokedexId": 467,
       "type": "fire",
+      "types": [
+        "fire"
+      ],
       "baseStats": {
         "hp": 75,
         "attack": 95,
@@ -1163,317 +6350,152 @@
       "name": "Magmortar"
     },
     {
-      "id": "magcargo",
-      "pokedexId": 219,
-      "type": "fire",
-      "baseStats": {
-        "hp": 60,
-        "attack": 50,
-        "defense": 120,
-        "specialAttack": 90,
-        "specialDefense": 80,
-        "speed": 30
-      },
-      "name": "Magcargo"
-    },
-    {
-      "id": "camerupt",
-      "pokedexId": 323,
-      "type": "fire",
-      "baseStats": {
-        "hp": 70,
-        "attack": 100,
-        "defense": 70,
-        "specialAttack": 105,
-        "specialDefense": 75,
-        "speed": 40
-      },
-      "name": "Camerupt"
-    },
-    {
-      "id": "quilava",
-      "pokedexId": 156,
-      "type": "fire",
-      "baseStats": {
-        "hp": 58,
-        "attack": 64,
-        "defense": 58,
-        "specialAttack": 80,
-        "specialDefense": 65,
-        "speed": 80
-      },
-      "name": "Quilava"
-    },
-    {
-      "id": "typhlosion",
-      "pokedexId": 157,
-      "type": "fire",
-      "baseStats": {
-        "hp": 78,
-        "attack": 84,
-        "defense": 78,
-        "specialAttack": 109,
-        "specialDefense": 85,
-        "speed": 100
-      },
-      "name": "Typhlosion"
-    },
-    {
-      "id": "combusken",
-      "pokedexId": 256,
-      "type": "fire",
-      "baseStats": {
-        "hp": 60,
-        "attack": 85,
-        "defense": 60,
-        "specialAttack": 85,
-        "specialDefense": 60,
-        "speed": 55
-      },
-      "name": "Combusken"
-    },
-    {
-      "id": "blaziken",
-      "pokedexId": 257,
-      "type": "fire",
-      "baseStats": {
-        "hp": 80,
-        "attack": 120,
-        "defense": 70,
-        "specialAttack": 110,
-        "specialDefense": 70,
-        "speed": 80
-      },
-      "name": "Blaziken"
-    },
-    {
-      "id": "monferno",
-      "pokedexId": 391,
-      "type": "fire",
-      "baseStats": {
-        "hp": 64,
-        "attack": 78,
-        "defense": 52,
-        "specialAttack": 78,
-        "specialDefense": 52,
-        "speed": 81
-      },
-      "name": "Monferno"
-    },
-    {
-      "id": "infernape",
-      "pokedexId": 392,
-      "type": "fire",
-      "baseStats": {
-        "hp": 76,
-        "attack": 104,
-        "defense": 71,
-        "specialAttack": 104,
-        "specialDefense": 71,
-        "speed": 108
-      },
-      "name": "Infernape"
-    },
-    {
-      "id": "kingler",
-      "pokedexId": 99,
+      "id": "gyarados",
+      "pokedexId": 130,
       "type": "water",
-      "baseStats": {
-        "hp": 55,
-        "attack": 130,
-        "defense": 115,
-        "specialAttack": 50,
-        "specialDefense": 50,
-        "speed": 75
-      },
-      "name": "Kingler"
-    },
-    {
-      "id": "starmie",
-      "pokedexId": 121,
-      "type": "water",
-      "baseStats": {
-        "hp": 60,
-        "attack": 75,
-        "defense": 85,
-        "specialAttack": 100,
-        "specialDefense": 85,
-        "speed": 115
-      },
-      "name": "Starmie"
-    },
-    {
-      "id": "seaking",
-      "pokedexId": 119,
-      "type": "water",
-      "baseStats": {
-        "hp": 80,
-        "attack": 92,
-        "defense": 65,
-        "specialAttack": 65,
-        "specialDefense": 80,
-        "speed": 68
-      },
-      "name": "Seaking"
-    },
-    {
-      "id": "cloyster",
-      "pokedexId": 91,
-      "type": "water",
-      "baseStats": {
-        "hp": 50,
-        "attack": 95,
-        "defense": 180,
-        "specialAttack": 85,
-        "specialDefense": 45,
-        "speed": 70
-      },
-      "name": "Cloyster"
-    },
-    {
-      "id": "quagsire",
-      "pokedexId": 195,
-      "type": "water",
+      "types": [
+        "water",
+        "flying"
+      ],
       "baseStats": {
         "hp": 95,
-        "attack": 85,
-        "defense": 85,
-        "specialAttack": 65,
-        "specialDefense": 65,
-        "speed": 35
-      },
-      "name": "Quagsire"
-    },
-    {
-      "id": "lombre",
-      "pokedexId": 271,
-      "type": "water",
-      "baseStats": {
-        "hp": 60,
-        "attack": 50,
-        "defense": 50,
+        "attack": 125,
+        "defense": 79,
         "specialAttack": 60,
-        "specialDefense": 70,
-        "speed": 50
-      },
-      "name": "Lombre"
-    },
-    {
-      "id": "ludicolo",
-      "pokedexId": 272,
-      "type": "water",
-      "baseStats": {
-        "hp": 80,
-        "attack": 70,
-        "defense": 70,
-        "specialAttack": 90,
         "specialDefense": 100,
-        "speed": 70
+        "speed": 81
       },
-      "name": "Ludicolo"
+      "name": "Gyarados"
     },
     {
-      "id": "tangrowth",
-      "pokedexId": 465,
-      "type": "grass",
+      "id": "vaporeon",
+      "pokedexId": 134,
+      "type": "water",
+      "types": [
+        "water"
+      ],
       "baseStats": {
-        "hp": 100,
-        "attack": 100,
-        "defense": 125,
+        "hp": 130,
+        "attack": 65,
+        "defense": 60,
         "specialAttack": 110,
-        "specialDefense": 50,
-        "speed": 50
-      },
-      "name": "Tangrowth"
-    },
-    {
-      "id": "skiploom",
-      "pokedexId": 188,
-      "type": "grass",
-      "baseStats": {
-        "hp": 55,
-        "attack": 45,
-        "defense": 50,
-        "specialAttack": 45,
-        "specialDefense": 65,
-        "speed": 80
-      },
-      "name": "Skiploom"
-    },
-    {
-      "id": "jumpluff",
-      "pokedexId": 189,
-      "type": "grass",
-      "baseStats": {
-        "hp": 75,
-        "attack": 55,
-        "defense": 70,
-        "specialAttack": 55,
         "specialDefense": 95,
-        "speed": 110
+        "speed": 65
       },
-      "name": "Jumpluff"
+      "name": "Vaporeon"
     },
     {
-      "id": "nuzleaf",
-      "pokedexId": 274,
-      "type": "grass",
+      "id": "porygon2",
+      "pokedexId": 233,
+      "type": "normal",
+      "types": [
+        "normal"
+      ],
       "baseStats": {
-        "hp": 70,
-        "attack": 70,
-        "defense": 40,
-        "specialAttack": 60,
-        "specialDefense": 40,
+        "hp": 85,
+        "attack": 80,
+        "defense": 90,
+        "specialAttack": 105,
+        "specialDefense": 95,
         "speed": 60
       },
-      "name": "Nuzleaf"
+      "name": "Porygon2"
     },
     {
-      "id": "shiftry",
-      "pokedexId": 275,
-      "type": "grass",
+      "id": "porygon-z",
+      "pokedexId": 474,
+      "type": "normal",
+      "types": [
+        "normal"
+      ],
       "baseStats": {
-        "hp": 90,
-        "attack": 100,
-        "defense": 60,
-        "specialAttack": 90,
-        "specialDefense": 60,
-        "speed": 80
+        "hp": 85,
+        "attack": 80,
+        "defense": 70,
+        "specialAttack": 135,
+        "specialDefense": 75,
+        "speed": 90
       },
-      "name": "Shiftry"
+      "name": "Porygon-Z"
     },
     {
-      "id": "breloom",
-      "pokedexId": 286,
-      "type": "grass",
+      "id": "omastar",
+      "pokedexId": 139,
+      "type": "rock",
+      "types": [
+        "rock",
+        "water"
+      ],
+      "baseStats": {
+        "hp": 70,
+        "attack": 60,
+        "defense": 125,
+        "specialAttack": 115,
+        "specialDefense": 70,
+        "speed": 55
+      },
+      "name": "Omastar"
+    },
+    {
+      "id": "kabutops",
+      "pokedexId": 141,
+      "type": "rock",
+      "types": [
+        "rock",
+        "water"
+      ],
       "baseStats": {
         "hp": 60,
-        "attack": 130,
-        "defense": 80,
-        "specialAttack": 60,
-        "specialDefense": 60,
-        "speed": 70
+        "attack": 115,
+        "defense": 105,
+        "specialAttack": 65,
+        "specialDefense": 70,
+        "speed": 80
       },
-      "name": "Breloom"
+      "name": "Kabutops"
     },
     {
-      "id": "sunflora",
-      "pokedexId": 192,
-      "type": "grass",
+      "id": "dragonair",
+      "pokedexId": 148,
+      "type": "dragon",
+      "types": [
+        "dragon"
+      ],
       "baseStats": {
-        "hp": 75,
-        "attack": 75,
-        "defense": 55,
-        "specialAttack": 105,
-        "specialDefense": 85,
-        "speed": 30
+        "hp": 61,
+        "attack": 84,
+        "defense": 65,
+        "specialAttack": 70,
+        "specialDefense": 70,
+        "speed": 70
       },
-      "name": "Sunflora"
+      "name": "Dragonair"
+    },
+    {
+      "id": "dragonite",
+      "pokedexId": 149,
+      "type": "dragon",
+      "types": [
+        "dragon",
+        "flying"
+      ],
+      "baseStats": {
+        "hp": 91,
+        "attack": 134,
+        "defense": 95,
+        "specialAttack": 100,
+        "specialDefense": 100,
+        "speed": 80
+      },
+      "name": "Dragonite"
     },
     {
       "id": "bayleef",
       "pokedexId": 153,
       "type": "grass",
+      "types": [
+        "grass"
+      ],
       "baseStats": {
         "hp": 60,
         "attack": 62,
@@ -1488,6 +6510,9 @@
       "id": "meganium",
       "pokedexId": 154,
       "type": "grass",
+      "types": [
+        "grass"
+      ],
       "baseStats": {
         "hp": 80,
         "attack": 82,
@@ -1499,9 +6524,205 @@
       "name": "Meganium"
     },
     {
+      "id": "quilava",
+      "pokedexId": 156,
+      "type": "fire",
+      "types": [
+        "fire"
+      ],
+      "baseStats": {
+        "hp": 58,
+        "attack": 64,
+        "defense": 58,
+        "specialAttack": 80,
+        "specialDefense": 65,
+        "speed": 80
+      },
+      "name": "Quilava"
+    },
+    {
+      "id": "typhlosion",
+      "pokedexId": 157,
+      "type": "fire",
+      "types": [
+        "fire"
+      ],
+      "baseStats": {
+        "hp": 78,
+        "attack": 84,
+        "defense": 78,
+        "specialAttack": 109,
+        "specialDefense": 85,
+        "speed": 100
+      },
+      "name": "Typhlosion"
+    },
+    {
+      "id": "croconaw",
+      "pokedexId": 159,
+      "type": "water",
+      "types": [
+        "water"
+      ],
+      "baseStats": {
+        "hp": 65,
+        "attack": 80,
+        "defense": 80,
+        "specialAttack": 59,
+        "specialDefense": 63,
+        "speed": 58
+      },
+      "name": "Croconaw"
+    },
+    {
+      "id": "feraligatr",
+      "pokedexId": 160,
+      "type": "water",
+      "types": [
+        "water"
+      ],
+      "baseStats": {
+        "hp": 85,
+        "attack": 105,
+        "defense": 100,
+        "specialAttack": 79,
+        "specialDefense": 83,
+        "speed": 78
+      },
+      "name": "Feraligatr"
+    },
+    {
+      "id": "furret",
+      "pokedexId": 162,
+      "type": "normal",
+      "types": [
+        "normal"
+      ],
+      "baseStats": {
+        "hp": 85,
+        "attack": 76,
+        "defense": 64,
+        "specialAttack": 45,
+        "specialDefense": 55,
+        "speed": 90
+      },
+      "name": "Furret"
+    },
+    {
+      "id": "noctowl",
+      "pokedexId": 164,
+      "type": "normal",
+      "types": [
+        "normal",
+        "flying"
+      ],
+      "baseStats": {
+        "hp": 100,
+        "attack": 50,
+        "defense": 50,
+        "specialAttack": 86,
+        "specialDefense": 96,
+        "speed": 70
+      },
+      "name": "Noctowl"
+    },
+    {
+      "id": "ledian",
+      "pokedexId": 166,
+      "type": "bug",
+      "types": [
+        "bug",
+        "flying"
+      ],
+      "baseStats": {
+        "hp": 55,
+        "attack": 35,
+        "defense": 50,
+        "specialAttack": 55,
+        "specialDefense": 110,
+        "speed": 85
+      },
+      "name": "Ledian"
+    },
+    {
+      "id": "ariados",
+      "pokedexId": 168,
+      "type": "bug",
+      "types": [
+        "bug",
+        "poison"
+      ],
+      "baseStats": {
+        "hp": 70,
+        "attack": 90,
+        "defense": 70,
+        "specialAttack": 60,
+        "specialDefense": 70,
+        "speed": 40
+      },
+      "name": "Ariados"
+    },
+    {
+      "id": "lanturn",
+      "pokedexId": 171,
+      "type": "water",
+      "types": [
+        "water",
+        "electric"
+      ],
+      "baseStats": {
+        "hp": 125,
+        "attack": 58,
+        "defense": 58,
+        "specialAttack": 76,
+        "specialDefense": 76,
+        "speed": 67
+      },
+      "name": "Lanturn"
+    },
+    {
+      "id": "togekiss",
+      "pokedexId": 468,
+      "type": "fairy",
+      "types": [
+        "fairy",
+        "flying"
+      ],
+      "baseStats": {
+        "hp": 85,
+        "attack": 50,
+        "defense": 95,
+        "specialAttack": 120,
+        "specialDefense": 115,
+        "speed": 80
+      },
+      "name": "Togekiss"
+    },
+    {
+      "id": "xatu",
+      "pokedexId": 178,
+      "type": "psychic",
+      "types": [
+        "psychic",
+        "flying"
+      ],
+      "baseStats": {
+        "hp": 65,
+        "attack": 75,
+        "defense": 70,
+        "specialAttack": 95,
+        "specialDefense": 70,
+        "speed": 95
+      },
+      "name": "Xatu"
+    },
+    {
       "id": "flaaffy",
       "pokedexId": 180,
       "type": "electric",
+      "types": [
+        "electric"
+      ],
       "baseStats": {
         "hp": 70,
         "attack": 55,
@@ -1516,6 +6737,9 @@
       "id": "ampharos",
       "pokedexId": 181,
       "type": "electric",
+      "types": [
+        "electric"
+      ],
       "baseStats": {
         "hp": 90,
         "attack": 75,
@@ -1527,9 +6751,1618 @@
       "name": "Ampharos"
     },
     {
+      "id": "azumarill",
+      "pokedexId": 184,
+      "type": "water",
+      "types": [
+        "water",
+        "fairy"
+      ],
+      "baseStats": {
+        "hp": 100,
+        "attack": 50,
+        "defense": 80,
+        "specialAttack": 60,
+        "specialDefense": 80,
+        "speed": 50
+      },
+      "name": "Azumarill"
+    },
+    {
+      "id": "skiploom",
+      "pokedexId": 188,
+      "type": "grass",
+      "types": [
+        "grass",
+        "flying"
+      ],
+      "baseStats": {
+        "hp": 55,
+        "attack": 45,
+        "defense": 50,
+        "specialAttack": 45,
+        "specialDefense": 65,
+        "speed": 80
+      },
+      "name": "Skiploom"
+    },
+    {
+      "id": "jumpluff",
+      "pokedexId": 189,
+      "type": "grass",
+      "types": [
+        "grass",
+        "flying"
+      ],
+      "baseStats": {
+        "hp": 75,
+        "attack": 55,
+        "defense": 70,
+        "specialAttack": 55,
+        "specialDefense": 95,
+        "speed": 110
+      },
+      "name": "Jumpluff"
+    },
+    {
+      "id": "ambipom",
+      "pokedexId": 424,
+      "type": "normal",
+      "types": [
+        "normal"
+      ],
+      "baseStats": {
+        "hp": 75,
+        "attack": 100,
+        "defense": 66,
+        "specialAttack": 60,
+        "specialDefense": 66,
+        "speed": 115
+      },
+      "name": "Ambipom"
+    },
+    {
+      "id": "sunflora",
+      "pokedexId": 192,
+      "type": "grass",
+      "types": [
+        "grass"
+      ],
+      "baseStats": {
+        "hp": 75,
+        "attack": 75,
+        "defense": 55,
+        "specialAttack": 105,
+        "specialDefense": 85,
+        "speed": 30
+      },
+      "name": "Sunflora"
+    },
+    {
+      "id": "yanmega",
+      "pokedexId": 469,
+      "type": "bug",
+      "types": [
+        "bug",
+        "flying"
+      ],
+      "baseStats": {
+        "hp": 86,
+        "attack": 76,
+        "defense": 86,
+        "specialAttack": 116,
+        "specialDefense": 56,
+        "speed": 95
+      },
+      "name": "Yanmega"
+    },
+    {
+      "id": "quagsire",
+      "pokedexId": 195,
+      "type": "water",
+      "types": [
+        "water",
+        "ground"
+      ],
+      "baseStats": {
+        "hp": 95,
+        "attack": 85,
+        "defense": 85,
+        "specialAttack": 65,
+        "specialDefense": 65,
+        "speed": 35
+      },
+      "name": "Quagsire"
+    },
+    {
+      "id": "honchkrow",
+      "pokedexId": 430,
+      "type": "dark",
+      "types": [
+        "dark",
+        "flying"
+      ],
+      "baseStats": {
+        "hp": 100,
+        "attack": 125,
+        "defense": 52,
+        "specialAttack": 105,
+        "specialDefense": 52,
+        "speed": 71
+      },
+      "name": "Honchkrow"
+    },
+    {
+      "id": "mismagius",
+      "pokedexId": 429,
+      "type": "ghost",
+      "types": [
+        "ghost"
+      ],
+      "baseStats": {
+        "hp": 60,
+        "attack": 60,
+        "defense": 60,
+        "specialAttack": 105,
+        "specialDefense": 105,
+        "speed": 105
+      },
+      "name": "Mismagius"
+    },
+    {
+      "id": "forretress",
+      "pokedexId": 205,
+      "type": "bug",
+      "types": [
+        "bug",
+        "steel"
+      ],
+      "baseStats": {
+        "hp": 75,
+        "attack": 90,
+        "defense": 140,
+        "specialAttack": 60,
+        "specialDefense": 60,
+        "speed": 40
+      },
+      "name": "Forretress"
+    },
+    {
+      "id": "gliscor",
+      "pokedexId": 472,
+      "type": "ground",
+      "types": [
+        "ground",
+        "flying"
+      ],
+      "baseStats": {
+        "hp": 75,
+        "attack": 95,
+        "defense": 125,
+        "specialAttack": 45,
+        "specialDefense": 75,
+        "speed": 95
+      },
+      "name": "Gliscor"
+    },
+    {
+      "id": "granbull",
+      "pokedexId": 210,
+      "type": "fairy",
+      "types": [
+        "fairy"
+      ],
+      "baseStats": {
+        "hp": 90,
+        "attack": 120,
+        "defense": 75,
+        "specialAttack": 60,
+        "specialDefense": 60,
+        "speed": 45
+      },
+      "name": "Granbull"
+    },
+    {
+      "id": "weavile",
+      "pokedexId": 461,
+      "type": "dark",
+      "types": [
+        "dark",
+        "ice"
+      ],
+      "baseStats": {
+        "hp": 70,
+        "attack": 120,
+        "defense": 65,
+        "specialAttack": 45,
+        "specialDefense": 85,
+        "speed": 125
+      },
+      "name": "Weavile"
+    },
+    {
+      "id": "ursaring",
+      "pokedexId": 217,
+      "type": "normal",
+      "types": [
+        "normal"
+      ],
+      "baseStats": {
+        "hp": 90,
+        "attack": 130,
+        "defense": 75,
+        "specialAttack": 75,
+        "specialDefense": 75,
+        "speed": 55
+      },
+      "name": "Ursaring"
+    },
+    {
+      "id": "magcargo",
+      "pokedexId": 219,
+      "type": "fire",
+      "types": [
+        "fire",
+        "rock"
+      ],
+      "baseStats": {
+        "hp": 60,
+        "attack": 50,
+        "defense": 120,
+        "specialAttack": 90,
+        "specialDefense": 80,
+        "speed": 30
+      },
+      "name": "Magcargo"
+    },
+    {
+      "id": "piloswine",
+      "pokedexId": 221,
+      "type": "ice",
+      "types": [
+        "ice",
+        "ground"
+      ],
+      "baseStats": {
+        "hp": 100,
+        "attack": 100,
+        "defense": 80,
+        "specialAttack": 60,
+        "specialDefense": 60,
+        "speed": 50
+      },
+      "name": "Piloswine"
+    },
+    {
+      "id": "mamoswine",
+      "pokedexId": 473,
+      "type": "ice",
+      "types": [
+        "ice",
+        "ground"
+      ],
+      "baseStats": {
+        "hp": 110,
+        "attack": 130,
+        "defense": 80,
+        "specialAttack": 70,
+        "specialDefense": 60,
+        "speed": 80
+      },
+      "name": "Mamoswine"
+    },
+    {
+      "id": "octillery",
+      "pokedexId": 224,
+      "type": "water",
+      "types": [
+        "water"
+      ],
+      "baseStats": {
+        "hp": 75,
+        "attack": 105,
+        "defense": 75,
+        "specialAttack": 105,
+        "specialDefense": 75,
+        "speed": 45
+      },
+      "name": "Octillery"
+    },
+    {
+      "id": "houndoom",
+      "pokedexId": 229,
+      "type": "dark",
+      "types": [
+        "dark",
+        "fire"
+      ],
+      "baseStats": {
+        "hp": 75,
+        "attack": 90,
+        "defense": 50,
+        "specialAttack": 110,
+        "specialDefense": 80,
+        "speed": 95
+      },
+      "name": "Houndoom"
+    },
+    {
+      "id": "donphan",
+      "pokedexId": 232,
+      "type": "ground",
+      "types": [
+        "ground"
+      ],
+      "baseStats": {
+        "hp": 90,
+        "attack": 120,
+        "defense": 120,
+        "specialAttack": 60,
+        "specialDefense": 60,
+        "speed": 50
+      },
+      "name": "Donphan"
+    },
+    {
+      "id": "pupitar",
+      "pokedexId": 247,
+      "type": "rock",
+      "types": [
+        "rock",
+        "ground"
+      ],
+      "baseStats": {
+        "hp": 70,
+        "attack": 84,
+        "defense": 70,
+        "specialAttack": 65,
+        "specialDefense": 70,
+        "speed": 51
+      },
+      "name": "Pupitar"
+    },
+    {
+      "id": "tyranitar",
+      "pokedexId": 248,
+      "type": "rock",
+      "types": [
+        "rock",
+        "dark"
+      ],
+      "baseStats": {
+        "hp": 100,
+        "attack": 134,
+        "defense": 110,
+        "specialAttack": 95,
+        "specialDefense": 100,
+        "speed": 61
+      },
+      "name": "Tyranitar"
+    },
+    {
+      "id": "grovyle",
+      "pokedexId": 253,
+      "type": "grass",
+      "types": [
+        "grass"
+      ],
+      "baseStats": {
+        "hp": 50,
+        "attack": 65,
+        "defense": 45,
+        "specialAttack": 85,
+        "specialDefense": 65,
+        "speed": 95
+      },
+      "name": "Grovyle"
+    },
+    {
+      "id": "sceptile",
+      "pokedexId": 254,
+      "type": "grass",
+      "types": [
+        "grass"
+      ],
+      "baseStats": {
+        "hp": 70,
+        "attack": 85,
+        "defense": 65,
+        "specialAttack": 105,
+        "specialDefense": 85,
+        "speed": 120
+      },
+      "name": "Sceptile"
+    },
+    {
+      "id": "combusken",
+      "pokedexId": 256,
+      "type": "fire",
+      "types": [
+        "fire",
+        "fighting"
+      ],
+      "baseStats": {
+        "hp": 60,
+        "attack": 85,
+        "defense": 60,
+        "specialAttack": 85,
+        "specialDefense": 60,
+        "speed": 55
+      },
+      "name": "Combusken"
+    },
+    {
+      "id": "blaziken",
+      "pokedexId": 257,
+      "type": "fire",
+      "types": [
+        "fire",
+        "fighting"
+      ],
+      "baseStats": {
+        "hp": 80,
+        "attack": 120,
+        "defense": 70,
+        "specialAttack": 110,
+        "specialDefense": 70,
+        "speed": 80
+      },
+      "name": "Blaziken"
+    },
+    {
+      "id": "marshtomp",
+      "pokedexId": 259,
+      "type": "water",
+      "types": [
+        "water",
+        "ground"
+      ],
+      "baseStats": {
+        "hp": 70,
+        "attack": 85,
+        "defense": 70,
+        "specialAttack": 60,
+        "specialDefense": 70,
+        "speed": 50
+      },
+      "name": "Marshtomp"
+    },
+    {
+      "id": "swampert",
+      "pokedexId": 260,
+      "type": "water",
+      "types": [
+        "water",
+        "ground"
+      ],
+      "baseStats": {
+        "hp": 100,
+        "attack": 110,
+        "defense": 90,
+        "specialAttack": 85,
+        "specialDefense": 90,
+        "speed": 60
+      },
+      "name": "Swampert"
+    },
+    {
+      "id": "mightyena",
+      "pokedexId": 262,
+      "type": "dark",
+      "types": [
+        "dark"
+      ],
+      "baseStats": {
+        "hp": 70,
+        "attack": 90,
+        "defense": 70,
+        "specialAttack": 60,
+        "specialDefense": 60,
+        "speed": 70
+      },
+      "name": "Mightyena"
+    },
+    {
+      "id": "linoone",
+      "pokedexId": 264,
+      "type": "normal",
+      "types": [
+        "normal"
+      ],
+      "baseStats": {
+        "hp": 78,
+        "attack": 70,
+        "defense": 61,
+        "specialAttack": 50,
+        "specialDefense": 61,
+        "speed": 100
+      },
+      "name": "Linoone"
+    },
+    {
+      "id": "silcoon",
+      "pokedexId": 266,
+      "type": "bug",
+      "types": [
+        "bug"
+      ],
+      "baseStats": {
+        "hp": 50,
+        "attack": 35,
+        "defense": 55,
+        "specialAttack": 25,
+        "specialDefense": 25,
+        "speed": 15
+      },
+      "name": "Silcoon"
+    },
+    {
+      "id": "beautifly",
+      "pokedexId": 267,
+      "type": "bug",
+      "types": [
+        "bug",
+        "flying"
+      ],
+      "baseStats": {
+        "hp": 60,
+        "attack": 70,
+        "defense": 50,
+        "specialAttack": 100,
+        "specialDefense": 50,
+        "speed": 65
+      },
+      "name": "Beautifly"
+    },
+    {
+      "id": "lombre",
+      "pokedexId": 271,
+      "type": "water",
+      "types": [
+        "water",
+        "grass"
+      ],
+      "baseStats": {
+        "hp": 60,
+        "attack": 50,
+        "defense": 50,
+        "specialAttack": 60,
+        "specialDefense": 70,
+        "speed": 50
+      },
+      "name": "Lombre"
+    },
+    {
+      "id": "ludicolo",
+      "pokedexId": 272,
+      "type": "water",
+      "types": [
+        "water",
+        "grass"
+      ],
+      "baseStats": {
+        "hp": 80,
+        "attack": 70,
+        "defense": 70,
+        "specialAttack": 90,
+        "specialDefense": 100,
+        "speed": 70
+      },
+      "name": "Ludicolo"
+    },
+    {
+      "id": "nuzleaf",
+      "pokedexId": 274,
+      "type": "grass",
+      "types": [
+        "grass",
+        "dark"
+      ],
+      "baseStats": {
+        "hp": 70,
+        "attack": 70,
+        "defense": 40,
+        "specialAttack": 60,
+        "specialDefense": 40,
+        "speed": 60
+      },
+      "name": "Nuzleaf"
+    },
+    {
+      "id": "shiftry",
+      "pokedexId": 275,
+      "type": "grass",
+      "types": [
+        "grass",
+        "dark"
+      ],
+      "baseStats": {
+        "hp": 90,
+        "attack": 100,
+        "defense": 60,
+        "specialAttack": 90,
+        "specialDefense": 60,
+        "speed": 80
+      },
+      "name": "Shiftry"
+    },
+    {
+      "id": "swellow",
+      "pokedexId": 277,
+      "type": "normal",
+      "types": [
+        "normal",
+        "flying"
+      ],
+      "baseStats": {
+        "hp": 60,
+        "attack": 85,
+        "defense": 60,
+        "specialAttack": 75,
+        "specialDefense": 50,
+        "speed": 125
+      },
+      "name": "Swellow"
+    },
+    {
+      "id": "pelipper",
+      "pokedexId": 279,
+      "type": "water",
+      "types": [
+        "water",
+        "flying"
+      ],
+      "baseStats": {
+        "hp": 60,
+        "attack": 50,
+        "defense": 100,
+        "specialAttack": 95,
+        "specialDefense": 70,
+        "speed": 65
+      },
+      "name": "Pelipper"
+    },
+    {
+      "id": "kirlia",
+      "pokedexId": 281,
+      "type": "psychic",
+      "types": [
+        "psychic",
+        "fairy"
+      ],
+      "baseStats": {
+        "hp": 38,
+        "attack": 35,
+        "defense": 35,
+        "specialAttack": 65,
+        "specialDefense": 55,
+        "speed": 50
+      },
+      "name": "Kirlia"
+    },
+    {
+      "id": "gardevoir",
+      "pokedexId": 282,
+      "type": "psychic",
+      "types": [
+        "psychic",
+        "fairy"
+      ],
+      "baseStats": {
+        "hp": 68,
+        "attack": 65,
+        "defense": 65,
+        "specialAttack": 125,
+        "specialDefense": 115,
+        "speed": 80
+      },
+      "name": "Gardevoir"
+    },
+    {
+      "id": "masquerain",
+      "pokedexId": 284,
+      "type": "bug",
+      "types": [
+        "bug",
+        "flying"
+      ],
+      "baseStats": {
+        "hp": 70,
+        "attack": 60,
+        "defense": 62,
+        "specialAttack": 100,
+        "specialDefense": 82,
+        "speed": 80
+      },
+      "name": "Masquerain"
+    },
+    {
+      "id": "breloom",
+      "pokedexId": 286,
+      "type": "grass",
+      "types": [
+        "grass",
+        "fighting"
+      ],
+      "baseStats": {
+        "hp": 60,
+        "attack": 130,
+        "defense": 80,
+        "specialAttack": 60,
+        "specialDefense": 60,
+        "speed": 70
+      },
+      "name": "Breloom"
+    },
+    {
+      "id": "vigoroth",
+      "pokedexId": 288,
+      "type": "normal",
+      "types": [
+        "normal"
+      ],
+      "baseStats": {
+        "hp": 80,
+        "attack": 80,
+        "defense": 80,
+        "specialAttack": 55,
+        "specialDefense": 55,
+        "speed": 90
+      },
+      "name": "Vigoroth"
+    },
+    {
+      "id": "slaking",
+      "pokedexId": 289,
+      "type": "normal",
+      "types": [
+        "normal"
+      ],
+      "baseStats": {
+        "hp": 150,
+        "attack": 160,
+        "defense": 100,
+        "specialAttack": 95,
+        "specialDefense": 65,
+        "speed": 100
+      },
+      "name": "Slaking"
+    },
+    {
+      "id": "ninjask",
+      "pokedexId": 291,
+      "type": "bug",
+      "types": [
+        "bug",
+        "flying"
+      ],
+      "baseStats": {
+        "hp": 61,
+        "attack": 90,
+        "defense": 45,
+        "specialAttack": 50,
+        "specialDefense": 50,
+        "speed": 160
+      },
+      "name": "Ninjask"
+    },
+    {
+      "id": "loudred",
+      "pokedexId": 294,
+      "type": "normal",
+      "types": [
+        "normal"
+      ],
+      "baseStats": {
+        "hp": 84,
+        "attack": 71,
+        "defense": 43,
+        "specialAttack": 71,
+        "specialDefense": 43,
+        "speed": 48
+      },
+      "name": "Loudred"
+    },
+    {
+      "id": "exploud",
+      "pokedexId": 295,
+      "type": "normal",
+      "types": [
+        "normal"
+      ],
+      "baseStats": {
+        "hp": 104,
+        "attack": 91,
+        "defense": 63,
+        "specialAttack": 91,
+        "specialDefense": 73,
+        "speed": 68
+      },
+      "name": "Exploud"
+    },
+    {
+      "id": "hariyama",
+      "pokedexId": 297,
+      "type": "fighting",
+      "types": [
+        "fighting"
+      ],
+      "baseStats": {
+        "hp": 144,
+        "attack": 120,
+        "defense": 60,
+        "specialAttack": 40,
+        "specialDefense": 60,
+        "speed": 50
+      },
+      "name": "Hariyama"
+    },
+    {
+      "id": "probopass",
+      "pokedexId": 476,
+      "type": "rock",
+      "types": [
+        "rock",
+        "steel"
+      ],
+      "baseStats": {
+        "hp": 60,
+        "attack": 55,
+        "defense": 145,
+        "specialAttack": 75,
+        "specialDefense": 150,
+        "speed": 40
+      },
+      "name": "Probopass"
+    },
+    {
+      "id": "delcatty",
+      "pokedexId": 301,
+      "type": "normal",
+      "types": [
+        "normal"
+      ],
+      "baseStats": {
+        "hp": 70,
+        "attack": 65,
+        "defense": 65,
+        "specialAttack": 55,
+        "specialDefense": 55,
+        "speed": 90
+      },
+      "name": "Delcatty"
+    },
+    {
+      "id": "lairon",
+      "pokedexId": 305,
+      "type": "steel",
+      "types": [
+        "steel",
+        "rock"
+      ],
+      "baseStats": {
+        "hp": 60,
+        "attack": 90,
+        "defense": 140,
+        "specialAttack": 50,
+        "specialDefense": 50,
+        "speed": 40
+      },
+      "name": "Lairon"
+    },
+    {
+      "id": "aggron",
+      "pokedexId": 306,
+      "type": "steel",
+      "types": [
+        "steel",
+        "rock"
+      ],
+      "baseStats": {
+        "hp": 70,
+        "attack": 110,
+        "defense": 180,
+        "specialAttack": 60,
+        "specialDefense": 60,
+        "speed": 50
+      },
+      "name": "Aggron"
+    },
+    {
+      "id": "medicham",
+      "pokedexId": 308,
+      "type": "fighting",
+      "types": [
+        "fighting",
+        "psychic"
+      ],
+      "baseStats": {
+        "hp": 60,
+        "attack": 60,
+        "defense": 75,
+        "specialAttack": 60,
+        "specialDefense": 75,
+        "speed": 80
+      },
+      "name": "Medicham"
+    },
+    {
+      "id": "manectric",
+      "pokedexId": 310,
+      "type": "electric",
+      "types": [
+        "electric"
+      ],
+      "baseStats": {
+        "hp": 70,
+        "attack": 75,
+        "defense": 60,
+        "specialAttack": 105,
+        "specialDefense": 60,
+        "speed": 105
+      },
+      "name": "Manectric"
+    },
+    {
+      "id": "roserade",
+      "pokedexId": 407,
+      "type": "grass",
+      "types": [
+        "grass",
+        "poison"
+      ],
+      "baseStats": {
+        "hp": 60,
+        "attack": 70,
+        "defense": 65,
+        "specialAttack": 125,
+        "specialDefense": 105,
+        "speed": 90
+      },
+      "name": "Roserade"
+    },
+    {
+      "id": "swalot",
+      "pokedexId": 317,
+      "type": "poison",
+      "types": [
+        "poison"
+      ],
+      "baseStats": {
+        "hp": 100,
+        "attack": 73,
+        "defense": 83,
+        "specialAttack": 73,
+        "specialDefense": 83,
+        "speed": 55
+      },
+      "name": "Swalot"
+    },
+    {
+      "id": "sharpedo",
+      "pokedexId": 319,
+      "type": "water",
+      "types": [
+        "water",
+        "dark"
+      ],
+      "baseStats": {
+        "hp": 70,
+        "attack": 120,
+        "defense": 40,
+        "specialAttack": 95,
+        "specialDefense": 40,
+        "speed": 95
+      },
+      "name": "Sharpedo"
+    },
+    {
+      "id": "wailord",
+      "pokedexId": 321,
+      "type": "water",
+      "types": [
+        "water"
+      ],
+      "baseStats": {
+        "hp": 170,
+        "attack": 90,
+        "defense": 45,
+        "specialAttack": 90,
+        "specialDefense": 45,
+        "speed": 60
+      },
+      "name": "Wailord"
+    },
+    {
+      "id": "camerupt",
+      "pokedexId": 323,
+      "type": "fire",
+      "types": [
+        "fire",
+        "ground"
+      ],
+      "baseStats": {
+        "hp": 70,
+        "attack": 100,
+        "defense": 70,
+        "specialAttack": 105,
+        "specialDefense": 75,
+        "speed": 40
+      },
+      "name": "Camerupt"
+    },
+    {
+      "id": "grumpig",
+      "pokedexId": 326,
+      "type": "psychic",
+      "types": [
+        "psychic"
+      ],
+      "baseStats": {
+        "hp": 80,
+        "attack": 45,
+        "defense": 65,
+        "specialAttack": 90,
+        "specialDefense": 110,
+        "speed": 80
+      },
+      "name": "Grumpig"
+    },
+    {
+      "id": "vibrava",
+      "pokedexId": 329,
+      "type": "ground",
+      "types": [
+        "ground",
+        "dragon"
+      ],
+      "baseStats": {
+        "hp": 50,
+        "attack": 70,
+        "defense": 50,
+        "specialAttack": 50,
+        "specialDefense": 50,
+        "speed": 70
+      },
+      "name": "Vibrava"
+    },
+    {
+      "id": "flygon",
+      "pokedexId": 330,
+      "type": "ground",
+      "types": [
+        "ground",
+        "dragon"
+      ],
+      "baseStats": {
+        "hp": 80,
+        "attack": 100,
+        "defense": 80,
+        "specialAttack": 80,
+        "specialDefense": 80,
+        "speed": 100
+      },
+      "name": "Flygon"
+    },
+    {
+      "id": "cacturne",
+      "pokedexId": 332,
+      "type": "grass",
+      "types": [
+        "grass",
+        "dark"
+      ],
+      "baseStats": {
+        "hp": 70,
+        "attack": 115,
+        "defense": 60,
+        "specialAttack": 115,
+        "specialDefense": 60,
+        "speed": 55
+      },
+      "name": "Cacturne"
+    },
+    {
+      "id": "altaria",
+      "pokedexId": 334,
+      "type": "dragon",
+      "types": [
+        "dragon",
+        "flying"
+      ],
+      "baseStats": {
+        "hp": 75,
+        "attack": 70,
+        "defense": 90,
+        "specialAttack": 70,
+        "specialDefense": 105,
+        "speed": 80
+      },
+      "name": "Altaria"
+    },
+    {
+      "id": "whiscash",
+      "pokedexId": 340,
+      "type": "water",
+      "types": [
+        "water",
+        "ground"
+      ],
+      "baseStats": {
+        "hp": 110,
+        "attack": 78,
+        "defense": 73,
+        "specialAttack": 76,
+        "specialDefense": 71,
+        "speed": 60
+      },
+      "name": "Whiscash"
+    },
+    {
+      "id": "crawdaunt",
+      "pokedexId": 342,
+      "type": "water",
+      "types": [
+        "water",
+        "dark"
+      ],
+      "baseStats": {
+        "hp": 63,
+        "attack": 120,
+        "defense": 85,
+        "specialAttack": 90,
+        "specialDefense": 55,
+        "speed": 55
+      },
+      "name": "Crawdaunt"
+    },
+    {
+      "id": "claydol",
+      "pokedexId": 344,
+      "type": "ground",
+      "types": [
+        "ground",
+        "psychic"
+      ],
+      "baseStats": {
+        "hp": 60,
+        "attack": 70,
+        "defense": 105,
+        "specialAttack": 70,
+        "specialDefense": 120,
+        "speed": 75
+      },
+      "name": "Claydol"
+    },
+    {
+      "id": "cradily",
+      "pokedexId": 346,
+      "type": "rock",
+      "types": [
+        "rock",
+        "grass"
+      ],
+      "baseStats": {
+        "hp": 86,
+        "attack": 81,
+        "defense": 97,
+        "specialAttack": 81,
+        "specialDefense": 107,
+        "speed": 43
+      },
+      "name": "Cradily"
+    },
+    {
+      "id": "armaldo",
+      "pokedexId": 348,
+      "type": "rock",
+      "types": [
+        "rock",
+        "bug"
+      ],
+      "baseStats": {
+        "hp": 75,
+        "attack": 125,
+        "defense": 100,
+        "specialAttack": 70,
+        "specialDefense": 80,
+        "speed": 45
+      },
+      "name": "Armaldo"
+    },
+    {
+      "id": "milotic",
+      "pokedexId": 350,
+      "type": "water",
+      "types": [
+        "water"
+      ],
+      "baseStats": {
+        "hp": 95,
+        "attack": 60,
+        "defense": 79,
+        "specialAttack": 100,
+        "specialDefense": 125,
+        "speed": 81
+      },
+      "name": "Milotic"
+    },
+    {
+      "id": "banette",
+      "pokedexId": 354,
+      "type": "ghost",
+      "types": [
+        "ghost"
+      ],
+      "baseStats": {
+        "hp": 64,
+        "attack": 115,
+        "defense": 65,
+        "specialAttack": 83,
+        "specialDefense": 63,
+        "speed": 65
+      },
+      "name": "Banette"
+    },
+    {
+      "id": "dusclops",
+      "pokedexId": 356,
+      "type": "ghost",
+      "types": [
+        "ghost"
+      ],
+      "baseStats": {
+        "hp": 40,
+        "attack": 70,
+        "defense": 130,
+        "specialAttack": 60,
+        "specialDefense": 130,
+        "speed": 25
+      },
+      "name": "Dusclops"
+    },
+    {
+      "id": "dusknoir",
+      "pokedexId": 477,
+      "type": "ghost",
+      "types": [
+        "ghost"
+      ],
+      "baseStats": {
+        "hp": 45,
+        "attack": 100,
+        "defense": 135,
+        "specialAttack": 65,
+        "specialDefense": 135,
+        "speed": 45
+      },
+      "name": "Dusknoir"
+    },
+    {
+      "id": "glalie",
+      "pokedexId": 362,
+      "type": "ice",
+      "types": [
+        "ice"
+      ],
+      "baseStats": {
+        "hp": 80,
+        "attack": 80,
+        "defense": 80,
+        "specialAttack": 80,
+        "specialDefense": 80,
+        "speed": 80
+      },
+      "name": "Glalie"
+    },
+    {
+      "id": "sealeo",
+      "pokedexId": 364,
+      "type": "ice",
+      "types": [
+        "ice",
+        "water"
+      ],
+      "baseStats": {
+        "hp": 90,
+        "attack": 60,
+        "defense": 70,
+        "specialAttack": 75,
+        "specialDefense": 70,
+        "speed": 45
+      },
+      "name": "Sealeo"
+    },
+    {
+      "id": "walrein",
+      "pokedexId": 365,
+      "type": "ice",
+      "types": [
+        "ice",
+        "water"
+      ],
+      "baseStats": {
+        "hp": 110,
+        "attack": 80,
+        "defense": 90,
+        "specialAttack": 95,
+        "specialDefense": 90,
+        "speed": 65
+      },
+      "name": "Walrein"
+    },
+    {
+      "id": "huntail",
+      "pokedexId": 367,
+      "type": "water",
+      "types": [
+        "water"
+      ],
+      "baseStats": {
+        "hp": 55,
+        "attack": 104,
+        "defense": 105,
+        "specialAttack": 94,
+        "specialDefense": 75,
+        "speed": 52
+      },
+      "name": "Huntail"
+    },
+    {
+      "id": "shelgon",
+      "pokedexId": 372,
+      "type": "dragon",
+      "types": [
+        "dragon"
+      ],
+      "baseStats": {
+        "hp": 65,
+        "attack": 95,
+        "defense": 100,
+        "specialAttack": 60,
+        "specialDefense": 50,
+        "speed": 50
+      },
+      "name": "Shelgon"
+    },
+    {
+      "id": "salamence",
+      "pokedexId": 373,
+      "type": "dragon",
+      "types": [
+        "dragon",
+        "flying"
+      ],
+      "baseStats": {
+        "hp": 95,
+        "attack": 135,
+        "defense": 80,
+        "specialAttack": 110,
+        "specialDefense": 80,
+        "speed": 100
+      },
+      "name": "Salamence"
+    },
+    {
+      "id": "metang",
+      "pokedexId": 375,
+      "type": "steel",
+      "types": [
+        "steel",
+        "psychic"
+      ],
+      "baseStats": {
+        "hp": 60,
+        "attack": 75,
+        "defense": 100,
+        "specialAttack": 55,
+        "specialDefense": 80,
+        "speed": 50
+      },
+      "name": "Metang"
+    },
+    {
+      "id": "metagross",
+      "pokedexId": 376,
+      "type": "steel",
+      "types": [
+        "steel",
+        "psychic"
+      ],
+      "baseStats": {
+        "hp": 80,
+        "attack": 135,
+        "defense": 130,
+        "specialAttack": 95,
+        "specialDefense": 90,
+        "speed": 70
+      },
+      "name": "Metagross"
+    },
+    {
+      "id": "grotle",
+      "pokedexId": 388,
+      "type": "grass",
+      "types": [
+        "grass"
+      ],
+      "baseStats": {
+        "hp": 75,
+        "attack": 89,
+        "defense": 85,
+        "specialAttack": 55,
+        "specialDefense": 65,
+        "speed": 36
+      },
+      "name": "Grotle"
+    },
+    {
+      "id": "torterra",
+      "pokedexId": 389,
+      "type": "grass",
+      "types": [
+        "grass",
+        "ground"
+      ],
+      "baseStats": {
+        "hp": 95,
+        "attack": 109,
+        "defense": 105,
+        "specialAttack": 75,
+        "specialDefense": 85,
+        "speed": 56
+      },
+      "name": "Torterra"
+    },
+    {
+      "id": "monferno",
+      "pokedexId": 391,
+      "type": "fire",
+      "types": [
+        "fire",
+        "fighting"
+      ],
+      "baseStats": {
+        "hp": 64,
+        "attack": 78,
+        "defense": 52,
+        "specialAttack": 78,
+        "specialDefense": 52,
+        "speed": 81
+      },
+      "name": "Monferno"
+    },
+    {
+      "id": "infernape",
+      "pokedexId": 392,
+      "type": "fire",
+      "types": [
+        "fire",
+        "fighting"
+      ],
+      "baseStats": {
+        "hp": 76,
+        "attack": 104,
+        "defense": 71,
+        "specialAttack": 104,
+        "specialDefense": 71,
+        "speed": 108
+      },
+      "name": "Infernape"
+    },
+    {
+      "id": "prinplup",
+      "pokedexId": 394,
+      "type": "water",
+      "types": [
+        "water"
+      ],
+      "baseStats": {
+        "hp": 64,
+        "attack": 66,
+        "defense": 68,
+        "specialAttack": 81,
+        "specialDefense": 76,
+        "speed": 50
+      },
+      "name": "Prinplup"
+    },
+    {
+      "id": "empoleon",
+      "pokedexId": 395,
+      "type": "water",
+      "types": [
+        "water",
+        "steel"
+      ],
+      "baseStats": {
+        "hp": 84,
+        "attack": 86,
+        "defense": 88,
+        "specialAttack": 111,
+        "specialDefense": 101,
+        "speed": 60
+      },
+      "name": "Empoleon"
+    },
+    {
+      "id": "staravia",
+      "pokedexId": 397,
+      "type": "normal",
+      "types": [
+        "normal",
+        "flying"
+      ],
+      "baseStats": {
+        "hp": 55,
+        "attack": 75,
+        "defense": 50,
+        "specialAttack": 40,
+        "specialDefense": 40,
+        "speed": 80
+      },
+      "name": "Staravia"
+    },
+    {
+      "id": "staraptor",
+      "pokedexId": 398,
+      "type": "normal",
+      "types": [
+        "normal",
+        "flying"
+      ],
+      "baseStats": {
+        "hp": 85,
+        "attack": 120,
+        "defense": 70,
+        "specialAttack": 50,
+        "specialDefense": 60,
+        "speed": 100
+      },
+      "name": "Staraptor"
+    },
+    {
+      "id": "bibarel",
+      "pokedexId": 400,
+      "type": "normal",
+      "types": [
+        "normal",
+        "water"
+      ],
+      "baseStats": {
+        "hp": 79,
+        "attack": 85,
+        "defense": 60,
+        "specialAttack": 55,
+        "specialDefense": 60,
+        "speed": 71
+      },
+      "name": "Bibarel"
+    },
+    {
+      "id": "kricketune",
+      "pokedexId": 402,
+      "type": "bug",
+      "types": [
+        "bug"
+      ],
+      "baseStats": {
+        "hp": 77,
+        "attack": 85,
+        "defense": 51,
+        "specialAttack": 55,
+        "specialDefense": 51,
+        "speed": 65
+      },
+      "name": "Kricketune"
+    },
+    {
       "id": "luxio",
       "pokedexId": 404,
       "type": "electric",
+      "types": [
+        "electric"
+      ],
       "baseStats": {
         "hp": 60,
         "attack": 85,
@@ -1544,6 +8377,9 @@
       "id": "luxray",
       "pokedexId": 405,
       "type": "electric",
+      "types": [
+        "electric"
+      ],
       "baseStats": {
         "hp": 80,
         "attack": 120,
@@ -1555,60 +8391,339 @@
       "name": "Luxray"
     },
     {
-      "id": "zebstrika",
-      "pokedexId": 523,
-      "type": "electric",
+      "id": "rampardos",
+      "pokedexId": 409,
+      "type": "rock",
+      "types": [
+        "rock"
+      ],
       "baseStats": {
-        "hp": 75,
-        "attack": 100,
-        "defense": 63,
-        "specialAttack": 80,
-        "specialDefense": 63,
-        "speed": 116
+        "hp": 97,
+        "attack": 165,
+        "defense": 60,
+        "specialAttack": 65,
+        "specialDefense": 50,
+        "speed": 58
       },
-      "name": "Zebstrika"
+      "name": "Rampardos"
     },
     {
-      "id": "eelektrik",
-      "pokedexId": 603,
-      "type": "electric",
+      "id": "bastiodon",
+      "pokedexId": 411,
+      "type": "rock",
+      "types": [
+        "rock",
+        "steel"
+      ],
       "baseStats": {
-        "hp": 65,
-        "attack": 85,
-        "defense": 70,
-        "specialAttack": 75,
-        "specialDefense": 70,
+        "hp": 60,
+        "attack": 52,
+        "defense": 168,
+        "specialAttack": 47,
+        "specialDefense": 138,
+        "speed": 30
+      },
+      "name": "Bastiodon"
+    },
+    {
+      "id": "wormadam-plant",
+      "pokedexId": 413,
+      "type": "bug",
+      "types": [
+        "bug",
+        "grass"
+      ],
+      "baseStats": {
+        "hp": 60,
+        "attack": 59,
+        "defense": 85,
+        "specialAttack": 79,
+        "specialDefense": 105,
+        "speed": 36
+      },
+      "name": "Wormadam"
+    },
+    {
+      "id": "vespiquen",
+      "pokedexId": 416,
+      "type": "bug",
+      "types": [
+        "bug",
+        "flying"
+      ],
+      "baseStats": {
+        "hp": 70,
+        "attack": 80,
+        "defense": 102,
+        "specialAttack": 80,
+        "specialDefense": 102,
         "speed": 40
       },
-      "name": "Eelektrik"
+      "name": "Vespiquen"
     },
     {
-      "id": "eelektross",
-      "pokedexId": 604,
-      "type": "electric",
+      "id": "floatzel",
+      "pokedexId": 419,
+      "type": "water",
+      "types": [
+        "water"
+      ],
       "baseStats": {
         "hp": 85,
-        "attack": 115,
-        "defense": 80,
-        "specialAttack": 105,
-        "specialDefense": 80,
-        "speed": 50
+        "attack": 105,
+        "defense": 55,
+        "specialAttack": 85,
+        "specialDefense": 50,
+        "speed": 115
       },
-      "name": "Eelektross"
+      "name": "Floatzel"
     },
     {
-      "id": "heliolisk",
-      "pokedexId": 695,
-      "type": "electric",
+      "id": "cherrim",
+      "pokedexId": 421,
+      "type": "grass",
+      "types": [
+        "grass"
+      ],
       "baseStats": {
-        "hp": 62,
-        "attack": 55,
-        "defense": 52,
-        "specialAttack": 109,
-        "specialDefense": 94,
-        "speed": 109
+        "hp": 70,
+        "attack": 60,
+        "defense": 70,
+        "specialAttack": 87,
+        "specialDefense": 78,
+        "speed": 85
       },
-      "name": "Heliolisk"
+      "name": "Cherrim"
+    },
+    {
+      "id": "gastrodon",
+      "pokedexId": 423,
+      "type": "water",
+      "types": [
+        "water",
+        "ground"
+      ],
+      "baseStats": {
+        "hp": 111,
+        "attack": 83,
+        "defense": 68,
+        "specialAttack": 92,
+        "specialDefense": 82,
+        "speed": 39
+      },
+      "name": "Gastrodon"
+    },
+    {
+      "id": "drifblim",
+      "pokedexId": 426,
+      "type": "ghost",
+      "types": [
+        "ghost",
+        "flying"
+      ],
+      "baseStats": {
+        "hp": 150,
+        "attack": 80,
+        "defense": 44,
+        "specialAttack": 90,
+        "specialDefense": 54,
+        "speed": 80
+      },
+      "name": "Drifblim"
+    },
+    {
+      "id": "lopunny",
+      "pokedexId": 428,
+      "type": "normal",
+      "types": [
+        "normal"
+      ],
+      "baseStats": {
+        "hp": 65,
+        "attack": 76,
+        "defense": 84,
+        "specialAttack": 54,
+        "specialDefense": 96,
+        "speed": 105
+      },
+      "name": "Lopunny"
+    },
+    {
+      "id": "purugly",
+      "pokedexId": 432,
+      "type": "normal",
+      "types": [
+        "normal"
+      ],
+      "baseStats": {
+        "hp": 71,
+        "attack": 82,
+        "defense": 64,
+        "specialAttack": 64,
+        "specialDefense": 59,
+        "speed": 112
+      },
+      "name": "Purugly"
+    },
+    {
+      "id": "skuntank",
+      "pokedexId": 435,
+      "type": "poison",
+      "types": [
+        "poison",
+        "dark"
+      ],
+      "baseStats": {
+        "hp": 103,
+        "attack": 93,
+        "defense": 67,
+        "specialAttack": 71,
+        "specialDefense": 61,
+        "speed": 84
+      },
+      "name": "Skuntank"
+    },
+    {
+      "id": "bronzong",
+      "pokedexId": 437,
+      "type": "steel",
+      "types": [
+        "steel",
+        "psychic"
+      ],
+      "baseStats": {
+        "hp": 67,
+        "attack": 89,
+        "defense": 116,
+        "specialAttack": 79,
+        "specialDefense": 116,
+        "speed": 33
+      },
+      "name": "Bronzong"
+    },
+    {
+      "id": "gabite",
+      "pokedexId": 444,
+      "type": "dragon",
+      "types": [
+        "dragon",
+        "ground"
+      ],
+      "baseStats": {
+        "hp": 68,
+        "attack": 90,
+        "defense": 65,
+        "specialAttack": 50,
+        "specialDefense": 55,
+        "speed": 82
+      },
+      "name": "Gabite"
+    },
+    {
+      "id": "garchomp",
+      "pokedexId": 445,
+      "type": "dragon",
+      "types": [
+        "dragon",
+        "ground"
+      ],
+      "baseStats": {
+        "hp": 108,
+        "attack": 130,
+        "defense": 95,
+        "specialAttack": 80,
+        "specialDefense": 85,
+        "speed": 102
+      },
+      "name": "Garchomp"
+    },
+    {
+      "id": "hippowdon",
+      "pokedexId": 450,
+      "type": "ground",
+      "types": [
+        "ground"
+      ],
+      "baseStats": {
+        "hp": 108,
+        "attack": 112,
+        "defense": 118,
+        "specialAttack": 68,
+        "specialDefense": 72,
+        "speed": 47
+      },
+      "name": "Hippowdon"
+    },
+    {
+      "id": "drapion",
+      "pokedexId": 452,
+      "type": "poison",
+      "types": [
+        "poison",
+        "dark"
+      ],
+      "baseStats": {
+        "hp": 70,
+        "attack": 90,
+        "defense": 110,
+        "specialAttack": 60,
+        "specialDefense": 75,
+        "speed": 95
+      },
+      "name": "Drapion"
+    },
+    {
+      "id": "toxicroak",
+      "pokedexId": 454,
+      "type": "poison",
+      "types": [
+        "poison",
+        "fighting"
+      ],
+      "baseStats": {
+        "hp": 83,
+        "attack": 106,
+        "defense": 65,
+        "specialAttack": 86,
+        "specialDefense": 65,
+        "speed": 85
+      },
+      "name": "Toxicroak"
+    },
+    {
+      "id": "lumineon",
+      "pokedexId": 457,
+      "type": "water",
+      "types": [
+        "water"
+      ],
+      "baseStats": {
+        "hp": 69,
+        "attack": 69,
+        "defense": 76,
+        "specialAttack": 69,
+        "specialDefense": 86,
+        "speed": 91
+      },
+      "name": "Lumineon"
+    },
+    {
+      "id": "abomasnow",
+      "pokedexId": 460,
+      "type": "grass",
+      "types": [
+        "grass",
+        "ice"
+      ],
+      "baseStats": {
+        "hp": 90,
+        "attack": 92,
+        "defense": 75,
+        "specialAttack": 92,
+        "specialDefense": 85,
+        "speed": 60
+      },
+      "name": "Abomasnow"
     }
   ]
 }

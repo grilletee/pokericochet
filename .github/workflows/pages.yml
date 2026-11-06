@@ -63,7 +63,7 @@ jobs:
         timeout-minutes: 3
       - run: git diff --exit-code -- src/data/generated
       # The page must carry the sprites and the affiliation notice: fail if either is missing.
-      - run: test "$(ls src/assets/sprites/*.png | wc -l)" -ge 41
+      - run: test "$(ls src/assets/sprites/*.png | wc -l)" -ge 400
       - run: pnpm build
       - run: grep -rq "No está afiliado" dist/assets
 

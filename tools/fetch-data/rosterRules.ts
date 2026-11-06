@@ -11,6 +11,12 @@ export interface RosterRules {
   readonly excludeMythical: boolean;
   /** A baby form is not a base: the line starts at the first form that is not a baby. */
   readonly excludeBabies: boolean;
+  /** Curated, not derived (4H-B2): the starters of the title screen, in key order. */
+  readonly starters?: readonly string[];
+  /** Curated: the legendaries that may be final bosses; they are never in a line. */
+  readonly legendaries?: readonly string[];
+  /** Curated: the fallback boss species (a legendary of its own, not one of `legendaries`). */
+  readonly boss?: string;
 }
 
 /** What one `/pokemon-species/{id}` response says that the rule needs. */

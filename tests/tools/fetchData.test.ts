@@ -65,6 +65,7 @@ describe('fetch-data: parsing a PokéAPI response', () => {
         id: 'charmander',
         pokedexId: 4,
         type: 'fire',
+        types: ['fire'],
         baseStats: {
           hp: 39,
           attack: 52,
@@ -103,11 +104,30 @@ describe('fetch-data: parsing a PokéAPI response', () => {
       }),
     );
     expect(parsed.species.type).toBe('grass');
+    expect(parsed.species.types).toEqual(['grass', 'poison']);
   });
 
-  it('refuses a first type the game does not have, naming the species', () => {
-    const response = apiResponse({ types: [{ slot: 1, type: { name: 'psychic' } }] });
-    expect(() => parsePokemon('abra', response)).toThrow(/"abra".*"psychic"/);
+  it('accepts all 18 types and refuses one the game does not have, naming the species', () => {
+    const psychic = apiResponse({ types: [{ slot: 1, type: { name: 'psychic' } }] });
+    expect(parsePokemon('abra', psychic).species.types).toEqual(['psychic']);
+    const shadow = apiResponse({ types: [{ slot: 1, type: { name: 'shadow' } }] });
+    expect(() => parsePokemon('abra', shadow)).toThrow(/"abra".*"shadow"/);
+    const second = apiResponse({
+      types: [
+        { slot: 1, type: { name: 'fire' } },
+        { slot: 2, type: { name: 'stellar' } },
+      ],
+    });
+    expect(() => parsePokemon('x', second)).toThrow(/"stellar"/);
+    expect(() => parsePokemon('x', apiResponse({ types: [] }))).toThrow(/no type/);
+    const three = apiResponse({
+      types: [
+        { slot: 1, type: { name: 'fire' } },
+        { slot: 2, type: { name: 'water' } },
+        { slot: 3, type: { name: 'grass' } },
+      ],
+    });
+    expect(parsePokemon('x', three).species.types).toEqual(['fire', 'water']); // at most two
   });
 
   it('refuses malformed responses with a message that says what is missing', () => {
@@ -139,6 +159,7 @@ describe('fetch-data: roster and output file', () => {
     pokedexId: 1,
     name: id.toUpperCase(),
     type: 'fire',
+    types: ['fire'],
     baseStats: { hp: 1, attack: 2, defense: 3, specialAttack: 4, specialDefense: 5, speed: 6 },
   });
 
@@ -267,6 +288,49 @@ describe('fetch-data: Spanish names and moves (ADR-036, ADR-039)', () => {
     },
     signatures: { sig: ['ember', null, 'overheat'] },
   };
+
+  it('a dual type chooses among the moves of either of its types (ADR-047), the strongest in the band', () => {
+    const dual = chooseMoves(
+      'd',
+      ['fire', 'water'],
+      ['d', 'd', 'd'],
+      { d: learn('ember', 'surf', 'flamethrower') },
+      infos,
+      overrides,
+    );
+    // Tier 2 band 61-95: surf (90, water) and flamethrower (90, fire) tie; the lower id wins.
+    expect(dual.moves[1]).toBe('flamethrower');
+    // A move of the SECOND type is chosen when it is the only candidate.
+    const second = chooseMoves(
+      'd',
+      ['fire', 'water'],
+      ['d', 'd', 'd'],
+      { d: learn('surf') },
+      infos,
+      overrides,
+    );
+    expect(second.moves[1]).toBe('surf');
+    const waterOnly = chooseMoves(
+      'd',
+      ['water'],
+      ['d', 'd', 'd'],
+      { d: learn('surf') },
+      infos,
+      overrides,
+    );
+    expect(waterOnly.moves[1]).toBe('surf');
+    // A species without a move of its types falls back to the ladder of its FIRST type.
+    const none = chooseMoves(
+      'd',
+      ['grass', 'fire'],
+      ['d', 'd', 'd'],
+      { d: learn('surf') },
+      infos,
+      overrides,
+    );
+    expect(none.sources).toEqual(['default', 'default', 'default']);
+    expect(none.moves[0]).toBe('g1');
+  });
 
   it('picks, per stage, the strongest move of the type inside the tier band, by level-up', () => {
     const chosen = chooseMoves(

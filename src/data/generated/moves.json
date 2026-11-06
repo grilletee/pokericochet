@@ -1,12 +1,12 @@
 {
   "byBase": {
+    "bulbasaur": [
+      "vine-whip",
+      "razor-leaf",
+      "solar-beam"
+    ],
     "charmander": [
       "ember",
-      "flamethrower",
-      "fire-blast"
-    ],
-    "vulpix": [
-      "flame-wheel",
       "flamethrower",
       "fire-blast"
     ],
@@ -15,65 +15,290 @@
       "surf",
       "hydro-pump"
     ],
-    "psyduck": [
-      "water-pulse",
-      "aqua-tail",
-      "hydro-pump"
+    "caterpie": [
+      "bug-bite",
+      "x-scissor",
+      "megahorn"
     ],
-    "bulbasaur": [
-      "vine-whip",
-      "razor-leaf",
-      "solar-beam"
+    "weedle": [
+      "bug-bite",
+      "x-scissor",
+      "megahorn"
     ],
-    "oddish": [
-      "razor-leaf",
-      "petal-blizzard",
-      "petal-dance"
+    "pidgey": [
+      "aerial-ace",
+      "razor-wind",
+      "sky-attack"
+    ],
+    "rattata": [
+      "quick-attack",
+      "take-down",
+      "double-edge"
+    ],
+    "spearow": [
+      "aerial-ace",
+      "take-down",
+      "sky-attack"
+    ],
+    "ekans": [
+      "acid",
+      "sludge-bomb",
+      "belch"
     ],
     "pikachu": [
       "thunder-shock",
       "thunderbolt",
       "thunder"
     ],
-    "magnemite": [
-      "thunder-shock",
-      "thunderbolt",
-      "zap-cannon"
+    "sandshrew": [
+      "bulldoze",
+      "dig",
+      "earthquake"
+    ],
+    "nidoran-f": [
+      "poison-fang",
+      "sludge-bomb",
+      "gunk-shot"
+    ],
+    "nidoran-m": [
+      "smog",
+      "poison-jab",
+      "gunk-shot"
+    ],
+    "clefairy": [
+      "draining-kiss",
+      "moonblast",
+      "moonblast"
+    ],
+    "vulpix": [
+      "flame-wheel",
+      "flamethrower",
+      "fire-blast"
+    ],
+    "jigglypuff": [
+      "covet",
+      "hyper-voice",
+      "double-edge"
+    ],
+    "zubat": [
+      "air-cutter",
+      "air-slash",
+      "gunk-shot"
+    ],
+    "oddish": [
+      "razor-leaf",
+      "petal-blizzard",
+      "petal-dance"
+    ],
+    "paras": [
+      "fury-cutter",
+      "energy-ball",
+      "megahorn"
+    ],
+    "venonat": [
+      "poison-fang",
+      "bug-buzz",
+      "megahorn"
+    ],
+    "diglett": [
+      "bulldoze",
+      "earth-power",
+      "earthquake"
+    ],
+    "meowth": [
+      "fake-out",
+      "slash",
+      "hyper-beam"
+    ],
+    "psyduck": [
+      "water-pulse",
+      "aqua-tail",
+      "hydro-pump"
+    ],
+    "mankey": [
+      "karate-chop",
+      "brick-break",
+      "close-combat"
     ],
     "growlithe": [
       "flame-wheel",
       "flamethrower",
       "burn-up"
     ],
+    "poliwag": [
+      "bubble",
+      "bubble-beam",
+      "hydro-pump"
+    ],
+    "abra": [
+      "confusion",
+      "psychic",
+      "future-sight"
+    ],
+    "machop": [
+      "revenge",
+      "submission",
+      "close-combat"
+    ],
+    "bellsprout": [
+      "razor-leaf",
+      "poison-jab",
+      "leaf-storm"
+    ],
+    "tentacool": [
+      "water-pulse",
+      "sludge-wave",
+      "hydro-pump"
+    ],
+    "geodude": [
+      "bulldoze",
+      "rock-slide",
+      "earthquake"
+    ],
     "ponyta": [
       "flame-wheel",
       "flamethrower",
       "flare-blitz"
     ],
-    "poliwag": [
-      "bubble",
-      "bubble-beam",
+    "slowpoke": [
+      "water-pulse",
+      "psychic",
       "hydro-pump"
+    ],
+    "magnemite": [
+      "magnet-bomb",
+      "thunderbolt",
+      "zap-cannon"
+    ],
+    "farfetchd": [
+      "aerial-ace",
+      "air-slash",
+      "sky-attack"
+    ],
+    "doduo": [
+      "pluck",
+      "uproar",
+      "thrash"
+    ],
+    "seel": [
+      "aqua-jet",
+      "aqua-tail",
+      "hydro-pump"
+    ],
+    "grimer": [
+      "smog",
+      "sludge-wave",
+      "belch"
+    ],
+    "shellder": [
+      "water-gun",
+      "razor-shell",
+      "hydro-pump"
+    ],
+    "gastly": [
+      "astonish",
+      "shadow-ball",
+      "shadow-force"
+    ],
+    "onix": [
+      "bulldoze",
+      "high-horsepower",
+      "stone-edge"
+    ],
+    "drowzee": [
+      "confusion",
+      "psychic",
+      "future-sight"
+    ],
+    "krabby": [
+      "bubble",
+      "razor-shell",
+      "crabhammer"
+    ],
+    "voltorb": [
+      "charge-beam",
+      "thunderbolt",
+      "thunder"
+    ],
+    "exeggcute": [
+      "confusion",
+      "extrasensory",
+      "leaf-storm"
+    ],
+    "cubone": [
+      "bonemerang",
+      "stomping-tantrum",
+      "earthquake"
+    ],
+    "hitmonlee": [
+      "revenge",
+      "brick-break",
+      "high-jump-kick"
+    ],
+    "hitmonchan": [
+      "revenge",
+      "sky-uppercut",
+      "focus-punch"
+    ],
+    "lickitung": [
+      "tackle",
+      "slam",
+      "giga-impact"
+    ],
+    "koffing": [
+      "clear-smog",
+      "sludge-bomb",
+      "belch"
+    ],
+    "rhyhorn": [
+      "bulldoze",
+      "high-horsepower",
+      "rock-wrecker"
+    ],
+    "chansey": [
+      "covet",
+      "take-down",
+      "last-resort"
+    ],
+    "tangela": [
+      "vine-whip",
+      "energy-ball",
+      "power-whip"
+    ],
+    "kangaskhan": [
+      "fake-out",
+      "mega-punch",
+      "last-resort"
     ],
     "horsea": [
       "water-pulse",
       "waterfall",
       "wave-crash"
     ],
-    "bellsprout": [
-      "razor-leaf",
-      "giga-drain",
-      "leaf-storm"
+    "goldeen": [
+      "water-pulse",
+      "waterfall",
+      "hydro-pump"
     ],
-    "exeggcute": [
-      "mega-drain",
-      "seed-bomb",
-      "leaf-storm"
+    "staryu": [
+      "water-gun",
+      "surf",
+      "hydro-pump"
     ],
-    "voltorb": [
-      "charge-beam",
-      "thunderbolt",
-      "thunder"
+    "mr-mime": [
+      "confusion",
+      "psychic",
+      "future-sight"
+    ],
+    "scyther": [
+      "aerial-ace",
+      "x-scissor",
+      "megahorn"
+    ],
+    "jynx": [
+      "avalanche",
+      "psychic",
+      "blizzard"
     ],
     "electabuzz": [
       "shock-wave",
@@ -85,118 +310,813 @@
       "flamethrower",
       "fire-blast"
     ],
-    "slugma": [
-      "incinerate",
-      "flamethrower",
-      "fire-blast"
+    "pinsir": [
+      "bug-bite",
+      "x-scissor",
+      "megahorn"
     ],
-    "numel": [
-      "flame-wheel",
-      "flamethrower",
-      "eruption"
+    "tauros": [
+      "tackle",
+      "raging-bull",
+      "giga-impact"
     ],
-    "cyndaquil": [
-      "flame-wheel",
-      "flamethrower",
-      "eruption"
-    ],
-    "torchic": [
-      "flame-charge",
-      "flamethrower",
-      "flare-blitz"
-    ],
-    "chimchar": [
-      "flame-wheel",
-      "flamethrower",
-      "flare-blitz"
-    ],
-    "krabby": [
-      "bubble",
-      "razor-shell",
-      "crabhammer"
-    ],
-    "staryu": [
-      "water-gun",
-      "surf",
-      "hydro-pump"
-    ],
-    "goldeen": [
-      "water-pulse",
-      "waterfall",
-      "hydro-pump"
-    ],
-    "shellder": [
-      "water-gun",
-      "razor-shell",
-      "hydro-pump"
-    ],
-    "wooper": [
+    "magikarp": [
       "water-gun",
       "aqua-tail",
       "hydro-pump"
     ],
-    "lotad": [
-      "bubble",
-      "bubble-beam",
+    "lapras": [
+      "water-pulse",
+      "ice-beam",
+      "blizzard"
+    ],
+    "ditto": [
+      "tackle",
+      "body-slam",
+      "hyper-beam"
+    ],
+    "eevee": [
+      "covet",
+      "take-down",
+      "last-resort"
+    ],
+    "porygon": [
+      "tackle",
+      "tri-attack",
+      "hyper-beam"
+    ],
+    "omanyte": [
+      "ancient-power",
+      "surf",
       "hydro-pump"
     ],
-    "tangela": [
-      "vine-whip",
-      "energy-ball",
-      "power-whip"
+    "kabuto": [
+      "ancient-power",
+      "liquidation",
+      "hydro-pump"
     ],
-    "hoppip": [
-      "mega-drain",
-      "giga-drain",
-      "solar-beam"
+    "aerodactyl": [
+      "ancient-power",
+      "fly",
+      "stone-edge"
     ],
-    "seedot": [
-      "mega-drain",
-      "leaf-blade",
-      "leaf-storm"
+    "snorlax": [
+      "covet",
+      "body-slam",
+      "giga-impact"
     ],
-    "shroomish": [
-      "mega-drain",
-      "seed-bomb",
-      "solar-beam"
-    ],
-    "sunkern": [
-      "razor-leaf",
-      "petal-blizzard",
-      "leaf-storm"
+    "dratini": [
+      "dragon-tail",
+      "dragon-claw",
+      "outrage"
     ],
     "chikorita": [
       "magical-leaf",
       "giga-drain",
       "petal-dance"
     ],
+    "cyndaquil": [
+      "flame-wheel",
+      "flamethrower",
+      "eruption"
+    ],
+    "totodile": [
+      "water-gun",
+      "aqua-tail",
+      "hydro-pump"
+    ],
+    "sentret": [
+      "quick-attack",
+      "hyper-voice",
+      "double-edge"
+    ],
+    "hoothoot": [
+      "echoed-voice",
+      "take-down",
+      "sky-attack"
+    ],
+    "ledyba": [
+      "silver-wind",
+      "bug-buzz",
+      "megahorn"
+    ],
+    "spinarak": [
+      "bug-bite",
+      "leech-life",
+      "megahorn"
+    ],
+    "chinchou": [
+      "bubble",
+      "discharge",
+      "hydro-pump"
+    ],
+    "togetic": [
+      "air-cutter",
+      "moonblast",
+      "sky-attack"
+    ],
+    "natu": [
+      "peck",
+      "psychic",
+      "future-sight"
+    ],
     "mareep": [
       "charge-beam",
       "discharge",
       "zap-cannon"
+    ],
+    "marill": [
+      "bubble",
+      "aqua-tail",
+      "hydro-pump"
+    ],
+    "sudowoodo": [
+      "rock-tomb",
+      "rock-slide",
+      "head-smash"
+    ],
+    "hoppip": [
+      "acrobatics",
+      "bounce",
+      "solar-beam"
+    ],
+    "aipom": [
+      "swift",
+      "body-slam",
+      "last-resort"
+    ],
+    "sunkern": [
+      "razor-leaf",
+      "petal-blizzard",
+      "leaf-storm"
+    ],
+    "yanma": [
+      "aerial-ace",
+      "bug-buzz",
+      "megahorn"
+    ],
+    "wooper": [
+      "mud-shot",
+      "aqua-tail",
+      "earthquake"
+    ],
+    "murkrow": [
+      "aerial-ace",
+      "foul-play",
+      "brave-bird"
+    ],
+    "misdreavus": [
+      "shadow-sneak",
+      "phantom-force",
+      "shadow-force"
+    ],
+    "unown": [
+      "confusion",
+      "psychic",
+      "future-sight"
+    ],
+    "wobbuffet": [
+      "confusion",
+      "psychic",
+      "future-sight"
+    ],
+    "girafarig": [
+      "confusion",
+      "psychic",
+      "hyper-beam"
+    ],
+    "pineco": [
+      "bug-bite",
+      "x-scissor",
+      "megahorn"
+    ],
+    "dunsparce": [
+      "tackle",
+      "take-down",
+      "double-edge"
+    ],
+    "gligar": [
+      "aerial-ace",
+      "earth-power",
+      "earthquake"
+    ],
+    "snubbull": [
+      "fairy-wind",
+      "play-rough",
+      "moonblast"
+    ],
+    "qwilfish": [
+      "bubble",
+      "aqua-tail",
+      "hydro-pump"
+    ],
+    "shuckle": [
+      "bug-bite",
+      "rock-slide",
+      "stone-edge"
+    ],
+    "heracross": [
+      "rock-smash",
+      "brick-break",
+      "close-combat"
+    ],
+    "sneasel": [
+      "feint-attack",
+      "dark-pulse",
+      "blizzard"
+    ],
+    "teddiursa": [
+      "covet",
+      "slash",
+      "double-edge"
+    ],
+    "slugma": [
+      "incinerate",
+      "flamethrower",
+      "fire-blast"
+    ],
+    "swinub": [
+      "bulldoze",
+      "high-horsepower",
+      "blizzard"
+    ],
+    "corsola": [
+      "ancient-power",
+      "power-gem",
+      "hydro-pump"
+    ],
+    "remoraid": [
+      "water-pulse",
+      "bubble-beam",
+      "hydro-pump"
+    ],
+    "delibird": [
+      "ice-shard",
+      "drill-peck",
+      "blizzard"
+    ],
+    "mantine": [
+      "aerial-ace",
+      "bounce",
+      "hydro-pump"
+    ],
+    "skarmory": [
+      "air-cutter",
+      "drill-peck",
+      "brave-bird"
+    ],
+    "houndour": [
+      "bite",
+      "foul-play",
+      "inferno"
+    ],
+    "phanpy": [
+      "bulldoze",
+      "stomping-tantrum",
+      "earthquake"
+    ],
+    "stantler": [
+      "tackle",
+      "take-down",
+      "double-edge"
+    ],
+    "smeargle": [
+      "tackle",
+      "body-slam",
+      "hyper-beam"
+    ],
+    "hitmontop": [
+      "revenge",
+      "brick-break",
+      "close-combat"
+    ],
+    "miltank": [
+      "tackle",
+      "body-slam",
+      "hyper-beam"
+    ],
+    "larvitar": [
+      "rock-throw",
+      "rock-slide",
+      "earthquake"
+    ],
+    "treecko": [
+      "leafage",
+      "energy-ball",
+      "leaf-storm"
+    ],
+    "torchic": [
+      "flame-charge",
+      "flamethrower",
+      "flare-blitz"
+    ],
+    "mudkip": [
+      "water-pulse",
+      "muddy-water",
+      "hydro-pump"
+    ],
+    "poochyena": [
+      "assurance",
+      "crunch",
+      "dark-pulse"
+    ],
+    "zigzagoon": [
+      "covet",
+      "take-down",
+      "double-edge"
+    ],
+    "wurmple": [
+      "bug-bite",
+      "x-scissor",
+      "megahorn"
+    ],
+    "lotad": [
+      "bubble",
+      "energy-ball",
+      "hydro-pump"
+    ],
+    "seedot": [
+      "mega-drain",
+      "leaf-blade",
+      "leaf-storm"
+    ],
+    "taillow": [
+      "aerial-ace",
+      "air-slash",
+      "brave-bird"
+    ],
+    "wingull": [
+      "aerial-ace",
+      "air-slash",
+      "hurricane"
+    ],
+    "ralts": [
+      "confusion",
+      "psychic",
+      "future-sight"
+    ],
+    "surskit": [
+      "aqua-jet",
+      "bug-buzz",
+      "megahorn"
+    ],
+    "shroomish": [
+      "mega-drain",
+      "seed-bomb",
+      "solar-beam"
+    ],
+    "slakoth": [
+      "covet",
+      "uproar",
+      "mega-kick"
+    ],
+    "nincada": [
+      "bug-bite",
+      "dig",
+      "megahorn"
+    ],
+    "whismur": [
+      "echoed-voice",
+      "hyper-voice",
+      "hyper-beam"
+    ],
+    "makuhita": [
+      "force-palm",
+      "vital-throw",
+      "focus-punch"
+    ],
+    "nosepass": [
+      "rock-throw",
+      "power-gem",
+      "stone-edge"
+    ],
+    "skitty": [
+      "covet",
+      "facade",
+      "double-edge"
+    ],
+    "sableye": [
+      "feint-attack",
+      "foul-play",
+      "dark-pulse"
+    ],
+    "mawile": [
+      "fairy-wind",
+      "play-rough",
+      "iron-tail"
+    ],
+    "aron": [
+      "rock-tomb",
+      "iron-head",
+      "iron-tail"
+    ],
+    "meditite": [
+      "force-palm",
+      "zen-headbutt",
+      "high-jump-kick"
+    ],
+    "electrike": [
+      "shock-wave",
+      "wild-charge",
+      "thunder"
+    ],
+    "plusle": [
+      "thunder-shock",
+      "discharge",
+      "thunder"
+    ],
+    "minun": [
+      "thunder-shock",
+      "discharge",
+      "thunder"
+    ],
+    "volbeat": [
+      "struggle-bug",
+      "bug-buzz",
+      "megahorn"
+    ],
+    "illumise": [
+      "struggle-bug",
+      "bug-buzz",
+      "megahorn"
+    ],
+    "roselia": [
+      "magical-leaf",
+      "energy-ball",
+      "petal-dance"
+    ],
+    "gulpin": [
+      "acid-spray",
+      "sludge-bomb",
+      "belch"
+    ],
+    "carvanha": [
+      "assurance",
+      "liquidation",
+      "hydro-pump"
+    ],
+    "wailmer": [
+      "water-pulse",
+      "dive",
+      "water-spout"
+    ],
+    "numel": [
+      "bulldoze",
+      "earth-power",
+      "eruption"
+    ],
+    "torkoal": [
+      "flame-wheel",
+      "heat-wave",
+      "eruption"
+    ],
+    "spoink": [
+      "confusion",
+      "psychic",
+      "future-sight"
+    ],
+    "spinda": [
+      "tackle",
+      "uproar",
+      "double-edge"
+    ],
+    "trapinch": [
+      "bulldoze",
+      "earth-power",
+      "earthquake"
+    ],
+    "cacnea": [
+      "needle-arm",
+      "energy-ball",
+      "solar-beam"
+    ],
+    "swablu": [
+      "round",
+      "take-down",
+      "sky-attack"
+    ],
+    "zangoose": [
+      "false-swipe",
+      "crush-claw",
+      "hyper-beam"
+    ],
+    "seviper": [
+      "poison-fang",
+      "sludge-bomb",
+      "belch"
+    ],
+    "lunatone": [
+      "confusion",
+      "psychic",
+      "future-sight"
+    ],
+    "solrock": [
+      "confusion",
+      "psychic",
+      "stone-edge"
+    ],
+    "barboach": [
+      "water-pulse",
+      "aqua-tail",
+      "earthquake"
+    ],
+    "corphish": [
+      "bubble",
+      "razor-shell",
+      "crabhammer"
+    ],
+    "baltoy": [
+      "confusion",
+      "earth-power",
+      "earthquake"
+    ],
+    "lileep": [
+      "ancient-power",
+      "energy-ball",
+      "stone-edge"
+    ],
+    "anorith": [
+      "ancient-power",
+      "x-scissor",
+      "stone-edge"
+    ],
+    "feebas": [
+      "water-gun",
+      "aqua-tail",
+      "hydro-pump"
+    ],
+    "castform": [
+      "weather-ball",
+      "headbutt",
+      "hyper-beam"
+    ],
+    "kecleon": [
+      "scratch",
+      "slash",
+      "hyper-beam"
+    ],
+    "shuppet": [
+      "shadow-sneak",
+      "phantom-force",
+      "shadow-force"
+    ],
+    "duskull": [
+      "shadow-sneak",
+      "shadow-ball",
+      "shadow-force"
+    ],
+    "tropius": [
+      "magical-leaf",
+      "air-slash",
+      "leaf-storm"
+    ],
+    "chimecho": [
+      "confusion",
+      "psychic",
+      "synchronoise"
+    ],
+    "absol": [
+      "bite",
+      "night-slash",
+      "dark-pulse"
+    ],
+    "snorunt": [
+      "frost-breath",
+      "ice-beam",
+      "blizzard"
+    ],
+    "spheal": [
+      "water-pulse",
+      "ice-beam",
+      "blizzard"
+    ],
+    "clamperl": [
+      "water-gun",
+      "aqua-tail",
+      "hydro-pump"
+    ],
+    "relicanth": [
+      "ancient-power",
+      "aqua-tail",
+      "head-smash"
+    ],
+    "luvdisc": [
+      "water-pulse",
+      "brine",
+      "hydro-pump"
+    ],
+    "bagon": [
+      "dragon-breath",
+      "dragon-claw",
+      "outrage"
+    ],
+    "beldum": [
+      "metal-claw",
+      "meteor-mash",
+      "iron-tail"
+    ],
+    "turtwig": [
+      "razor-leaf",
+      "leaf-blade",
+      "leaf-storm"
+    ],
+    "chimchar": [
+      "flame-wheel",
+      "flamethrower",
+      "flare-blitz"
+    ],
+    "piplup": [
+      "water-pulse",
+      "liquidation",
+      "wave-crash"
+    ],
+    "starly": [
+      "aerial-ace",
+      "take-down",
+      "giga-impact"
+    ],
+    "bidoof": [
+      "tackle",
+      "take-down",
+      "double-edge"
+    ],
+    "kricketot": [
+      "bug-bite",
+      "bug-buzz",
+      "megahorn"
     ],
     "shinx": [
       "thunder-shock",
       "wild-charge",
       "thunder"
     ],
-    "blitzle": [
-      "shock-wave",
-      "wild-charge",
+    "cranidos": [
+      "ancient-power",
+      "rock-slide",
+      "head-smash"
+    ],
+    "shieldon": [
+      "ancient-power",
+      "iron-head",
+      "stone-edge"
+    ],
+    "burmy": [
+      "bug-bite",
+      "bug-buzz",
+      "megahorn"
+    ],
+    "combee": [
+      "bug-bite",
+      "attack-order",
+      "megahorn"
+    ],
+    "pachirisu": [
+      "thunder-shock",
+      "discharge",
       "thunder"
     ],
-    "tynamo": [
-      "charge-beam",
-      "thunderbolt",
-      "zap-cannon"
+    "buizel": [
+      "water-pulse",
+      "aqua-tail",
+      "wave-crash"
     ],
-    "helioptile": [
-      "thunder-shock",
+    "cherubi": [
+      "magical-leaf",
+      "energy-ball",
+      "petal-dance"
+    ],
+    "shellos": [
+      "water-pulse",
+      "muddy-water",
+      "hydro-pump"
+    ],
+    "drifloon": [
+      "ominous-wind",
+      "phantom-force",
+      "shadow-force"
+    ],
+    "buneary": [
+      "swift",
+      "dizzy-punch",
+      "double-edge"
+    ],
+    "glameow": [
+      "fake-out",
+      "body-slam",
+      "double-edge"
+    ],
+    "stunky": [
+      "bite",
+      "poison-jab",
+      "belch"
+    ],
+    "bronzor": [
+      "confusion",
+      "extrasensory",
+      "future-sight"
+    ],
+    "chatot": [
+      "air-cutter",
+      "hyper-voice",
+      "hurricane"
+    ],
+    "spiritomb": [
+      "feint-attack",
+      "dark-pulse",
+      "shadow-force"
+    ],
+    "gible": [
+      "bulldoze",
+      "earth-power",
+      "outrage"
+    ],
+    "lucario": [
+      "force-palm",
+      "meteor-mash",
+      "close-combat"
+    ],
+    "hippopotas": [
+      "sand-tomb",
+      "high-horsepower",
+      "earthquake"
+    ],
+    "skorupi": [
+      "bug-bite",
+      "x-scissor",
+      "gunk-shot"
+    ],
+    "croagunk": [
+      "revenge",
+      "sludge-bomb",
+      "belch"
+    ],
+    "carnivine": [
+      "vine-whip",
+      "energy-ball",
+      "power-whip"
+    ],
+    "finneon": [
+      "water-pulse",
+      "surf",
+      "hydro-pump"
+    ],
+    "snover": [
+      "icy-wind",
+      "energy-ball",
+      "wood-hammer"
+    ],
+    "rotom": [
+      "ominous-wind",
       "thunderbolt",
       "thunder"
     ]
   },
   "defaults": {
+    "normal": [
+      "tackle",
+      "body-slam",
+      "hyper-beam"
+    ],
+    "fighting": [
+      "karate-chop",
+      "brick-break",
+      "close-combat"
+    ],
+    "flying": [
+      "wing-attack",
+      "air-slash",
+      "brave-bird"
+    ],
+    "poison": [
+      "smog",
+      "sludge-bomb",
+      "gunk-shot"
+    ],
+    "ground": [
+      "mud-shot",
+      "dig",
+      "earthquake"
+    ],
+    "rock": [
+      "rock-throw",
+      "rock-slide",
+      "stone-edge"
+    ],
+    "bug": [
+      "bug-bite",
+      "x-scissor",
+      "megahorn"
+    ],
+    "ghost": [
+      "lick",
+      "shadow-ball",
+      "shadow-force"
+    ],
+    "steel": [
+      "metal-claw",
+      "flash-cannon",
+      "iron-tail"
+    ],
     "fire": [
       "ember",
       "flamethrower",
@@ -216,13 +1136,143 @@
       "thunder-shock",
       "thunderbolt",
       "thunder"
+    ],
+    "psychic": [
+      "confusion",
+      "psychic",
+      "future-sight"
+    ],
+    "ice": [
+      "ice-shard",
+      "ice-beam",
+      "blizzard"
+    ],
+    "dragon": [
+      "dragon-breath",
+      "dragon-claw",
+      "outrage"
+    ],
+    "dark": [
+      "bite",
+      "crunch",
+      "dark-pulse"
+    ],
+    "fairy": [
+      "fairy-wind",
+      "dazzling-gleam",
+      "moonblast"
     ]
   },
   "moves": {
+    "acid": {
+      "name": "Ácido",
+      "type": "poison",
+      "power": 40
+    },
+    "acid-spray": {
+      "name": "Bomba Ácida",
+      "type": "poison",
+      "power": 40
+    },
+    "acrobatics": {
+      "name": "Acróbata",
+      "type": "flying",
+      "power": 55
+    },
+    "aerial-ace": {
+      "name": "Golpe Aéreo",
+      "type": "flying",
+      "power": 60
+    },
+    "air-cutter": {
+      "name": "Aire Afilado",
+      "type": "flying",
+      "power": 60
+    },
+    "air-slash": {
+      "name": "Tajo Aéreo",
+      "type": "flying",
+      "power": 75
+    },
+    "ancient-power": {
+      "name": "Poder Pasado",
+      "type": "rock",
+      "power": 60
+    },
+    "aqua-jet": {
+      "name": "Acua Jet",
+      "type": "water",
+      "power": 40
+    },
     "aqua-tail": {
       "name": "Acua Cola",
       "type": "water",
       "power": 90
+    },
+    "assurance": {
+      "name": "Buena Baza",
+      "type": "dark",
+      "power": 60
+    },
+    "astonish": {
+      "name": "Impresionar",
+      "type": "ghost",
+      "power": 30
+    },
+    "attack-order": {
+      "name": "Al Ataque",
+      "type": "bug",
+      "power": 90
+    },
+    "avalanche": {
+      "name": "Alud",
+      "type": "ice",
+      "power": 60
+    },
+    "belch": {
+      "name": "Eructo",
+      "type": "poison",
+      "power": 120
+    },
+    "bite": {
+      "name": "Mordisco",
+      "type": "dark",
+      "power": 60
+    },
+    "blizzard": {
+      "name": "Ventisca",
+      "type": "ice",
+      "power": 110
+    },
+    "body-slam": {
+      "name": "Golpe Cuerpo",
+      "type": "normal",
+      "power": 85
+    },
+    "bonemerang": {
+      "name": "Huesomerang",
+      "type": "ground",
+      "power": 50
+    },
+    "bounce": {
+      "name": "Bote",
+      "type": "flying",
+      "power": 85
+    },
+    "brave-bird": {
+      "name": "Pájaro Osado",
+      "type": "flying",
+      "power": 120
+    },
+    "brick-break": {
+      "name": "Demolición",
+      "type": "fighting",
+      "power": 75
+    },
+    "brine": {
+      "name": "Salmuera",
+      "type": "water",
+      "power": 65
     },
     "bubble": {
       "name": "Burbuja",
@@ -234,6 +1284,21 @@
       "type": "water",
       "power": 65
     },
+    "bug-bite": {
+      "name": "Picadura",
+      "type": "bug",
+      "power": 60
+    },
+    "bug-buzz": {
+      "name": "Zumbido",
+      "type": "bug",
+      "power": 90
+    },
+    "bulldoze": {
+      "name": "Terratemblor",
+      "type": "ground",
+      "power": 60
+    },
     "burn-up": {
       "name": "Llama Final",
       "type": "fire",
@@ -244,15 +1309,115 @@
       "type": "electric",
       "power": 50
     },
+    "clear-smog": {
+      "name": "Niebla Clara",
+      "type": "poison",
+      "power": 50
+    },
+    "close-combat": {
+      "name": "A Bocajarro",
+      "type": "fighting",
+      "power": 120
+    },
+    "confusion": {
+      "name": "Confusión",
+      "type": "psychic",
+      "power": 50
+    },
+    "covet": {
+      "name": "Antojo",
+      "type": "normal",
+      "power": 60
+    },
     "crabhammer": {
       "name": "Martillazo",
       "type": "water",
       "power": 100
     },
+    "crunch": {
+      "name": "Triturar",
+      "type": "dark",
+      "power": 80
+    },
+    "crush-claw": {
+      "name": "Garra Brutal",
+      "type": "normal",
+      "power": 75
+    },
+    "dark-pulse": {
+      "name": "Pulso Umbrío",
+      "type": "dark",
+      "power": 80
+    },
+    "dazzling-gleam": {
+      "name": "Brillo Mágico",
+      "type": "fairy",
+      "power": 80
+    },
+    "dig": {
+      "name": "Excavar",
+      "type": "ground",
+      "power": 80
+    },
     "discharge": {
       "name": "Chispazo",
       "type": "electric",
       "power": 80
+    },
+    "dive": {
+      "name": "Buceo",
+      "type": "water",
+      "power": 80
+    },
+    "dizzy-punch": {
+      "name": "Puño Mareo",
+      "type": "normal",
+      "power": 70
+    },
+    "double-edge": {
+      "name": "Doble Filo",
+      "type": "normal",
+      "power": 120
+    },
+    "dragon-breath": {
+      "name": "Dragoaliento",
+      "type": "dragon",
+      "power": 60
+    },
+    "dragon-claw": {
+      "name": "Garra Dragón",
+      "type": "dragon",
+      "power": 80
+    },
+    "dragon-tail": {
+      "name": "Cola Dragón",
+      "type": "dragon",
+      "power": 60
+    },
+    "draining-kiss": {
+      "name": "Beso Drenaje",
+      "type": "fairy",
+      "power": 50
+    },
+    "drill-peck": {
+      "name": "Pico Taladro",
+      "type": "flying",
+      "power": 80
+    },
+    "earth-power": {
+      "name": "Tierra Viva",
+      "type": "ground",
+      "power": 90
+    },
+    "earthquake": {
+      "name": "Terremoto",
+      "type": "ground",
+      "power": 100
+    },
+    "echoed-voice": {
+      "name": "Eco Voz",
+      "type": "normal",
+      "power": 40
     },
     "ember": {
       "name": "Ascuas",
@@ -268,6 +1433,36 @@
       "name": "Estallido",
       "type": "fire",
       "power": 150
+    },
+    "extrasensory": {
+      "name": "Paranormal",
+      "type": "psychic",
+      "power": 80
+    },
+    "facade": {
+      "name": "Fachada",
+      "type": "normal",
+      "power": 70
+    },
+    "fairy-wind": {
+      "name": "Viento Feérico",
+      "type": "fairy",
+      "power": 40
+    },
+    "fake-out": {
+      "name": "Sorpresa",
+      "type": "normal",
+      "power": 40
+    },
+    "false-swipe": {
+      "name": "Falso Tortazo",
+      "type": "normal",
+      "power": 40
+    },
+    "feint-attack": {
+      "name": "Finta",
+      "type": "dark",
+      "power": 60
     },
     "fire-blast": {
       "name": "Llamarada",
@@ -294,20 +1489,150 @@
       "type": "fire",
       "power": 120
     },
+    "flash-cannon": {
+      "name": "Cañón Resplandor",
+      "type": "steel",
+      "power": 80
+    },
+    "fly": {
+      "name": "Vuelo",
+      "type": "flying",
+      "power": 90
+    },
+    "focus-punch": {
+      "name": "Puño Certero",
+      "type": "fighting",
+      "power": 150
+    },
+    "force-palm": {
+      "name": "Palmeo",
+      "type": "fighting",
+      "power": 60
+    },
+    "foul-play": {
+      "name": "Juego Sucio",
+      "type": "dark",
+      "power": 95
+    },
+    "frost-breath": {
+      "name": "Vaho Gélido",
+      "type": "ice",
+      "power": 60
+    },
+    "fury-cutter": {
+      "name": "Corte Furia",
+      "type": "bug",
+      "power": 40
+    },
+    "future-sight": {
+      "name": "Premonición",
+      "type": "psychic",
+      "power": 120
+    },
     "giga-drain": {
       "name": "Gigadrenado",
       "type": "grass",
       "power": 75
+    },
+    "giga-impact": {
+      "name": "Gigaimpacto",
+      "type": "normal",
+      "power": 150
+    },
+    "gunk-shot": {
+      "name": "Lanzamugre",
+      "type": "poison",
+      "power": 120
+    },
+    "head-smash": {
+      "name": "Testarazo",
+      "type": "rock",
+      "power": 150
+    },
+    "headbutt": {
+      "name": "Golpe Cabeza",
+      "type": "normal",
+      "power": 70
+    },
+    "heat-wave": {
+      "name": "Onda Ígnea",
+      "type": "fire",
+      "power": 95
+    },
+    "high-horsepower": {
+      "name": "Fuerza Equina",
+      "type": "ground",
+      "power": 95
+    },
+    "high-jump-kick": {
+      "name": "Patada Salto Alta",
+      "type": "fighting",
+      "power": 130
+    },
+    "hurricane": {
+      "name": "Vendaval",
+      "type": "flying",
+      "power": 110
     },
     "hydro-pump": {
       "name": "Hidrobomba",
       "type": "water",
       "power": 110
     },
+    "hyper-beam": {
+      "name": "Hiperrayo",
+      "type": "normal",
+      "power": 150
+    },
+    "hyper-voice": {
+      "name": "Vozarrón",
+      "type": "normal",
+      "power": 90
+    },
+    "ice-beam": {
+      "name": "Rayo Hielo",
+      "type": "ice",
+      "power": 90
+    },
+    "ice-shard": {
+      "name": "Esquirla Helada",
+      "type": "ice",
+      "power": 40
+    },
+    "icy-wind": {
+      "name": "Viento Hielo",
+      "type": "ice",
+      "power": 55
+    },
     "incinerate": {
       "name": "Calcinación",
       "type": "fire",
       "power": 60
+    },
+    "inferno": {
+      "name": "Infierno",
+      "type": "fire",
+      "power": 100
+    },
+    "iron-head": {
+      "name": "Cabeza de Hierro",
+      "type": "steel",
+      "power": 80
+    },
+    "iron-tail": {
+      "name": "Cola Férrea",
+      "type": "steel",
+      "power": 100
+    },
+    "karate-chop": {
+      "name": "Golpe Kárate",
+      "type": "fighting",
+      "power": 50
+    },
+    "last-resort": {
+      "name": "Última Baza",
+      "type": "normal",
+      "power": 140
     },
     "leaf-blade": {
       "name": "Hoja Aguda",
@@ -319,15 +1644,105 @@
       "type": "grass",
       "power": 130
     },
+    "leafage": {
+      "name": "Follaje",
+      "type": "grass",
+      "power": 40
+    },
+    "leech-life": {
+      "name": "Chupavidas",
+      "type": "bug",
+      "power": 80
+    },
+    "lick": {
+      "name": "Lengüetazo",
+      "type": "ghost",
+      "power": 30
+    },
+    "liquidation": {
+      "name": "Hidroariete",
+      "type": "water",
+      "power": 85
+    },
     "magical-leaf": {
       "name": "Hoja Mágica",
       "type": "grass",
+      "power": 60
+    },
+    "magnet-bomb": {
+      "name": "Bomba Imán",
+      "type": "steel",
       "power": 60
     },
     "mega-drain": {
       "name": "Megaagotar",
       "type": "grass",
       "power": 40
+    },
+    "mega-kick": {
+      "name": "Megapatada",
+      "type": "normal",
+      "power": 120
+    },
+    "mega-punch": {
+      "name": "Megapuño",
+      "type": "normal",
+      "power": 80
+    },
+    "megahorn": {
+      "name": "Megacuerno",
+      "type": "bug",
+      "power": 120
+    },
+    "metal-claw": {
+      "name": "Garra Metal",
+      "type": "steel",
+      "power": 50
+    },
+    "meteor-mash": {
+      "name": "Puño Meteoro",
+      "type": "steel",
+      "power": 90
+    },
+    "moonblast": {
+      "name": "Fuerza Lunar",
+      "type": "fairy",
+      "power": 95
+    },
+    "mud-shot": {
+      "name": "Disparo Lodo",
+      "type": "ground",
+      "power": 55
+    },
+    "muddy-water": {
+      "name": "Agua Lodosa",
+      "type": "water",
+      "power": 90
+    },
+    "needle-arm": {
+      "name": "Brazo Pincho",
+      "type": "grass",
+      "power": 60
+    },
+    "night-slash": {
+      "name": "Tajo Umbrío",
+      "type": "dark",
+      "power": 70
+    },
+    "ominous-wind": {
+      "name": "Viento Aciago",
+      "type": "ghost",
+      "power": 60
+    },
+    "outrage": {
+      "name": "Enfado",
+      "type": "dragon",
+      "power": 120
+    },
+    "peck": {
+      "name": "Picotazo",
+      "type": "flying",
+      "power": 35
     },
     "petal-blizzard": {
       "name": "Tormenta Floral",
@@ -339,10 +1754,55 @@
       "type": "grass",
       "power": 120
     },
+    "phantom-force": {
+      "name": "Golpe Fantasma",
+      "type": "ghost",
+      "power": 90
+    },
+    "play-rough": {
+      "name": "Carantoña",
+      "type": "fairy",
+      "power": 90
+    },
+    "pluck": {
+      "name": "Picoteo",
+      "type": "flying",
+      "power": 60
+    },
+    "poison-fang": {
+      "name": "Colmillo Veneno",
+      "type": "poison",
+      "power": 50
+    },
+    "poison-jab": {
+      "name": "Puya Nociva",
+      "type": "poison",
+      "power": 80
+    },
+    "power-gem": {
+      "name": "Joya de Luz",
+      "type": "rock",
+      "power": 80
+    },
     "power-whip": {
       "name": "Latigazo",
       "type": "grass",
       "power": 120
+    },
+    "psychic": {
+      "name": "Psíquico",
+      "type": "psychic",
+      "power": 90
+    },
+    "quick-attack": {
+      "name": "Ataque Rápido",
+      "type": "normal",
+      "power": 40
+    },
+    "raging-bull": {
+      "name": "Furia Taurina",
+      "type": "normal",
+      "power": 90
     },
     "razor-leaf": {
       "name": "Hoja Afilada",
@@ -354,25 +1814,175 @@
       "type": "water",
       "power": 75
     },
+    "razor-wind": {
+      "name": "Viento Cortante",
+      "type": "normal",
+      "power": 80
+    },
+    "revenge": {
+      "name": "Desquite",
+      "type": "fighting",
+      "power": 60
+    },
+    "rock-slide": {
+      "name": "Avalancha",
+      "type": "rock",
+      "power": 75
+    },
+    "rock-smash": {
+      "name": "Golpe Roca",
+      "type": "fighting",
+      "power": 40
+    },
+    "rock-throw": {
+      "name": "Lanzarrocas",
+      "type": "rock",
+      "power": 50
+    },
+    "rock-tomb": {
+      "name": "Tumba Rocas",
+      "type": "rock",
+      "power": 60
+    },
+    "rock-wrecker": {
+      "name": "Romperrocas",
+      "type": "rock",
+      "power": 150
+    },
+    "round": {
+      "name": "Canon",
+      "type": "normal",
+      "power": 60
+    },
+    "sand-tomb": {
+      "name": "Bucle Arena",
+      "type": "ground",
+      "power": 35
+    },
+    "scratch": {
+      "name": "Arañazo",
+      "type": "normal",
+      "power": 40
+    },
     "seed-bomb": {
       "name": "Bomba Germen",
       "type": "grass",
       "power": 80
+    },
+    "shadow-ball": {
+      "name": "Bola Sombra",
+      "type": "ghost",
+      "power": 80
+    },
+    "shadow-force": {
+      "name": "Golpe Umbrío",
+      "type": "ghost",
+      "power": 120
+    },
+    "shadow-sneak": {
+      "name": "Sombra Vil",
+      "type": "ghost",
+      "power": 40
     },
     "shock-wave": {
       "name": "Onda Voltio",
       "type": "electric",
       "power": 60
     },
+    "silver-wind": {
+      "name": "Viento Plata",
+      "type": "bug",
+      "power": 60
+    },
+    "sky-attack": {
+      "name": "Ataque Aéreo",
+      "type": "flying",
+      "power": 140
+    },
+    "sky-uppercut": {
+      "name": "Gancho Alto",
+      "type": "fighting",
+      "power": 85
+    },
+    "slam": {
+      "name": "Atizar",
+      "type": "normal",
+      "power": 80
+    },
+    "slash": {
+      "name": "Cuchillada",
+      "type": "normal",
+      "power": 70
+    },
+    "sludge-bomb": {
+      "name": "Bomba Lodo",
+      "type": "poison",
+      "power": 90
+    },
+    "sludge-wave": {
+      "name": "Onda Tóxica",
+      "type": "poison",
+      "power": 95
+    },
+    "smog": {
+      "name": "Polución",
+      "type": "poison",
+      "power": 30
+    },
     "solar-beam": {
       "name": "Rayo Solar",
       "type": "grass",
       "power": 120
     },
+    "stomping-tantrum": {
+      "name": "Pataleta",
+      "type": "ground",
+      "power": 75
+    },
+    "stone-edge": {
+      "name": "Roca Afilada",
+      "type": "rock",
+      "power": 100
+    },
+    "struggle-bug": {
+      "name": "Estoicismo",
+      "type": "bug",
+      "power": 50
+    },
+    "submission": {
+      "name": "Sumisión",
+      "type": "fighting",
+      "power": 80
+    },
     "surf": {
       "name": "Surf",
       "type": "water",
       "power": 90
+    },
+    "swift": {
+      "name": "Meteoros",
+      "type": "normal",
+      "power": 60
+    },
+    "synchronoise": {
+      "name": "Sincrorruido",
+      "type": "psychic",
+      "power": 120
+    },
+    "tackle": {
+      "name": "Placaje",
+      "type": "normal",
+      "power": 40
+    },
+    "take-down": {
+      "name": "Derribo",
+      "type": "normal",
+      "power": 90
+    },
+    "thrash": {
+      "name": "Saña",
+      "type": "normal",
+      "power": 120
     },
     "thunder": {
       "name": "Trueno",
@@ -389,10 +1999,25 @@
       "type": "electric",
       "power": 90
     },
+    "tri-attack": {
+      "name": "Triataque",
+      "type": "normal",
+      "power": 80
+    },
+    "uproar": {
+      "name": "Alboroto",
+      "type": "normal",
+      "power": 90
+    },
     "vine-whip": {
       "name": "Látigo Cepa",
       "type": "grass",
       "power": 45
+    },
+    "vital-throw": {
+      "name": "Llave Vital",
+      "type": "fighting",
+      "power": 70
     },
     "water-gun": {
       "name": "Pistola Agua",
@@ -404,6 +2029,11 @@
       "type": "water",
       "power": 60
     },
+    "water-spout": {
+      "name": "Salpicar",
+      "type": "water",
+      "power": 150
+    },
     "waterfall": {
       "name": "Cascada",
       "type": "water",
@@ -414,15 +2044,40 @@
       "type": "water",
       "power": 120
     },
+    "weather-ball": {
+      "name": "Meteorobola",
+      "type": "normal",
+      "power": 50
+    },
     "wild-charge": {
       "name": "Voltio Cruel",
       "type": "electric",
       "power": 90
     },
+    "wing-attack": {
+      "name": "Ataque Ala",
+      "type": "flying",
+      "power": 60
+    },
+    "wood-hammer": {
+      "name": "Mazazo",
+      "type": "grass",
+      "power": 120
+    },
+    "x-scissor": {
+      "name": "Tijera X",
+      "type": "bug",
+      "power": 80
+    },
     "zap-cannon": {
       "name": "Electrocañón",
       "type": "electric",
       "power": 120
+    },
+    "zen-headbutt": {
+      "name": "Cabezazo Zen",
+      "type": "psychic",
+      "power": 80
     }
   }
 }
