@@ -1,6 +1,8 @@
 export type { SoundId } from './audio';
-export { AimToggle, SoundFx, SoundToggle, soundFor, Throttle } from './audio';
+export { SoundFx, SoundToggle, soundFor, Throttle } from './audio';
 export { describeBall, describeEffects } from './ballText';
+export type { BossMomentView } from './bossMoment';
+export { BOSS_DEFEAT_MS, BOSS_ENTRY_MS, BOSS_PHASE_MS, BossMoment } from './bossMoment';
 export type { CardTextContext } from './cardText';
 export { cardStep, describeCard, typeName } from './cardText';
 export type { ArtLookup } from './cardView';
@@ -18,7 +20,7 @@ export { Overlay } from './overlay';
 export type { ReplaceMember, ReplaceView } from './replaceScreen';
 export { guardChange, percent, ReplaceScreen } from './replaceScreen';
 export type { StarterOption } from './screens';
-export { CreditsScreen, ResultsScreen, StartScreen } from './screens';
+export { CreditsScreen, ResultsScreen, SettingsScreen, StartScreen } from './screens';
 export type { BestRunView, ResultsText } from './screenText';
 export {
   BOSS_WARNING_TICKS,
@@ -37,11 +39,10 @@ export {
   waveLabel,
 } from './screenText';
 export { barPercent, oneDecimal, STAT_BAR_MAX, STAT_ROWS, statBars, statSummary } from './statBars';
-export type { TileEdge, TileGlow } from './teamBar';
+export type { TileGlow } from './teamBar';
 export { EvolutionBanner, TeamBar } from './teamBar';
 export type { TuneRow } from './tunePanel';
 export { TunePanel } from './tunePanel';
 export { TYPE_COLORS } from './typeColors';
 export { typeIcon, typeIcons } from './typeIcons';
 export { BOSS_CARTEL_MS, CARTEL_MS, SignQueue, WaveBanner } from './waveBanner';
-export { WaveStrip } from './waveStrip';

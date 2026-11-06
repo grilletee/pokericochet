@@ -81,10 +81,14 @@ try {
   check('the assisted aim is off by default', aimed.autoAim === false);
   await page.keyboard.press('KeyT');
   await page.waitForTimeout(150);
-  check('T switches the assisted aim on', (await state()).autoAim === true);
-  await page.keyboard.press('KeyT');
-  await page.waitForTimeout(150);
-  check('T switches it off again', (await state()).autoAim === false);
+  check(
+    'T no longer switches the assisted aim (it is a setting now)',
+    (await state()).autoAim === false,
+  );
+  check(
+    'there is no aim button over the field',
+    (await page.locator('[data-aim-toggle]').count()) === 0,
+  );
   await page.mouse.move(box.x + box.width * 0.7, box.y + box.height * 0.3);
 
   // Balls leave through the bottom, wait on the floor and come back when collected.
@@ -245,8 +249,28 @@ try {
   await creditsPage.waitForFunction(() => window.__debug().screen === 'menu');
   check('Escape goes back from the credits to the title screen', true);
 
-  // The evolution pause can be skipped with a key (and a tap), after a short grace (4H-B1).
-  for (const how of ['key', 'tap']) {
+  // Settings (4H-B2): the assisted aim lives here, off by default, and is remembered.
+  await creditsPage.locator('button[data-action="settings"]').click();
+  await creditsPage.waitForFunction(() => window.__debug().screen === 'settings');
+  const aimButton = creditsPage.locator('button[data-setting="autoAim"]');
+  check(
+    'the settings screen offers the assisted aim, off by default',
+    ((await aimButton.textContent()) ?? '').includes('no'),
+  );
+  await aimButton.click();
+  check(
+    'turning it on is remembered',
+    (await creditsPage.evaluate(() => window.localStorage.getItem('autoAim.v1'))) !== null &&
+      ((await aimButton.textContent()) ?? '').includes('sí'),
+  );
+  await aimButton.click(); // back to off, so the rest of the checks run with the default
+  await creditsPage.keyboard.press('Escape');
+  await creditsPage.waitForFunction(() => window.__debug().screen === 'menu');
+  check('Escape goes back from the settings to the title screen', true);
+
+  // The evolution pause is skipped only with Space or its visible button, after a short grace
+  // (4H-B1, 4H-B2): a stray key or a tap on the field does nothing.
+  for (const how of ['key', 'button']) {
     const skip = await open('starter=charmander&ballLevel=2&offers=growth&seed=9');
     await skip.waitForFunction(() => window.__debug().phase === 'levelup');
     await skip.locator('button[data-card="0"]').click();
@@ -255,8 +279,15 @@ try {
     check(`(${how}) the evolution moment is up before the skip`, await moment2.isVisible());
     const stoppedAt = (await dbg(skip)).tick;
     await skip.waitForTimeout(450); // past the grace
-    if (how === 'key') await skip.keyboard.press('Space');
-    else await skip.mouse.click(270, 400);
+    if (how === 'key') {
+      await skip.keyboard.press('KeyA');
+      await skip.mouse.click(40, 300);
+      await skip.waitForTimeout(100);
+      check('a stray key and a tap on the field do not skip it', await moment2.isVisible());
+      await skip.keyboard.press('Space');
+    } else {
+      await skip.locator('[data-evolution-skip]').click();
+    }
     await skip.waitForTimeout(250);
     check(`(${how}) it ends at once, long before its two seconds`, !(await moment2.isVisible()));
     await skip.waitForTimeout(300);
@@ -528,52 +559,45 @@ try {
     !cartelText.includes('Al acabar'),
     cartelText,
   );
-  const stripText = (await themePage.locator('[data-wave-strip]').textContent()) ?? '';
+  // The strip and the arrows of the portraits are gone (9th playtest); the 4E redesigns them.
   check(
-    'the strip shows the wave, its seconds, and how long until the first boss',
-    stripText.includes('Oleada 1/7') &&
-      /\d+ s/.test(stripText) &&
-      /Jefe 1\/3 en \d:\d\d/.test(stripText),
-    stripText,
-  );
-  check(
-    'the strip carries the type icons',
-    (await themePage.locator('[data-wave-strip] [data-type-icon]').count()) >= 1,
-  );
-  check(
-    'every tile of the team bar has its effectiveness arrow slot',
-    (await themePage.locator('[data-team-tile] [data-tile-edge]').count()) >= 1,
+    'there is no strip over the field and no arrow on the portraits',
+    (await themePage.locator('[data-wave-strip]').count()) === 0 &&
+      (await themePage.locator('[data-tile-edge]').count()) === 0,
   );
   await themePage.screenshot({ path: outFile.replace('.png', '-theme.png') });
-  // A1/A2: the strip is readable on a phone and never lies over the buttons or the team bar.
-  const overlaps = (a, b) =>
-    a !== null &&
-    b !== null &&
-    a.x < b.x + b.width &&
-    b.x < a.x + a.width &&
-    a.y < b.y + b.height &&
-    b.y < a.y + a.height;
-  for (const [label, size] of [
-    ['desktop', { width: 540, height: 820 }],
-    ['phone', { width: 360, height: 640 }],
-  ]) {
-    const view = await open('starter=charmander&seed=9', size);
-    await view.waitForTimeout(400);
-    const stripBox = await view.locator('[data-wave-strip]').boundingBox();
-    const others = [
-      await view.locator('[data-sound-toggle]').boundingBox(),
-      await view.locator('[data-aim-toggle]').boundingBox(),
-      await view.locator('[data-team-bar]').boundingBox(),
-    ];
+  // Biomes and the pool of the run (4H-B2): 7 different biomes, a pool of 30-70 lines, and the
+  // field is tinted with the colour of the biome of the wave (two seeds with other biomes differ).
+  {
+    const info = await themePage.evaluate(() => window.__debug());
     check(
-      `(${label}) the strip is inside the screen and clear of the buttons and the team bar`,
-      stripBox !== null &&
-        stripBox.x >= 0 &&
-        stripBox.x + stripBox.width <= size.width &&
-        others.every((box) => !overlaps(stripBox, box)),
-      JSON.stringify({ stripBox, others }),
+      'the run has seven different biomes and a pool of 30 to 70 lines',
+      new Set(info.waveThemes).size === 7 && info.poolSize >= 30 && info.poolSize <= 70,
+      JSON.stringify({ themes: info.waveThemes, pool: info.poolSize }),
     );
-    if (label === 'phone') await view.screenshot({ path: outFile.replace('.png', '-phone.png') });
+    await themePage.waitForFunction(() => window.__debug().biomeColor >= 0, undefined, {
+      timeout: 4000,
+    });
+    const colours = new Set();
+    for (const seed of [9, 10, 11, 12, 13, 14]) {
+      const other = await open(`starter=charmander&seed=${seed}`);
+      await other.waitForFunction(() => window.__debug().biomeColor >= 0, undefined, {
+        timeout: 4000,
+      });
+      await other.waitForTimeout(1200); // the tint has finished fading in
+      colours.add(await other.evaluate(() => window.__debug().biomeColor));
+      await other.close();
+    }
+    check(
+      'the colour of the field changes with the biome (several different tints over six seeds)',
+      colours.size >= 3,
+      JSON.stringify([...colours]),
+    );
+  }
+  {
+    const view = await open('starter=charmander&seed=9', { width: 360, height: 640 });
+    await view.waitForTimeout(400);
+    await view.screenshot({ path: outFile.replace('.png', '-phone.png') });
     await view.close();
   }
   await themePage.waitForFunction(
@@ -601,16 +625,23 @@ try {
   );
   check('the boss gets its own cartel, after the wave one, with its name', true);
   check(
-    'while a boss lives the strip says which one instead of the clock',
-    ((await bossPage.locator('[data-wave-strip]').textContent()) ?? '').includes('Jefe final'),
-  );
-  check(
     'the final boss is a legendary named on its bar',
-    /(Moltres|Kyogre|Virizion|Zapdos)/.test(
+    /(Moltres|Kyogre|Virizion|Zapdos|Articuno|Mewtwo|Regirock|Registeel|Rayquaza|Giratina|Groudon|Darkrai|Arceus|Genesect)/.test(
       (await bossPage.locator('[data-boss-bar]').textContent()) ?? '',
     ),
   );
   await bossPage.screenshot({ path: outFile.replace('.png', '-boss.png') });
+  // The fight (4G-B, ADR-046): the entry stops the game with a big name, the bar has the notches of
+  // its phases and a shield bar, and the boss announces columns of the floor.
+  check(
+    'the bar of the boss has the notches of its phases and a bar for the shield',
+    (await bossPage.locator('[data-boss-notch]').count()) === 2 &&
+      (await bossPage.locator('[data-boss-shield]').count()) === 1,
+  );
+  await bossPage.waitForFunction(() => window.__debug().hazards > 0, undefined, { timeout: 15000 });
+  check('the boss announces a column of the floor', true);
+  await bossPage.screenshot({ path: outFile.replace('.png', '-boss-column.png') });
+  check('the columns are drawn and the game still runs', (await dbg(bossPage)).hp > 0);
 
   // End of run: results screen, best run in localStorage, and the two ways to go on.
   const end = await open('starter=charmander&hp=0&seed=2');

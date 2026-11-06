@@ -11,11 +11,10 @@ import {
   dropCapture,
   formAt,
   formOfMember,
-  GAME_TYPES,
   type GameConfig,
   type GameEvent,
+  type GameType,
   guardAfterReplace,
-  matchup,
   moveIdOf,
   nextStep,
   PHASE_LEVELUP,
@@ -30,15 +29,19 @@ import {
   summarizeRun,
   syncMember,
   teamGuard,
+  themeTypes,
   tick,
   typeAdvice,
-  type WaveAdvice,
   waveAdvice,
   writeSnapshot,
 } from '../domain';
 import { Renderer } from '../render';
 import {
-  AimToggle,
+  BOSS_DEFEAT_MS,
+  BOSS_ENTRY_MS,
+  BOSS_PHASE_MS,
+  BossMoment,
+  type BossMomentView,
   bossCartel,
   bossLabel,
   type CardTextContext,
@@ -60,6 +63,7 @@ import {
   ReplaceScreen,
   type ReplaceView,
   ResultsScreen,
+  SettingsScreen,
   SoundFx,
   SoundToggle,
   STEP_COLOR,
@@ -69,12 +73,10 @@ import {
   signatureLine,
   spriteTile,
   TeamBar,
-  type TileEdge,
   type TileGlow,
   TunePanel,
   typeName,
   WaveBanner,
-  WaveStrip,
   waveCartel,
 } from '../ui';
 import { BENCH_LOADS, type BenchLoad, benchScenario } from './benchScenario';
@@ -152,6 +154,15 @@ declare global {
       autoAim: boolean;
       aimX: number;
       aimY: number;
+      /** Biome of each wave, the lines in the pool of the run and the tint of the field now. */
+      waveThemes: readonly string[];
+      poolSize: number;
+      biomeColor: number;
+      /** The fight of a boss: columns on the floor, the phase, the shield left and the stun. */
+      hazards: number;
+      bossPhase: number;
+      bossShield: number;
+      bossStun: number;
       /** Moves cast so far, and the labels that were shown / left out (ADR-039). */
       moveCasts: number;
       labelsShown: number;
@@ -254,7 +265,7 @@ function arrow(symbol = '→'): HTMLElement {
   return node;
 }
 
-type Screen = 'menu' | 'credits' | 'playing' | 'results';
+type Screen = 'menu' | 'credits' | 'settings' | 'playing' | 'results';
 
 /** Debug aids (?debug&…): start from a prepared state to reach a scene quickly. */
 function applyDebugParams(run: Run, config: GameConfig, params: URLSearchParams): void {
@@ -372,8 +383,6 @@ export async function startGame(host: HTMLElement): Promise<void> {
     forms,
   );
   const overlay = new Overlay(host);
-  // What the wave in progress is, for the strip and the arrows of the team bar (ADR-050).
-  let advice: WaveAdvice | null = null;
   const teamBar = new TeamBar(
     host,
     art,
@@ -384,14 +393,8 @@ export async function startGame(host: HTMLElement): Promise<void> {
       const need = chargeNeed(config, stageForLevel(config, member.level));
       return member.charge >= need * NEAR_CHARGE ? 'near' : 'idle';
     },
-    (member): TileEdge => {
-      if (advice === null || advice.types.length === 0) return 'even';
-      const value = matchup(config, member.type, advice.types);
-      return value > 1 ? 'good' : value < 1 ? 'poor' : 'even';
-    },
   );
   const cartel = new WaveBanner(host);
-  const strip = new WaveStrip(host);
   const replaceScreen = new ReplaceScreen(host);
   const sheet = new MemberSheet(host);
   const moveLabels = new MoveLabels(host);
@@ -399,13 +402,20 @@ export async function startGame(host: HTMLElement): Promise<void> {
   const labelPolicy = new MoveLabelPolicy(3, 900);
   const banner = new EvolutionBanner(host);
   const moment = new EvolutionMoment(host);
+  const bossMoment = new BossMoment(host);
   const pause = new GamePause();
-  // A tap or any key skips the evolution pause (4H-B1); the grace time lives in `GamePause.skip`.
+  // Only Space or the visible button skip the evolution pause (4H-B2: a stray key or tap used to
+  // skip it); the grace time lives in `GamePause.skip`.
   const skipEvolution = (): void => {
-    if (pause.skip(performance.now())) moment.hide();
+    if (pause.skip(performance.now())) {
+      moment.hide();
+      bossMoment.hide();
+    }
   };
-  host.addEventListener('pointerdown', skipEvolution);
-  window.addEventListener('keydown', skipEvolution);
+  moment.setOnSkip(skipEvolution);
+  window.addEventListener('keydown', (e) => {
+    if (e.code === 'Space') skipEvolution();
+  });
   const startScreen = new StartScreen(host);
   const creditsScreen = new CreditsScreen(host);
   const resultsScreen = new ResultsScreen(host);
@@ -420,11 +430,9 @@ export async function startGame(host: HTMLElement): Promise<void> {
   for (const gesture of ['pointerdown', 'keydown'] as const) {
     window.addEventListener(gesture, () => sound.unlock());
   }
+  // The assisted aim is an accessibility option of the settings screen, off by default (4H-B2).
   let autoAim = loadAutoAim(store);
-  const aimToggle = new AimToggle(host, autoAim, (auto) => {
-    autoAim = auto;
-    saveAutoAim(store, auto);
-  });
+  const settingsScreen = new SettingsScreen(host);
   // ?tune: live tuning panel. The knobs rebuild the config from the shipped one on every change.
   if (params.has('tune') && !bench) {
     let tuneValues: TuneValues;
@@ -502,6 +510,13 @@ export async function startGame(host: HTMLElement): Promise<void> {
       autoAim: run.autoAim,
       aimX: run.aimX,
       aimY: run.aimY,
+      waveThemes: run.waveThemes,
+      poolSize: run.pool.length,
+      biomeColor: renderer.biomeColor,
+      hazards: run.hazards.length,
+      bossPhase: run.boss.phase,
+      bossShield: run.boss.shieldHp,
+      bossStun: run.boss.stunTicks,
       moveCasts,
       labelsShown: labelPolicy.shown,
       labelsDropped: labelPolicy.dropped,
@@ -541,9 +556,10 @@ export async function startGame(host: HTMLElement): Promise<void> {
   const themeLabel = (id: string): string | null => {
     const theme = config.themes?.[id];
     if (theme === undefined) return null;
-    const counters = GAME_TYPES.filter((type) => config.typeChart[type][theme.type] > 1);
+    const types = themeTypes(config, id);
+    const counters = typeAdvice(config, types).effective.slice(0, 3);
     const hint = counters.length > 0 ? ` · le gana ${counters.map(typeName).join(' / ')}` : '';
-    return `${theme.name} (${typeName(theme.type)})${hint}`;
+    return `${theme.name} (${types.map(typeName).join(' / ')})${hint}`;
   };
 
   const startRun = (species: string): void => {
@@ -558,6 +574,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
     resultsScreen.hide();
     banner.hide();
     moment.hide();
+    bossMoment.hide();
     cartel.hide();
     pause.reset();
     signatureAnnounced = false;
@@ -571,6 +588,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
     resultsScreen.hide();
     banner.hide();
     creditsScreen.hide();
+    settingsScreen.hide();
     startScreen.show(
       GAME_TITLE,
       starters,
@@ -578,8 +596,21 @@ export async function startGame(host: HTMLElement): Promise<void> {
       disclaimerShort(GAME_TITLE),
       (index) => input.requestPick(index),
       showCredits,
+      showSettings,
     );
   };
+  function showSettings(): void {
+    screen = 'settings';
+    startScreen.hide();
+    settingsScreen.show(
+      autoAim,
+      (auto) => {
+        autoAim = auto;
+        saveAutoAim(store, auto);
+      },
+      showMenu,
+    );
+  }
   function showCredits(): void {
     screen = 'credits';
     startScreen.hide();
@@ -656,6 +687,51 @@ export async function startGame(host: HTMLElement): Promise<void> {
     if (signatureReady(run, config, index)) input.requestPick(index);
     else openSheet(index);
   });
+  /** The full-screen moment a boss event brings, with how long the game stops for it. */
+  const bossMomentOf = (event: GameEvent): { view: BossMomentView; ms: number } | null => {
+    const name = (species: string): string => pokemonName(species);
+    const typeOf = (species: string): GameType | undefined => config.species[species]?.type;
+    if (event.type === 'bossSpawn') {
+      return {
+        ms: BOSS_ENTRY_MS,
+        view: {
+          style: 'entry',
+          kicker: bossLabel(event.number, event.interludes, event.final).toUpperCase(),
+          title: name(event.species),
+          type: typeOf(event.species),
+          spriteUrl: art.spriteUrl(event.species),
+        },
+      };
+    }
+    if (event.type === 'bossPhase') {
+      const boss = run.enemies.find((e) => e.id === run.boss.id);
+      const species = boss?.species ?? '';
+      return {
+        ms: BOSS_PHASE_MS,
+        view: {
+          style: 'phase',
+          kicker: `FASE ${event.phase + 1}/3`,
+          title: name(species),
+          note: 'Rompe el escudo en su punto débil',
+          type: typeOf(species),
+          spriteUrl: art.spriteUrl(species),
+        },
+      };
+    }
+    if (event.type === 'bossDefeated') {
+      return {
+        ms: BOSS_DEFEAT_MS,
+        view: {
+          style: 'defeat',
+          kicker: '¡JEFE DERROTADO!',
+          title: name(event.species),
+          type: typeOf(event.species),
+          spriteUrl: art.spriteUrl(event.species),
+        },
+      };
+    }
+    return null;
+  };
   /** The DOM feedback of the events of this frame: captures fly to the team bar, evolutions show. */
   const showEventFeedback = (events: readonly GameEvent[], now: number): void => {
     for (const event of events) {
@@ -763,7 +839,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
       if (id !== undefined && config.species[id] !== undefined) startRun(id);
       input.restartRequested = false;
       input.menuRequested = false;
-    } else if (screen === 'credits') {
+    } else if (screen === 'credits' || screen === 'settings') {
       input.takePick();
       if (input.menuRequested) showMenu();
       input.restartRequested = false;
@@ -775,12 +851,6 @@ export async function startGame(host: HTMLElement): Promise<void> {
       input.restartRequested = false;
       input.menuRequested = false;
     } else {
-      if (input.autoAimToggleRequested) {
-        autoAim = !autoAim;
-        aimToggle.set(autoAim, false);
-        saveAutoAim(store, autoAim);
-      }
-      input.autoAimToggleRequested = false;
       input.restartRequested = false;
       input.menuRequested = false;
     }
@@ -819,6 +889,13 @@ export async function startGame(host: HTMLElement): Promise<void> {
           pause.start(now, pauseMs(event.stage));
           stopped = true;
         }
+        // The entry, the phases and the defeat of a boss stop the game for a moment (4G-B, ADR-046).
+        const bossPause = bossMomentOf(event);
+        if (bossPause !== null) {
+          bossMoment.show(bossPause.view, bossPause.ms);
+          pause.start(now, bossPause.ms);
+          stopped = true;
+        }
       }
       const swap = prev;
       prev = curr;
@@ -833,13 +910,6 @@ export async function startGame(host: HTMLElement): Promise<void> {
       }
     }
 
-    advice = !bench && screen === 'playing' ? waveAdvice(run, config) : null;
-    strip.update(
-      advice,
-      curr.bossHp > 0
-        ? bossLabel(run.boss.next, (config.interludes ?? []).length, run.boss.spawned)
-        : null,
-    );
     cartel.update(now);
     teamBar.update(!bench && screen === 'playing' ? run.team : null);
     if (!bench && screen === 'playing') {
@@ -891,7 +961,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
     }
 
     overlay.setHud(
-      screen === 'menu' || screen === 'credits'
+      screen === 'menu' || screen === 'credits' || screen === 'settings'
         ? ''
         : hudText(
             curr,
@@ -907,6 +977,8 @@ export async function startGame(host: HTMLElement): Promise<void> {
       pokemonName(speciesIds[curr.bossSpecies] ?? ''),
       screen === 'playing' ? curr.bossHp : 0,
       curr.bossMaxHp,
+      curr.bossShield,
+      curr.bossStun > 0,
     );
     overlay.setCards(
       screen === 'playing' && curr.phase === PHASE_LEVELUP ? run.offers : null,

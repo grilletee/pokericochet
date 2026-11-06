@@ -10,7 +10,7 @@ export interface ArenaView {
 }
 
 /**
- * Keyboard (A/D, arrows, T for the assisted aim) and pointer. The mouse aims wherever it points
+ * Keyboard (A/D, arrows) and pointer. The mouse aims wherever it points
  * and a press on the floor strip steers; on a touch screen a finger on the floor steers and
  * another one above it aims (ADR-021). It only records state; the per-tick command is derived in
  * `commandFromInput`.
@@ -27,8 +27,6 @@ export class Input {
   restartRequested = false;
   /** Set when M or Escape asks for the title screen; the game loop consumes it. */
   menuRequested = false;
-  /** Set when T asks to switch the assisted aim; the game loop consumes it. */
-  autoAimToggleRequested = false;
   /** Pointer ids currently steering (on the floor) and aiming (anywhere above it). */
   private steerId: number | null = null;
   private aimId: number | null = null;
@@ -125,9 +123,6 @@ export class Input {
       case 'KeyR':
       case 'Enter':
         if (down) this.restartRequested = true;
-        break;
-      case 'KeyT':
-        if (down) this.autoAimToggleRequested = true;
         break;
       case 'KeyM':
       case 'Escape':

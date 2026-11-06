@@ -163,7 +163,14 @@ describe('card text', () => {
         for (const kind of ['train', 'power', 'cadence'] as const) {
           const { title } = describeCard({ kind, member: 0 }, ctx);
           expect(title, `${base} Nv${level} ${kind}`).toContain(name);
-          if (form !== base) expect(title).not.toContain(pokemonName(base));
+          // The base name as a whole word: "Paras" is inside "Parasect" without being named.
+          if (form !== base) {
+            const whole = new RegExp(
+              `(^|[^\\p{L}\\p{N}-])${pokemonName(base)}($|[^\\p{L}\\p{N}-])`,
+              'u',
+            );
+            expect(title).not.toMatch(whole);
+          }
         }
         expect(stageForLevel(gameConfig, level)).toBeGreaterThan(0);
       }

@@ -10,10 +10,24 @@ import { typeName } from './cardText';
 import { pokemonName } from './names';
 
 const TYPE_BLURB: Record<GameType, string> = {
+  normal: 'Golpe fiable y fuerte',
+  fighting: 'Empuja y revienta a los de al lado',
+  flying: 'Atraviesa enemigos',
+  poison: 'Envenena: el daño se acumula',
+  ground: 'Una onda sube por la columna',
+  rock: 'Explota al derrotar',
+  bug: 'Salta entre varios enemigos',
+  ghost: 'Maldice: el daño llega después',
+  steel: 'Atraviesa y golpea fuerte',
   fire: 'Quema al impactar',
   water: 'Atraviesa enemigos',
   grass: 'Drena vida al golpear',
   electric: 'Encadena a otro enemigo',
+  psychic: 'Aturde un instante',
+  ice: 'Frena y congela',
+  dragon: 'Daño muy alto, pero raro',
+  dark: 'Marca: recibe más daño',
+  fairy: 'Cura y da guardia al equipo',
 };
 
 export function starterBlurb(type: GameType): string {

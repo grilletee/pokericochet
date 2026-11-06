@@ -47,6 +47,7 @@ export class StartScreen {
     disclaimer: string,
     onPick: (index: number) => void,
     onCredits: () => void,
+    onSettings: () => void,
   ): void {
     this.root.replaceChildren(
       el('div', 'font-size:40px;font-weight:800;letter-spacing:0.5px;', title),
@@ -89,7 +90,16 @@ export class StartScreen {
     credits.type = 'button';
     credits.dataset.action = 'credits';
     credits.addEventListener('click', onCredits);
+    const settings = el(
+      'button',
+      `${BUTTON}min-width:0;margin-top:6px;padding:6px 14px;`,
+      'Ajustes',
+    );
+    settings.type = 'button';
+    settings.dataset.action = 'settings';
+    settings.addEventListener('click', onSettings);
     this.root.append(
+      settings,
       credits,
       el('div', 'font-size:11px;opacity:0.6;max-width:420px;margin-top:6px;', disclaimer),
     );
@@ -132,6 +142,55 @@ export class ResultsScreen {
     menu.dataset.action = 'menu';
     menu.addEventListener('click', onMenu);
     this.root.append(again, menu);
+    this.root.style.display = 'flex';
+  }
+
+  hide(): void {
+    this.root.style.display = 'none';
+  }
+}
+
+/**
+ * Settings screen (4H-B2): for now only the assisted aim, an accessibility option that is off by
+ * default and is no longer in the game screen ("I never use it": it only gets in the way there).
+ */
+export class SettingsScreen {
+  private readonly root = el('div', PANEL);
+
+  constructor(host: HTMLElement) {
+    this.root.dataset.screen = 'settings';
+    this.root.addEventListener('pointerdown', (e) => e.stopPropagation());
+    host.append(this.root);
+  }
+
+  show(autoAim: boolean, onAutoAim: (auto: boolean) => void, onBack: () => void): void {
+    let auto = autoAim;
+    this.root.replaceChildren(
+      el('div', 'font-size:30px;font-weight:800;margin-bottom:6px;', 'Ajustes'),
+    );
+    const aim = el('button', `${BUTTON}text-align:center;`);
+    aim.type = 'button';
+    aim.dataset.setting = 'autoAim';
+    const render = (): void => {
+      aim.textContent = auto ? 'Apuntado asistido: sí' : 'Apuntado asistido: no';
+    };
+    render();
+    aim.addEventListener('click', () => {
+      auto = !auto;
+      render();
+      onAutoAim(auto);
+    });
+    const note = el(
+      'div',
+      'font-size:13px;opacity:0.75;max-width:380px;line-height:1.4;',
+      'Accesibilidad: dispara solo al enemigo más cercano, con más dispersión y recarga más lenta. ' +
+        'Por defecto se apunta con el ratón o el dedo.',
+    );
+    const back = el('button', `${BUTTON}margin-top:12px;text-align:center;`, 'Volver (Esc)');
+    back.type = 'button';
+    back.dataset.action = 'back';
+    back.addEventListener('click', onBack);
+    this.root.append(aim, note, back);
     this.root.style.display = 'flex';
   }
 

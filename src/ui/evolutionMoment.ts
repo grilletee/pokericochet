@@ -6,7 +6,7 @@ import { TYPE_COLORS } from './typeColors';
 /**
  * Real milliseconds the game stops for a stage step: about two seconds, a little longer for the
  * maximum stage (4H-B1; one second in 4F-E was "a bit short to see it well"). The 4F-D slow motion
- * was dropped: "it cuts the rhythm and feels odd". A tap or a key skips it (`GamePause.skip`).
+ * was dropped: "it cuts the rhythm and feels odd". Space or its button skips it (`GamePause.skip`).
  */
 export function pauseMs(stage: number): number {
   return stage >= 3 ? 2400 : 2000;
@@ -98,12 +98,18 @@ export interface MomentView {
  * The evolution moment (4F-D, pause instead of slow motion in 4F-E, polished in 4E): the game is
  * paused by the app (`GamePause`) while the screen dims and the old form shows as a glowing
  * silhouette in the foreground; a flash changes it into the new form and the name of what it
- * became appears big in the centre. It takes no pointer events and ends by itself, or earlier when
- * the app skips the pause (a tap or a key, 4H-B1: the app calls `hide`).
+ * became appears big in the centre. Only its skip button takes pointer events; it ends by itself,
+ * or earlier when the app skips the pause (the button or Space; the app calls `hide`).
  */
 export class EvolutionMoment {
   private readonly root: HTMLDivElement;
   private timers: number[] = [];
+  private onSkip: () => void = () => {};
+
+  /** Called when the visible skip button is pressed (the app decides if the grace has passed). */
+  setOnSkip(handler: () => void): void {
+    this.onSkip = handler;
+  }
 
   constructor(host: HTMLElement) {
     this.root = box(
@@ -149,7 +155,17 @@ export class EvolutionMoment {
         `text-shadow:0 2px 0 #000,0 0 14px ${color};`,
       this.headline(view, false),
     );
-    this.root.replaceChildren(stage, title);
+    // A visible button for the phone; the keyboard uses Space. Nothing else skips (9th playtest:
+    // "I hit A by accident and skipped one I did not want to").
+    const skip = document.createElement('button');
+    skip.type = 'button';
+    skip.dataset.evolutionSkip = '';
+    skip.textContent = 'Saltar [Espacio]';
+    skip.style.cssText =
+      'margin-top:10px;min-height:44px;padding:0 18px;border-radius:22px;border:1px solid #ffffff88;' +
+      'background:#0b0e16cc;color:#e8ecf8;font:700 14px system-ui;cursor:pointer;pointer-events:auto;';
+    skip.addEventListener('click', () => this.onSkip());
+    this.root.replaceChildren(stage, title, skip);
     this.root.style.display = 'flex';
 
     const half = ms * 0.45;

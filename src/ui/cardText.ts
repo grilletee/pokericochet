@@ -3,10 +3,24 @@ import { describeEffects } from './ballText';
 import { pokemonName } from './names';
 
 const TYPE_NAMES: Record<GameType, string> = {
+  normal: 'Normal',
+  fighting: 'Lucha',
+  flying: 'Volador',
+  poison: 'Veneno',
+  ground: 'Tierra',
+  rock: 'Roca',
+  bug: 'Bicho',
+  ghost: 'Fantasma',
+  steel: 'Acero',
   fire: 'Fuego',
   water: 'Agua',
   grass: 'Planta',
   electric: 'Eléctrico',
+  psychic: 'Psíquico',
+  ice: 'Hielo',
+  dragon: 'Dragón',
+  dark: 'Siniestro',
+  fairy: 'Hada',
 };
 
 /** What the text of a card needs to know about the rules in force and the team. */

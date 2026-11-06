@@ -10,6 +10,14 @@ const EFFECT_NAMES: Record<EffectKind, string> = {
   splash: 'Salpicadura',
   slow: 'Ralentizar',
   blast: 'Explosión',
+  poison: 'Envenenar',
+  curse: 'Maldecir',
+  quake: 'Onda de tierra',
+  push: 'Empujar',
+  guard: 'Guardia',
+  freeze: 'Congelar',
+  stun: 'Aturdir',
+  mark: 'Marcar',
 };
 
 /** 1.5 -> "1,5"; at most two decimals, no trailing zeros. */
