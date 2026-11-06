@@ -4,6 +4,7 @@ import {
   aimDirection,
   type GameConfig,
   type GameEvent,
+  NO_SPECIES,
   type Snapshot,
   typeCode,
 } from '../domain';
@@ -11,9 +12,24 @@ import { ballVisualScale, opaqueExtent } from './artBox';
 import { interpolateBalls, interpolateEnemies } from './interpolate';
 
 /** Placeholder colours per type code (fire, water, grass, electric). No franchise art here. */
-const TYPE_COLORS: readonly number[] = [0xff7043, 0x4fc3f7, 0x81c784, 0xffee58];
+// In the order of the type codes of the snapshot (`typeCode`, the place in GAME_TYPES): normal,
+// fighting, flying, poison, ground, rock, bug, ghost, steel, fire, water, grass, electric, psychic,
+// ice, dragon, dark, fairy.
+const TYPE_COLORS: readonly number[] = [
+  0xc9c5a0, 0xd0584a, 0xa4b8f0, 0xb55cc0, 0xe0c068, 0xc2b068, 0xa8c030, 0x8570b8, 0xb8b8d0,
+  0xff7043, 0x4fc3f7, 0x81c784, 0xffee58, 0xf9689a, 0x98e0e0, 0x7c52f8, 0x8a7060, 0xf4a8c8,
+];
 const FX_POOL = 48;
+/** Columns of a boss drawn at once; the snapshot carries `MAX_HAZARDS`. */
+const HAZARD_POOL = 16;
 const AIM_DOTS = 16;
+/** Particles of the biome of the wave in progress (4H-B2, block 3): few and cheap on purpose. */
+const BIOME_DOTS = 22;
+/** How fast the tint of the field moves to the colour of a new biome, in milliseconds. */
+const BIOME_FADE_MS = 900;
+/** Type codes whose biome particles rise (embers, fumes), fall (rain, snow, petals) or drift. */
+const RISING = new Set([9, 3, 7, 15, 16, 13]); // fire, poison, ghost, dragon, dark, psychic
+const FALLING = new Set([10, 14, 11, 17, 6, 0]); // water, ice, grass, fairy, bug, normal
 /** Length of the aim guide and the gap between its dots, in arena pixels. */
 const AIM_LENGTH = 300;
 const PICKUP_GOLD = 0xffd54f;
@@ -69,6 +85,17 @@ export class Renderer {
   private readonly pickupSprites: Sprite[] = [];
   private readonly pickupRings: Sprite[] = [];
   private readonly aimDots: Sprite[] = [];
+  private readonly hazardLayer = new Container();
+  private readonly hazardSprites: Sprite[] = [];
+  private readonly weakRing: Sprite;
+  private readonly shieldRing: Sprite;
+  private readonly biomeLayer = new Container();
+  private readonly biomeTint: Sprite;
+  private readonly biomeDots: Sprite[] = [];
+  /** The colour the field is tinted with now (0 = no biome) and the clock of the particles. */
+  private tintRgb = [0, 0, 0];
+  private tintAlpha = 0;
+  private biomeClock = 0;
   private readonly aimScratch: AimDirection = { x: 0, y: -1 };
   private readonly reachRing: Sprite;
   private pickupsShown = 0;
@@ -149,14 +176,45 @@ export class Renderer {
     }
     const shapeLayer = new Container();
     for (const sprite of this.shapes) shapeLayer.addChild(sprite);
+    // The biome: a tint over the whole field and a few drifting particles (block 3 of 4H-B2).
+    this.biomeTint = new Sprite(bar);
+    this.biomeTint.width = width;
+    this.biomeTint.height = height;
+    this.biomeTint.alpha = 0;
+    this.biomeLayer.addChild(this.biomeTint);
+    for (let i = 0; i < BIOME_DOTS; i++) {
+      const dot = new Sprite(disc);
+      dot.anchor.set(0.5);
+      dot.visible = false;
+      this.biomeDots.push(dot);
+      this.biomeLayer.addChild(dot);
+    }
+    // The columns of a boss's attacks, under everything that moves; the ring of its shield and the
+    // weak point over its body (4G-B, ADR-046).
+    for (let i = 0; i < HAZARD_POOL; i++) {
+      const column = new Sprite(bar);
+      column.visible = false;
+      this.hazardSprites.push(column);
+      this.hazardLayer.addChild(column);
+    }
+    this.shieldRing = new Sprite(ring);
+    this.shieldRing.anchor.set(0.5);
+    this.shieldRing.visible = false;
+    this.weakRing = new Sprite(ring);
+    this.weakRing.anchor.set(0.5);
+    this.weakRing.visible = false;
     this.world.addChild(
       background,
+      this.biomeLayer,
+      this.hazardLayer,
       this.aimLayer,
       this.enemyLayer,
       this.pickupLayer,
       shapeLayer,
       this.ballLayer,
       this.fxLayer,
+      this.shieldRing,
+      this.weakRing,
       this.reachRing,
       this.player,
     );
@@ -215,6 +273,8 @@ export class Renderer {
       (this.app.screen.height - height * scale) / 2,
     );
 
+    this.drawBiome(curr, elapsedMs);
+    this.drawBossFight(curr);
     this.drawBalls(prev, curr, alpha);
     this.drawEnemies(prev, curr, alpha);
     this.player.x = prev.playerX + (curr.playerX - prev.playerX) * alpha;
@@ -225,6 +285,115 @@ export class Renderer {
     this.drawEffects(events, elapsedMs);
 
     this.app.render();
+  }
+
+  /** The colour (0xRRGGBB) the field is tinted with now, or -1 when there is no biome: for tests. */
+  get biomeColor(): number {
+    if (this.tintAlpha < 0.01) return -1;
+    const [r, g, b] = this.tintRgb;
+    return (Math.round(r ?? 0) << 16) | (Math.round(g ?? 0) << 8) | Math.round(b ?? 0);
+  }
+
+  /**
+   * The look of the biome of the wave in progress (4H-B2): the field is tinted with the colour of
+   * its main type, fading from the last one, and a few particles of its two main types rise, fall
+   * or drift by the family of the type. Render only: nothing here touches the run.
+   */
+  private drawBiome(curr: Snapshot, elapsedMs: number): void {
+    const main = curr.biomeMain;
+    const has = main >= 0;
+    const target = has ? (TYPE_COLORS[main] ?? 0xffffff) : 0;
+    const step = Math.min(1, elapsedMs / BIOME_FADE_MS);
+    const goal = [(target >> 16) & 255, (target >> 8) & 255, target & 255];
+    // The colour moves to the new biome; the strength goes down to 0 while there is none.
+    if (has && this.tintAlpha < 0.01) this.tintRgb = goal;
+    for (let c = 0; c < 3; c++) {
+      this.tintRgb[c] = (this.tintRgb[c] ?? 0) + ((goal[c] ?? 0) - (this.tintRgb[c] ?? 0)) * step;
+    }
+    this.tintAlpha += ((has ? 0.16 : 0) - this.tintAlpha) * step;
+    this.biomeTint.alpha = this.tintAlpha;
+    this.biomeTint.tint = this.biomeColor < 0 ? 0xffffff : this.biomeColor;
+
+    this.biomeClock += elapsedMs;
+    const { width, height } = this.config.arena;
+    const second = curr.biomeSecond >= 0 ? curr.biomeSecond : main;
+    const rising = RISING.has(main);
+    const falling = FALLING.has(main);
+    for (let i = 0; i < BIOME_DOTS; i++) {
+      const dot = this.biomeDots[i];
+      if (dot === undefined) continue;
+      dot.visible = has;
+      if (!has) continue;
+      const phase = (i * 0.61803398875) % 1; // a spread of the dots that never lines them up
+      const speed = 0.012 + (i % 5) * 0.004; // pixels per millisecond
+      const travel = (this.biomeClock * speed + phase * height) % height;
+      let x = phase * width;
+      let y = height - travel;
+      if (falling) y = travel;
+      else if (!rising) {
+        // Drifting sideways, wrapping around, at the height of the dot.
+        x = (this.biomeClock * speed + phase * width) % width;
+        y = ((i * 97) % height) + Math.sin(this.biomeClock / 700 + i) * 14;
+      }
+      if (rising || falling) x += Math.sin(this.biomeClock / 900 + i) * 10;
+      dot.x = x;
+      dot.y = y;
+      const size = 2.2 + (i % 4) * 0.9;
+      dot.scale.set(size / 32);
+      dot.tint = TYPE_COLORS[i % 2 === 0 ? main : second] ?? 0xffffff;
+      // Electric and Fairy blink; the rest stay steady.
+      const blink =
+        main === 12 || main === 17 ? 0.5 + 0.5 * Math.sin(this.biomeClock / 160 + i * 2) : 1;
+      dot.alpha = 0.42 * blink * this.tintAlpha * 6;
+    }
+  }
+
+  /**
+   * The fight of a boss (4G-B, ADR-046): the columns of the floor that are going to be hit (a
+   * pulsing warning), the ones that strike now (bright), a ring for the shield, and the weak point
+   * a ball has to reach. A stunned boss shows a gold ring instead.
+   */
+  private drawBossFight(curr: Snapshot): void {
+    const { height } = this.config.arena;
+    for (let i = 0; i < HAZARD_POOL; i++) {
+      const sprite = this.hazardSprites[i];
+      if (sprite === undefined) continue;
+      if (i >= curr.hazardCount) {
+        sprite.visible = false;
+        continue;
+      }
+      const warning = (curr.hazardWarn[i] ?? 0) > 0;
+      sprite.visible = true;
+      sprite.x = (curr.hazardX[i] ?? 0) - (curr.hazardWidth[i] ?? 0) / 2;
+      sprite.y = 0;
+      sprite.width = curr.hazardWidth[i] ?? 0;
+      sprite.height = height;
+      sprite.tint = warning ? 0xff5252 : 0xffffff;
+      // The warning breathes faster as the strike nears; the strike itself is solid.
+      const left = curr.hazardWarn[i] ?? 0;
+      sprite.alpha = warning
+        ? 0.16 + 0.14 * (0.5 + 0.5 * Math.sin(curr.tick / Math.max(2, left / 8)))
+        : 0.75;
+    }
+    const alive = curr.bossMaxHp > 0 && curr.bossHp > 0;
+    const stunned = alive && curr.bossStun > 0;
+    const shielded = alive && curr.bossShield > 0;
+    this.shieldRing.visible = shielded || stunned;
+    if (this.shieldRing.visible) {
+      this.shieldRing.x = curr.bossX;
+      this.shieldRing.y = curr.bossY;
+      this.shieldRing.scale.set((curr.bossRadius + 10) / 30);
+      this.shieldRing.tint = stunned ? 0xffd54f : 0x7ec8ff;
+      this.shieldRing.alpha = stunned ? 0.9 : 0.25 + 0.6 * curr.bossShield;
+    }
+    this.weakRing.visible = shielded && curr.bossWeakRadius > 0;
+    if (this.weakRing.visible) {
+      this.weakRing.x = curr.bossWeakX;
+      this.weakRing.y = curr.bossWeakY;
+      this.weakRing.scale.set(curr.bossWeakRadius / 30);
+      this.weakRing.tint = 0xffd54f;
+      this.weakRing.alpha = 0.95;
+    }
   }
 
   /** Art code of the form a ball of `stage` shows: `forms[species code][stage - 1]`. */
@@ -255,7 +424,7 @@ export class Renderer {
       // sprite, not the whole picture, have the size of the ball (ADR-037): the same growth for all.
       const radius = curr.ballRadius[slot] || this.config.ball.radius;
       const stage = curr.ballLevel[slot] ?? 1;
-      const code = this.artCode(curr.ballSpecies[slot] ?? 255, stage);
+      const code = this.artCode(curr.ballSpecies[slot] ?? NO_SPECIES, stage);
       const art = this.art[code];
       if (art === undefined) {
         sprite.texture = this.disc;
@@ -310,7 +479,7 @@ export class Renderer {
       sprite.visible = true;
       sprite.position.set(this.scratchEnemyX[i] ?? 0, this.scratchEnemyY[i] ?? 0);
       const radius = curr.enemyRadius[i] ?? 16;
-      const art = this.art[curr.enemySpecies[i] ?? 255];
+      const art = this.art[curr.enemySpecies[i] ?? NO_SPECIES];
       if (art === undefined) {
         sprite.texture = this.disc;
         sprite.scale.set(radius / 32);
@@ -353,7 +522,7 @@ export class Renderer {
       halo.visible = true;
       sprite.position.set(x, y);
       halo.position.set(x, y);
-      const code = this.artCode(curr.pickupSpecies[i] ?? 255, curr.pickupLevel[i] ?? 1);
+      const code = this.artCode(curr.pickupSpecies[i] ?? NO_SPECIES, curr.pickupLevel[i] ?? 1);
       const art = this.art[code];
       if (art === undefined) {
         sprite.texture = this.disc;
