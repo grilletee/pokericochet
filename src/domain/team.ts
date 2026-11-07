@@ -182,17 +182,20 @@ export function trainMember(
     form: formAt(config, member.species, after),
     source,
   });
-  const kind = after > before ? stageKind(config, member.species, after) : null;
-  if (kind !== null) {
+  // One event per stage crossed, in order (Bagon -> Shelgon -> Salamence): a jump of several stages
+  // at once (a duplicate capture worth the level of a late stage) must never skip a form (4G-E).
+  for (let stage = before + 1; stage <= after; stage++) {
+    const kind = stageKind(config, member.species, stage);
+    if (kind === null) continue;
     run.events.push({
       type: 'stage',
       ballId: firstBallId(run, index),
       member: index,
       species: member.species,
       kind,
-      stage: after,
-      from: formAt(config, member.species, before),
-      to: formAt(config, member.species, after),
+      stage,
+      from: formAt(config, member.species, stage - 1),
+      to: formAt(config, member.species, stage),
     });
   }
   return true;

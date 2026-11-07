@@ -30,6 +30,12 @@ export class GamePause {
     this.until = Math.max(this.until, now + ms);
   }
 
+  /** Queues `ms` more after what is already on: the steps of a chain play one after another. */
+  add(now: number, ms: number): void {
+    if (now >= this.until) this.since = now;
+    this.until = Math.max(this.until, now) + ms;
+  }
+
   /** True while the game is stopped. */
   active(now: number): boolean {
     return now < this.until;
@@ -59,12 +65,8 @@ export class GamePause {
 export function pauseSeconds(
   steps: readonly { readonly tick: number; readonly stage: number }[],
 ): number {
-  const longest = new Map<number, number>();
-  for (const step of steps) {
-    longest.set(step.tick, Math.max(longest.get(step.tick) ?? 0, pauseMs(step.stage)));
-  }
   let total = 0;
-  for (const ms of longest.values()) total += ms;
+  for (const step of steps) total += pauseMs(step.stage);
   return total / 1000;
 }
 
@@ -104,6 +106,7 @@ export interface MomentView {
 export class EvolutionMoment {
   private readonly root: HTMLDivElement;
   private timers: number[] = [];
+  private queue: { view: MomentView; ms: number }[] = [];
   private onSkip: () => void = () => {};
 
   /** Called when the visible skip button is pressed (the app decides if the grace has passed). */
@@ -125,7 +128,15 @@ export class EvolutionMoment {
     return this.root.style.display !== 'none';
   }
 
-  show(view: MomentView, ms: number): void {
+  /**
+   * Plays one step. While another is playing the new one WAITS its turn: a Pokémon that crosses
+   * two stages at once shows both forms in order (Bagon, Shelgon, Salamence), never a jump (4G-E).
+   */
+  show(view: MomentView, ms: number, fromQueue = false): void {
+    if (!fromQueue && this.visible) {
+      this.queue.push({ view, ms });
+      return;
+    }
     this.clearTimers();
     const color = view.type === undefined ? STEP_COLOR : TYPE_COLORS[view.type];
     const size = view.stage >= 3 ? 220 : 180;
@@ -188,11 +199,23 @@ export class EvolutionMoment {
         easing: 'ease-out',
       });
     });
-    this.later(ms, () => this.hide());
+    this.later(ms, () => this.finish());
   }
 
+  /** The step that was playing is over: the next one of the chain, or nothing. */
+  private finish(): void {
+    const next = this.queue.shift();
+    if (next !== undefined) {
+      this.show(next.view, next.ms, true);
+      return;
+    }
+    this.hide();
+  }
+
+  /** Stops everything, the queued steps too (a skip). */
   hide(): void {
     this.clearTimers();
+    this.queue = [];
     this.root.style.display = 'none';
   }
 

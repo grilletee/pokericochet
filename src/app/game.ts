@@ -902,7 +902,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
         }
         sound.playEvent(event, now);
         if (event.type === 'stage' && isRealEvolution(event.kind, event.from, event.to)) {
-          pause.start(now, pauseMs(event.stage));
+          pause.add(now, pauseMs(event.stage));
           stopped = true;
         }
         // The entry, the phases and the defeat of a boss stop the game for a moment (4G-B, ADR-046).

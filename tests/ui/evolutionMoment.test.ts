@@ -65,13 +65,25 @@ describe('pauseSeconds: the real time a run spends paused by evolutions (M16)', 
     expect(pauseSeconds(steps)).toBeCloseTo(4.4, 6);
   });
 
-  it('merges steps on the same tick into one pause of the longest', () => {
+  it('plays the steps of the same tick one after another (a chain: Bagon, Shelgon, Salamence)', () => {
     const steps = [
       { tick: 600, stage: 2 },
       { tick: 600, stage: 3 },
-      { tick: 600, stage: 2 },
     ];
-    expect(pauseSeconds(steps)).toBeCloseTo(2.4, 6);
+    expect(pauseSeconds(steps)).toBeCloseTo(4.4, 6);
+  });
+
+  it('GamePause.add queues after the pause that is on; start only extends to the later end', () => {
+    const p = new GamePause();
+    p.add(1000, 2000);
+    p.add(1000, 2400);
+    expect(p.active(5399)).toBe(true);
+    expect(p.active(5400)).toBe(false);
+    const q = new GamePause();
+    q.start(1000, 2000);
+    q.start(1000, 2400);
+    expect(q.active(3399)).toBe(true);
+    expect(q.active(3400)).toBe(false);
   });
 });
 
