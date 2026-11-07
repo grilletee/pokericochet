@@ -1,6 +1,7 @@
 import { ART_SPECIES_IDS, gameConfig, MOVE_NAMES, POKEMON_NAMES, STARTER_SPECIES } from '../data';
 import {
   addMember,
+  attackTypeOf,
   ballsFor,
   type Command,
   captureForm,
@@ -32,6 +33,7 @@ import {
   themeTypes,
   tick,
   typeAdvice,
+  typesOfSpecies,
   waveAdvice,
   writeSnapshot,
 } from '../domain';
@@ -39,7 +41,6 @@ import { Renderer } from '../render';
 import {
   BOSS_DEFEAT_MS,
   BOSS_ENTRY_MS,
-  BOSS_PHASE_MS,
   BossMoment,
   type BossMomentView,
   bossCartel,
@@ -158,11 +159,12 @@ declare global {
       waveThemes: readonly string[];
       poolSize: number;
       biomeColor: number;
-      /** The fight of a boss: columns on the floor, the phase, the shield left and the stun. */
+      /** The fight of a boss: things on the floor, the phase (1 = fury) and the ticks the core is open. */
       hazards: number;
       bossPhase: number;
-      bossShield: number;
-      bossStun: number;
+      bossCoreOpen: number;
+      /** Kinds of the things on the floor now, for the smoke test. */
+      hazardKinds: readonly string[];
       /** Moves cast so far, and the labels that were shown / left out (ADR-039). */
       moveCasts: number;
       labelsShown: number;
@@ -515,8 +517,8 @@ export async function startGame(host: HTMLElement): Promise<void> {
       biomeColor: renderer.biomeColor,
       hazards: run.hazards.length,
       bossPhase: run.boss.phase,
-      bossShield: run.boss.shieldHp,
-      bossStun: run.boss.stunTicks,
+      bossCoreOpen: run.boss.coreOpen,
+      hazardKinds: run.hazards.map((h) => h.kind),
       moveCasts,
       labelsShown: labelPolicy.shown,
       labelsDropped: labelPolicy.dropped,
@@ -663,10 +665,13 @@ export async function startGame(host: HTMLElement): Promise<void> {
     const member = run.team[index];
     if (member === undefined) return;
     const stats = statsOfMember(config, member);
+    const formSpecies = config.species[stats.form];
     sheet.show(
       {
         form: stats.form,
         type: member.type,
+        types: formSpecies === undefined ? [member.type] : typesOfSpecies(formSpecies),
+        attackType: attackTypeOf(config, member.species, stats.stage, member.type),
         level: member.level,
         stage: stats.stage,
         stats,
@@ -703,21 +708,8 @@ export async function startGame(host: HTMLElement): Promise<void> {
         },
       };
     }
-    if (event.type === 'bossPhase') {
-      const boss = run.enemies.find((e) => e.id === run.boss.id);
-      const species = boss?.species ?? '';
-      return {
-        ms: BOSS_PHASE_MS,
-        view: {
-          style: 'phase',
-          kicker: `FASE ${event.phase + 1}/3`,
-          title: name(species),
-          note: 'Rompe el escudo en su punto débil',
-          type: typeOf(species),
-          spriteUrl: art.spriteUrl(species),
-        },
-      };
-    }
+    // Only two pauses per boss (10th playtest): a big one on entry and a shorter one on defeat. The
+    // change of phase never stops the game.
     if (event.type === 'bossDefeated') {
       return {
         ms: BOSS_DEFEAT_MS,
@@ -872,7 +864,11 @@ export async function startGame(host: HTMLElement): Promise<void> {
       for (const event of output.events) {
         pending.push(event);
         if (event.type === 'move') moveCasts += 1;
-        const text = describeEvent(event, themeLabel);
+        const furious = run.enemies.find((e) => e.id === run.boss.id)?.species ?? '';
+        const text =
+          event.type === 'bossPhase'
+            ? `¡${pokemonName(furious)} se ha enfurecido!`
+            : describeEvent(event, themeLabel);
         // Stage steps and hybrids have their own banner with the sprites, and waves and bosses have
         // the cartel (ADR-050): no second message, a toast would cover them.
         if (
@@ -977,8 +973,9 @@ export async function startGame(host: HTMLElement): Promise<void> {
       pokemonName(speciesIds[curr.bossSpecies] ?? ''),
       screen === 'playing' ? curr.bossHp : 0,
       curr.bossMaxHp,
-      curr.bossShield,
-      curr.bossStun > 0,
+      curr.bossCoreOpen > 0,
+      curr.bossCoreWarning,
+      curr.bossPhase === 1,
     );
     overlay.setCards(
       screen === 'playing' && curr.phase === PHASE_LEVELUP ? run.offers : null,

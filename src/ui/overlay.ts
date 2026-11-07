@@ -15,7 +15,6 @@ export class Overlay {
   private readonly bossBar: HTMLDivElement;
   private readonly bossFill: HTMLDivElement;
   private readonly bossLabel: HTMLDivElement;
-  private readonly bossShieldFill: HTMLDivElement;
   private lastBossKey = '';
   private toastUntil = 0;
   private shownOffers: readonly Card[] | null = null;
@@ -46,30 +45,25 @@ export class Overlay {
       `${base}left:50%;top:30%;transform:translateX(-50%);display:none;padding:6px 14px;` +
       'border-radius:8px;background:rgba(5,8,16,0.78);font-size:16px;font-weight:600;' +
       'text-align:center;max-width:80%;';
-    // The bar of the boss (4G-B, ADR-046): wide, with a notch at each phase (66 % and 33 %), a thin
-    // bar for the shield under the health and a gold edge while the boss is stunned.
+    // The bar of the boss (4G-C, ADR-053): wide, at the TOP (the bottom is where the finger and the
+    // attacks are), with a notch at half health, where the fury starts, and a gold edge while the
+    // core is open.
     this.bossBar = document.createElement('div');
     this.bossBar.dataset.bossBar = '';
     this.bossBar.style.cssText =
-      `${base}left:6%;bottom:8px;display:none;width:88%;height:26px;border-radius:9px;` +
+      `${base}left:6%;top:76px;display:none;width:88%;height:26px;border-radius:9px;` +
       'background:rgba(255,255,255,0.18);overflow:hidden;font-size:13px;font-weight:700;' +
-      'line-height:20px;text-align:center;box-sizing:border-box;border:2px solid transparent;';
+      'line-height:22px;text-align:center;box-sizing:border-box;border:2px solid transparent;';
     this.bossFill = document.createElement('div');
     this.bossFill.style.cssText = 'position:absolute;left:0;top:0;height:100%;background:#e8503a;';
-    this.bossShieldFill = document.createElement('div');
-    this.bossShieldFill.dataset.bossShield = '';
-    this.bossShieldFill.style.cssText =
-      'position:absolute;left:0;bottom:0;height:4px;width:0;background:#7ec8ff;';
     this.bossLabel = document.createElement('div');
     this.bossLabel.style.cssText = 'position:relative;text-shadow:0 0 3px #000;';
-    this.bossBar.append(this.bossFill, this.bossShieldFill);
-    for (const at of [66, 33]) {
-      const notch = document.createElement('div');
-      notch.dataset.bossNotch = String(at);
-      notch.style.cssText = `position:absolute;left:${at}%;top:0;width:2px;height:100%;background:#0b0e16cc;`;
-      this.bossBar.append(notch);
-    }
-    this.bossBar.append(this.bossLabel);
+    this.bossBar.append(this.bossFill);
+    const notch = document.createElement('div');
+    notch.dataset.bossNotch = '50';
+    notch.style.cssText =
+      'position:absolute;left:50%;top:0;width:2px;height:100%;background:#0b0e16cc;';
+    this.bossBar.append(notch, this.bossLabel);
     host.append(this.hud, this.toast, this.bossBar, this.message, this.debug, this.cards);
   }
 
@@ -153,21 +147,28 @@ export class Overlay {
   }
 
   /**
-   * Boss health bar. `shield` is what is left of the shield (0..1), `stunned` lights the edge gold
-   * (the window for the Ultimate). Writes to the DOM only when what it shows changes.
+   * Boss health bar (ADR-053). `open` lights the edge gold while the core is open (the window to hit
+   * it and throw the Ultimate), `warning` pulses it just before, and `rage` turns the bar dark red
+   * (the fury at half health). Writes to the DOM only when what it shows changes.
    */
-  setBoss(name: string, hp: number, maxHp: number, shield = 0, stunned = false): void {
+  setBoss(
+    name: string,
+    hp: number,
+    maxHp: number,
+    open = false,
+    warning = false,
+    rage = false,
+  ): void {
     const visible = maxHp > 0 && hp > 0;
     const percent = visible ? Math.max(1, Math.ceil((100 * hp) / maxHp)) : 0;
-    const shieldPercent = Math.round(100 * Math.max(0, Math.min(1, shield)));
-    const key = `${name}|${percent}|${shieldPercent}|${stunned}`;
+    const key = `${name}|${percent}|${open}|${warning}|${rage}`;
     if (key === this.lastBossKey) return;
     this.lastBossKey = key;
     this.bossBar.style.display = visible ? 'block' : 'none';
-    this.bossLabel.textContent = `${name} ${percent} %${stunned ? ' · ¡ATURDIDO!' : ''}`;
+    this.bossLabel.textContent = `${name} ${percent} %${open ? ' · ¡NÚCLEO ABIERTO!' : warning ? ' · se abre…' : ''}`;
     this.bossFill.style.width = `${percent}%`;
-    this.bossShieldFill.style.width = `${shieldPercent}%`;
-    this.bossBar.style.borderColor = stunned ? '#ffd54f' : 'transparent';
+    this.bossFill.style.background = rage ? '#a3141f' : '#e8503a';
+    this.bossBar.style.borderColor = open ? '#ffd54f' : warning ? '#ffffff88' : 'transparent';
   }
 
   setDebug(text: string | null): void {

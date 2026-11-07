@@ -1,13 +1,19 @@
 import type { GameType, MemberStats } from '../domain';
+import { typeName } from './cardText';
 import { type ArtLookup, spriteTile } from './cardView';
 import { moveName, pokemonName } from './names';
+import { typeAbility } from './screenText';
 import { statBars, statSummary } from './statBars';
 import { TYPE_COLORS } from './typeColors';
+import { typeIcons } from './typeIcons';
 
 /** What the sheet of a Pokémon of the team shows (ADR-038, ADR-039). */
 export interface SheetView {
   readonly form: string;
   readonly type: GameType | undefined;
+  /** The one or two types of the form it shows, and the type its balls attack with at this stage. */
+  readonly types: readonly GameType[];
+  readonly attackType: GameType | undefined;
   readonly level: number;
   readonly stage: number;
   readonly stats: MemberStats;
@@ -82,6 +88,19 @@ export class MemberSheet {
     card.append(
       box('font-size:13px;', `⚔${view.damageUps} ⟳${view.cadenceUps} (mejoras de este Pokémon)`),
     );
+    // What its type does, with the icons of its types (4G-C): "Ataca con Fuego: quema al impactar".
+    const typesRow = box('display:flex;align-items:center;gap:6px;font-size:13px;');
+    typesRow.dataset.sheetTypes = '';
+    typesRow.append(typeIcons(view.types, 20));
+    if (view.attackType !== undefined) {
+      typesRow.append(
+        box(
+          'font-weight:700;',
+          `Ataca con ${typeName(view.attackType)}: ${typeAbility(view.attackType)}`,
+        ),
+      );
+    }
+    card.append(typesRow);
     if (view.move !== undefined) {
       const label = view.signature ? 'Ultimate' : 'Movimiento';
       const state =

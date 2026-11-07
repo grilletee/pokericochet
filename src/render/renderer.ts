@@ -6,6 +6,14 @@ import {
   type GameEvent,
   NO_SPECIES,
   type Snapshot,
+  STATUS_BURN,
+  STATUS_CURSE,
+  STATUS_FROZEN,
+  STATUS_MARK,
+  STATUS_PARALYSED,
+  STATUS_POISON,
+  STATUS_PUSHED,
+  STATUS_SLOW,
   typeCode,
 } from '../domain';
 import { ballVisualScale, opaqueExtent } from './artBox';
@@ -20,8 +28,17 @@ const TYPE_COLORS: readonly number[] = [
   0xff7043, 0x4fc3f7, 0x81c784, 0xffee58, 0xf9689a, 0x98e0e0, 0x7c52f8, 0x8a7060, 0xf4a8c8,
 ];
 const FX_POOL = 48;
-/** Columns of a boss drawn at once; the snapshot carries `MAX_HAZARDS`. */
+/** Things of a boss drawn at once; the snapshot carries `MAX_HAZARDS`. */
 const HAZARD_POOL = 16;
+/** Signs of the states of the enemies (flames, bubbles, sparks...) drawn at once. */
+const STATUS_POOL = 360;
+/** Colour of each kind of hazard (the order of `HAZARD_KINDS`): column, comb, sweep, rain, shot, zone, gust. */
+const HAZARD_COLORS: readonly number[] = [
+  0xff6b4a, 0xff9a3c, 0x4fc3f7, 0xc792ea, 0xffd54f, 0x7a4cff, 0xe8f4ff,
+];
+const KIND_SHOT = 4;
+const KIND_ZONE = 5;
+const KIND_GUST = 6;
 const AIM_DOTS = 16;
 /** Particles of the biome of the wave in progress (4H-B2, block 3): few and cheap on purpose. */
 const BIOME_DOTS = 22;
@@ -87,6 +104,11 @@ export class Renderer {
   private readonly aimDots: Sprite[] = [];
   private readonly hazardLayer = new Container();
   private readonly hazardSprites: Sprite[] = [];
+  /** The bright mark each hazard leaves on the floor strip, and the pool of the status signs. */
+  private readonly hazardFloor: Sprite[] = [];
+  private readonly statusLayer = new Container();
+  private readonly statusSprites: Sprite[] = [];
+  private statusUsed = 0;
   private readonly weakRing: Sprite;
   private readonly shieldRing: Sprite;
   private readonly biomeLayer = new Container();
@@ -196,6 +218,17 @@ export class Renderer {
       column.visible = false;
       this.hazardSprites.push(column);
       this.hazardLayer.addChild(column);
+      const mark = new Sprite(bar);
+      mark.visible = false;
+      this.hazardFloor.push(mark);
+      this.hazardLayer.addChild(mark);
+    }
+    for (let i = 0; i < STATUS_POOL; i++) {
+      const sign = new Sprite(disc);
+      sign.anchor.set(0.5);
+      sign.visible = false;
+      this.statusSprites.push(sign);
+      this.statusLayer.addChild(sign);
     }
     this.shieldRing = new Sprite(ring);
     this.shieldRing.anchor.set(0.5);
@@ -209,6 +242,7 @@ export class Renderer {
       this.hazardLayer,
       this.aimLayer,
       this.enemyLayer,
+      this.statusLayer,
       this.pickupLayer,
       shapeLayer,
       this.ballLayer,
@@ -349,51 +383,228 @@ export class Renderer {
   }
 
   /**
-   * The fight of a boss (4G-B, ADR-046): the columns of the floor that are going to be hit (a
-   * pulsing warning), the ones that strike now (bright), a ring for the shield, and the weak point
-   * a ball has to reach. A stunned boss shows a gold ring instead.
+   * The fight of a boss (4G-C, ADR-053): what the boss put on the field, each kind with its own
+   * colour and shape (columns, combs, sweeps, rain, falling shots, patches of floor, gusts), a
+   * bright mark on the floor strip for every one that hurts (so it reads even when a finger covers
+   * the field), a blue ring while the core is closed and a gold circle on the core while it is open.
    */
   private drawBossFight(curr: Snapshot): void {
-    const { height } = this.config.arena;
+    const { height, defenseLineY } = this.config.arena;
+    const floorHeight = height - defenseLineY;
     for (let i = 0; i < HAZARD_POOL; i++) {
       const sprite = this.hazardSprites[i];
-      if (sprite === undefined) continue;
+      const mark = this.hazardFloor[i];
+      if (sprite === undefined || mark === undefined) continue;
       if (i >= curr.hazardCount) {
         sprite.visible = false;
+        mark.visible = false;
         continue;
       }
-      const warning = (curr.hazardWarn[i] ?? 0) > 0;
-      sprite.visible = true;
-      sprite.x = (curr.hazardX[i] ?? 0) - (curr.hazardWidth[i] ?? 0) / 2;
-      sprite.y = 0;
-      sprite.width = curr.hazardWidth[i] ?? 0;
-      sprite.height = height;
-      sprite.tint = warning ? 0xff5252 : 0xffffff;
-      // The warning breathes faster as the strike nears; the strike itself is solid.
+      const kind = curr.hazardKind[i] ?? 0;
+      const x = curr.hazardX[i] ?? 0;
+      const width = curr.hazardWidth[i] ?? 0;
       const left = curr.hazardWarn[i] ?? 0;
-      sprite.alpha = warning
-        ? 0.16 + 0.14 * (0.5 + 0.5 * Math.sin(curr.tick / Math.max(2, left / 8)))
-        : 0.75;
+      const warning = left > 0;
+      const color = HAZARD_COLORS[kind] ?? 0xffffff;
+      const pulse = 0.5 + 0.5 * Math.sin(curr.tick / Math.max(2, left / 8));
+      sprite.visible = true;
+      mark.visible = false;
+      if (kind === KIND_SHOT) {
+        // A falling shot: a bright ball with a thin line down to where it will land.
+        const y = curr.hazardY[i] ?? 0;
+        sprite.texture = this.disc;
+        sprite.width = width;
+        sprite.height = width;
+        sprite.x = x - width / 2;
+        sprite.y = warning ? this.config.arena.defenseLineY - width : y - width / 2;
+        sprite.tint = color;
+        sprite.alpha = warning ? 0.35 + 0.35 * pulse : 0.95;
+        mark.visible = true;
+        mark.x = x - width / 2;
+        mark.y = warning ? defenseLineY : y;
+        mark.width = width;
+        mark.height = warning ? floorHeight : Math.max(2, defenseLineY - y);
+        mark.tint = color;
+        mark.alpha = warning ? 0.55 : 0.18;
+      } else if (kind === KIND_ZONE) {
+        // A patch of floor: purple, low, with a thicker edge; balls on it cannot be collected.
+        sprite.texture = this.bar;
+        sprite.width = width;
+        sprite.height = floorHeight;
+        sprite.x = x - width / 2;
+        sprite.y = defenseLineY;
+        sprite.tint = color;
+        sprite.alpha = warning ? 0.2 + 0.2 * pulse : 0.55;
+      } else if (kind === KIND_GUST) {
+        // A gust: pale bands that slide in the direction it pushes.
+        sprite.texture = this.bar;
+        sprite.width = width;
+        sprite.height = 46;
+        sprite.x = 0;
+        sprite.y = defenseLineY - 60 + ((curr.tick * 2) % 40);
+        sprite.tint = color;
+        sprite.alpha = warning ? 0.1 + 0.1 * pulse : 0.28;
+      } else {
+        // Columns, combs, sweeps and rain: tall and faint, and bright on the floor strip.
+        sprite.texture = this.bar;
+        sprite.width = width;
+        sprite.height = height;
+        sprite.x = x - width / 2;
+        sprite.y = 0;
+        sprite.tint = color;
+        sprite.alpha = warning ? 0.1 + 0.1 * pulse : 0.6;
+        mark.visible = true;
+        mark.x = x - width / 2;
+        mark.y = defenseLineY;
+        mark.width = width;
+        mark.height = floorHeight;
+        mark.tint = color;
+        mark.alpha = warning ? 0.35 + 0.3 * pulse : 0.9;
+      }
     }
     const alive = curr.bossMaxHp > 0 && curr.bossHp > 0;
-    const stunned = alive && curr.bossStun > 0;
-    const shielded = alive && curr.bossShield > 0;
-    this.shieldRing.visible = shielded || stunned;
+    const open = alive && curr.bossCoreOpen > 0;
+    // Closed: a blue ring around the boss (almost nothing gets through). Open: it goes away.
+    this.shieldRing.visible = alive && !open;
     if (this.shieldRing.visible) {
       this.shieldRing.x = curr.bossX;
       this.shieldRing.y = curr.bossY;
       this.shieldRing.scale.set((curr.bossRadius + 10) / 30);
-      this.shieldRing.tint = stunned ? 0xffd54f : 0x7ec8ff;
-      this.shieldRing.alpha = stunned ? 0.9 : 0.25 + 0.6 * curr.bossShield;
+      this.shieldRing.tint = curr.bossPhase === 1 ? 0xff6b6b : 0x7ec8ff;
+      this.shieldRing.alpha = 0.45;
     }
-    this.weakRing.visible = shielded && curr.bossWeakRadius > 0;
+    // The core: faint while it is about to open, a bright pulsing gold circle while it is open.
+    this.weakRing.visible = alive && curr.bossWeakRadius > 0;
     if (this.weakRing.visible) {
       this.weakRing.x = curr.bossWeakX;
       this.weakRing.y = curr.bossWeakY;
       this.weakRing.scale.set(curr.bossWeakRadius / 30);
       this.weakRing.tint = 0xffd54f;
-      this.weakRing.alpha = 0.95;
+      this.weakRing.alpha = open
+        ? 0.9 + 0.1 * Math.sin(curr.tick / 4)
+        : 0.3 + 0.2 * Math.sin(curr.tick / 6);
     }
+  }
+
+  /**
+   * One sign per thing that can be wrong with an enemy (4G-C, "estados visibles"): subtle but each
+   * its own. Burning rises as flames, poison as purple bubbles, a slowdown as pale drops, ice as a
+   * frost ring, paralysis as flickering sparks, a mark as a red target, a curse as violet wisps and a
+   * push as a streak behind. Returns the tint the sprite should wear (0xffffff for none).
+   */
+  private drawStatus(bits: number, x: number, y: number, radius: number, seed: number): number {
+    if (bits === 0) return 0xffffff;
+    const t = this.biomeClock;
+    const spread = radius * 0.7;
+    if (bits & STATUS_BURN) {
+      for (let k = 0; k < 3; k++) {
+        const f = (t / 700 + k / 3 + seed * 0.13) % 1;
+        this.statusDot(
+          x + (k - 1) * spread * 0.6 + Math.sin(t / 260 + k + seed) * 2,
+          y + radius * 0.3 - f * radius * 1.4,
+          k === 1 ? 0xffd24d : 0xff8a3d,
+          3.2 * (1 - f * 0.5),
+          0.85 * (1 - f),
+        );
+      }
+    }
+    if (bits & STATUS_POISON) {
+      for (let k = 0; k < 3; k++) {
+        const f = (t / 1100 + k / 3 + seed * 0.21) % 1;
+        this.statusRing(
+          x + (k - 1) * spread * 0.7 + Math.sin(t / 400 + k * 2) * 3,
+          y + radius * 0.2 - f * radius * 1.3,
+          0xc58bff,
+          2.6 + k * 0.8,
+          0.9 * (1 - f * 0.6),
+        );
+      }
+    }
+    if (bits & STATUS_SLOW) {
+      for (let k = 0; k < 2; k++) {
+        const f = (t / 1500 + k / 2 + seed * 0.17) % 1;
+        this.statusDot(
+          x + (k === 0 ? -1 : 1) * spread * 0.8,
+          y - radius * 0.6 + f * radius * 1.4,
+          0xbfe3ff,
+          2.4,
+          0.7 * (1 - f),
+        );
+      }
+    }
+    if (bits & STATUS_FROZEN) {
+      this.statusRing(x, y, 0x9fe8ff, radius * 1.1, 0.75);
+      for (let k = 0; k < 4; k++) {
+        const a = (k / 4) * Math.PI * 2 + 0.6;
+        this.statusDot(x + Math.cos(a) * radius, y + Math.sin(a) * radius, 0xffffff, 2.6, 0.9);
+      }
+    }
+    if (bits & STATUS_PARALYSED) {
+      const frame = Math.floor(t / 80) + seed;
+      for (let k = 0; k < 3; k++) {
+        const a = ((frame * 2.3 + k * 2.1) % 6.28) + k;
+        const flick = (frame + k) % 3 === 0 ? 0.2 : 1;
+        this.statusDot(
+          x + Math.cos(a) * radius * 0.95,
+          y + Math.sin(a) * radius * 0.95,
+          0xfff27a,
+          2.8,
+          flick,
+        );
+      }
+    }
+    if (bits & STATUS_MARK) {
+      this.statusRing(x, y - radius - 7, 0xff5a7a, 5.5, 0.9);
+    }
+    if (bits & STATUS_CURSE) {
+      for (let k = 0; k < 2; k++) {
+        const f = (t / 1800 + k / 2 + seed * 0.11) % 1;
+        this.statusDot(
+          x + (k === 0 ? -1 : 1) * spread * 0.5 + Math.sin(t / 500 + k) * 4,
+          y - f * radius * 1.6,
+          0x8d6bd1,
+          5,
+          0.4 * (1 - f),
+        );
+      }
+    }
+    if (bits & STATUS_PUSHED) {
+      for (let k = 1; k <= 3; k++)
+        this.statusDot(x, y - radius - k * 6, 0xffffff, 3.4 - k * 0.6, 0.5 - k * 0.12);
+    }
+    // The tint of the one that matters most.
+    if (bits & STATUS_FROZEN) return 0xa8d8ff;
+    if (bits & STATUS_PARALYSED) return Math.floor(t / 80) % 2 === 0 ? 0xfff6a0 : 0xffffff;
+    if (bits & STATUS_BURN) return 0xffa896;
+    if (bits & STATUS_POISON) return 0xd2b0ff;
+    if (bits & STATUS_CURSE) return 0xbba8e6;
+    if (bits & STATUS_MARK) return 0xff9aae;
+    if (bits & STATUS_SLOW) return 0xc4e0ff;
+    return 0xffffff;
+  }
+
+  private statusDot(x: number, y: number, color: number, size: number, alpha: number): void {
+    const sprite = this.statusSprites[this.statusUsed];
+    if (sprite === undefined) return;
+    this.statusUsed += 1;
+    sprite.texture = this.disc;
+    sprite.visible = true;
+    sprite.position.set(x, y);
+    sprite.scale.set(size / 32);
+    sprite.tint = color;
+    sprite.alpha = Math.max(0, alpha);
+  }
+
+  private statusRing(x: number, y: number, color: number, size: number, alpha: number): void {
+    const sprite = this.statusSprites[this.statusUsed];
+    if (sprite === undefined) return;
+    this.statusUsed += 1;
+    sprite.texture = this.ring;
+    sprite.visible = true;
+    sprite.position.set(x, y);
+    sprite.scale.set(size / 30);
+    sprite.tint = color;
+    sprite.alpha = Math.max(0, alpha);
   }
 
   /** Art code of the form a ball of `stage` shows: `forms[species code][stage - 1]`. */
@@ -474,21 +685,36 @@ export class Renderer {
 
   private drawEnemies(prev: Snapshot, curr: Snapshot, alpha: number): void {
     interpolateEnemies(prev, curr, alpha, this.scratchEnemyX, this.scratchEnemyY);
+    // The signs of the states of the enemies use a pool of dots that is refilled every frame.
+    for (let k = 0; k < this.statusUsed; k++) {
+      const used = this.statusSprites[k];
+      if (used !== undefined) used.visible = false;
+    }
+    this.statusUsed = 0;
     for (let i = 0; i < curr.enemyCount; i++) {
       const sprite = this.spriteAt(this.enemySprites, this.enemyLayer, i);
       sprite.visible = true;
-      sprite.position.set(this.scratchEnemyX[i] ?? 0, this.scratchEnemyY[i] ?? 0);
+      const ex = this.scratchEnemyX[i] ?? 0;
+      const ey = this.scratchEnemyY[i] ?? 0;
+      sprite.position.set(ex, ey);
       const radius = curr.enemyRadius[i] ?? 16;
       const art = this.art[curr.enemySpecies[i] ?? NO_SPECIES];
+      const worn = this.drawStatus(curr.enemyStatus[i] ?? 0, ex, ey, radius, curr.enemyId[i] ?? 0);
+      // A boss in its fury is red.
+      const raging =
+        curr.bossPhase === 1 &&
+        radius === curr.bossRadius &&
+        Math.abs(ex - curr.bossX) < 2 &&
+        curr.bossMaxHp > 0;
       if (art === undefined) {
         sprite.texture = this.disc;
         sprite.scale.set(radius / 32);
-        sprite.tint = TYPE_COLORS[curr.enemyType[i] ?? 0] ?? 0xffffff;
+        sprite.tint = worn === 0xffffff ? (TYPE_COLORS[curr.enemyType[i] ?? 0] ?? 0xffffff) : worn;
         sprite.alpha = 0.9;
       } else {
         sprite.texture = art;
         sprite.scale.set((radius * ENEMY_ART_SCALE) / (art.width / 2));
-        sprite.tint = 0xffffff;
+        sprite.tint = raging ? 0xff8a8a : worn;
         sprite.alpha = 1;
       }
     }

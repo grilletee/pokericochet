@@ -30,6 +30,11 @@ const TYPE_BLURB: Record<GameType, string> = {
   fairy: 'Cura y da guardia al equipo',
 };
 
+/** What the balls of a type do, in a few words (the sheet of a Pokémon and the title screen). */
+export function typeAbility(type: GameType): string {
+  return TYPE_BLURB[type];
+}
+
 export function starterBlurb(type: GameType): string {
   return `${typeName(type)} · ${TYPE_BLURB[type]}`;
 }
@@ -211,6 +216,8 @@ export function describeEvent(
       return `¡Jefe derrotado: ${pokemonName(event.species)}!`;
     case 'bossSpawn':
       return `¡${bossLabel(event.number, event.interludes, event.final)}: ${pokemonName(event.species)}!`;
+    case 'bossPhase':
+      return '¡Se ha enfurecido!';
     case 'bossSummon':
       return `El jefe invoca ${event.count} refuerzos`;
     case 'stage':

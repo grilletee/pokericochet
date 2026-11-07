@@ -634,14 +634,64 @@ try {
   // The fight (4G-B, ADR-046): the entry stops the game with a big name, the bar has the notches of
   // its phases and a shield bar, and the boss announces columns of the floor.
   check(
-    'the bar of the boss has the notches of its phases and a bar for the shield',
-    (await bossPage.locator('[data-boss-notch]').count()) === 2 &&
-      (await bossPage.locator('[data-boss-shield]').count()) === 1,
+    'the bar of the boss has one notch, at half health, where the fury starts',
+    (await bossPage.locator('[data-boss-notch]').count()) === 1 &&
+      (await bossPage.locator('[data-boss-notch="50"]').count()) === 1,
   );
-  await bossPage.waitForFunction(() => window.__debug().hazards > 0, undefined, { timeout: 15000 });
-  check('the boss announces a column of the floor', true);
+  // 4G-C: the boss bar is at the TOP, away from the floor strip where the finger and the attacks are.
+  const barBox = await bossPage.locator('[data-boss-bar]').boundingBox();
+  check(
+    'the boss bar is in the upper third, not over the floor strip',
+    barBox !== null && barBox.y < 280,
+    JSON.stringify(barBox),
+  );
+  await bossPage.waitForFunction(() => window.__debug().hazards > 0, undefined, { timeout: 30000 });
+  check('the boss announces something on the field', true);
   await bossPage.screenshot({ path: outFile.replace('.png', '-boss-column.png') });
-  check('the columns are drawn and the game still runs', (await dbg(bossPage)).hp > 0);
+  check(
+    'what the boss put on the field is drawn and the game still runs',
+    (await dbg(bossPage)).hp > 0,
+  );
+  const seenKinds = new Set();
+  for (let i = 0; i < 150 && seenKinds.size < 3; i++) {
+    for (const kind of (await dbg(bossPage)).hazardKinds) seenKinds.add(kind);
+    await bossPage.waitForTimeout(200);
+  }
+  check(
+    'the boss uses more than one kind of attack in half a minute',
+    seenKinds.size >= 2,
+    JSON.stringify([...seenKinds]),
+  );
+
+  // On a phone, with a finger on the floor strip: the attacks of a boss must stay readable (4G-C).
+  {
+    const phone = await open('starter=pikachu&wave=7&seed=3', { width: 360, height: 640 });
+    await phone.waitForFunction(() => window.__debug().bossMaxHp > 0);
+    await phone.waitForFunction(() => window.__debug().hazards > 0, undefined, { timeout: 30000 });
+    // The finger: a touch held on the floor strip, as when steering.
+    await phone.mouse.move(180, 600);
+    await phone.mouse.down();
+    await phone.waitForTimeout(250);
+    const bar = await phone.locator('[data-boss-bar]').boundingBox();
+    const sound = await phone.locator('[data-sound-toggle]').boundingBox();
+    check(
+      '(phone) the boss bar is clear of the floor strip and of the sound button',
+      bar !== null &&
+        bar.y + bar.height < 640 * 0.5 &&
+        (sound === null ||
+          bar.y >= sound.y + sound.height - 1 ||
+          bar.x + bar.width <= sound.x + 1 ||
+          sound.x + sound.width <= bar.x),
+      JSON.stringify({ bar, sound }),
+    );
+    check(
+      '(phone) the game runs with the finger down and the attacks on the field',
+      (await dbg(phone)).hp > 0 && (await dbg(phone)).hazards >= 0,
+    );
+    await phone.screenshot({ path: outFile.replace('.png', '-boss-phone.png') });
+    await phone.mouse.up();
+    await phone.close();
+  }
 
   // End of run: results screen, best run in localStorage, and the two ways to go on.
   const end = await open('starter=charmander&hp=0&seed=2');

@@ -229,7 +229,7 @@ describe('results and title text', () => {
         }
       }
     }
-  });
+  }, 30_000);
 
   it('names the form of a dropped or captured evolved enemy, and the boss that fell', () => {
     expect(

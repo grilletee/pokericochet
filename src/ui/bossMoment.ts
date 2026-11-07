@@ -2,9 +2,8 @@ import type { GameType } from '../domain';
 import { TYPE_COLORS } from './typeColors';
 
 /** Real milliseconds the game stops for each moment of a boss (ADR-046): short, so it does not drag. */
-export const BOSS_ENTRY_MS = 1200;
-export const BOSS_PHASE_MS = 800;
-export const BOSS_DEFEAT_MS = 1000;
+export const BOSS_ENTRY_MS = 1600;
+export const BOSS_DEFEAT_MS = 700;
 
 /** What a boss moment shows: the small line over the name, the name and what comes with it. */
 export interface BossMomentView {
