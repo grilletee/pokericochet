@@ -6,7 +6,6 @@ import {
   type BossAttackDef,
   cloneRun,
   createRun,
-  deriveRng,
   type GameConfig,
   type Hazard,
   hashRun,
@@ -35,6 +34,7 @@ function testConfig(attack: BossAttackDef = column, perRound = 1): GameConfig {
     damageMult: mult,
     coreEvery: 200,
     coreOpen: 90,
+    strong: { ...attack, damage: attack.damage + 1 },
   });
   const table = { phases: [phase(1), phase(2)] as const };
   return {
@@ -70,41 +70,21 @@ describe('gaps found by the mutants of the 4G-C', () => {
     expect(hashRun(a)).not.toBe(hashRun(b));
   });
 
-  it('the core opens at a different place each time, inside the body', () => {
+  it('through the tick, a ball does the open multiplier while the boss charges and the closed one otherwise', () => {
     const cfg = testConfig();
-    const seen = new Set<number>();
-    for (let seed = 1; seed <= 40; seed++) {
+    const dealt = (open: number): number => {
       const { run, boss } = withBoss(cfg);
-      run.rng.boss = deriveRng(seed * 7919, 'boss');
-      run.boss.coreIn = 1;
-      advanceBossFight(run, cfg);
-      expect(run.boss.coreOpen).toBeGreaterThan(0);
-      expect(Math.abs(run.boss.weakX)).toBeLessThanOrEqual(boss.radius * 0.55 + 1e-9);
-      seen.add(Math.round(run.boss.weakX));
-    }
-    expect(seen.size).toBeGreaterThan(10);
-    expect(Math.max(...seen)).toBeGreaterThan(5); // it goes to the right as well as the left...
-    expect(Math.min(...seen)).toBeLessThan(-5);
-    expect(Math.max(...[...seen].map(Math.abs))).toBeGreaterThan(14); // ...and near the edge of the body
-  });
-
-  it('through the tick, a ball on the open core does about five times what one beside it does', () => {
-    const cfg = testConfig();
-    const dealt = (x: number, y: number): number => {
-      const { run, boss } = withBoss(cfg);
-      run.boss.coreOpen = 50;
-      run.boss.weakX = 0;
+      run.boss.coreOpen = open;
       run.loadout = [makeBall({ effects: [] })];
       run.cooldowns = [-1];
-      run.bodies = [makeBody({ x: boss.x + x, y: boss.y + y, vy: -1 })];
+      run.bodies = [makeBody({ x: boss.x, y: boss.y + 30, vy: -1 })];
       const before = boss.hp;
       tick(run, { moveX: 0 }, cfg);
       return before - boss.hp;
     };
-    const onCore = dealt(0, 20); // inside the core (radius 18 + ball 6)
-    const beside = dealt(22, 30); // touches the body but not the core
-    expect(beside).toBeGreaterThan(0);
-    expect(onCore / beside).toBeCloseTo(fight.coreHitMult, 6);
+    const guarded = dealt(0);
+    expect(guarded).toBeGreaterThan(0);
+    expect(dealt(50) / guarded).toBeCloseTo(fight.openMult / fight.closedMult, 6);
   });
 
   it('balls on a patch of floor made by a boss are not collected, and are outside it', () => {
@@ -113,6 +93,7 @@ describe('gaps found by the mutants of the 4G-C', () => {
     const zone: Hazard = {
       kind: 'zone',
       x: 100,
+      link: 0,
       y: 0,
       width: 80,
       telegraph: 0,
@@ -148,6 +129,7 @@ describe('gaps found by the mutants of the 4G-C', () => {
         {
           kind: 'gust',
           x: 240,
+          link: 0,
           y: 0,
           width: 480,
           telegraph: 0,

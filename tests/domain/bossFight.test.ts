@@ -5,7 +5,6 @@ import {
   type BossAttackDef,
   bossDamage,
   cloneRun,
-  coreHitMult,
   createRun,
   damageEnemy,
   type GameConfig,
@@ -44,6 +43,7 @@ function testConfig(
     damageMult: mult,
     coreEvery: 200,
     coreOpen: 90,
+    strong: { ...column, width: 120, damage: 4 },
   });
   const table = { phases: [phase(attack, 1), phase(rageAttack, 2)] as const };
   return {
@@ -475,30 +475,23 @@ describe('the core, the skill of the fight (ADR-053)', () => {
     expect(announced && opened && closedAgain).toBe(true);
   });
 
-  it('little damage gets through while it is closed, more while it is open, and most ON the core', () => {
+  it('little damage gets through while it is guarded and much more while it is charging', () => {
     const cfg = testConfig();
     const { run, boss } = withBoss(cfg);
     expect(bossDamage(run, cfg, boss, 100)).toBeCloseTo(100 * fight.closedMult, 9);
     run.boss.coreOpen = 50;
     expect(bossDamage(run, cfg, boss, 100)).toBeCloseTo(100 * fight.openMult, 9);
-    run.boss.weakX = 10;
-    const x = boss.x + 10;
-    expect(coreHitMult(run, cfg, boss, x, boss.y, 6)).toBe(fight.coreHitMult);
-    expect(coreHitMult(run, cfg, boss, x + 18 + 6, boss.y, 6)).toBe(fight.coreHitMult); // core radius 18
-    expect(coreHitMult(run, cfg, boss, x + 18 + 6.5, boss.y, 6)).toBe(1);
-    run.boss.coreOpen = 0;
-    expect(coreHitMult(run, cfg, boss, x, boss.y, 6)).toBe(1); // closed: nowhere
+    expect(fight.openMult).toBeGreaterThan(fight.closedMult * 3);
   });
 
-  it('a ball that lands on the open core really does more, through the tick', () => {
+  it('a ball that hits the boss while it charges really does more, through the tick', () => {
     const cfg = testConfig();
-    const hit = (onCore: boolean): number => {
+    const hit = (exposed: boolean): number => {
       const { run, boss } = withBoss(cfg);
-      run.boss.coreOpen = 50;
-      run.boss.weakX = 0;
+      run.boss.coreOpen = exposed ? 50 : 0;
       run.loadout = [makeBall({ effects: [] })];
       run.cooldowns = [-1];
-      run.bodies = [makeBody({ x: onCore ? boss.x : boss.x + 36, y: boss.y + 30, vy: -1 })];
+      run.bodies = [makeBody({ x: boss.x, y: boss.y + 30, vy: -1 })];
       const before = boss.hp;
       tick(run, { moveX: 0 }, cfg);
       return before - boss.hp;
@@ -528,6 +521,7 @@ describe('the fight is part of the run state', () => {
         r.hazards.push({
           kind: 'shot',
           x: 1,
+          link: 0,
           y: 1,
           width: 1,
           telegraph: 1,

@@ -54,14 +54,26 @@ export interface BossState {
   attackIn: number;
   /** Reinforcements a `summon` attack asked for and the wave code has not spawned yet. */
   summonDebt: number;
+  /**
+   * The state of the exclusive mechanics of a legendary (ADR-054): how much the field is squeezed
+   * (0..1, `tide`), ticks left of the barrier and of the slowdown, and the clock of the mechanic.
+   */
+  squeeze: number;
+  barrier: number;
+  timeSlow: number;
+  mechIn: number;
+  /** Ticks before a portal can carry the player again (so they are not carried back at once). */
+  portalCool: number;
   /** Base species of the bosses between waves met so far: none comes twice in a run. */
   used: string[];
 }
 
 /** Something a boss put on the floor or in the air (ADR-053). */
 export interface Hazard {
-  kind: 'column' | 'comb' | 'sweep' | 'rain' | 'shot' | 'zone' | 'gust';
+  kind: 'column' | 'comb' | 'sweep' | 'rain' | 'shot' | 'zone' | 'gust' | 'crack' | 'portal';
   x: number;
+  /** A `portal` carries whoever touches it to this x (its pair); 0 for the rest. */
+  link: number;
   /** Height of a `shot` (arena pixels); 0 for the rest. */
   y: number;
   width: number;
@@ -274,6 +286,11 @@ export function createRun(config: GameConfig, seed: number, starterSpecies: stri
       weakX: 0,
       attackIn: 0,
       summonDebt: 0,
+      squeeze: 0,
+      barrier: 0,
+      timeSlow: 0,
+      mechIn: 0,
+      portalCool: 0,
       used: [],
     },
     hazards: [],
@@ -505,12 +522,18 @@ export function hashRun(run: Run): string {
   h.num(run.boss.weakX);
   h.int(run.boss.attackIn);
   h.int(run.boss.summonDebt);
+  h.num(run.boss.squeeze);
+  h.int(run.boss.barrier);
+  h.int(run.boss.timeSlow);
+  h.int(run.boss.mechIn);
+  h.int(run.boss.portalCool);
   h.int(run.boss.used.length);
   for (const id of run.boss.used) h.str(id);
   h.int(run.hazards.length);
   for (const hz of run.hazards) {
     h.str(hz.kind);
     h.num(hz.y);
+    h.num(hz.link);
     h.num(hz.x);
     h.num(hz.width);
     h.int(hz.telegraph);

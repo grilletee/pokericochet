@@ -219,7 +219,8 @@ export function validateRoster(roster: Roster): void {
     throw new Error('roster.legendaries has duplicates');
   }
   for (const id of roster.legendaries) {
-    if (roster.balls.includes(id) || roster.enemies.includes(id) || id === roster.boss) {
+    // The fallback boss may itself be one of the legendaries (4G-D: Lugia is both).
+    if (roster.balls.includes(id) || roster.enemies.includes(id)) {
       throw new Error(`legendary "${id}" is also a ball, an enemy or the boss`);
     }
   }

@@ -626,7 +626,7 @@ try {
   check('the boss gets its own cartel, after the wave one, with its name', true);
   check(
     'the final boss is a legendary named on its bar',
-    /(Moltres|Kyogre|Virizion|Zapdos|Articuno|Mewtwo|Regirock|Registeel|Rayquaza|Giratina|Groudon|Darkrai|Arceus|Genesect)/.test(
+    /(Moltres|Kyogre|Virizion|Zapdos|Articuno|Mewtwo|Mew|Regirock|Regice|Registeel|Regigigas|Rayquaza|Giratina|Groudon|Darkrai|Arceus|Genesect|Lugia|Ho-Oh|Suicune|Entei|Raikou|Celebi|Jirachi|Deoxys|Dialga|Palkia|Heatran|Cresselia|Manaphy|Phione|Shaymin|Uxie|Mesprit|Azelf|Latias|Latios)/.test(
       (await bossPage.locator('[data-boss-bar]').textContent()) ?? '',
     ),
   );
@@ -638,12 +638,13 @@ try {
     (await bossPage.locator('[data-boss-notch]').count()) === 1 &&
       (await bossPage.locator('[data-boss-notch="50"]').count()) === 1,
   );
-  // 4G-C: the boss bar is at the TOP, away from the floor strip where the finger and the attacks are.
+  // 4G-D: the boss bar is at the BOTTOM (11th playtest), on the lower edge of the page.
   const barBox = await bossPage.locator('[data-boss-bar]').boundingBox();
+  const pageHeight = await bossPage.evaluate(() => window.innerHeight);
   check(
-    'the boss bar is in the upper third, not over the floor strip',
-    barBox !== null && barBox.y < 280,
-    JSON.stringify(barBox),
+    'the boss bar is at the bottom of the page',
+    barBox !== null && barBox.y + barBox.height > pageHeight * 0.85,
+    JSON.stringify({ barBox, pageHeight }),
   );
   await bossPage.waitForFunction(() => window.__debug().hazards > 0, undefined, { timeout: 30000 });
   check('the boss announces something on the field', true);
@@ -675,9 +676,9 @@ try {
     const bar = await phone.locator('[data-boss-bar]').boundingBox();
     const sound = await phone.locator('[data-sound-toggle]').boundingBox();
     check(
-      '(phone) the boss bar is clear of the floor strip and of the sound button',
+      '(phone) the boss bar is at the bottom and clear of the sound button',
       bar !== null &&
-        bar.y + bar.height < 640 * 0.5 &&
+        bar.y + bar.height > 640 * 0.85 &&
         (sound === null ||
           bar.y >= sound.y + sound.height - 1 ||
           bar.x + bar.width <= sound.x + 1 ||

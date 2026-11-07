@@ -5,12 +5,14 @@ export type { AimDirection } from './aim';
 export { aimDirection } from './aim';
 export {
   advanceBossFight,
+  barrierUp,
   bossDamage,
-  coreHitMult,
   coreOf,
+  fieldMargin,
   liveBoss,
   MIN_TELEGRAPH_TICKS,
   patternFor,
+  playerSpeedMult,
   startFight,
   ultimateOnBoss,
   zoneCovers,
@@ -37,6 +39,7 @@ export type {
   BossAttackDef,
   BossDef,
   BossFightDef,
+  BossMechanicDef,
   BossPatternDef,
   BossPhaseDef,
   GameConfig,

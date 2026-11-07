@@ -435,19 +435,42 @@
     ],
     "boss": "lugia",
     "legendaries": [
-      "moltres",
-      "kyogre",
-      "virizion",
-      "zapdos",
       "articuno",
+      "zapdos",
+      "moltres",
       "mewtwo",
+      "mew",
+      "raikou",
+      "entei",
+      "suicune",
+      "lugia",
+      "ho-oh",
+      "celebi",
       "regirock",
+      "regice",
       "registeel",
-      "rayquaza",
-      "giratina-altered",
+      "latias",
+      "latios",
+      "kyogre",
       "groudon",
+      "rayquaza",
+      "jirachi",
+      "deoxys-normal",
+      "uxie",
+      "mesprit",
+      "azelf",
+      "dialga",
+      "palkia",
+      "heatran",
+      "regigigas",
+      "giratina-altered",
+      "cresselia",
+      "phione",
+      "manaphy",
       "darkrai",
+      "shaymin-land",
       "arceus",
+      "virizion",
       "genesect"
     ],
     "starters": [
@@ -4791,57 +4814,22 @@
       "name": "Lugia"
     },
     {
-      "id": "moltres",
-      "pokedexId": 146,
-      "type": "fire",
+      "id": "articuno",
+      "pokedexId": 144,
+      "type": "ice",
       "types": [
-        "fire",
+        "ice",
         "flying"
       ],
       "baseStats": {
         "hp": 90,
-        "attack": 100,
-        "defense": 90,
-        "specialAttack": 125,
-        "specialDefense": 85,
-        "speed": 90
+        "attack": 85,
+        "defense": 100,
+        "specialAttack": 95,
+        "specialDefense": 125,
+        "speed": 85
       },
-      "name": "Moltres"
-    },
-    {
-      "id": "kyogre",
-      "pokedexId": 382,
-      "type": "water",
-      "types": [
-        "water"
-      ],
-      "baseStats": {
-        "hp": 100,
-        "attack": 100,
-        "defense": 90,
-        "specialAttack": 150,
-        "specialDefense": 140,
-        "speed": 90
-      },
-      "name": "Kyogre"
-    },
-    {
-      "id": "virizion",
-      "pokedexId": 640,
-      "type": "grass",
-      "types": [
-        "grass",
-        "fighting"
-      ],
-      "baseStats": {
-        "hp": 91,
-        "attack": 90,
-        "defense": 72,
-        "specialAttack": 90,
-        "specialDefense": 129,
-        "speed": 108
-      },
-      "name": "Virizion"
+      "name": "Articuno"
     },
     {
       "id": "zapdos",
@@ -4862,22 +4850,22 @@
       "name": "Zapdos"
     },
     {
-      "id": "articuno",
-      "pokedexId": 144,
-      "type": "ice",
+      "id": "moltres",
+      "pokedexId": 146,
+      "type": "fire",
       "types": [
-        "ice",
+        "fire",
         "flying"
       ],
       "baseStats": {
         "hp": 90,
-        "attack": 85,
-        "defense": 100,
-        "specialAttack": 95,
-        "specialDefense": 125,
-        "speed": 85
+        "attack": 100,
+        "defense": 90,
+        "specialAttack": 125,
+        "specialDefense": 85,
+        "speed": 90
       },
-      "name": "Articuno"
+      "name": "Moltres"
     },
     {
       "id": "mewtwo",
@@ -4897,6 +4885,110 @@
       "name": "Mewtwo"
     },
     {
+      "id": "mew",
+      "pokedexId": 151,
+      "type": "psychic",
+      "types": [
+        "psychic"
+      ],
+      "baseStats": {
+        "hp": 100,
+        "attack": 100,
+        "defense": 100,
+        "specialAttack": 100,
+        "specialDefense": 100,
+        "speed": 100
+      },
+      "name": "Mew"
+    },
+    {
+      "id": "raikou",
+      "pokedexId": 243,
+      "type": "electric",
+      "types": [
+        "electric"
+      ],
+      "baseStats": {
+        "hp": 90,
+        "attack": 85,
+        "defense": 75,
+        "specialAttack": 115,
+        "specialDefense": 100,
+        "speed": 115
+      },
+      "name": "Raikou"
+    },
+    {
+      "id": "entei",
+      "pokedexId": 244,
+      "type": "fire",
+      "types": [
+        "fire"
+      ],
+      "baseStats": {
+        "hp": 115,
+        "attack": 115,
+        "defense": 85,
+        "specialAttack": 90,
+        "specialDefense": 75,
+        "speed": 100
+      },
+      "name": "Entei"
+    },
+    {
+      "id": "suicune",
+      "pokedexId": 245,
+      "type": "water",
+      "types": [
+        "water"
+      ],
+      "baseStats": {
+        "hp": 100,
+        "attack": 75,
+        "defense": 115,
+        "specialAttack": 90,
+        "specialDefense": 115,
+        "speed": 85
+      },
+      "name": "Suicune"
+    },
+    {
+      "id": "ho-oh",
+      "pokedexId": 250,
+      "type": "fire",
+      "types": [
+        "fire",
+        "flying"
+      ],
+      "baseStats": {
+        "hp": 106,
+        "attack": 130,
+        "defense": 90,
+        "specialAttack": 110,
+        "specialDefense": 154,
+        "speed": 90
+      },
+      "name": "Ho-Oh"
+    },
+    {
+      "id": "celebi",
+      "pokedexId": 251,
+      "type": "psychic",
+      "types": [
+        "psychic",
+        "grass"
+      ],
+      "baseStats": {
+        "hp": 100,
+        "attack": 100,
+        "defense": 100,
+        "specialAttack": 100,
+        "specialDefense": 100,
+        "speed": 100
+      },
+      "name": "Celebi"
+    },
+    {
       "id": "regirock",
       "pokedexId": 377,
       "type": "rock",
@@ -4914,6 +5006,23 @@
       "name": "Regirock"
     },
     {
+      "id": "regice",
+      "pokedexId": 378,
+      "type": "ice",
+      "types": [
+        "ice"
+      ],
+      "baseStats": {
+        "hp": 80,
+        "attack": 50,
+        "defense": 100,
+        "specialAttack": 100,
+        "specialDefense": 200,
+        "speed": 50
+      },
+      "name": "Regice"
+    },
+    {
       "id": "registeel",
       "pokedexId": 379,
       "type": "steel",
@@ -4929,6 +5038,76 @@
         "speed": 50
       },
       "name": "Registeel"
+    },
+    {
+      "id": "latias",
+      "pokedexId": 380,
+      "type": "dragon",
+      "types": [
+        "dragon",
+        "psychic"
+      ],
+      "baseStats": {
+        "hp": 80,
+        "attack": 80,
+        "defense": 90,
+        "specialAttack": 110,
+        "specialDefense": 130,
+        "speed": 110
+      },
+      "name": "Latias"
+    },
+    {
+      "id": "latios",
+      "pokedexId": 381,
+      "type": "dragon",
+      "types": [
+        "dragon",
+        "psychic"
+      ],
+      "baseStats": {
+        "hp": 80,
+        "attack": 90,
+        "defense": 80,
+        "specialAttack": 130,
+        "specialDefense": 110,
+        "speed": 110
+      },
+      "name": "Latios"
+    },
+    {
+      "id": "kyogre",
+      "pokedexId": 382,
+      "type": "water",
+      "types": [
+        "water"
+      ],
+      "baseStats": {
+        "hp": 100,
+        "attack": 100,
+        "defense": 90,
+        "specialAttack": 150,
+        "specialDefense": 140,
+        "speed": 90
+      },
+      "name": "Kyogre"
+    },
+    {
+      "id": "groudon",
+      "pokedexId": 383,
+      "type": "ground",
+      "types": [
+        "ground"
+      ],
+      "baseStats": {
+        "hp": 100,
+        "attack": 150,
+        "defense": 140,
+        "specialAttack": 100,
+        "specialDefense": 90,
+        "speed": 90
+      },
+      "name": "Groudon"
     },
     {
       "id": "rayquaza",
@@ -4949,6 +5128,163 @@
       "name": "Rayquaza"
     },
     {
+      "id": "jirachi",
+      "pokedexId": 385,
+      "type": "steel",
+      "types": [
+        "steel",
+        "psychic"
+      ],
+      "baseStats": {
+        "hp": 100,
+        "attack": 100,
+        "defense": 100,
+        "specialAttack": 100,
+        "specialDefense": 100,
+        "speed": 100
+      },
+      "name": "Jirachi"
+    },
+    {
+      "id": "deoxys-normal",
+      "pokedexId": 386,
+      "type": "psychic",
+      "types": [
+        "psychic"
+      ],
+      "baseStats": {
+        "hp": 50,
+        "attack": 150,
+        "defense": 50,
+        "specialAttack": 150,
+        "specialDefense": 50,
+        "speed": 150
+      },
+      "name": "Deoxys"
+    },
+    {
+      "id": "uxie",
+      "pokedexId": 480,
+      "type": "psychic",
+      "types": [
+        "psychic"
+      ],
+      "baseStats": {
+        "hp": 75,
+        "attack": 75,
+        "defense": 130,
+        "specialAttack": 75,
+        "specialDefense": 130,
+        "speed": 95
+      },
+      "name": "Uxie"
+    },
+    {
+      "id": "mesprit",
+      "pokedexId": 481,
+      "type": "psychic",
+      "types": [
+        "psychic"
+      ],
+      "baseStats": {
+        "hp": 80,
+        "attack": 105,
+        "defense": 105,
+        "specialAttack": 105,
+        "specialDefense": 105,
+        "speed": 80
+      },
+      "name": "Mesprit"
+    },
+    {
+      "id": "azelf",
+      "pokedexId": 482,
+      "type": "psychic",
+      "types": [
+        "psychic"
+      ],
+      "baseStats": {
+        "hp": 75,
+        "attack": 125,
+        "defense": 70,
+        "specialAttack": 125,
+        "specialDefense": 70,
+        "speed": 115
+      },
+      "name": "Azelf"
+    },
+    {
+      "id": "dialga",
+      "pokedexId": 483,
+      "type": "steel",
+      "types": [
+        "steel",
+        "dragon"
+      ],
+      "baseStats": {
+        "hp": 100,
+        "attack": 120,
+        "defense": 120,
+        "specialAttack": 150,
+        "specialDefense": 100,
+        "speed": 90
+      },
+      "name": "Dialga"
+    },
+    {
+      "id": "palkia",
+      "pokedexId": 484,
+      "type": "water",
+      "types": [
+        "water",
+        "dragon"
+      ],
+      "baseStats": {
+        "hp": 90,
+        "attack": 120,
+        "defense": 100,
+        "specialAttack": 150,
+        "specialDefense": 120,
+        "speed": 100
+      },
+      "name": "Palkia"
+    },
+    {
+      "id": "heatran",
+      "pokedexId": 485,
+      "type": "fire",
+      "types": [
+        "fire",
+        "steel"
+      ],
+      "baseStats": {
+        "hp": 91,
+        "attack": 90,
+        "defense": 106,
+        "specialAttack": 130,
+        "specialDefense": 106,
+        "speed": 77
+      },
+      "name": "Heatran"
+    },
+    {
+      "id": "regigigas",
+      "pokedexId": 486,
+      "type": "normal",
+      "types": [
+        "normal"
+      ],
+      "baseStats": {
+        "hp": 110,
+        "attack": 160,
+        "defense": 110,
+        "specialAttack": 80,
+        "specialDefense": 110,
+        "speed": 100
+      },
+      "name": "Regigigas"
+    },
+    {
       "id": "giratina-altered",
       "pokedexId": 487,
       "type": "ghost",
@@ -4967,21 +5303,55 @@
       "name": "Giratina"
     },
     {
-      "id": "groudon",
-      "pokedexId": 383,
-      "type": "ground",
+      "id": "cresselia",
+      "pokedexId": 488,
+      "type": "psychic",
       "types": [
-        "ground"
+        "psychic"
+      ],
+      "baseStats": {
+        "hp": 120,
+        "attack": 70,
+        "defense": 110,
+        "specialAttack": 75,
+        "specialDefense": 120,
+        "speed": 85
+      },
+      "name": "Cresselia"
+    },
+    {
+      "id": "phione",
+      "pokedexId": 489,
+      "type": "water",
+      "types": [
+        "water"
+      ],
+      "baseStats": {
+        "hp": 80,
+        "attack": 80,
+        "defense": 80,
+        "specialAttack": 80,
+        "specialDefense": 80,
+        "speed": 80
+      },
+      "name": "Phione"
+    },
+    {
+      "id": "manaphy",
+      "pokedexId": 490,
+      "type": "water",
+      "types": [
+        "water"
       ],
       "baseStats": {
         "hp": 100,
-        "attack": 150,
-        "defense": 140,
+        "attack": 100,
+        "defense": 100,
         "specialAttack": 100,
-        "specialDefense": 90,
-        "speed": 90
+        "specialDefense": 100,
+        "speed": 100
       },
-      "name": "Groudon"
+      "name": "Manaphy"
     },
     {
       "id": "darkrai",
@@ -5001,6 +5371,23 @@
       "name": "Darkrai"
     },
     {
+      "id": "shaymin-land",
+      "pokedexId": 492,
+      "type": "grass",
+      "types": [
+        "grass"
+      ],
+      "baseStats": {
+        "hp": 100,
+        "attack": 100,
+        "defense": 100,
+        "specialAttack": 100,
+        "specialDefense": 100,
+        "speed": 100
+      },
+      "name": "Shaymin"
+    },
+    {
       "id": "arceus",
       "pokedexId": 493,
       "type": "normal",
@@ -5016,6 +5403,24 @@
         "speed": 120
       },
       "name": "Arceus"
+    },
+    {
+      "id": "virizion",
+      "pokedexId": 640,
+      "type": "grass",
+      "types": [
+        "grass",
+        "fighting"
+      ],
+      "baseStats": {
+        "hp": 91,
+        "attack": 90,
+        "defense": 72,
+        "specialAttack": 90,
+        "specialDefense": 129,
+        "speed": 108
+      },
+      "name": "Virizion"
     },
     {
       "id": "genesect",

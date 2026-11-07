@@ -258,6 +258,16 @@ export function advanceBoss(run: Run, config: GameConfig): void {
 
   const final = config.boss;
   if (!run.boss.spawned && final !== undefined && run.wave.index >= config.waves.length) {
+    // 4G-D: the final boss is drawn from the whole list of legendaries that have data (37), with the
+    // `themes` stream; the old table by type is the fallback for configs without the list.
+    const listed = (final.finals ?? []).filter((id) => config.species[id] !== undefined);
+    if (listed.length > 0) {
+      const species = listed[nextInt(run.rng.themes, listed.length)] ?? final.species;
+      placeBoss(run, config, species, final, interludes.length + 1, true);
+      run.boss.spawned = true;
+      run.boss.type = getSpecies(config, species).type;
+      return;
+    }
     const type = final.byType === undefined ? undefined : bossType(run, config, final.byType, -1);
     placeBoss(
       run,

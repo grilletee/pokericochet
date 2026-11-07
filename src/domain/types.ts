@@ -366,7 +366,16 @@ export type GameEvent =
     }
   /** The player lost `damage` health to a column of the boss (after the guard of the team). */
   | { readonly type: 'bossHurt'; readonly damage: number }
-  /** The core of the boss opens (it is about to, with `open` false) or has just closed: the window for the Ultimate. */
+  /** The barrier of a legendary went up or down (reflects balls while it is up, ADR-054). */
+  | { readonly type: 'bossBarrier'; readonly up: boolean }
+  /** Dialga slowed the player's time (ADR-054). */
+  | { readonly type: 'bossTimeSlow' }
+  /** A portal carried the player from x `from` to x `to` (ADR-054). */
+  | { readonly type: 'bossPortal'; readonly from: number; readonly to: number }
+  /**
+   * The boss started to charge its strong attack (`open`; exposed: the window for the Ultimate), is
+   * about to (`warning`) or has launched it and closed again (ADR-054; the name is historical).
+   */
   | { readonly type: 'bossCore'; readonly open: boolean; readonly warning: boolean }
   /** A boss died; `index` counts the bosses defeated so far, this one included (ADR-028). */
   | { readonly type: 'bossDefeated'; readonly species: string; readonly index: number }

@@ -114,6 +114,7 @@ describe('the states of an enemy, as the render reads them (4G-C)', () => {
       {
         kind: 'shot',
         x: 100,
+        link: 0,
         y: 222,
         width: 30,
         telegraph: 0,
@@ -125,6 +126,7 @@ describe('the states of an enemy, as the render reads them (4G-C)', () => {
       {
         kind: 'zone',
         x: 300,
+        link: 0,
         y: 0,
         width: 120,
         telegraph: 20,

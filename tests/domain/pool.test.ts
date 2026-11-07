@@ -253,7 +253,8 @@ describe('the legendaries stay available as final bosses (ADR-048)', () => {
   });
 
   it('the final boss of a run is one of them, drawn by the themes stream, different over seeds', () => {
-    const table = Object.values(gameConfig.boss?.byType ?? {});
+    const table = gameConfig.boss?.finals ?? [];
+    expect(table.length).toBeGreaterThanOrEqual(30);
     const seen = new Set<string>();
     for (const seed of SEEDS.slice(0, 30)) {
       const strong: GameConfig = {

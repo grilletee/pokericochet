@@ -6,7 +6,7 @@ import {
   type ThemeDef,
 } from '../../domain';
 import typeChartFile from '../generated/typeChart.json';
-import { bossFight } from './bosses';
+import { bossFight, FINAL_BOSSES } from './bosses';
 
 /**
  * Game rules as data, kept out of the domain (ADR-005, ADR-006). Initial values, not balanced.
@@ -385,10 +385,13 @@ export const baseConfig: Omit<
       normal: 'arceus',
       bug: 'genesect',
     },
+    // 4G-D (ADR-054): the final boss is any of these legendaries (36 of generations 1-4 + Virizion,
+    // Genesect), drawn with the themes stream; each has a table and many have a mechanic of their own.
+    finals: FINAL_BOSSES,
     // 4G-C (ADR-053): 26 -> 110, clearly above the third boss between waves (the author: "a real
     // challenge you can die in"); only the open core lets most of the damage through, so the time of
     // the fight is set by the bench (B3). Slow and big, so it takes a long time to reach the line.
-    hpScale: 46,
+    hpScale: 105, // 4G-D: 46 -> 105 (the boss now hovers fully on screen: it is hit much more)
     speed: 0.04,
     radius: 72,
     summonIntervalTicks: 900,
@@ -402,7 +405,7 @@ export const baseConfig: Omit<
     {
       after: 2,
       byType: { fire: 'rapidash', water: 'starmie', grass: 'victreebel', electric: 'electabuzz' },
-      hpScale: 3, // 3.2 in the 4G-B: the first met a team of level 5; it lasts long enough through the core
+      hpScale: 6.5, // 4G-D: 3 -> 6.5 (B3); 3.2 in the 4G-B: the first met a team of level 5; it lasts long enough through the core
       speed: 0.07,
       radius: 44,
       summonIntervalTicks: 1100,
@@ -415,7 +418,7 @@ export const baseConfig: Omit<
     {
       after: 4,
       byType: { fire: 'arcanine', water: 'gyarados', grass: 'exeggutor', electric: 'ampharos' },
-      hpScale: 11.5, // 7 in the 4G-B
+      hpScale: 28, // 4G-D: 11.5 -> 28 (B3); 7 in the 4G-B
       speed: 0.075,
       radius: 52,
       summonIntervalTicks: 1000,
@@ -427,7 +430,7 @@ export const baseConfig: Omit<
     {
       after: 6,
       byType: { fire: 'typhlosion', water: 'kingdra', grass: 'tangrowth', electric: 'luxray' },
-      hpScale: 24, // 16 in the 4G-B
+      hpScale: 56, // 4G-D: 24 -> 56 (B3); 16 in the 4G-B
       speed: 0.08,
       radius: 58,
       summonIntervalTicks: 900,

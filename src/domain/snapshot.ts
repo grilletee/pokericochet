@@ -11,7 +11,17 @@ export function typeCode(type: GameType): number {
 }
 
 /** The kinds of things a boss leaves on the field, in the order of their codes in the snapshot. */
-export const HAZARD_KINDS = ['column', 'comb', 'sweep', 'rain', 'shot', 'zone', 'gust'] as const;
+export const HAZARD_KINDS = [
+  'column',
+  'comb',
+  'sweep',
+  'rain',
+  'shot',
+  'zone',
+  'gust',
+  'crack',
+  'portal',
+] as const;
 
 /** Bits of `Snapshot.enemyStatus`: one sign for each thing that can be wrong with an enemy. */
 export const STATUS_BURN = 1;
@@ -150,6 +160,14 @@ export interface Snapshot {
   /** Ticks the core stays open (0 = closed) and whether it is about to open. */
   bossCoreOpen: number;
   bossCoreWarning: boolean;
+  /** Type code of the boss, the colour of its attacks (-1 without a boss). */
+  bossType: number;
+  /** The exclusive mechanics of a legendary (ADR-054): the squeeze of the field and the barrier / slow flags. */
+  bossSqueeze: number;
+  bossBarrier: boolean;
+  bossTimeSlow: boolean;
+  /** Link x of a portal (0 for the rest of the hazards). */
+  hazardLink: Float32Array;
   bossWeakX: number;
   bossWeakY: number;
   bossWeakRadius: number;
@@ -220,6 +238,11 @@ export function createSnapshot(maxSlots = 64, maxEnemies = 512, maxPickups = 64)
     enemyStatus: new Uint16Array(maxEnemies),
     bossCoreOpen: 0,
     bossCoreWarning: false,
+    bossType: -1,
+    bossSqueeze: 0,
+    bossBarrier: false,
+    bossTimeSlow: false,
+    hazardLink: new Float32Array(MAX_HAZARDS),
     bossWeakX: 0,
     bossWeakY: 0,
     bossWeakRadius: 0,
@@ -255,6 +278,10 @@ export function writeSnapshot(
   snap.bossSpecies = 0;
   snap.bossCoreOpen = 0;
   snap.bossCoreWarning = false;
+  snap.bossType = -1;
+  snap.bossSqueeze = run.boss.squeeze;
+  snap.bossBarrier = run.boss.barrier > 0;
+  snap.bossTimeSlow = run.boss.timeSlow > 0;
   snap.bossPhase = 0;
   snap.bossWeakRadius = 0;
   if (run.boss.id !== 0) {
@@ -267,6 +294,7 @@ export function writeSnapshot(
       snap.bossY = e.y;
       snap.bossRadius = e.radius;
       snap.bossPhase = run.boss.phase;
+      snap.bossType = typeCode(e.type);
       snap.bossCoreOpen = run.boss.coreOpen;
       const fight = config?.bossFight;
       snap.bossCoreWarning =
@@ -284,6 +312,7 @@ export function writeSnapshot(
     if (h === undefined) continue;
     snap.hazardKind[i] = HAZARD_KINDS.indexOf(h.kind);
     snap.hazardY[i] = h.y;
+    snap.hazardLink[i] = h.link;
     snap.hazardX[i] = h.x;
     snap.hazardWidth[i] = h.width;
     snap.hazardWarn[i] = h.telegraph;

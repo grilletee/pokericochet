@@ -172,7 +172,9 @@ describe('fetch-data: roster and output file', () => {
       /legendaries has dup/,
     );
     expect(() => validateRoster({ ...roster, legendaries: ['a'] })).toThrow(/legendary "a"/);
-    expect(() => validateRoster({ ...roster, legendaries: ['d'] })).toThrow(/legendary "d"/);
+    // The fallback boss may be one of the legendaries; a ball or an enemy may not.
+    expect(() => validateRoster({ ...roster, legendaries: ['d'] })).not.toThrow();
+    expect(() => validateRoster({ ...roster, legendaries: ['c'] })).toThrow(/legendary "c"/);
   });
 
   it('allows lines of none, one or two forms, and no more (ADR-037)', () => {

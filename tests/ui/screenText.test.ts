@@ -15,8 +15,10 @@ import {
   describeEvent,
   describeResults,
   formatTime,
+  isRealEvolution,
   stageText,
   starterBlurb,
+  strongerText,
 } from '../../src/ui/screenText';
 
 beforeAll(() => setNames(POKEMON_NAMES, MOVE_NAMES));
@@ -202,6 +204,16 @@ describe('results and title text', () => {
     );
     expect(stageText('peak', 'exeggutor', 'exeggutor')).toBe('¡Exeggutor alcanza su máximo poder!');
     expect(stageText('awaken', 'tangela', 'tangela')).toBe('¡Tangela despierta su poder!');
+  });
+
+  it('only a real evolution plays the animation: no animation when the form does not change', () => {
+    expect(isRealEvolution('evolve', 'exeggcute', 'exeggutor')).toBe(true);
+    expect(isRealEvolution('evolve', 'gyarados', 'gyarados')).toBe(false);
+    expect(isRealEvolution('peak', 'exeggutor', 'exeggutor')).toBe(false);
+    expect(isRealEvolution('awaken', 'tangela', 'tangela')).toBe(false);
+    expect(strongerText('gyarados')).toBe(
+      '¡Gyarados se vuelve más fuerte! Este nivel sube mucho sus estadísticas',
+    );
   });
 
   it('never says a Pokémon evolves into itself, for any line and any stage of the roster', () => {

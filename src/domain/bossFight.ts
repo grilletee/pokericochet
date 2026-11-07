@@ -4,6 +4,11 @@ import { nextFloat, nextInt } from './rng';
 import type { Hazard, Run } from './run';
 import type { Enemy, GameType } from './types';
 
+/** A whole number of ticks from a positive length (the domain may not use Math.round). */
+function ticksOf(x: number): number {
+  return (x + 0.5) | 0;
+}
+
 /** No attack that hurts is ever announced for less than this: a person has to be able to react. */
 export const MIN_TELEGRAPH_TICKS = 60;
 
@@ -47,27 +52,40 @@ export function bossDamage(run: Run, config: GameConfig, boss: Enemy, amount: nu
 }
 
 /**
- * How much more a ball does when it lands ON the open core (ADR-053): the skill of the fight. A
- * ball anywhere else, or with the core closed, gets 1.
+ * How far from each side of the arena the player can go: the margin of the floor plus what the
+ * `tide` of Kyogre has squeezed in (ADR-054). The rest of the game asks this, never `margin` directly.
  */
-export function coreHitMult(
-  run: Run,
-  config: GameConfig,
-  boss: Enemy,
-  x: number,
-  y: number,
-  radius: number,
-): number {
-  const fight = config.bossFight;
-  if (fight === undefined || run.boss.coreOpen <= 0) return 1;
-  const core = coreOf(run, boss);
-  const dx = x - core.x;
-  const dy = y - core.y;
-  const reach = core.radius + radius;
-  return dx * dx + dy * dy <= reach * reach ? fight.coreHitMult : 1;
+export function fieldMargin(run: Run, config: GameConfig): number {
+  return config.player.margin + run.boss.squeeze * (config.arena.width * 0.3);
 }
 
-/** An Ultimate that lands while the core is open hits extra hard (ADR-053); 1 otherwise. */
+/** Does the barrier of a legendary reflect the balls now (ADR-054)? */
+export function barrierUp(run: Run): boolean {
+  return run.boss.barrier > 0;
+}
+
+/** The speed the player moves at, slowed while Dialga's time slow lasts (ADR-054). */
+export function playerSpeedMult(run: Run, config: GameConfig): number {
+  if (run.boss.timeSlow <= 0) return 1;
+  const mechanic = patternFor(
+    config,
+    bossSpeciesOf(run, config),
+    bossTypeOf(run, config),
+  )?.mechanic;
+  return mechanic?.kind === 'timeSlow' ? mechanic.mult : 1;
+}
+
+function bossSpeciesOf(run: Run, config: GameConfig): string {
+  void config;
+  return run.enemies.find((e) => e.id === run.boss.id)?.species ?? '';
+}
+
+function bossTypeOf(run: Run, config: GameConfig): string {
+  void config;
+  return run.enemies.find((e) => e.id === run.boss.id)?.type ?? '';
+}
+
+/** An Ultimate that lands while the boss is exposed hits extra hard (ADR-054); 1 otherwise. */
 export function ultimateOnBoss(run: Run, config: GameConfig): number {
   const fight = config.bossFight;
   if (fight === undefined) return 1;
@@ -86,6 +104,10 @@ export function startFight(run: Run, config: GameConfig, boss: Enemy): void {
   run.boss.weakX = 0;
   run.boss.attackIn = fight.calmTicks;
   run.boss.summonDebt = 0;
+  run.boss.squeeze = 0;
+  run.boss.barrier = 0;
+  run.boss.timeSlow = 0;
+  run.boss.mechIn = 240;
 }
 
 function addHazard(run: Run, config: GameConfig, hazard: Hazard): void {
@@ -111,6 +133,7 @@ function spawnAttack(
   const damage = attack.damage * phase.damageMult;
   const base = {
     y: 0,
+    link: 0,
     telegraph,
     active: attack.activeTicks,
     damage,
@@ -224,6 +247,102 @@ function strike(run: Run, config: GameConfig, hazard: Hazard): void {
   run.events.push({ type: 'bossHurt', damage: cost });
 }
 
+/**
+ * The exclusive mechanic of a legendary (ADR-054), one tick: the tide squeezes the field in, cracks
+ * open in the floor, the barrier goes up and down, time slows, portals open. Bosses without one skip it.
+ */
+function advanceMechanic(run: Run, config: GameConfig, pattern: BossPatternDef): void {
+  const mechanic = pattern.mechanic;
+  if (mechanic === undefined) return;
+  const { width } = config.arena;
+  const fury = run.boss.phase === 1;
+  switch (mechanic.kind) {
+    case 'tide': {
+      // The water rises a little all the time and further in the fury; it never goes back.
+      const goal = mechanic.maxSqueeze * (fury ? 1 : 0.55);
+      run.boss.squeeze = Math.min(goal, run.boss.squeeze + goal / mechanic.riseTicks);
+      const margin = fieldMargin(run, config);
+      run.player.x = Math.max(margin, Math.min(width - margin, run.player.x));
+      break;
+    }
+    case 'cracks': {
+      run.boss.mechIn -= 1;
+      if (run.boss.mechIn <= 0) {
+        const count = mechanic.count + (fury ? 1 : 0);
+        for (let i = 0; i < count; i++) {
+          const x = 30 + nextFloat(run.rng.boss) * (width - 60);
+          addHazard(run, config, {
+            kind: 'crack',
+            x,
+            y: 0,
+            link: 0,
+            width: 44,
+            telegraph: 80,
+            active: mechanic.lastTicks,
+            damage: 1.5,
+            speed: 0,
+            struck: false,
+          });
+        }
+        run.boss.mechIn = ticksOf(mechanic.everyTicks * (fury ? 0.7 : 1));
+      }
+      break;
+    }
+    case 'barrier': {
+      if (run.boss.barrier > 0) {
+        run.boss.barrier -= 1;
+        if (run.boss.barrier === 0) {
+          run.boss.mechIn = mechanic.offTicks;
+          run.events.push({ type: 'bossBarrier', up: false });
+        }
+      } else {
+        run.boss.mechIn -= 1;
+        if (run.boss.mechIn <= 0) {
+          run.boss.barrier = ticksOf(mechanic.onTicks * (fury ? 1.25 : 1));
+          run.events.push({ type: 'bossBarrier', up: true });
+        }
+      }
+      break;
+    }
+    case 'timeSlow': {
+      if (run.boss.timeSlow > 0) {
+        run.boss.timeSlow -= 1;
+      } else {
+        run.boss.mechIn -= 1;
+        if (run.boss.mechIn <= 0) {
+          run.boss.timeSlow = ticksOf(mechanic.lastTicks * (fury ? 1.3 : 1));
+          run.boss.mechIn = ticksOf(mechanic.everyTicks * (fury ? 0.75 : 1));
+          run.events.push({ type: 'bossTimeSlow' });
+        }
+      }
+      break;
+    }
+    case 'portals': {
+      run.boss.mechIn -= 1;
+      if (run.boss.mechIn <= 0) {
+        const a = 60 + nextFloat(run.rng.boss) * (width / 2 - 100);
+        const b = width / 2 + 40 + nextFloat(run.rng.boss) * (width / 2 - 100);
+        const make = (x: number, link: number): Hazard => ({
+          kind: 'portal',
+          x,
+          y: 0,
+          link,
+          width: 40,
+          telegraph: 60,
+          active: mechanic.lastTicks,
+          damage: 0,
+          speed: 0,
+          struck: false,
+        });
+        addHazard(run, config, make(a, b));
+        addHazard(run, config, make(b, a));
+        run.boss.mechIn = ticksOf(mechanic.everyTicks * (fury ? 0.75 : 1));
+      }
+      break;
+    }
+  }
+}
+
 /** True if a patch of floor (a `zone`) that is active covers x: balls there cannot be collected. */
 export function zoneCovers(run: Run, x: number): boolean {
   for (const h of run.hazards) {
@@ -259,12 +378,14 @@ export function advanceBossFight(run: Run, config: GameConfig): void {
     return;
   }
 
-  // The core: closed, announced, open.
+  // The charge (ADR-054): guarded, announced, then the boss stops and charges its strong attack,
+  // exposed (it takes much more damage, and the Ultimate is worth most), and launches it.
   if (run.boss.coreOpen > 0) {
     run.boss.coreOpen -= 1;
     if (run.boss.coreOpen === 0) {
       run.boss.coreIn = phase.coreEvery;
       run.events.push({ type: 'bossCore', open: false, warning: false });
+      spawnAttack(run, config, boss, phase, phase.strong);
     }
   } else {
     run.boss.coreIn -= 1;
@@ -272,15 +393,14 @@ export function advanceBossFight(run: Run, config: GameConfig): void {
       run.events.push({ type: 'bossCore', open: false, warning: true });
     }
     if (run.boss.coreIn <= 0) {
-      const reach = boss.radius * 0.55;
-      run.boss.weakX = (nextFloat(run.rng.boss) * 2 - 1) * reach;
       run.boss.coreOpen = phase.coreOpen;
       run.events.push({ type: 'bossCore', open: true, warning: false });
     }
   }
+  advanceMechanic(run, config, pattern);
 
-  // A round of attacks.
-  run.boss.attackIn -= 1;
+  // A round of attacks (not while it charges: it is busy).
+  if (run.boss.coreOpen <= 0) run.boss.attackIn -= 1;
   if (run.boss.attackIn <= 0) {
     for (let i = 0; i < phase.perRound; i++) {
       const attack = phase.attacks[nextInt(run.rng.boss, Math.max(1, phase.attacks.length))];
@@ -292,6 +412,7 @@ export function advanceBossFight(run: Run, config: GameConfig): void {
   // What is on the floor: warn, strike, fall, push, block, leave.
   let kept = 0;
   const floorY = config.player.y;
+  if (run.boss.portalCool > 0) run.boss.portalCool -= 1;
   for (const hazard of run.hazards) {
     if (hazard.telegraph > 0) {
       hazard.telegraph -= 1;
@@ -317,12 +438,28 @@ export function advanceBossFight(run: Run, config: GameConfig): void {
       }
     } else if (hazard.kind === 'gust') {
       hazard.active -= 1;
+      const margin = fieldMargin(run, config);
       run.player.x = Math.max(
-        config.player.margin,
-        Math.min(config.arena.width - config.player.margin, run.player.x + hazard.speed),
+        margin,
+        Math.min(config.arena.width - margin, run.player.x + hazard.speed),
       );
     } else if (hazard.kind === 'zone') {
       hazard.active -= 1;
+    } else if (hazard.kind === 'crack') {
+      // A burning crack hurts whoever stands on it, every second.
+      hazard.active -= 1;
+      if (hazard.active % 60 === 0 && covers(run, hazard)) {
+        strike(run, config, hazard);
+        hazard.struck = false;
+      }
+    } else if (hazard.kind === 'portal') {
+      // Touching one carries the player to its pair, once; they cannot be carried back at once.
+      hazard.active -= 1;
+      if (covers(run, hazard) && run.boss.portalCool <= 0) {
+        run.player.x = hazard.link;
+        run.boss.portalCool = 45;
+        run.events.push({ type: 'bossPortal', from: hazard.x, to: hazard.link });
+      }
     } else {
       hazard.active -= 1;
       hazard.x += hazard.speed;

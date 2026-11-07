@@ -1,5 +1,5 @@
 import { type AimDirection, aimDirection } from './aim';
-import { advanceBossFight, coreHitMult } from './bossFight';
+import { advanceBossFight, barrierUp, fieldMargin, playerSpeedMult } from './bossFight';
 import { applyCard } from './cards';
 import { ballSpeed, damagePlayer, effectivenessOn, hitDamage, leakDamage } from './combat';
 import type { GameConfig } from './config';
@@ -46,6 +46,9 @@ function nearestEnemy(enemies: readonly Enemy[], x: number, y: number): Enemy | 
 }
 
 const scratchDirection: AimDirection = { x: 0, y: -1 };
+/** A boss comes down at this speed (pixels per tick) until its centre is `radius + BOSS_HOVER` from the top. */
+const BOSS_ENTRY_SPEED = 1.6;
+const BOSS_HOVER = 60;
 
 /**
  * Launches every ball that is ready. Manual aim (the default) goes towards the point the player
@@ -171,10 +174,12 @@ export function tick(run: Run, cmd: Command, config: GameConfig): TickOutput {
   const { arena, ball: ballConfig } = config;
   const guardBonus = config.effects.guardBonus ?? 0.15;
 
+  // Slower while Dialga's time slow lasts, and the tide of Kyogre narrows the field (ADR-054).
+  const margin = fieldMargin(run, config);
   run.player.x = clamp(
-    run.player.x + cmd.moveX * config.player.speed,
-    config.player.margin,
-    arena.width - config.player.margin,
+    run.player.x + cmd.moveX * config.player.speed * playerSpeedMult(run, config),
+    margin,
+    arena.width - margin,
   );
   // The aim is part of the command (ADR-021): whole pixels inside the arena, so two recordings
   // that mean the same aim hash the same.
@@ -195,6 +200,10 @@ export function tick(run: Run, cmd: Command, config: GameConfig): TickOutput {
     const halt = e.haltTicks ?? 0;
     if (halt > 0) {
       e.haltTicks = halt - 1; // stopped by ice or a stun: it does not advance this tick
+    } else if (e.id === run.boss.id && run.boss.maxHp > 0 && e.y < e.radius + BOSS_HOVER) {
+      // A boss comes down fast to where its whole body is on screen (its entrance), then it
+      // advances slowly as before: before 4G-D it spent a minute half-hidden over the top edge.
+      e.y += BOSS_ENTRY_SPEED;
     } else {
       e.y += e.speed * (e.slowTicks > 0 ? 1 - e.slow : 1);
     }
@@ -250,15 +259,14 @@ export function tick(run: Run, cmd: Command, config: GameConfig): TickOutput {
         x: target.x,
         y: target.y,
       });
-      // A ball that lands ON the open core of a boss hits much harder (ADR-053).
-      const dealt =
-        target.id === run.boss.id
-          ? damage * coreHitMult(run, config, target, body.x, body.y, radius)
-          : damage;
-      const killed = damageEnemy(run, config, target, dealt);
-      applyHitEffects(run, config, ball, target, damage, killed);
-      landHit(run, config, ball, target);
-      if (body.pierce > 0) {
+      // The barrier of a legendary (Mewtwo) reflects the ball without a scratch (ADR-054).
+      const reflected = target.id === run.boss.id && barrierUp(run);
+      const killed = reflected ? false : damageEnemy(run, config, target, damage);
+      if (!reflected) {
+        applyHitEffects(run, config, ball, target, damage, killed);
+        landHit(run, config, ball, target);
+      }
+      if (body.pierce > 0 && !reflected) {
         body.pierce -= 1;
         body.skipId = target.id;
       } else {

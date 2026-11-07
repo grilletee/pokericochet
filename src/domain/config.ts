@@ -75,27 +75,55 @@ export interface BossPhaseDef {
   readonly perRound: number;
   /** Multiplies the damage of every attack of the phase. */
   readonly damageMult: number;
-  /** The core: closed for `coreEvery` ticks, then open for `coreOpen` (it is announced first). */
+  /**
+   * The strong attack (ADR-054, which replaces the core of ADR-053): every `coreEvery` ticks the
+   * boss stops and CHARGES it for `coreOpen` ticks, exposed (it is announced first and it glows), and
+   * then launches `strong`. The names `core*` are historical: they mean "charge".
+   */
   readonly coreEvery: number;
   readonly coreOpen: number;
+  readonly strong: BossAttackDef;
 }
 
-/** The pattern table of one boss: the normal phase and the fury (ADR-053). */
+/**
+ * The mechanic of a legendary that no other boss has (ADR-054). `tide` squeezes the field from both
+ * sides (Kyogre); `cracks` opens burning cracks in the floor (Groudon); `barrier` raises a barrier
+ * that reflects balls (Mewtwo); `timeSlow` slows the player (Dialga); `portals` opens pairs of
+ * portals that carry the player from one to the other (Palkia).
+ */
+export type BossMechanicDef =
+  | { readonly kind: 'tide'; readonly maxSqueeze: number; readonly riseTicks: number }
+  | {
+      readonly kind: 'cracks';
+      readonly everyTicks: number;
+      readonly count: number;
+      readonly lastTicks: number;
+    }
+  | { readonly kind: 'barrier'; readonly onTicks: number; readonly offTicks: number }
+  | {
+      readonly kind: 'timeSlow';
+      readonly everyTicks: number;
+      readonly lastTicks: number;
+      readonly mult: number;
+    }
+  | { readonly kind: 'portals'; readonly everyTicks: number; readonly lastTicks: number };
+
+/** The pattern table of one boss: the normal phase and the fury, and its own mechanic if it has one. */
 export interface BossPatternDef {
   readonly phases: readonly [BossPhaseDef, BossPhaseDef];
+  readonly mechanic?: BossMechanicDef;
 }
 
 /** The boss fight rules that do not depend on the boss (ADR-053). */
 export interface BossFightDef {
   /** The fury starts when the boss is at or under this share of its health. */
   readonly rageAt: number;
-  /** Damage multiplier while the core is closed, open and, when a ball is ON the core, open and hit. */
+  /** Damage multiplier while the boss is guarded (normal) and while it is exposed, charging its strong attack. */
   readonly closedMult: number;
   readonly openMult: number;
-  readonly coreHitMult: number;
-  /** An Ultimate that lands while the core is open does this much extra. */
+  /** An Ultimate that lands while the boss is exposed does this much extra. */
   readonly ultimateOpenBonus: number;
-  /** Ticks the core is announced before it opens. */
+  /** Ticks the charge is announced before it starts. */
   readonly coreWarnTicks: number;
   /** Ticks of calm after the boss appears and after the fury starts. */
   readonly calmTicks: number;
@@ -115,6 +143,11 @@ export interface BossDef {
    * type, ADR-028) and the summons are of that type; `species` is then only the fallback.
    */
   readonly byType?: Readonly<Partial<Record<GameType, string>>>;
+  /**
+   * The legendaries that may be the final boss (4G-D: every one of generations 1-4 that fits, 37).
+   * When present one is drawn with the `themes` stream; the summons are of its type.
+   */
+  readonly finals?: readonly string[];
   /** Multiplies species hp * enemy.hpScale. */
   readonly hpScale: number;
   /** Pixels advanced downwards per tick. */
