@@ -26,6 +26,7 @@ export class Overlay {
     const base =
       'position:absolute;pointer-events:none;font-family:system-ui,sans-serif;color:#e8ecf8;';
     this.hud = document.createElement('div');
+    this.hud.dataset.hud = '';
     this.hud.style.cssText = `${base}left:12px;top:10px;font-size:18px;font-weight:600;white-space:pre;line-height:1.25;`;
     this.message = document.createElement('div');
     this.message.style.cssText =
@@ -45,13 +46,14 @@ export class Overlay {
       `${base}left:50%;top:30%;transform:translateX(-50%);display:none;padding:6px 14px;` +
       'border-radius:8px;background:rgba(5,8,16,0.78);font-size:16px;font-weight:600;' +
       'text-align:center;max-width:80%;';
-    // The bar of the boss (4G-C, ADR-053): wide, at the TOP (the bottom is where the finger and the
-    // attacks are), with a notch at half health, where the fury starts, and a gold edge while the
-    // core is open.
+    // The bar of the boss (4G-C, ADR-053): wide, with a notch at half health, where the fury
+    // starts, and a gold edge while the boss is exposed. At the BOTTOM again (4G-D, the author's
+    // choice: "me gusta, pero debe estar abajo"); the marks that attacks leave on the floor strip are
+    // tall enough to stay readable above it.
     this.bossBar = document.createElement('div');
     this.bossBar.dataset.bossBar = '';
     this.bossBar.style.cssText =
-      `${base}left:6%;top:76px;display:none;width:88%;height:26px;border-radius:9px;` +
+      `${base}left:6%;bottom:10px;display:none;width:88%;height:26px;border-radius:9px;` +
       'background:rgba(255,255,255,0.18);overflow:hidden;font-size:13px;font-weight:700;' +
       'line-height:22px;text-align:center;box-sizing:border-box;border:2px solid transparent;';
     this.bossFill = document.createElement('div');
@@ -165,7 +167,7 @@ export class Overlay {
     if (key === this.lastBossKey) return;
     this.lastBossKey = key;
     this.bossBar.style.display = visible ? 'block' : 'none';
-    this.bossLabel.textContent = `${name} ${percent} %${open ? ' · ¡NÚCLEO ABIERTO!' : warning ? ' · se abre…' : ''}`;
+    this.bossLabel.textContent = `${name} ${percent} %${open ? ' · ¡CARGANDO, EXPUESTO! ¡ATACA!' : warning ? ' · va a cargar…' : ''}`;
     this.bossFill.style.width = `${percent}%`;
     this.bossFill.style.background = rage ? '#a3141f' : '#e8503a';
     this.bossBar.style.borderColor = open ? '#ffd54f' : warning ? '#ffffff88' : 'transparent';

@@ -3,7 +3,7 @@ import { TYPE_COLORS } from './typeColors';
 
 /** Real milliseconds the game stops for each moment of a boss (ADR-046): short, so it does not drag. */
 export const BOSS_ENTRY_MS = 1600;
-export const BOSS_DEFEAT_MS = 700;
+export const BOSS_DEFEAT_MS = 1300;
 
 /** What a boss moment shows: the small line over the name, the name and what comes with it. */
 export interface BossMomentView {
@@ -54,6 +54,8 @@ export class BossMoment {
     window.clearTimeout(this.timer);
     const color = view.type === undefined ? '#ffd54f' : TYPE_COLORS[view.type];
     const children: HTMLElement[] = [];
+    /** Things drawn over everything else (the burst of the defeat, the bars of the entry). */
+    const extras: HTMLElement[] = [];
     if (view.spriteUrl !== undefined) {
       const img = document.createElement('img');
       img.src = view.spriteUrl;
@@ -61,26 +63,101 @@ export class BossMoment {
       img.draggable = false;
       img.style.cssText = `width:${view.style === 'phase' ? 120 : 170}px;height:${view.style === 'phase' ? 120 : 170}px;image-rendering:pixelated;filter:drop-shadow(0 0 14px ${color});`;
       children.push(img);
-      animate(
-        img,
-        view.style === 'defeat'
-          ? [
-              { transform: 'scale(1)', opacity: 1 },
-              { transform: 'scale(1.5)', opacity: 0 },
-            ]
-          : [
-              { transform: 'translateY(60px) scale(0.6)', opacity: 0 },
-              { transform: 'translateY(0) scale(1)', opacity: 1 },
+      img.style.transformOrigin = '50% 100%';
+      if (view.style === 'defeat') {
+        // It faints the way the old games did: blinks, then folds into the floor in coarse steps.
+        animate(
+          img,
+          [
+            { opacity: 1, transform: 'scaleY(1)', offset: 0 },
+            { opacity: 0, transform: 'scaleY(1)', offset: 0.12 },
+            { opacity: 1, transform: 'scaleY(1)', offset: 0.24 },
+            { opacity: 0, transform: 'scaleY(1)', offset: 0.36 },
+            { opacity: 1, transform: 'scaleY(1)', offset: 0.48 },
+            { opacity: 1, transform: 'scaleY(1)', offset: 0.55 },
+            { opacity: 0.9, transform: 'scaleY(0)', offset: 1 },
+          ],
+          { duration: ms, easing: 'steps(14)', fill: 'forwards' },
+        );
+        // A burst of square pixels in the colour of the type.
+        for (let k = 0; k < 28; k++) {
+          const angle = (k / 28) * Math.PI * 2;
+          const reach = 90 + (k % 4) * 34;
+          const dot = box(
+            `position:absolute;width:8px;height:8px;background:${k % 3 === 0 ? '#fff7e0' : color};` +
+              'image-rendering:pixelated;left:50%;top:44%;',
+          );
+          extras.push(dot);
+          animate(
+            dot,
+            [
+              { transform: 'translate(0,0)', opacity: 1 },
+              {
+                transform: `translate(${Math.cos(angle) * reach}px,${Math.sin(angle) * reach}px)`,
+                opacity: 0,
+              },
             ],
-        { duration: ms * 0.7, easing: 'ease-out', fill: 'forwards' },
-      );
+            { duration: ms * 0.85, delay: ms * 0.3, easing: 'steps(8)', fill: 'both' },
+          );
+        }
+      } else if (view.style === 'entry') {
+        // It drops in with a heavy landing: coarse steps down, then the screen shakes.
+        animate(
+          img,
+          [
+            { transform: 'translateY(-220px)', opacity: 0 },
+            { transform: 'translateY(0)', opacity: 1, offset: 0.55 },
+            { transform: 'translateY(0)', opacity: 1 },
+          ],
+          { duration: ms, easing: 'steps(9)', fill: 'forwards' },
+        );
+        animate(
+          this.root,
+          [
+            { transform: 'translate(0,0)' },
+            { transform: 'translate(-6px,4px)', offset: 0.58 },
+            { transform: 'translate(6px,-4px)', offset: 0.66 },
+            { transform: 'translate(-3px,2px)', offset: 0.74 },
+            { transform: 'translate(0,0)', offset: 0.82 },
+          ],
+          { duration: ms, easing: 'steps(1)' },
+        );
+      } else {
+        // The fury: a flash and a shudder.
+        animate(
+          img,
+          [
+            { transform: 'scale(1)', filter: 'brightness(3)' },
+            { transform: 'scale(1.12)', filter: 'brightness(1)' },
+            { transform: 'scale(1)', filter: 'brightness(2)' },
+          ],
+          { duration: ms, easing: 'steps(6)', fill: 'forwards' },
+        );
+      }
+    }
+    // Black bars slide in from the top and the bottom, like a cut scene.
+    if (view.style === 'entry') {
+      for (const edge of ['top', 'bottom']) {
+        const bar = box(
+          `position:absolute;left:0;right:0;${edge}:0;height:13%;background:#0a0c18;border-${edge === 'top' ? 'bottom' : 'top'}:4px solid ${color};`,
+        );
+        extras.push(bar);
+        animate(
+          bar,
+          [
+            { transform: `translateY(${edge === 'top' ? '-100%' : '100%'})` },
+            { transform: 'none' },
+          ],
+          { duration: ms * 0.25, easing: 'steps(5)', fill: 'both' },
+        );
+      }
     }
     children.push(
       box(`font-size:15px;font-weight:800;letter-spacing:2px;color:${color};`, view.kicker),
       box(`font-size:38px;font-weight:900;text-shadow:0 2px 0 #000,0 0 14px ${color};`, view.title),
     );
     if (view.note !== undefined) children.push(box('font-size:15px;opacity:0.9;', view.note));
-    this.root.replaceChildren(...children);
+    this.root.replaceChildren(...children, ...extras);
     this.root.style.display = 'flex';
     this.root.dataset.style = view.style;
     this.root.style.background =

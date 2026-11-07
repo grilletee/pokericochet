@@ -198,6 +198,24 @@ export function stageText(kind: 'evolve' | 'awaken' | 'peak', from: string, to: 
 }
 
 /**
+ * Does a stage step change the form? Only then the evolution animation (flashes, the silhouette
+ * that turns into the new form) and its pause play: the 11th playtest asked for none when a Pokémon
+ * does not evolve (Gyarados in its third phase), only a notice.
+ */
+export function isRealEvolution(
+  kind: 'evolve' | 'awaken' | 'peak',
+  from: string,
+  to: string,
+): boolean {
+  return kind === 'evolve' && from !== to;
+}
+
+/** The notice of a stage step that does not change the form: no animation, no pause. */
+export function strongerText(form: string): string {
+  return `¡${pokemonName(form)} se vuelve más fuerte! Este nivel sube mucho sus estadísticas`;
+}
+
+/**
  * A short on-screen message for an event, or null if the event needs none. Every Pokémon is named
  * by the form the event carries (ADR-036), never by the base species.
  */

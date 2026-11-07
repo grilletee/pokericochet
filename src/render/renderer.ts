@@ -1,4 +1,4 @@
-import { Application, Container, Graphics, Sprite, type Texture } from 'pixi.js';
+import { Application, Container, Graphics, Sprite, Texture, TilingSprite } from 'pixi.js';
 import {
   type AimDirection,
   aimDirection,
@@ -18,6 +18,15 @@ import {
 } from '../domain';
 import { ballVisualScale, opaqueExtent } from './artBox';
 import { interpolateBalls, interpolateEnemies } from './interpolate';
+import {
+  ART_PIXEL,
+  backdropFor,
+  dotTexture,
+  FX_FRAMES,
+  fxFor,
+  launcherTexture,
+  ringTexture,
+} from './pixelArt';
 
 /** Placeholder colours per type code (fire, water, grass, electric). No franchise art here. */
 // In the order of the type codes of the snapshot (`typeCode`, the place in GAME_TYPES): normal,
@@ -32,13 +41,22 @@ const FX_POOL = 48;
 const HAZARD_POOL = 16;
 /** Signs of the states of the enemies (flames, bubbles, sparks...) drawn at once. */
 const STATUS_POOL = 360;
-/** Colour of each kind of hazard (the order of `HAZARD_KINDS`): column, comb, sweep, rain, shot, zone, gust. */
-const HAZARD_COLORS: readonly number[] = [
-  0xff6b4a, 0xff9a3c, 0x4fc3f7, 0xc792ea, 0xffd54f, 0x7a4cff, 0xe8f4ff,
-];
+/** Codes of the kinds of hazard (the order of `HAZARD_KINDS`). */
+const KIND_COMB = 1;
+const KIND_SWEEP = 2;
+const KIND_RAIN = 3;
 const KIND_SHOT = 4;
 const KIND_ZONE = 5;
 const KIND_GUST = 6;
+const KIND_CRACK = 7;
+const KIND_PORTAL = 8;
+/** Colour of the cracks (lava) and of the portals, which do not take the colour of the boss. */
+const LAVA = 0xff7a2e;
+const PORTAL_COLOR = 0xb08cff;
+/** Sparks that fly off every attack while it strikes: four per hazard. */
+const SPARKS_PER_HAZARD = 4;
+/** Pixels per millisecond the three layers of the backdrop scroll at (far, middle, near). */
+const BACKDROP_SPEEDS: readonly number[] = [0.006, 0.016, 0.034];
 const AIM_DOTS = 16;
 /** Particles of the biome of the wave in progress (4H-B2, block 3): few and cheap on purpose. */
 const BIOME_DOTS = 22;
@@ -103,13 +121,19 @@ export class Renderer {
   private readonly pickupRings: Sprite[] = [];
   private readonly aimDots: Sprite[] = [];
   private readonly hazardLayer = new Container();
-  private readonly hazardSprites: Sprite[] = [];
+  private readonly hazardSprites: TilingSprite[] = [];
   /** The bright mark each hazard leaves on the floor strip, and the pool of the status signs. */
-  private readonly hazardFloor: Sprite[] = [];
+  private readonly hazardFloor: TilingSprite[] = [];
+  private readonly hazardSparks: Sprite[] = [];
+  /** Mechanics of the legendaries: the tide at both sides, the barrier over the boss, the slow veil. */
+  private readonly tideLeft: TilingSprite;
+  private readonly tideRight: TilingSprite;
+  private readonly barrierSprite: TilingSprite;
+  private readonly slowVeil: Sprite;
   private readonly statusLayer = new Container();
   private readonly statusSprites: Sprite[] = [];
   private statusUsed = 0;
-  private readonly weakRing: Sprite;
+  /** The aura of the boss while it announces and charges its strong attack. */
   private readonly shieldRing: Sprite;
   private readonly biomeLayer = new Container();
   private readonly biomeTint: Sprite;
@@ -135,7 +159,15 @@ export class Renderer {
   private shapeNext = 0;
   private enemiesShown = 0;
   private ballsShown = 0;
-  private readonly player: Graphics;
+  private readonly player: Sprite;
+  private readonly floorStrip: Graphics;
+  private readonly backdrop: Partial<Record<'far' | 'mid' | 'near', TilingSprite>> = {};
+  private readonly backdropFade: Sprite;
+  /** The biome the backdrop was built for (main:second), and how much of the fade-through is left. */
+  private backdropKey = -1;
+  private backdropSheets: (TilingSprite | undefined)[] = [];
+  private fade = 0;
+  private scroll = 0;
   private readonly scratchBallX: Float32Array;
   private readonly scratchBallY: Float32Array;
   private readonly scratchEnemyX: Float32Array;
@@ -164,17 +196,34 @@ export class Renderer {
     this.scratchEnemyY = new Float32Array(maxEnemies);
 
     const { width, height, defenseLineY } = config.arena;
-    const background = new Graphics()
-      .rect(0, 0, width, height)
-      .fill(0x131a2b)
+    const background = new Graphics().rect(0, 0, width, height).fill(0x14172b);
+    // The three layers of the backdrop (far, middle, near) scroll at different speeds: the parallax.
+    for (const name of ['far', 'mid', 'near'] as const) {
+      const sheet = new TilingSprite({ texture: Texture.EMPTY, width, height });
+      sheet.tileScale.set(ART_PIXEL);
+      sheet.visible = false;
+      this.backdrop[name] = sheet;
+      this.backdropSheets.push(sheet);
+      this.biomeLayer.addChild(sheet);
+    }
+    this.backdropFade = new Sprite(bar);
+    this.backdropFade.width = width;
+    this.backdropFade.height = height;
+    this.backdropFade.tint = 0x14172b;
+    this.backdropFade.alpha = 0;
+    this.biomeLayer.addChild(this.backdropFade);
+    // The floor strip and the line of defence, in pixels: a dark band with a dashed red line.
+    const floor = new Graphics()
       .rect(0, defenseLineY, width, height - defenseLineY)
-      .fill(0x1b2540)
-      .moveTo(0, defenseLineY)
-      .lineTo(width, defenseLineY)
-      .stroke({ width: 2, color: 0xe57373, alpha: 0.8 })
-      .rect(0, 0, width, height)
-      .stroke({ width: 4, color: 0x3d4a73 });
-    this.player = new Graphics().poly([-14, 12, 14, 12, 0, -14]).fill(0xffffff);
+      .fill({ color: 0x14172b, alpha: 0.8 })
+      .rect(0, defenseLineY, width, 4)
+      .fill(0x2b3a73);
+    for (let x = 0; x < width; x += 16) floor.rect(x, defenseLineY - 4, 12, 4).fill(0xe04a4a);
+    for (let x = 0; x < width; x += 8) floor.rect(x, height - 4, 4, 4).fill(0x4a5578);
+    this.floorStrip = floor;
+    this.player = new Sprite(launcherTexture());
+    this.player.anchor.set(0.5);
+    this.player.scale.set(2);
     this.player.y = config.player.y;
 
     for (let i = 0; i < FX_POOL; i++) {
@@ -214,14 +263,49 @@ export class Renderer {
     // The columns of a boss's attacks, under everything that moves; the ring of its shield and the
     // weak point over its body (4G-B, ADR-046).
     for (let i = 0; i < HAZARD_POOL; i++) {
-      const column = new Sprite(bar);
+      const column = new TilingSprite({ texture: Texture.EMPTY, width: 1, height: 1 });
+      column.tileScale.set(ART_PIXEL);
       column.visible = false;
       this.hazardSprites.push(column);
       this.hazardLayer.addChild(column);
-      const mark = new Sprite(bar);
+      const mark = new TilingSprite({ texture: Texture.EMPTY, width: 1, height: 1 });
+      mark.tileScale.set(ART_PIXEL);
       mark.visible = false;
       this.hazardFloor.push(mark);
       this.hazardLayer.addChild(mark);
+    }
+    const tideArt = fxFor(0x3f8fd8);
+    this.tideLeft = new TilingSprite({
+      texture: tideArt.patch[0] ?? Texture.EMPTY,
+      width: 1,
+      height,
+    });
+    this.tideRight = new TilingSprite({
+      texture: tideArt.patch[0] ?? Texture.EMPTY,
+      width: 1,
+      height,
+    });
+    for (const wall of [this.tideLeft, this.tideRight]) {
+      wall.tileScale.set(ART_PIXEL);
+      wall.visible = false;
+      wall.alpha = 0.8;
+      this.hazardLayer.addChild(wall);
+    }
+    this.barrierSprite = new TilingSprite({ texture: Texture.EMPTY, width, height: 1 });
+    this.barrierSprite.tileScale.set(ART_PIXEL);
+    this.barrierSprite.visible = false;
+    this.slowVeil = new Sprite(bar);
+    this.slowVeil.width = width;
+    this.slowVeil.height = height;
+    this.slowVeil.tint = 0x6b8cff;
+    this.slowVeil.alpha = 0;
+    this.slowVeil.visible = false;
+    for (let i = 0; i < HAZARD_POOL * SPARKS_PER_HAZARD; i++) {
+      const spark = new Sprite(fxFor(0xffffff).particle);
+      spark.anchor.set(0.5);
+      spark.scale.set(ART_PIXEL / 2);
+      spark.visible = false;
+      this.hazardSparks.push(spark);
     }
     for (let i = 0; i < STATUS_POOL; i++) {
       const sign = new Sprite(disc);
@@ -233,12 +317,10 @@ export class Renderer {
     this.shieldRing = new Sprite(ring);
     this.shieldRing.anchor.set(0.5);
     this.shieldRing.visible = false;
-    this.weakRing = new Sprite(ring);
-    this.weakRing.anchor.set(0.5);
-    this.weakRing.visible = false;
     this.world.addChild(
       background,
       this.biomeLayer,
+      this.floorStrip,
       this.hazardLayer,
       this.aimLayer,
       this.enemyLayer,
@@ -247,8 +329,10 @@ export class Renderer {
       shapeLayer,
       this.ballLayer,
       this.fxLayer,
+      this.barrierSprite,
+      ...this.hazardSparks,
+      this.slowVeil,
       this.shieldRing,
-      this.weakRing,
       this.reachRing,
       this.player,
     );
@@ -267,16 +351,17 @@ export class Renderer {
     await app.init({
       resizeTo: host,
       background: 0x0b0e16,
-      antialias: true,
+      antialias: false, // pixel art: no smoothing anywhere
+      roundPixels: true,
       resolution: Math.min(window.devicePixelRatio || 1, 2),
       autoDensity: true,
       autoStart: false, // we drive rendering from our own loop
     });
     host.appendChild(app.canvas);
-    const disc = app.renderer.generateTexture(new Graphics().circle(0, 0, 32).fill(0xffffff));
-    const ring = app.renderer.generateTexture(
-      new Graphics().circle(0, 0, 30).stroke({ width: 4, color: 0xffffff }),
-    );
+    // Pixel dot and pixel ring (4G-D): every small effect, the aim guide and the markers are drawn
+    // with them, so nothing in the game is a smooth circle.
+    const disc = dotTexture();
+    const ring = ringTexture();
     const bar = app.renderer.generateTexture(new Graphics().rect(0, 0, 4, 4).fill(0xffffff));
     return new Renderer(app, config, disc, ring, bar, maxSlots, maxEnemies, art, forms);
   }
@@ -321,6 +406,48 @@ export class Renderer {
     this.app.render();
   }
 
+  /**
+   * The three layers of the backdrop of the biome of the wave, built once per biome and scrolled at
+   * three speeds (parallax): the far one slowest. A change of biome goes through a short dip to the
+   * colour of the floor, so it never pops.
+   */
+  private drawBackdrop(curr: Snapshot, elapsedMs: number): void {
+    const main = curr.biomeMain;
+    const sheets = this.backdropSheets;
+    if (main < 0) {
+      for (const sheet of sheets) if (sheet !== undefined) sheet.visible = false;
+      this.backdropKey = -1;
+      return;
+    }
+    const second = curr.biomeSecond >= 0 ? curr.biomeSecond : main;
+    const key = main * 64 + second;
+    if (key !== this.backdropKey) {
+      const made = backdropFor(
+        main,
+        second,
+        (code) => `#${(TYPE_COLORS[code] ?? 0xffffff).toString(16).padStart(6, '0')}`,
+      );
+      const layers = [made.far, made.mid, made.near];
+      sheets.forEach((sheet, i) => {
+        if (sheet === undefined) return;
+        sheet.texture = layers[i] ?? Texture.EMPTY;
+        sheet.visible = true;
+      });
+      this.backdropKey = key;
+      this.fade = 1;
+    }
+    this.fade = Math.max(0, this.fade - elapsedMs / 500);
+    this.backdropFade.alpha = this.fade;
+    this.scroll += elapsedMs;
+    for (let i = 0; i < sheets.length; i++) {
+      const sheet = sheets[i];
+      if (sheet === undefined) continue;
+      // Whole art pixels only, so the scrolling never smears the pixels.
+      sheet.tilePosition.y =
+        Math.floor((this.scroll * (BACKDROP_SPEEDS[i] ?? 0)) / ART_PIXEL) * ART_PIXEL;
+    }
+  }
+
   /** The colour (0xRRGGBB) the field is tinted with now, or -1 when there is no biome: for tests. */
   get biomeColor(): number {
     if (this.tintAlpha < 0.01) return -1;
@@ -336,6 +463,7 @@ export class Renderer {
   private drawBiome(curr: Snapshot, elapsedMs: number): void {
     const main = curr.biomeMain;
     const has = main >= 0;
+    this.drawBackdrop(curr, elapsedMs);
     const target = has ? (TYPE_COLORS[main] ?? 0xffffff) : 0;
     const step = Math.min(1, elapsedMs / BIOME_FADE_MS);
     const goal = [(target >> 16) & 255, (target >> 8) & 255, target & 255];
@@ -345,8 +473,8 @@ export class Renderer {
       this.tintRgb[c] = (this.tintRgb[c] ?? 0) + ((goal[c] ?? 0) - (this.tintRgb[c] ?? 0)) * step;
     }
     this.tintAlpha += ((has ? 0.16 : 0) - this.tintAlpha) * step;
-    this.biomeTint.alpha = this.tintAlpha;
-    this.biomeTint.tint = this.biomeColor < 0 ? 0xffffff : this.biomeColor;
+    // The backdrop carries the colour now; the old flat tint only keeps `biomeColor` for the tests.
+    this.biomeTint.alpha = 0;
 
     this.biomeClock += elapsedMs;
     const { width, height } = this.config.arena;
@@ -383,14 +511,15 @@ export class Renderer {
   }
 
   /**
-   * The fight of a boss (4G-C, ADR-053): what the boss put on the field, each kind with its own
-   * colour and shape (columns, combs, sweeps, rain, falling shots, patches of floor, gusts), a
-   * bright mark on the floor strip for every one that hurts (so it reads even when a finger covers
-   * the field), a blue ring while the core is closed and a gold circle on the core while it is open.
+   * The fight of a boss (4G-D, ADR-054): every attack is animated pixel art in the colour of the
+   * type of the boss, with its own shape per verb (beams, orbs, patches, gusts, cracks, portals), a
+   * hatched announcement, sparks on impact and a strong mark on the floor strip; the mechanics of the
+   * legendaries (tide, barrier, slow time) and an aura while the boss announces and charges.
    */
   private drawBossFight(curr: Snapshot): void {
     const { height, defenseLineY } = this.config.arena;
     const floorHeight = height - defenseLineY;
+    const bossColor = TYPE_COLORS[curr.bossType] ?? 0xff6b4a;
     for (let i = 0; i < HAZARD_POOL; i++) {
       const sprite = this.hazardSprites[i];
       const mark = this.hazardFloor[i];
@@ -404,85 +533,161 @@ export class Renderer {
       const x = curr.hazardX[i] ?? 0;
       const width = curr.hazardWidth[i] ?? 0;
       const left = curr.hazardWarn[i] ?? 0;
+      const activeLeft = curr.hazardActive[i] ?? 0;
       const warning = left > 0;
-      const color = HAZARD_COLORS[kind] ?? 0xffffff;
+      const frame = Math.floor(curr.tick / 5) % FX_FRAMES;
+      const color = kind === KIND_CRACK ? LAVA : kind === KIND_PORTAL ? PORTAL_COLOR : bossColor;
+      const fx = fxFor(color);
       const pulse = 0.5 + 0.5 * Math.sin(curr.tick / Math.max(2, left / 8));
       sprite.visible = true;
       mark.visible = false;
+      sprite.tint = 0xffffff;
+      mark.tint = 0xffffff;
+      sprite.tilePosition.set(0, 0);
+      mark.tilePosition.set(0, 0);
       if (kind === KIND_SHOT) {
-        // A falling shot: a bright ball with a thin line down to where it will land.
+        // A falling orb with a pixel trail; its landing spot is hatched on the floor while it is announced.
         const y = curr.hazardY[i] ?? 0;
-        sprite.texture = this.disc;
-        sprite.width = width;
-        sprite.height = width;
-        sprite.x = x - width / 2;
-        sprite.y = warning ? this.config.arena.defenseLineY - width : y - width / 2;
-        sprite.tint = color;
-        sprite.alpha = warning ? 0.35 + 0.35 * pulse : 0.95;
+        const size = Math.max(width, 3 * ART_PIXEL);
+        sprite.texture = fx.orb[frame] ?? Texture.EMPTY;
+        sprite.width = ART_PIXEL * 12;
+        sprite.height = ART_PIXEL * 18;
+        sprite.x = x - sprite.width / 2;
+        sprite.y = (warning ? defenseLineY - ART_PIXEL * 18 : y - ART_PIXEL * 12) - 0;
+        sprite.alpha = warning ? 0.35 + 0.4 * pulse : 1;
+        sprite.tilePosition.set(0, 0);
         mark.visible = true;
-        mark.x = x - width / 2;
-        mark.y = warning ? defenseLineY : y;
-        mark.width = width;
-        mark.height = warning ? floorHeight : Math.max(2, defenseLineY - y);
-        mark.tint = color;
-        mark.alpha = warning ? 0.55 : 0.18;
-      } else if (kind === KIND_ZONE) {
-        // A patch of floor: purple, low, with a thicker edge; balls on it cannot be collected.
-        sprite.texture = this.bar;
+        mark.texture = fx.warn;
+        mark.x = x - size / 2;
+        mark.y = defenseLineY;
+        mark.width = size;
+        mark.height = floorHeight;
+        mark.alpha = warning ? 0.5 + 0.4 * pulse : 0.15;
+      } else if (kind === KIND_ZONE || kind === KIND_CRACK) {
+        // A patch of floor: bubbling pixels in the colour of the boss (lava for a crack).
+        sprite.texture = fx.patch[frame] ?? Texture.EMPTY;
         sprite.width = width;
         sprite.height = floorHeight;
         sprite.x = x - width / 2;
         sprite.y = defenseLineY;
-        sprite.tint = color;
-        sprite.alpha = warning ? 0.2 + 0.2 * pulse : 0.55;
+        sprite.alpha = warning ? 0.25 + 0.3 * pulse : 0.85;
+        if (warning) {
+          mark.visible = true;
+          mark.texture = fx.warn;
+          mark.x = sprite.x;
+          mark.y = defenseLineY;
+          mark.width = width;
+          mark.height = floorHeight;
+          mark.alpha = 0.6;
+        }
       } else if (kind === KIND_GUST) {
-        // A gust: pale bands that slide in the direction it pushes.
-        sprite.texture = this.bar;
+        // A gust: streaks of pixels that sweep across the floor.
+        sprite.texture = fx.gust[frame] ?? Texture.EMPTY;
         sprite.width = width;
         sprite.height = 46;
         sprite.x = 0;
-        sprite.y = defenseLineY - 60 + ((curr.tick * 2) % 40);
-        sprite.tint = color;
-        sprite.alpha = warning ? 0.1 + 0.1 * pulse : 0.28;
+        sprite.y = defenseLineY - 60;
+        sprite.tilePosition.set(curr.tick * 3, 0);
+        sprite.alpha = warning ? 0.25 + 0.2 * pulse : 0.7;
+      } else if (kind === KIND_PORTAL) {
+        // A portal: a ring of pixels, and its pair at the other side; the player is carried between them.
+        const link = curr.hazardLink[i] ?? 0;
+        sprite.texture = fx.orb[frame] ?? Texture.EMPTY;
+        sprite.width = ART_PIXEL * 12;
+        sprite.height = ART_PIXEL * 12;
+        sprite.x = x - sprite.width / 2;
+        sprite.y = defenseLineY + 6;
+        sprite.alpha = warning ? 0.4 + 0.4 * pulse : 0.95;
+        mark.visible = link > 0;
+        mark.texture = fx.orb[frame] ?? Texture.EMPTY;
+        mark.x = link - ART_PIXEL * 6;
+        mark.y = defenseLineY + 6;
+        mark.width = ART_PIXEL * 12;
+        mark.height = ART_PIXEL * 12;
+        mark.alpha = sprite.alpha;
       } else {
-        // Columns, combs, sweeps and rain: tall and faint, and bright on the floor strip.
-        sprite.texture = this.bar;
+        // Columns, combs, sweeps and rain: beams (announced as a hatched band), orbs for rain, and a
+        // strong mark on the floor strip so it reads even when a finger covers the field.
+        const stream = kind === KIND_RAIN;
+        sprite.texture = warning
+          ? fx.warn
+          : stream
+            ? (fx.orb[frame] ?? Texture.EMPTY)
+            : (fx.beam[frame] ?? Texture.EMPTY);
         sprite.width = width;
         sprite.height = height;
         sprite.x = x - width / 2;
         sprite.y = 0;
-        sprite.tint = color;
-        sprite.alpha = warning ? 0.1 + 0.1 * pulse : 0.6;
+        // Centre the art in the band, scroll upwards (beam) or downwards (rain).
+        const artWidth = 12 * ART_PIXEL;
+        sprite.tilePosition.set(width / 2 - artWidth / 2, stream ? curr.tick * 9 : -curr.tick * 6);
+        sprite.alpha = warning
+          ? 0.25 + 0.35 * pulse
+          : kind === KIND_COMB || kind === KIND_SWEEP
+            ? 0.95
+            : 1;
         mark.visible = true;
+        mark.texture = warning ? fx.warn : (fx.beam[frame] ?? Texture.EMPTY);
         mark.x = x - width / 2;
         mark.y = defenseLineY;
         mark.width = width;
         mark.height = floorHeight;
-        mark.tint = color;
-        mark.alpha = warning ? 0.35 + 0.3 * pulse : 0.9;
+        mark.tilePosition.set(width / 2 - 6 * ART_PIXEL, -curr.tick * 6);
+        mark.alpha = warning ? 0.55 + 0.45 * pulse : 1;
+      }
+      // Sparks fly off an attack while it strikes: the impact.
+      for (let k = 0; k < SPARKS_PER_HAZARD; k++) {
+        const spark = this.hazardSparks[i * SPARKS_PER_HAZARD + k];
+        if (spark === undefined) continue;
+        const striking = !warning && activeLeft > 0 && kind !== KIND_GUST && kind !== KIND_ZONE;
+        spark.visible = striking;
+        if (!striking) continue;
+        const f = (curr.tick * 0.07 + k / SPARKS_PER_HAZARD + i * 0.31) % 1;
+        spark.tint = 0xfff3c4;
+        spark.x = x + (k - 1.5) * Math.max(10, width * 0.25) + Math.sin(curr.tick / 3 + k) * 4;
+        spark.y = defenseLineY - f * 60;
+        spark.alpha = 1 - f;
       }
     }
+    // The mechanics of a legendary (ADR-054): the tide closes in from both sides, the barrier is a
+    // shimmering line over the boss, time slow is a cold veil over the whole field.
+    const { width: arenaWidth } = this.config.arena;
+    const squeeze = curr.bossSqueeze * arenaWidth * 0.3;
+    for (const [wall, left] of [
+      [this.tideLeft, true],
+      [this.tideRight, false],
+    ] as const) {
+      wall.visible = squeeze > 1;
+      if (!wall.visible) continue;
+      wall.width = squeeze;
+      wall.height = height;
+      wall.x = left ? 0 : arenaWidth - squeeze;
+      wall.tilePosition.set(Math.sin(curr.tick / 30) * 8, curr.tick * 0.5);
+    }
     const alive = curr.bossMaxHp > 0 && curr.bossHp > 0;
-    const open = alive && curr.bossCoreOpen > 0;
-    // Closed: a blue ring around the boss (almost nothing gets through). Open: it goes away.
-    this.shieldRing.visible = alive && !open;
+    this.barrierSprite.visible = alive && curr.bossBarrier;
+    if (this.barrierSprite.visible) {
+      const bf = fxFor(0xc792ea);
+      this.barrierSprite.texture = bf.gust[Math.floor(curr.tick / 4) % FX_FRAMES] ?? Texture.EMPTY;
+      this.barrierSprite.y = curr.bossY + curr.bossRadius + 8;
+      this.barrierSprite.height = 8 * ART_PIXEL;
+      this.barrierSprite.tilePosition.set(curr.tick * 2, 0);
+      this.barrierSprite.alpha = 0.7 + 0.25 * Math.sin(curr.tick / 5);
+    }
+    this.slowVeil.visible = curr.bossTimeSlow;
+    this.slowVeil.alpha = curr.bossTimeSlow ? 0.12 + 0.05 * Math.sin(curr.tick / 12) : 0;
+    // The charge: the boss is announced with a pulsing yellow aura and, while it charges (exposed),
+    // wears a red-hot aura that throbs fast. Guarded, there is nothing around it.
+    const charging = alive && curr.bossCoreOpen > 0;
+    const announcing = alive && curr.bossCoreWarning;
+    this.shieldRing.visible = charging || announcing;
     if (this.shieldRing.visible) {
       this.shieldRing.x = curr.bossX;
       this.shieldRing.y = curr.bossY;
-      this.shieldRing.scale.set((curr.bossRadius + 10) / 30);
-      this.shieldRing.tint = curr.bossPhase === 1 ? 0xff6b6b : 0x7ec8ff;
-      this.shieldRing.alpha = 0.45;
-    }
-    // The core: faint while it is about to open, a bright pulsing gold circle while it is open.
-    this.weakRing.visible = alive && curr.bossWeakRadius > 0;
-    if (this.weakRing.visible) {
-      this.weakRing.x = curr.bossWeakX;
-      this.weakRing.y = curr.bossWeakY;
-      this.weakRing.scale.set(curr.bossWeakRadius / 30);
-      this.weakRing.tint = 0xffd54f;
-      this.weakRing.alpha = open
-        ? 0.9 + 0.1 * Math.sin(curr.tick / 4)
-        : 0.3 + 0.2 * Math.sin(curr.tick / 6);
+      const beat = Math.sin(curr.tick / (charging ? 3 : 6));
+      this.shieldRing.scale.set((curr.bossRadius + (charging ? 14 : 8) + beat * 4) / 30);
+      this.shieldRing.tint = charging ? 0xff4b3a : 0xffd54f;
+      this.shieldRing.alpha = charging ? 0.85 : 0.5 + 0.3 * beat;
     }
   }
 

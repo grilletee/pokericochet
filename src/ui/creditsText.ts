@@ -28,7 +28,11 @@ export function creditLines(title: string): CreditLine[] {
     },
     { text: 'Gráficos de la partida: PixiJS (licencia MIT)', url: 'https://pixijs.com' },
     {
-      text: 'El código, los efectos de sonido y la interfaz son originales (sonidos sintetizados).',
+      text: 'Tipografía: Pixelify Sans, © The Pixelify Sans Project Authors (licencia SIL OFL 1.1)',
+      url: 'https://github.com/eifetx/Pixelify-Sans',
+    },
+    {
+      text: 'El código, los efectos de sonido, el pixel art de los fondos, los ataques y la interfaz son originales (dibujados por código y sonidos sintetizados).',
     },
   ];
 }

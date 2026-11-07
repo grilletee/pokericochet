@@ -1,3 +1,4 @@
+import pixelFontUrl from '../assets/fonts/PixelifySans.ttf?url';
 import { ART_SPECIES_IDS, gameConfig, MOVE_NAMES, POKEMON_NAMES, STARTER_SPECIES } from '../data';
 import {
   addMember,
@@ -53,6 +54,8 @@ import {
   EvolutionBanner,
   EvolutionMoment,
   GamePause,
+  installPixelStyle,
+  isRealEvolution,
   labelPriority,
   MemberSheet,
   MoveLabelPolicy,
@@ -73,6 +76,7 @@ import {
   setNames,
   signatureLine,
   spriteTile,
+  strongerText,
   TeamBar,
   type TileGlow,
   TunePanel,
@@ -384,6 +388,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
     await loadSpeciesTextures(speciesIds),
     forms,
   );
+  installPixelStyle(host, pixelFontUrl);
   const overlay = new Overlay(host);
   const teamBar = new TeamBar(
     host,
@@ -759,20 +764,35 @@ export async function startGame(host: HTMLElement): Promise<void> {
         // An evolution, an awakening or the maximum power (ADR-037): the game stops for about a
         // second (the pause starts in the tick loop) and the silhouette, the flash and the big name
         // fill the screen (4F-E). Several at once merge into one.
-        const ms = pauseMs(event.stage);
         teamBar.pulse(event.member);
-        moment.show(
-          {
-            kind: event.kind,
-            stage: event.stage,
-            type: config.species[event.species]?.type,
-            from: event.from,
-            to: event.to,
-            fromUrl: art.spriteUrl(event.from),
-            toUrl: art.spriteUrl(event.to),
-          },
-          ms,
-        );
+        if (isRealEvolution(event.kind, event.from, event.to)) {
+          moment.show(
+            {
+              kind: event.kind,
+              stage: event.stage,
+              type: config.species[event.species]?.type,
+              from: event.from,
+              to: event.to,
+              fromUrl: art.spriteUrl(event.from),
+              toUrl: art.spriteUrl(event.to),
+            },
+            pauseMs(event.stage),
+          );
+        } else {
+          // No evolution (the form does not change): a notice, no animation and no pause (11th playtest).
+          banner.show(
+            [
+              spriteTile(
+                art.spriteUrl(event.to),
+                event.to,
+                config.species[event.species]?.type,
+                64,
+              ),
+            ],
+            strongerText(event.to),
+            STEP_COLOR,
+          );
+        }
       } else if (event.type === 'move') {
         if (event.manual && !signatureAnnounced) {
           // The first time the signature goes off in a run: a big notice (4F-D).
@@ -881,7 +901,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
           overlay.showToast(text, now);
         }
         sound.playEvent(event, now);
-        if (event.type === 'stage') {
+        if (event.type === 'stage' && isRealEvolution(event.kind, event.from, event.to)) {
           pause.start(now, pauseMs(event.stage));
           stopped = true;
         }

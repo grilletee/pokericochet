@@ -17,6 +17,7 @@ export type { LabelFate, MoveLabel } from './moveLabels';
 export { labelPriority, labelText, MoveLabelPolicy, MoveLabels } from './moveLabels';
 export { moveName, pokemonName, setNames } from './names';
 export { Overlay } from './overlay';
+export { installPixelStyle, PALETTE, pixelFrame } from './pixelStyle';
 export type { ReplaceMember, ReplaceView } from './replaceScreen';
 export { guardChange, percent, ReplaceScreen } from './replaceScreen';
 export type { StarterOption } from './screens';
@@ -32,9 +33,11 @@ export {
   describeEvent,
   describeResults,
   formatTime,
+  isRealEvolution,
   signatureLine,
   stageText,
   starterBlurb,
+  strongerText,
   waveCartel,
   waveLabel,
 } from './screenText';
