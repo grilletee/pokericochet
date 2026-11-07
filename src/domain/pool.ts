@@ -89,15 +89,19 @@ export function statTotal(species: SpeciesDef): number {
 /**
  * The champion of a biome, the boss between waves (ADR-049): among the lines of the pool that
  * belong to it, the one whose LAST form has the highest total of base stats; a tie goes to the
- * lower id. Returns the species of that last form, or undefined if the pool has no line there.
+ * lower id. Lines in `used` (the bosses of this run so far) are skipped: no boss repeats in a game
+ * (10th playtest: an Exeggutor came twice). Returns the species of that last form, or undefined if
+ * the pool has no line left there.
  */
 export function championOf(
   config: GameConfig,
   pool: readonly string[],
   theme: ThemeDef,
+  used: readonly string[] = [],
 ): string | undefined {
   let best: { id: string; total: number } | undefined;
   for (const base of new Set(biomeLines(config, pool, theme, 3))) {
+    if (used.includes(base)) continue;
     const id = formAt(config, base, 3);
     const species = config.species[id];
     if (species === undefined) continue;

@@ -236,9 +236,14 @@ export function advanceBoss(run: Run, config: GameConfig): void {
     // The champion of the biome of the wave that just ended (ADR-049); a theme without a type
     // list (or a pool with nothing of it) falls back to the table by type of ADR-028.
     const ended = config.themes?.[run.waveThemes[next.after - 1] ?? ''];
-    const champion = ended?.types === undefined ? undefined : championOf(config, run.pool, ended);
+    const champion =
+      ended?.types === undefined
+        ? undefined
+        : (championOf(config, run.pool, ended, run.boss.used) ??
+          championOf(config, run.pool, ended));
     if (champion !== undefined) {
       placeBoss(run, config, champion, next, run.boss.next + 1, false);
+      run.boss.used.push(baseOf(config, champion).base);
       run.boss.next += 1;
       run.boss.type = getSpecies(config, champion).type;
       return;
@@ -270,6 +275,17 @@ export function advanceBoss(run: Run, config: GameConfig): void {
   const def = run.boss.spawned ? final : interludes[run.boss.next - 1];
   if (def === undefined || !isBossAlive(run)) return;
   run.boss.tick += 1;
+  // The reinforcements its `summon` attacks asked for (ADR-053), through the same `spawn` stream.
+  if (run.boss.summonDebt > 0) {
+    const asked: SpawnProfile = {
+      types: run.boss.type === '' ? GAME_TYPES : [run.boss.type as GameType],
+      speedScale: def.summonSpeedScale,
+      hpScale: def.summonHpScale,
+      tier: 1,
+    };
+    for (let i = 0; i < run.boss.summonDebt; i++) spawnEnemy(run, config, asked);
+    run.boss.summonDebt = 0;
+  }
   if (run.boss.tick % def.summonIntervalTicks === 0) {
     const profile: SpawnProfile = {
       types: run.boss.type === '' ? GAME_TYPES : [run.boss.type as GameType],

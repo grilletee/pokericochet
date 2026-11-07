@@ -42,30 +42,37 @@ export interface BossState {
   defeated: number;
   /** Type of the current boss's summons; '' = any type. */
   type: string;
-  /** The fight (ADR-046): phase 0..2, the shield left and its size, where the weak point is, and the stun. */
+  /**
+   * The fight (ADR-053): 0 = normal, 1 = fury. The core is closed (`coreOpen` 0) until `coreIn`
+   * runs out, then open for a while; `weakX` is where it is, as an offset from the boss's centre.
+   */
   phase: number;
-  shieldHp: number;
-  shieldMax: number;
-  /** Offset of the weak point from the centre of the boss, and the way it is moving (+1 / -1). */
+  coreOpen: number;
+  coreIn: number;
   weakX: number;
-  weakDir: number;
-  stunTicks: number;
-  /** Ticks until the next attack; counts down while the boss is alive and not stunned. */
+  /** Ticks until the next round of attacks. */
   attackIn: number;
+  /** Reinforcements a `summon` attack asked for and the wave code has not spawned yet. */
+  summonDebt: number;
+  /** Base species of the bosses between waves met so far: none comes twice in a run. */
+  used: string[];
 }
 
-/** A column of the floor a boss attacked (ADR-046). */
+/** Something a boss put on the floor or in the air (ADR-053). */
 export interface Hazard {
+  kind: 'column' | 'comb' | 'sweep' | 'rain' | 'shot' | 'zone' | 'gust';
   x: number;
+  /** Height of a `shot` (arena pixels); 0 for the rest. */
+  y: number;
   width: number;
-  /** Ticks left of the warning; the strike comes when it reaches 0. */
+  /** Ticks left of the warning; it strikes (or starts, or falls) when it reaches 0. */
   telegraph: number;
   /** Ticks left of the strike. */
   active: number;
   damage: number;
-  /** Pixels per tick it moves while active (`sweep`). */
+  /** Pixels per tick: a `sweep` moves, a `shot` falls, a `gust` pushes (signed). */
   speed: number;
-  /** True once it hurt the player: a column hurts once. */
+  /** True once it hurt the player: it hurts once. */
   struck: boolean;
 }
 
@@ -262,12 +269,12 @@ export function createRun(config: GameConfig, seed: number, starterSpecies: stri
       defeated: 0,
       type: '',
       phase: 0,
-      shieldHp: 0,
-      shieldMax: 0,
+      coreOpen: 0,
+      coreIn: 0,
       weakX: 0,
-      weakDir: 1,
-      stunTicks: 0,
       attackIn: 0,
+      summonDebt: 0,
+      used: [],
     },
     hazards: [],
     offers: [],
@@ -314,7 +321,7 @@ export function cloneRun(run: Run): Run {
     enemies: run.enemies.map((e) => ({ ...e })),
     nextEnemyId: run.nextEnemyId,
     wave: { ...run.wave },
-    boss: { ...run.boss },
+    boss: { ...run.boss, used: run.boss.used.slice() },
     hazards: run.hazards.map((h) => ({ ...h })),
     offers: run.offers.slice(), // cards are immutable values
     events: run.events.slice(),
@@ -479,6 +486,7 @@ export function hashRun(run: Run): string {
     h.int(e.chill ?? 0);
     h.int(e.markTicks ?? 0);
     h.num(e.markBonus ?? 0);
+    h.int(e.pushTicks ?? 0);
   }
   h.int(run.nextEnemyId);
   h.int(run.wave.index);
@@ -492,14 +500,17 @@ export function hashRun(run: Run): string {
   h.str(run.boss.type);
   h.rng(run.rng.boss);
   h.int(run.boss.phase);
-  h.num(run.boss.shieldHp);
-  h.num(run.boss.shieldMax);
+  h.int(run.boss.coreOpen);
+  h.int(run.boss.coreIn);
   h.num(run.boss.weakX);
-  h.int(run.boss.weakDir);
-  h.int(run.boss.stunTicks);
   h.int(run.boss.attackIn);
+  h.int(run.boss.summonDebt);
+  h.int(run.boss.used.length);
+  for (const id of run.boss.used) h.str(id);
   h.int(run.hazards.length);
   for (const hz of run.hazards) {
+    h.str(hz.kind);
+    h.num(hz.y);
     h.num(hz.x);
     h.num(hz.width);
     h.int(hz.telegraph);

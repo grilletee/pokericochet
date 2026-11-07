@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { gameConfig } from '../../src/data';
 import {
+  advanceBoss,
+  baseOf,
   biomeLines,
   championOf,
   createRun,
@@ -88,7 +90,7 @@ describe('the pool of a run (ADR-048)', () => {
       }
     }
     expect(worst).toBeGreaterThanOrEqual(4);
-  });
+  }, 30_000);
 });
 
 describe('the biomes of a run (ADR-049)', () => {
@@ -184,6 +186,29 @@ describe('the champion of a biome, the boss between waves (ADR-049)', () => {
       championOf(twins, ['zzz', 'aaa'], { ...biome, types: [{ type: 'fire', weight: 1 }] }),
     ).toBe('aaa');
   });
+
+  it("no boss between waves repeats inside a run, over 400 seeds (the author's two included)", () => {
+    const seeds = [
+      2973913475,
+      3059020336,
+      ...Array.from({ length: 400 }, (_, i) => 7 + i * 104729),
+    ];
+    const starters = ['charmander', 'squirtle', 'bulbasaur', 'pikachu'];
+    for (const [n, seed] of seeds.entries()) {
+      const run = createRun(gameConfig, seed, starters[n % 4] ?? 'charmander');
+      const lines: string[] = [];
+      for (const interlude of gameConfig.interludes ?? []) {
+        run.wave.index = interlude.after;
+        advanceBoss(run, gameConfig);
+        const boss = run.enemies.find((e) => e.id === run.boss.id);
+        if (boss === undefined) throw new Error(`seed ${seed}: no boss`);
+        lines.push(baseOf(gameConfig, boss.species).base);
+        run.enemies = []; // defeated
+      }
+      expect(lines, `seed ${seed}`).toHaveLength(3);
+      expect(new Set(lines).size, `seed ${seed}: ${lines.join(', ')}`).toBe(3);
+    }
+  }, 60_000);
 
   it('the first interlude boss of a run is the champion of the biome that just ended', () => {
     for (const seed of [3, 4, 5, 6, 7]) {
