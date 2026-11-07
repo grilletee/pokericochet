@@ -46,59 +46,59 @@ export interface PoolDef {
 }
 
 /**
- * One ground attack of a boss (ADR-046): the player only moves along the floor, so an attack is a
- * column (or several) of the floor. It is announced for `telegraphTicks` (never under 60) and
- * strikes once; the player is hit if they stand inside at that moment.
+ * The verbs of a boss (ADR-053, which replaces the columns-only attacks of ADR-046). The player only
+ * moves along the floor, so each is something to read and leave, to stand on or to answer:
+ * `column` one column, `comb` columns with one gap, `sweep` a column that crosses part of the floor,
+ * `rain` narrow columns one after another, `shot` a projectile that falls where the player was,
+ * `zone` a patch of floor where balls cannot be collected, `gust` a wind that pushes the player,
+ * `summon` reinforcements. All are announced for `telegraphTicks` (never under 60 for those that hurt).
  */
 export interface BossAttackDef {
-  /** `column`: one; `comb`: `count` columns with gaps; `sweep`: one that moves; `rain`: `count` narrow ones in a row. */
-  readonly kind: 'column' | 'comb' | 'sweep' | 'rain';
+  readonly kind: 'column' | 'comb' | 'sweep' | 'rain' | 'shot' | 'zone' | 'gust' | 'summon';
   readonly width: number;
+  /** `comb`: slots; `rain`: columns; `summon`: enemies; `shot`: shots in a row. */
   readonly count?: number;
   readonly telegraphTicks: number;
   readonly activeTicks: number;
-  /** Health points of the leak it costs, before the guard of the team. */
+  /** Health points of the leak it costs, before the guard of the team and the fury multiplier. */
   readonly damage: number;
-  /** `sweep` only: pixels per tick it moves while active. */
-  readonly sweepSpeed?: number;
+  /** `sweep`: pixels per tick it moves; `shot`: pixels per tick it falls; `gust`: pixels per tick it pushes. */
+  readonly speed?: number;
 }
 
-/** What a phase of a boss does (ADR-046). */
+/** What a phase of a boss does: the normal one or the fury at half health (ADR-053). */
 export interface BossPhaseDef {
-  /** The phase starts when the boss is at or under this share of its health (1, 0.66, 0.33). */
-  readonly fromHp: number;
   readonly attacks: readonly BossAttackDef[];
-  /** Ticks between one attack and the next. */
+  /** Ticks between one round of attacks and the next. */
   readonly intervalTicks: number;
-  /** A shield that has to be broken at the weak point before the boss can be hurt much. */
-  readonly shield?: {
-    /** Health of the shield as a share of the boss's health, so every boss has the fight of its size. */
-    readonly share: number;
-    /** Radius of the weak point, which moves from side to side over the body. */
-    readonly weakRadius: number;
-    /** Pixels per tick of the weak point, over +-`reach`. */
-    readonly weakSpeed: number;
-  };
+  /** Attacks launched per round. */
+  readonly perRound: number;
+  /** Multiplies the damage of every attack of the phase. */
+  readonly damageMult: number;
+  /** The core: closed for `coreEvery` ticks, then open for `coreOpen` (it is announced first). */
+  readonly coreEvery: number;
+  readonly coreOpen: number;
 }
 
-/** The pattern table of one boss: three phases and the numbers they share (ADR-046). */
+/** The pattern table of one boss: the normal phase and the fury (ADR-053). */
 export interface BossPatternDef {
-  readonly phases: readonly BossPhaseDef[];
+  readonly phases: readonly [BossPhaseDef, BossPhaseDef];
 }
 
-/** The boss fight rules that do not depend on the boss (ADR-046). */
+/** The boss fight rules that do not depend on the boss (ADR-053). */
 export interface BossFightDef {
-  /** Damage multiplier while the shield stands (not at the weak point: that one breaks it). */
-  readonly shieldMult: number;
-  /** A broken shield stuns the boss for this many ticks, and every hit counts x`stunMult`. */
-  readonly stunTicks: number;
-  readonly stunMult: number;
-  /** An Ultimate that lands during the stun does this much extra on top. */
-  readonly ultimateStunBonus: number;
-  /** An Ultimate that lands on an intact shield takes this share of it. */
-  readonly ultimateShieldShare: number;
-  /** Ticks the fight waits after a phase change before attacking again (the player's breath). */
-  readonly phasePauseTicks: number;
+  /** The fury starts when the boss is at or under this share of its health. */
+  readonly rageAt: number;
+  /** Damage multiplier while the core is closed, open and, when a ball is ON the core, open and hit. */
+  readonly closedMult: number;
+  readonly openMult: number;
+  readonly coreHitMult: number;
+  /** An Ultimate that lands while the core is open does this much extra. */
+  readonly ultimateOpenBonus: number;
+  /** Ticks the core is announced before it opens. */
+  readonly coreWarnTicks: number;
+  /** Ticks of calm after the boss appears and after the fury starts. */
+  readonly calmTicks: number;
   /** The most columns on the field at once. */
   readonly maxHazards: number;
   /** Pattern of a boss by species id; `byType` is the template of its main type; `default` the rest. */

@@ -266,18 +266,38 @@ function collectingMove(run: Run, config: GameConfig): -1 | 0 | 1 {
 }
 
 /**
- * Ticks the bot takes to start dodging a column once it appears: a human reaction (ADR-046, B5). A
- * column is announced for 60 to 100 ticks, so 30 leaves a person time to get out of most of them.
+ * A human reaction (ADR-053): the bot starts to dodge something 35 to 80 ticks after it appears (a
+ * different delay for each one, from the run's own numbers so it stays deterministic), and misses
+ * about one in ten outright, like a person looking at something else. An attack is announced for 60
+ * to 100 ticks, so the slowest reactions are hit a good part of the time.
  */
-export const DODGE_REACTION_TICKS = 45;
+export const DODGE_REACTION_TICKS = 30;
+const REACTION_SPREAD_TICKS = 30;
+const MISSED_ONE_IN = 10;
 
-/** The tick each column of a run was first seen on, so the bot reacts after a human delay. */
+/** The tick each thing of a boss was first seen on and the delay the bot takes to react to it. */
 const seenAt = new WeakMap<object, number>();
+const reactionOf = new WeakMap<object, number>();
+
+function reactionFor(h: object, run: Run, base: number): number {
+  let value = reactionOf.get(h);
+  if (value === undefined) {
+    // A small hash of the run and the moment: the same run always reacts the same way.
+    let x = (run.seed ^ Math.imul(run.tickCount + 1, 0x9e3779b1)) >>> 0;
+    x = Math.imul(x ^ (x >>> 15), 0x85ebca6b) >>> 0;
+    x = Math.imul(x ^ (x >>> 13), 0xc2b2ae35) >>> 0;
+    // Negative = never notices it.
+    value = (x >>> 8) % MISSED_ONE_IN === 0 ? -1 : base + ((x >>> 16) % REACTION_SPREAD_TICKS);
+    reactionOf.set(h, value);
+  }
+  return value;
+}
 
 /**
- * Where to go to leave the columns the bot has already noticed, or null when it is not standing in
- * one (or has noticed none). It goes to the nearest free point of the floor; a column it cannot
- * leave in time simply hits it, like a person who is too late.
+ * Where to go to leave what the bot has already noticed, or null when it is not standing in the way
+ * (or has noticed nothing). It goes to the nearest free point of the floor; something it cannot
+ * leave in time simply hits it, like a person who is too late. Patches of floor and gusts are not
+ * dodged: they do not hurt.
  */
 export function dodgeMove(
   run: Run,
@@ -288,10 +308,12 @@ export function dodgeMove(
   const widthOfFloor = config.arena.width;
   const spans: { lo: number; hi: number }[] = [];
   for (const h of run.hazards) {
+    if (h.kind === 'zone' || h.kind === 'gust') continue;
     if (!seenAt.has(h)) seenAt.set(h, run.tickCount);
-    if (run.tickCount - (seenAt.get(h) ?? 0) < reaction) continue;
+    const wait = reactionFor(h, run, reaction);
+    if (wait < 0 || run.tickCount - (seenAt.get(h) ?? 0) < wait) continue;
     // A moving column is avoided where it is going to be, not only where it is.
-    const ahead = h.speed * Math.min(40, h.telegraph + h.active);
+    const ahead = h.kind === 'sweep' ? h.speed * Math.min(40, h.telegraph + h.active) : 0;
     spans.push({
       lo: Math.min(h.x, h.x + ahead) - h.width / 2 - 8,
       hi: Math.max(h.x, h.x + ahead) + h.width / 2 + 8,
@@ -312,21 +334,14 @@ export function dodgeMove(
 }
 
 /**
- * Aims at where the weak point of a boss's shield will be when the ball arrives (ADR-046): it
- * slides over the body, so the bot leads it like it leads any target; otherwise at the most
- * dangerous enemy.
+ * While the core of a boss is open, aims at it with the imprecision of a hand (about 14 pixels, from
+ * the run's numbers); otherwise at the most dangerous enemy (ADR-053).
  */
 function bossAwareAim(run: Run, config: GameConfig): AimPoint | null {
   const boss = liveBoss(run);
-  if (boss === undefined || run.boss.shieldHp <= 0) return dangerousTarget(run, config);
-  const dx = boss.x - run.player.x;
-  const dy = boss.y - config.player.y;
-  const flight = Math.sqrt(dx * dx + dy * dy) / ((config.ball.speedMin + config.ball.speedMax) / 2);
-  const reach = Math.max(0, boss.radius - 22);
-  const lead = run.boss.weakX + run.boss.weakDir * 1.7 * flight;
-  // The weak point turns back at the edges of the body: follow it there.
-  const folded = Math.abs(lead) <= reach ? lead : Math.sign(lead) * (2 * reach - Math.abs(lead));
-  return { x: boss.x + folded, y: boss.y };
+  if (boss === undefined || run.boss.coreOpen <= 0) return dangerousTarget(run, config);
+  const wobble = (((run.seed + run.tickCount * 7) % 29) - 14) | 0;
+  return { x: boss.x + run.boss.weakX + wobble, y: boss.y };
 }
 
 /** Dodges the columns of a boss, collects, and otherwise goes under the most dangerous enemy. */
@@ -345,7 +360,8 @@ export const activePolicy: Policy = {
   move: dodgingMove,
   aim: bossAwareAim,
   pick: balancedPick,
-  holdSignature: (run) => liveBoss(run) !== undefined && run.boss.shieldHp > 0,
+  // The Ultimate waits for the open core of a boss (and is thrown at once when it opens).
+  holdSignature: (run) => liveBoss(run) !== undefined && run.boss.coreOpen <= 0,
 };
 
 /** The same bot that never dodges (ADR-046): shows that the health of the player matters. */

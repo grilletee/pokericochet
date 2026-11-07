@@ -6,12 +6,14 @@ export { aimDirection } from './aim';
 export {
   advanceBossFight,
   bossDamage,
-  hitWeakPoint,
+  coreHitMult,
+  coreOf,
   liveBoss,
   MIN_TELEGRAPH_TICKS,
   patternFor,
   startFight,
   ultimateOnBoss,
+  zoneCovers,
 } from './bossFight';
 export { applyCard, drawOffers } from './cards';
 export {
@@ -102,12 +104,22 @@ export { cloneRun, createRun, hashRun } from './run';
 export type { Snapshot } from './snapshot';
 export {
   createSnapshot,
+  HAZARD_KINDS,
   NO_SPECIES,
   PHASE_LEVELUP,
   PHASE_LOST,
   PHASE_PLAYING,
   PHASE_REPLACE,
   PHASE_WON,
+  STATUS_BURN,
+  STATUS_CURSE,
+  STATUS_FROZEN,
+  STATUS_MARK,
+  STATUS_PARALYSED,
+  STATUS_POISON,
+  STATUS_PUSHED,
+  STATUS_SLOW,
+  statusOf,
   typeCode,
   writeSnapshot,
 } from './snapshot';

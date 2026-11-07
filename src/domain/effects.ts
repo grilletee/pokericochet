@@ -243,6 +243,7 @@ export function applyHitEffects(
         // Pushes the target back up the arena; a boss does not move.
         if (target.hp <= 0 || target.id === run.boss.id) break;
         target.y = Math.max(-target.radius, target.y - effect.strength);
+        target.pushTicks = 14;
         break;
       case 'guard':
         run.guardTicks = config.effects.guardTicks ?? 180;
@@ -309,6 +310,7 @@ export function tickAilments(run: Run, config: GameConfig): void {
       if (mark === 1) enemy.markBonus = 0;
     }
     if ((enemy.chill ?? 0) < 0) enemy.chill = (enemy.chill ?? 0) + 1;
+    if ((enemy.pushTicks ?? 0) > 0) enemy.pushTicks = (enemy.pushTicks ?? 0) - 1;
   }
 }
 

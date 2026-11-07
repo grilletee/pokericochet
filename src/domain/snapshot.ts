@@ -1,13 +1,42 @@
 import { themeTypes } from './advice';
-import { patternFor } from './bossFight';
+import { coreOf } from './bossFight';
 import type { GameConfig } from './config';
 import type { Run } from './run';
 import { ballRadius } from './team';
-import { GAME_TYPES, type GameType } from './types';
+import { type Enemy, GAME_TYPES, type GameType } from './types';
 
 /** Numeric codes the render uses to index its colour tables: the place of the type in `GAME_TYPES`. */
 export function typeCode(type: GameType): number {
   return GAME_TYPES.indexOf(type);
+}
+
+/** The kinds of things a boss leaves on the field, in the order of their codes in the snapshot. */
+export const HAZARD_KINDS = ['column', 'comb', 'sweep', 'rain', 'shot', 'zone', 'gust'] as const;
+
+/** Bits of `Snapshot.enemyStatus`: one sign for each thing that can be wrong with an enemy. */
+export const STATUS_BURN = 1;
+export const STATUS_POISON = 2;
+export const STATUS_SLOW = 4;
+export const STATUS_FROZEN = 8;
+export const STATUS_PARALYSED = 16;
+export const STATUS_MARK = 32;
+export const STATUS_CURSE = 64;
+export const STATUS_PUSHED = 128;
+
+/**
+ * What is wrong with an enemy now. A stop from ice (`chill` >= 0) is a freeze; a short stop from a
+ * stun (`chill` < 0, the immunity that follows it) is a paralysis.
+ */
+export function statusOf(e: Enemy): number {
+  let bits = 0;
+  if (e.burnTicks > 0) bits |= STATUS_BURN;
+  if ((e.poisonTicks ?? 0) > 0) bits |= STATUS_POISON;
+  if (e.slowTicks > 0) bits |= STATUS_SLOW;
+  if ((e.haltTicks ?? 0) > 0) bits |= (e.chill ?? 0) < 0 ? STATUS_PARALYSED : STATUS_FROZEN;
+  if ((e.markTicks ?? 0) > 0) bits |= STATUS_MARK;
+  if ((e.curseTicks ?? 0) > 0) bits |= STATUS_CURSE;
+  if ((e.pushTicks ?? 0) > 0) bits |= STATUS_PUSHED;
+  return bits;
 }
 
 /** The most columns of a boss the render keeps (the fight caps them lower, ADR-046). */
@@ -107,21 +136,29 @@ export interface Snapshot {
   biomeSecond: number;
 
   /**
-   * The boss fight (ADR-046): the columns of the floor under attack, the weak point of the shield
-   * (arena pixels), what is left of the shield (0..1), the stun and the phase.
+   * The boss fight (ADR-053): what the boss put on the floor or in the air (kind code = place in
+   * `HAZARD_KINDS`), the core (arena pixels; open or about to open) and the phase.
    */
   hazardCount: number;
+  hazardKind: Uint8Array;
   hazardX: Float32Array;
+  hazardY: Float32Array;
   hazardWidth: Float32Array;
   /** Ticks of warning left (0 = striking) and ticks of strike left. */
   hazardWarn: Int32Array;
   hazardActive: Int32Array;
-  bossShield: number;
+  /** Ticks the core stays open (0 = closed) and whether it is about to open. */
+  bossCoreOpen: number;
+  bossCoreWarning: boolean;
   bossWeakX: number;
   bossWeakY: number;
   bossWeakRadius: number;
-  bossStun: number;
   bossPhase: number;
+  /**
+   * What is wrong with each enemy (ADR-053, "estados visibles"), as a set of `STATUS_*` bits: the
+   * render shows each one with its own subtle sign.
+   */
+  enemyStatus: Uint16Array;
   /** Where the boss is, for what is drawn around it. */
   bossX: number;
   bossY: number;
@@ -174,15 +211,18 @@ export function createSnapshot(maxSlots = 64, maxEnemies = 512, maxPickups = 64)
     biomeMain: -1,
     biomeSecond: -1,
     hazardCount: 0,
+    hazardKind: new Uint8Array(MAX_HAZARDS),
     hazardX: new Float32Array(MAX_HAZARDS),
+    hazardY: new Float32Array(MAX_HAZARDS),
     hazardWidth: new Float32Array(MAX_HAZARDS),
     hazardWarn: new Int32Array(MAX_HAZARDS),
     hazardActive: new Int32Array(MAX_HAZARDS),
-    bossShield: 0,
+    enemyStatus: new Uint16Array(maxEnemies),
+    bossCoreOpen: 0,
+    bossCoreWarning: false,
     bossWeakX: 0,
     bossWeakY: 0,
     bossWeakRadius: 0,
-    bossStun: 0,
     bossPhase: 0,
     bossX: 0,
     bossY: 0,
@@ -213,8 +253,8 @@ export function writeSnapshot(
   snap.bossHp = 0;
   snap.bossMaxHp = 0;
   snap.bossSpecies = 0;
-  snap.bossShield = 0;
-  snap.bossStun = 0;
+  snap.bossCoreOpen = 0;
+  snap.bossCoreWarning = false;
   snap.bossPhase = 0;
   snap.bossWeakRadius = 0;
   if (run.boss.id !== 0) {
@@ -226,17 +266,15 @@ export function writeSnapshot(
       snap.bossX = e.x;
       snap.bossY = e.y;
       snap.bossRadius = e.radius;
-      snap.bossShield =
-        run.boss.shieldMax > 0 ? Math.max(0, run.boss.shieldHp) / run.boss.shieldMax : 0;
-      snap.bossStun = run.boss.stunTicks;
       snap.bossPhase = run.boss.phase;
-      snap.bossWeakX = e.x + run.boss.weakX;
-      snap.bossWeakY = e.y;
-      const shield =
-        config === undefined
-          ? undefined
-          : patternFor(config, e.species, e.type)?.phases[run.boss.phase]?.shield;
-      snap.bossWeakRadius = run.boss.shieldHp > 0 ? (shield?.weakRadius ?? 0) : 0;
+      snap.bossCoreOpen = run.boss.coreOpen;
+      const fight = config?.bossFight;
+      snap.bossCoreWarning =
+        fight !== undefined && run.boss.coreOpen === 0 && run.boss.coreIn <= fight.coreWarnTicks;
+      const core = coreOf(run, e);
+      snap.bossWeakX = core.x;
+      snap.bossWeakY = core.y;
+      snap.bossWeakRadius = run.boss.coreOpen > 0 || snap.bossCoreWarning ? core.radius : 0;
     }
   }
   const hazards = Math.min(run.hazards.length, snap.hazardX.length);
@@ -244,6 +282,8 @@ export function writeSnapshot(
   for (let i = 0; i < hazards; i++) {
     const h = run.hazards[i];
     if (h === undefined) continue;
+    snap.hazardKind[i] = HAZARD_KINDS.indexOf(h.kind);
+    snap.hazardY[i] = h.y;
     snap.hazardX[i] = h.x;
     snap.hazardWidth[i] = h.width;
     snap.hazardWarn[i] = h.telegraph;
@@ -308,6 +348,7 @@ export function writeSnapshot(
     snap.enemyRadius[i] = e.radius;
     snap.enemyType[i] = typeCode(e.type);
     snap.enemySpecies[i] = speciesCodes?.get(e.species) ?? NO_SPECIES;
+    snap.enemyStatus[i] = statusOf(e);
   }
   snap.truncated = truncated;
 }

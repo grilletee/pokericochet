@@ -1,3 +1,4 @@
+import { zoneCovers } from './bossFight';
 import type { GameConfig } from './config';
 import { formAt } from './forms';
 import type { Run } from './run';
@@ -102,7 +103,8 @@ export function advancePickups(run: Run, config: GameConfig): void {
     if (blocked) {
       run.pickups[kept] = p;
       kept += 1;
-    } else if (dx * dx + dy * dy <= reach2) {
+    } else if (dx * dx + dy * dy <= reach2 && !zoneCovers(run, p.x)) {
+      // (a patch of floor a boss made keeps balls from being collected, ADR-053)
       collect(run, config, p, false);
     } else if (p.ticks <= 0) {
       collect(run, config, p, true);

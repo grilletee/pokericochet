@@ -170,6 +170,8 @@ export interface Enemy {
   chill?: number;
   markTicks?: number;
   markBonus?: number;
+  /** Ticks left of the trail a push leaves (only for the render, ADR-053). */
+  pushTicks?: number;
 }
 
 /** A reward offered when the player levels up. */
@@ -343,7 +345,7 @@ export type GameEvent =
       readonly final: boolean;
     }
   | { readonly type: 'bossSummon'; readonly count: number }
-  /** The boss entered phase `phase` (1 or 2; the first is 0) at 66 % or 33 % of its health (ADR-046). */
+  /** The boss is furious (phase 1) at half of its health (ADR-053): a message, never a pause. */
   | { readonly type: 'bossPhase'; readonly phase: number }
   /** A ground attack was announced: a column of `width` at `x` that strikes in `ticks` (ADR-046). */
   | {
@@ -364,10 +366,8 @@ export type GameEvent =
     }
   /** The player lost `damage` health to a column of the boss (after the guard of the team). */
   | { readonly type: 'bossHurt'; readonly damage: number }
-  /** The shield of the boss went up (`broken` false) or was broken at its weak point (true). */
-  | { readonly type: 'bossShield'; readonly broken: boolean }
-  /** The boss was stunned for `ticks`: the window for the Ultimate. */
-  | { readonly type: 'bossStun'; readonly ticks: number }
+  /** The core of the boss opens (it is about to, with `open` false) or has just closed: the window for the Ultimate. */
+  | { readonly type: 'bossCore'; readonly open: boolean; readonly warning: boolean }
   /** A boss died; `index` counts the bosses defeated so far, this one included (ADR-028). */
   | { readonly type: 'bossDefeated'; readonly species: string; readonly index: number }
   /**

@@ -385,12 +385,13 @@ export const baseConfig: Omit<
       normal: 'arceus',
       bug: 'genesect',
     },
-    // 4G-B: 44 -> 26: the fight lasts through its shield, its stun and three phases now, so the
-    // health that made a sponge of it is not needed (B3), and the author asked for less health.
-    hpScale: 26,
-    speed: 0.12,
-    radius: 40,
-    summonIntervalTicks: 480,
+    // 4G-C (ADR-053): 26 -> 110, clearly above the third boss between waves (the author: "a real
+    // challenge you can die in"); only the open core lets most of the damage through, so the time of
+    // the fight is set by the bench (B3). Slow and big, so it takes a long time to reach the line.
+    hpScale: 46,
+    speed: 0.04,
+    radius: 72,
+    summonIntervalTicks: 900,
     summonCount: 4,
     summonSpeedScale: 1,
     summonHpScale: 0.8,
@@ -401,38 +402,39 @@ export const baseConfig: Omit<
     {
       after: 2,
       byType: { fire: 'rapidash', water: 'starmie', grass: 'victreebel', electric: 'electabuzz' },
-      hpScale: 3.2, // 5.5 before the 4G-B, see the final boss
-      speed: 0.12,
-      radius: 28,
-      summonIntervalTicks: 600,
+      hpScale: 3, // 3.2 in the 4G-B: the first met a team of level 5; it lasts long enough through the core
+      speed: 0.07,
+      radius: 44,
+      summonIntervalTicks: 1100,
       summonCount: 2,
       summonSpeedScale: 1,
       summonHpScale: 0.8,
-      healHp: 0, // bosses no longer heal (ADR-032): the reward is the capture
+      // 4G-C: a boss that now hurts gives back some health when it falls (it did not since ADR-032).
+      healHp: 3,
     },
     {
       after: 4,
       byType: { fire: 'arcanine', water: 'gyarados', grass: 'exeggutor', electric: 'ampharos' },
-      hpScale: 7, // 12 before
-      speed: 0.13,
-      radius: 34,
-      summonIntervalTicks: 540,
+      hpScale: 11.5, // 7 in the 4G-B
+      speed: 0.075,
+      radius: 52,
+      summonIntervalTicks: 1000,
       summonCount: 3,
       summonSpeedScale: 1,
       summonHpScale: 0.8,
-      healHp: 0, // bosses no longer heal (ADR-032): the reward is the capture
+      healHp: 3,
     },
     {
       after: 6,
       byType: { fire: 'typhlosion', water: 'kingdra', grass: 'tangrowth', electric: 'luxray' },
-      hpScale: 16, // 28 before
-      speed: 0.14,
-      radius: 38,
-      summonIntervalTicks: 480,
+      hpScale: 24, // 16 in the 4G-B
+      speed: 0.08,
+      radius: 58,
+      summonIntervalTicks: 900,
       summonCount: 4,
       summonSpeedScale: 1,
       summonHpScale: 0.8,
-      healHp: 0, // bosses no longer heal (ADR-032): the reward is the capture
+      healHp: 4,
     },
   ],
   // The 14 biomes (ADR-049, which replaces the themes of ADR-027). They list no species: the pool of

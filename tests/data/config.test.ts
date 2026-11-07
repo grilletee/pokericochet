@@ -130,9 +130,10 @@ describe('stat mapping', () => {
   });
 
   it('pins the provisional boss hp multiplier, so changing it is a conscious decision', () => {
-    // 44 / 5.5 / 12 / 28 before the 4G-B: the fight now lasts through its shield, stun and phases.
-    expect(baseConfig.boss?.hpScale).toBe(26);
-    expect((baseConfig.interludes ?? []).map((b) => b.hpScale)).toEqual([3.2, 7, 16]);
+    // 4G-C (ADR-053): 3.2 / 7 / 16 and 26 before; the fight lasts through the core, and the final boss
+    // is clearly above the third in between.
+    expect(baseConfig.boss?.hpScale).toBe(46);
+    expect((baseConfig.interludes ?? []).map((b) => b.hpScale)).toEqual([3, 11.5, 24]);
   });
 
   it('gives every type an effect at each of the three stages, and the first stage is the old one', () => {
@@ -199,10 +200,11 @@ describe('stat mapping', () => {
     expect(t.ballRadiusByStage[0]).toBe(baseConfig.ball.radius);
   });
 
-  it('keeps hybrids off by configuration (ADR-033) and bosses without a heal (ADR-032)', () => {
+  it('keeps hybrids off by configuration (ADR-033); bosses that hurt give back some health (4G-C)', () => {
     expect(baseConfig.hybrid.enabled).toBe(false);
     expect(baseConfig.cards.weights.hybrid).toBe(0);
-    for (const boss of baseConfig.interludes ?? []) expect(boss.healHp).toBe(0);
+    // ADR-032 had no heal; the bosses of ADR-053 hurt, so the three between waves heal a little.
+    expect((baseConfig.interludes ?? []).map((boss) => boss.healHp)).toEqual([3, 3, 4]);
   });
 });
 

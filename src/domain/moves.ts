@@ -107,7 +107,7 @@ const tally = { hits: 0, damage: 0 };
 /** One enemy struck by a move: its damage, its status and the tally. */
 function strike(run: Run, config: GameConfig, ball: Ball, enemy: Enemy, power: number): void {
   // An Ultimate on a boss: it takes a share of an intact shield, and hits extra during the stun.
-  const onBoss = enemy.id === run.boss.id ? ultimateOnBoss(run, config, enemy) : 1;
+  const onBoss = enemy.id === run.boss.id ? ultimateOnBoss(run, config) : 1;
   const damage = hitDamage(config, ball, enemy.type, enemy.type2) * power * onBoss;
   damageEnemy(run, config, enemy, damage);
   applyStatus(config, ball, enemy, power);

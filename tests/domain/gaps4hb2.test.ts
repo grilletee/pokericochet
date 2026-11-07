@@ -1,64 +1,14 @@
 import { describe, expect, it } from 'vitest';
-import { gameConfig } from '../../src/data';
 import {
-  advanceBossFight,
   applyHitEffects,
   attackTypeOf,
   createRun,
   damageEnemy,
   type GameConfig,
-  hitWeakPoint,
-  startFight,
   tick,
 } from '../../src/domain';
 import { tickAilments } from '../../src/domain/effects';
 import { config, flyingRun, makeBall, makeBody, makeEnemy, quietConfig } from './fixtures';
-
-const fight = gameConfig.bossFight;
-if (fight === undefined) throw new Error('no boss fight table');
-
-const column = {
-  kind: 'column' as const,
-  width: 60,
-  telegraphTicks: 70,
-  activeTicks: 20,
-  damage: 3,
-};
-function fightConfig(attack = column, extra: Partial<GameConfig> = {}): GameConfig {
-  const table = {
-    phases: [
-      { fromHp: 1, attacks: [attack], intervalTicks: 100 },
-      {
-        fromHp: 0.66,
-        attacks: [attack],
-        intervalTicks: 90,
-        shield: { share: 0.1, weakRadius: 20, weakSpeed: 1 },
-      },
-      { fromHp: 0.33, attacks: [attack], intervalTicks: 80 },
-    ],
-  };
-  return {
-    ...quietConfig,
-    ...extra,
-    bossFight: {
-      ...fight,
-      bySpecies: { psyduck: table },
-      byType: {},
-      default: table,
-      phasePauseTicks: 30,
-    },
-  } as GameConfig;
-}
-function withBoss(cfg: GameConfig) {
-  const run = createRun(cfg, 5, 'charmander');
-  const boss = makeEnemy({ id: 9, species: 'psyduck', hp: 1000, x: 240, y: 120, radius: 40 });
-  run.enemies = [boss];
-  run.boss.id = 9;
-  run.boss.maxHp = 1000;
-  startFight(run, cfg, boss);
-  run.events.length = 0;
-  return { run, boss };
-}
 
 describe('gaps found by the mutants of the 4H-B2 and the 4G-B', () => {
   it('a move of a type the species does not have does not become its attack type', () => {
@@ -172,59 +122,5 @@ describe('gaps found by the mutants of the 4H-B2 and the 4G-B', () => {
       const boss = run.enemies.find((e) => e.id === run.boss.id);
       expect(boss?.hp).toBeCloseTo(expected * cfg.enemy.hpScale * config.boss.hpScale, 6);
     }
-  });
-
-  it('the weak point counts exactly at its reach, and a ball on the way hurts the shield', () => {
-    const cfg = fightConfig();
-    const { run, boss } = withBoss(cfg);
-    boss.hp = 660;
-    advanceBossFight(run, cfg);
-    run.boss.weakX = 0;
-    hitWeakPoint(run, cfg, boss, boss.x + 26, boss.y, 6, 10); // radius 20 + ball 6
-    expect(run.boss.shieldHp).toBeCloseTo(90, 9);
-    // The same through the tick: a ball sitting on the weak point.
-    const ball = makeBall({ effects: [] });
-    run.loadout = [ball];
-    run.cooldowns = [-1];
-    run.bodies = [makeBody({ x: boss.x, y: boss.y + 20, vy: -1 })];
-    const before = run.boss.shieldHp;
-    tick(run, { moveX: 0 }, cfg);
-    expect(run.boss.shieldHp).toBeLessThan(before);
-  });
-
-  it('a column covers its whole width, edges included, and the guard lowers its damage', () => {
-    const cfg = {
-      ...fightConfig(),
-      stats: { ...quietConfig.stats, guardMax: 0.5, guardStatMin: 0, guardStatMax: 1 },
-    } as GameConfig;
-    for (const [offset, hurt] of [
-      [30, true],
-      [25, true],
-      [31, false],
-    ] as const) {
-      const { run } = withBoss(cfg);
-      run.boss.attackIn = 1;
-      advanceBossFight(run, cfg);
-      const x = run.hazards[0]?.x ?? 0;
-      run.player.x = x + offset;
-      const hp = run.player.hp;
-      for (let i = 0; i < 72; i++) advanceBossFight(run, cfg);
-      expect(hp - run.player.hp, `offset ${offset}`).toBe(hurt ? 2 : 0); // 3 x 0.5 rounded
-    }
-  });
-
-  it('the weak point goes back and forth more than once', () => {
-    const cfg = fightConfig();
-    const { run, boss } = withBoss(cfg);
-    boss.hp = 660;
-    advanceBossFight(run, cfg);
-    const signs: number[] = [];
-    for (let i = 0; i < 120; i++) {
-      advanceBossFight(run, cfg);
-      const s = Math.sign(run.boss.weakX);
-      if (s !== 0 && signs[signs.length - 1] !== s) signs.push(s);
-    }
-    expect(signs.length).toBeGreaterThanOrEqual(3);
-    expect(signs.slice(0, 3)).toEqual([1, -1, 1]);
   });
 });

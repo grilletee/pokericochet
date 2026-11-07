@@ -1,5 +1,5 @@
 import { type AimDirection, aimDirection } from './aim';
-import { advanceBossFight, hitWeakPoint } from './bossFight';
+import { advanceBossFight, coreHitMult } from './bossFight';
 import { applyCard } from './cards';
 import { ballSpeed, damagePlayer, effectivenessOn, hitDamage, leakDamage } from './combat';
 import type { GameConfig } from './config';
@@ -250,11 +250,12 @@ export function tick(run: Run, cmd: Command, config: GameConfig): TickOutput {
         x: target.x,
         y: target.y,
       });
-      // A ball on the weak point of a boss's shield breaks it down (ADR-046).
-      if (target.id === run.boss.id) {
-        hitWeakPoint(run, config, target, body.x, body.y, radius, damage);
-      }
-      const killed = damageEnemy(run, config, target, damage);
+      // A ball that lands ON the open core of a boss hits much harder (ADR-053).
+      const dealt =
+        target.id === run.boss.id
+          ? damage * coreHitMult(run, config, target, body.x, body.y, radius)
+          : damage;
+      const killed = damageEnemy(run, config, target, dealt);
       applyHitEffects(run, config, ball, target, damage, killed);
       landHit(run, config, ball, target);
       if (body.pierce > 0) {
