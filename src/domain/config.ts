@@ -106,7 +106,11 @@ export type BossMechanicDef =
       readonly lastTicks: number;
       readonly mult: number;
     }
-  | { readonly kind: 'portals'; readonly everyTicks: number; readonly lastTicks: number };
+  | { readonly kind: 'portals'; readonly everyTicks: number; readonly lastTicks: number }
+  /** A volley of narrow lightning columns, each announced (Zapdos, Raikou; 4G-E). */
+  | { readonly kind: 'storm'; readonly everyTicks: number; readonly count: number }
+  /** A shower of falling fireballs, each announced where it will land (Moltres, Entei, Ho-Oh; 4G-E). */
+  | { readonly kind: 'meteors'; readonly everyTicks: number; readonly count: number };
 
 /** The pattern table of one boss: the normal phase and the fury, and its own mechanic if it has one. */
 export interface BossPatternDef {

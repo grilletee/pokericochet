@@ -21,3 +21,6 @@ src/assets/sprites/
 
 # Output of pnpm playtest
 playtest-out/
+
+# Cries downloaded by fetch-data (PokeAPI/cries); never committed, fetched per build
+src/assets/cries/

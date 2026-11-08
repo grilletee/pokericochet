@@ -122,7 +122,7 @@ function phase(
 }
 
 /** The softer numbers of the intermediate bosses (the first of them met a team of level 4). */
-const SOFT: Partial<Shape> = { damageScale: 0.5, furyMult: 1.2, interval: 250 };
+const SOFT: Partial<Shape> = { damageScale: 0.6, furyMult: 1.25, interval: 230 }; // 4G-E: 0.5 / 1.2 / 250, "I take them down too fast and they barely hurt"
 
 /**
  * A table: the normal phase and the fury, each with its attacks and its strong attack. The fury is
@@ -139,7 +139,7 @@ function table(
 ): BossPatternDef {
   const base: Shape = { interval: 215, perRound: 1, coreEvery: 420, coreOpen: 170, ...shape };
   const final = shape.damageScale === undefined;
-  const scale = base.damageScale ?? 0.75;
+  const scale = base.damageScale ?? 0.85; // 4G-E: 0.75 -> 0.85, the final hits harder
   const interval = Math.round(base.interval * (final ? 1.3 : 1));
   const scaled = (list: readonly BossAttackDef[]): BossAttackDef[] =>
     list.map((a) => ({ ...a, damage: a.damage * scale }));
@@ -237,6 +237,8 @@ const CRACKS: BossMechanicDef = { kind: 'cracks', everyTicks: 420, count: 2, las
 const BARRIER: BossMechanicDef = { kind: 'barrier', onTicks: 150, offTicks: 330 };
 const SLOW: BossMechanicDef = { kind: 'timeSlow', everyTicks: 520, lastTicks: 220, mult: 0.5 };
 const PORTALS: BossMechanicDef = { kind: 'portals', everyTicks: 520, lastTicks: 330 };
+const STORM: BossMechanicDef = { kind: 'storm', everyTicks: 380, count: 3 };
+const METEORS: BossMechanicDef = { kind: 'meteors', everyTicks: 400, count: 3 };
 
 interface Legend {
   readonly family: keyof typeof FAMILIES;
@@ -268,6 +270,9 @@ const variant = (m: BossMechanicDef, k: number): BossMechanicDef => {
       };
     case 'portals':
       return { ...m, everyTicks: Math.round(m.everyTicks / k) };
+    case 'storm':
+    case 'meteors':
+      return { ...m, everyTicks: Math.round(m.everyTicks / k) };
   }
 };
 
@@ -286,8 +291,8 @@ const LEGENDS: Record<string, Legend> = {
   suicune: { family: 'tides', interval: 142, charge: 425, mechanic: variant(TIDE, 0.7) },
   manaphy: { family: 'tides', interval: 146, charge: 432, mechanic: variant(TIDE, 0.55) },
   phione: { family: 'tides', interval: 148, charge: 436, mechanic: variant(TIDE, 0.45) },
-  entei: { family: 'shots', interval: 133, charge: 405, mechanic: variant(CRACKS, 1.15) },
-  heatran: { family: 'shots', interval: 136, charge: 412, mechanic: variant(CRACKS, 1.3) },
+  entei: { family: 'shots', interval: 133, charge: 405, mechanic: METEORS },
+  heatran: { family: 'shots', interval: 136, charge: 412, mechanic: variant(METEORS, 1.2) },
   regirock: {
     family: 'quakes',
     interval: 170,
@@ -323,10 +328,16 @@ const LEGENDS: Record<string, Legend> = {
   'shaymin-land': { family: 'swarms', interval: 147, charge: 434, mechanic: variant(PORTALS, 0.7) },
   // Birds and beasts of storm and fire: no mechanic, a faster fight with their own pace.
   articuno: { family: 'tides', interval: 127, charge: 385 },
-  zapdos: { family: 'shots', interval: 112, charge: 335, open: 130 },
-  moltres: { family: 'shots', interval: 124, charge: 372 },
-  raikou: { family: 'shots', interval: 114, charge: 340, open: 135 },
-  'ho-oh': { family: 'shots', interval: 123, charge: 368, mechanic: variant(CRACKS, 1) },
+  zapdos: { family: 'shots', interval: 112, charge: 335, open: 130, mechanic: STORM },
+  moltres: { family: 'shots', interval: 124, charge: 372, mechanic: variant(METEORS, 1.1) },
+  raikou: {
+    family: 'shots',
+    interval: 114,
+    charge: 340,
+    open: 135,
+    mechanic: variant(STORM, 1.15),
+  },
+  'ho-oh': { family: 'shots', interval: 123, charge: 368, mechanic: variant(METEORS, 1.3) },
   virizion: { family: 'swarms', interval: 119, charge: 360 },
   genesect: { family: 'swarms', interval: 116, charge: 345 },
 };

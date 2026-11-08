@@ -165,6 +165,8 @@ export interface Snapshot {
   /** The exclusive mechanics of a legendary (ADR-054): the squeeze of the field and the barrier / slow flags. */
   bossSqueeze: number;
   bossBarrier: boolean;
+  /** The FINAL boss is on the field: the render changes the stage to its own (4G-E). */
+  bossFinal: boolean;
   bossTimeSlow: boolean;
   /** Link x of a portal (0 for the rest of the hazards). */
   hazardLink: Float32Array;
@@ -241,6 +243,7 @@ export function createSnapshot(maxSlots = 64, maxEnemies = 512, maxPickups = 64)
     bossType: -1,
     bossSqueeze: 0,
     bossBarrier: false,
+    bossFinal: false,
     bossTimeSlow: false,
     hazardLink: new Float32Array(MAX_HAZARDS),
     bossWeakX: 0,
@@ -281,6 +284,8 @@ export function writeSnapshot(
   snap.bossType = -1;
   snap.bossSqueeze = run.boss.squeeze;
   snap.bossBarrier = run.boss.barrier > 0;
+  snap.bossFinal =
+    run.boss.spawned && run.boss.id !== 0 && run.enemies.some((e) => e.id === run.boss.id);
   snap.bossTimeSlow = run.boss.timeSlow > 0;
   snap.bossPhase = 0;
   snap.bossWeakRadius = 0;

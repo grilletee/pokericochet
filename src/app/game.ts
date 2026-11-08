@@ -42,6 +42,7 @@ import { Renderer } from '../render';
 import {
   BOSS_DEFEAT_MS,
   BOSS_ENTRY_MS,
+  BOSS_FINAL_MS,
   BossMoment,
   type BossMomentView,
   bossCartel,
@@ -87,6 +88,7 @@ import {
 import { BENCH_LOADS, type BenchLoad, benchScenario } from './benchScenario';
 import { type BestRun, browserStore, loadBestRun, saveIfBest } from './bestRun';
 import { GAME_TITLE } from './config';
+import { playCry } from './cries';
 import { FixedStepper } from './fixedStepper';
 import { Input, RELEASE_PICK } from './input';
 import { commandFromInput } from './inputLogic';
@@ -482,6 +484,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
   let moveCasts = 0;
   /** The notices that happen once per run: the signature is ready / was thrown for the first time. */
   let signatureAnnounced = false;
+  let vulnerableHinted = false;
   let signatureWasReady = false;
   let readyAnnounced = false;
 
@@ -702,12 +705,15 @@ export async function startGame(host: HTMLElement): Promise<void> {
     const name = (species: string): string => pokemonName(species);
     const typeOf = (species: string): GameType | undefined => config.species[species]?.type;
     if (event.type === 'bossSpawn') {
+      // The final boss is an event of its own: dark screen, silhouette, shaking, a huge name (4G-E).
       return {
-        ms: BOSS_ENTRY_MS,
+        ms: event.final ? BOSS_FINAL_MS : BOSS_ENTRY_MS,
         view: {
-          style: 'entry',
-          kicker: bossLabel(event.number, event.interludes, event.final).toUpperCase(),
-          title: name(event.species),
+          style: event.final ? 'final' : 'entry',
+          kicker: event.final
+            ? '¡POKÉMON LEGENDARIO!'
+            : bossLabel(event.number, event.interludes, event.final).toUpperCase(),
+          title: event.final ? name(event.species).toUpperCase() : name(event.species),
           type: typeOf(event.species),
           spriteUrl: art.spriteUrl(event.species),
         },
@@ -739,15 +745,28 @@ export async function startGame(host: HTMLElement): Promise<void> {
       } else if (event.type === 'bossSpawn') {
         const type = config.species[event.species]?.type;
         const types = type === undefined ? [] : [type];
-        cartel.push(
-          bossCartel(
-            bossLabel(event.number, event.interludes, event.final),
-            event.species,
-            types,
-            typeAdvice(config, types).effective,
-          ),
+        // The cry (PokeAPI/cries) when the boss lands / lights up; louder for the final one.
+        const cryAt = (event.final ? BOSS_FINAL_MS : BOSS_ENTRY_MS) * (event.final ? 0.6 : 0.55);
+        window.setTimeout(() => playCry(event.species, event.final ? 1 : 0.7, sound.muted), cryAt);
+        // The final boss has its own entrance (dark screen, name); no cartel over it.
+        if (!event.final) {
+          cartel.push(
+            bossCartel(
+              bossLabel(event.number, event.interludes, event.final),
+              event.species,
+              types,
+              typeAdvice(config, types).effective,
+            ),
+            now,
+            true,
+          );
+        }
+      } else if (event.type === 'bossCore' && event.open && !vulnerableHinted) {
+        // The first time in a run: say what the glow means (12th playtest: "no se entiende").
+        vulnerableHinted = true;
+        overlay.showToast(
+          '¡Está cargando su ataque y queda EXPUESTO! Golpéalo ahora y lanza tu Ultimate',
           now,
-          true,
         );
       } else if (event.type === 'capture') {
         const from = toScreen(event.x, config.player.y);

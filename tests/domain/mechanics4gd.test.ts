@@ -225,3 +225,37 @@ describe('the legendaries as data (ADR-054)', () => {
     for (const table of Object.values(fight.byType)) expect(table?.mechanic).toBeUndefined();
   });
 });
+
+describe('storm and meteors: the new mechanics of 4G-E', () => {
+  it('a storm opens narrow announced columns; the fury adds one', () => {
+    const cfg = configWith({ kind: 'storm', everyTicks: 600, count: 3 });
+    for (const [phase, expected] of [
+      [0, 3],
+      [1, 4],
+    ] as const) {
+      const { run } = withBoss(cfg);
+      run.boss.phase = phase;
+      run.boss.mechIn = 1;
+      advanceBossFight(run, cfg);
+      const columns = run.hazards.filter((h) => h.kind === 'column');
+      expect(columns.length).toBe(expected);
+      expect(columns.every((h) => h.telegraph >= 60 && h.damage > 0)).toBe(true);
+    }
+  });
+
+  it('meteors are announced falling shots', () => {
+    const cfg = configWith({ kind: 'meteors', everyTicks: 600, count: 2 });
+    const { run } = withBoss(cfg);
+    run.boss.mechIn = 1;
+    advanceBossFight(run, cfg);
+    const shots = run.hazards.filter((h) => h.kind === 'shot');
+    expect(shots.length).toBe(2);
+    expect(shots.every((h) => h.telegraph >= 60 && h.speed > 0)).toBe(true);
+  });
+
+  it('the electric and fire legendaries have them', () => {
+    const kind = (id: string) => fight.bySpecies[id]?.mechanic?.kind;
+    expect(['zapdos', 'raikou'].map(kind)).toEqual(['storm', 'storm']);
+    expect(['moltres', 'entei', 'ho-oh', 'heatran'].map(kind)).toEqual(Array(4).fill('meteors'));
+  });
+});

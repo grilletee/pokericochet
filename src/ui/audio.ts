@@ -14,7 +14,9 @@ export type SoundId =
   | 'win'
   | 'lose'
   | 'collect'
-  | 'capture';
+  | 'capture'
+  | 'vulnerable'
+  | 'tension';
 
 /** Which sound, if any, an event makes. A ball hit is the "bounce": walls emit no event. */
 export function soundFor(event: GameEvent): SoundId | null {
@@ -30,6 +32,11 @@ export function soundFor(event: GameEvent): SoundId | null {
       return event.manual ? 'signature' : 'move';
     case 'hybrid':
       return 'hybrid';
+    // The boss starts to charge (exposed): a sharp alarm. The final boss arrives under a low drone.
+    case 'bossCore':
+      return event.open ? 'vulnerable' : null;
+    case 'bossSpawn':
+      return event.final ? 'tension' : null;
     case 'captureDrop':
       return 'captureDrop';
     case 'collect':
@@ -64,6 +71,8 @@ const MIN_GAP_MS: Record<SoundId, number> = {
   lose: 0,
   collect: 60,
   capture: 0,
+  vulnerable: 400,
+  tension: 0,
 };
 
 /** Decides whether a sound may play now, per kind. Pure: time is given, never read. */
@@ -132,6 +141,19 @@ const RECIPES: Record<SoundId, readonly Note[]> = {
     { from: 659, to: 659, seconds: 0.09, wave: 'square', gain: 0.07, at: 0.09 },
     { from: 784, to: 1047, seconds: 0.28, wave: 'square', gain: 0.07, at: 0.18 },
     { from: 1047, to: 1047, seconds: 0.28, wave: 'sine', gain: 0.1, at: 0.18 },
+  ],
+  // Exposed: two sharp rising alarm beeps (the boss is charging, hit it now).
+  vulnerable: [
+    { from: 600, to: 1200, seconds: 0.11, wave: 'square', gain: 0.1 },
+    { from: 600, to: 1200, seconds: 0.11, wave: 'square', gain: 0.1, at: 0.14 },
+    { from: 90, to: 70, seconds: 0.3, wave: 'sawtooth', gain: 0.1 },
+  ],
+  // The final boss: a low drone with a slow swell and a dissonant fifth-less interval, 3 s of dread.
+  tension: [
+    { from: 55, to: 48, seconds: 3, wave: 'sawtooth', gain: 0.13 },
+    { from: 58, to: 51, seconds: 3, wave: 'triangle', gain: 0.12 },
+    { from: 82, to: 110, seconds: 2.2, wave: 'sine', gain: 0.07, at: 0.6 },
+    { from: 740, to: 698, seconds: 0.8, wave: 'sine', gain: 0.05, at: 1.6 },
   ],
   win: [
     { from: 523, to: 523, seconds: 0.14, wave: 'square', gain: 0.08 },

@@ -26,6 +26,10 @@ export function creditLines(title: string): CreditLine[] {
       text: 'Imágenes de los Pokémon: PokeAPI/sprites (© sus propietarios, usadas sin fines comerciales)',
       url: SPRITES_URL,
     },
+    {
+      text: 'Gritos de los Pokémon: PokeAPI/cries (© sus propietarios, usados sin fines comerciales; se descargan aparte, no están en el repositorio)',
+      url: 'https://github.com/PokeAPI/cries',
+    },
     { text: 'Gráficos de la partida: PixiJS (licencia MIT)', url: 'https://pixijs.com' },
     {
       text: 'Tipografía: Pixelify Sans, © The Pixelify Sans Project Authors (licencia SIL OFL 1.1)',

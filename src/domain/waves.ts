@@ -296,7 +296,9 @@ export function advanceBoss(run: Run, config: GameConfig): void {
     for (let i = 0; i < run.boss.summonDebt; i++) spawnEnemy(run, config, asked);
     run.boss.summonDebt = 0;
   }
-  if (run.boss.tick % def.summonIntervalTicks === 0) {
+  // A boss with `summonCount` 0 (the final one, 4G-E) fights alone: only the special reinforcements
+  // its own attacks ask for (above) ever come.
+  if (def.summonCount > 0 && run.boss.tick % def.summonIntervalTicks === 0) {
     const profile: SpawnProfile = {
       types: run.boss.type === '' ? GAME_TYPES : [run.boss.type as GameType],
       speedScale: def.summonSpeedScale,

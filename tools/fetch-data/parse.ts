@@ -404,3 +404,14 @@ export function movesReport(
   }
   return `${lines.join('\n')}\n`;
 }
+
+/**
+ * The URL of the cry of a Pokémon in a PokéAPI `/pokemon/{name}` response (`cries.latest`, from the
+ * PokeAPI/cries repository), or undefined when it has none. Cries are optional: the game is silent
+ * without them (4G-E).
+ */
+export function parseCryUrl(raw: unknown): string | undefined {
+  if (!isRecord(raw) || !isRecord(raw.cries)) return undefined;
+  const latest = raw.cries.latest;
+  return typeof latest === 'string' && latest.startsWith('https://') ? latest : undefined;
+}

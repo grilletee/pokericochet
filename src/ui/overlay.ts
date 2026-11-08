@@ -13,6 +13,7 @@ export class Overlay {
   private readonly cards: HTMLDivElement;
   private readonly toast: HTMLDivElement;
   private readonly bossBar: HTMLDivElement;
+  private readonly vulnerable: HTMLDivElement;
   private readonly bossFill: HTMLDivElement;
   private readonly bossLabel: HTMLDivElement;
   private lastBossKey = '';
@@ -66,7 +67,26 @@ export class Overlay {
     notch.style.cssText =
       'position:absolute;left:50%;top:0;width:2px;height:100%;background:#0b0e16cc;';
     this.bossBar.append(notch, this.bossLabel);
-    host.append(this.hud, this.toast, this.bossBar, this.message, this.debug, this.cards);
+    // The sign of the exposure (4G-E): big, blinking, right over the bar. The boss is charging: hit it now.
+    this.vulnerable = document.createElement('div');
+    this.vulnerable.dataset.vulnerable = '';
+    this.vulnerable.textContent = '¡VULNERABLE!';
+    this.vulnerable.style.cssText =
+      `${base}left:0;right:0;bottom:44px;display:none;text-align:center;font-size:30px;` +
+      'font-weight:900;letter-spacing:3px;color:#ffd75a;text-shadow:0 3px 0 #7a1010,0 0 14px #ff5a3a;' +
+      'animation:vulnerable-blink 0.5s steps(2) infinite;pointer-events:none;';
+    const blink = document.createElement('style');
+    blink.textContent = '@keyframes vulnerable-blink{0%{opacity:1}50%{opacity:0.35}}';
+    document.head.append(blink);
+    host.append(
+      this.hud,
+      this.toast,
+      this.bossBar,
+      this.vulnerable,
+      this.message,
+      this.debug,
+      this.cards,
+    );
   }
 
   setHud(text: string): void {
@@ -167,6 +187,7 @@ export class Overlay {
     if (key === this.lastBossKey) return;
     this.lastBossKey = key;
     this.bossBar.style.display = visible ? 'block' : 'none';
+    this.vulnerable.style.display = visible && open ? 'block' : 'none';
     this.bossLabel.textContent = `${name} ${percent} %${open ? ' · ¡CARGANDO, EXPUESTO! ¡ATACA!' : warning ? ' · va a cargar…' : ''}`;
     this.bossFill.style.width = `${percent}%`;
     this.bossFill.style.background = rage ? '#a3141f' : '#e8503a';

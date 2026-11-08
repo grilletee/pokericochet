@@ -4,6 +4,8 @@ import { TYPE_COLORS } from './typeColors';
 /** Real milliseconds the game stops for each moment of a boss (ADR-046): short, so it does not drag. */
 export const BOSS_ENTRY_MS = 1600;
 export const BOSS_DEFEAT_MS = 1300;
+/** The entrance of the final boss, a legendary: an event, not a cartel (4G-E). */
+export const BOSS_FINAL_MS = 4200;
 
 /** What a boss moment shows: the small line over the name, the name and what comes with it. */
 export interface BossMomentView {
@@ -13,7 +15,7 @@ export interface BossMomentView {
   readonly type: GameType | undefined;
   readonly spriteUrl: string | undefined;
   /** A defeat bursts in the colour of the type; an entry rises; a phase flashes. */
-  readonly style: 'entry' | 'phase' | 'defeat';
+  readonly style: 'entry' | 'phase' | 'defeat' | 'final';
 }
 
 function box(css: string, text = ''): HTMLDivElement {
@@ -122,6 +124,41 @@ export class BossMoment {
           ],
           { duration: ms, easing: 'steps(1)' },
         );
+      } else if (view.style === 'final') {
+        // The legendary: it is a black silhouette that rumbles for two seconds, then lights up in
+        // the colour of its type with a flash, while the whole screen shakes harder.
+        img.style.width = '250px';
+        img.style.height = '250px';
+        animate(
+          img,
+          [
+            { filter: 'brightness(0)', transform: 'scale(0.7)', opacity: 0, offset: 0 },
+            { filter: 'brightness(0)', transform: 'scale(0.85)', opacity: 1, offset: 0.25 },
+            { filter: 'brightness(0)', transform: 'scale(0.95)', opacity: 1, offset: 0.55 },
+            { filter: 'brightness(6)', transform: 'scale(1.1)', opacity: 1, offset: 0.6 },
+            {
+              filter: `brightness(1) drop-shadow(0 0 22px ${color})`,
+              transform: 'scale(1)',
+              opacity: 1,
+              offset: 0.7,
+            },
+            {
+              filter: `brightness(1) drop-shadow(0 0 22px ${color})`,
+              transform: 'scale(1)',
+              opacity: 1,
+            },
+          ],
+          { duration: ms, easing: 'steps(30)', fill: 'forwards' },
+        );
+        const quake: Keyframe[] = [];
+        for (let k = 0; k <= 20; k++) {
+          const power = k < 12 ? 3 : 8;
+          quake.push({
+            transform: `translate(${k % 2 === 0 ? -power : power}px,${k % 3 === 0 ? power / 2 : -power / 2}px)`,
+            offset: k / 20,
+          });
+        }
+        animate(this.root, quake, { duration: ms * 0.8, easing: 'steps(1)' });
       } else {
         // The fury: a flash and a shudder.
         animate(
@@ -136,7 +173,7 @@ export class BossMoment {
       }
     }
     // Black bars slide in from the top and the bottom, like a cut scene.
-    if (view.style === 'entry') {
+    if (view.style === 'entry' || view.style === 'final') {
       for (const edge of ['top', 'bottom']) {
         const bar = box(
           `position:absolute;left:0;right:0;${edge}:0;height:13%;background:#0a0c18;border-${edge === 'top' ? 'bottom' : 'top'}:4px solid ${color};`,
@@ -154,7 +191,10 @@ export class BossMoment {
     }
     children.push(
       box(`font-size:15px;font-weight:800;letter-spacing:2px;color:${color};`, view.kicker),
-      box(`font-size:38px;font-weight:900;text-shadow:0 2px 0 #000,0 0 14px ${color};`, view.title),
+      box(
+        `font-size:${view.style === 'final' ? 56 : 38}px;font-weight:900;text-shadow:0 2px 0 #000,0 0 14px ${color};`,
+        view.title,
+      ),
     );
     if (view.note !== undefined) children.push(box('font-size:15px;opacity:0.9;', view.note));
     this.root.replaceChildren(...children, ...extras);
@@ -163,7 +203,9 @@ export class BossMoment {
     this.root.style.background =
       view.style === 'defeat'
         ? `radial-gradient(${color}cc, rgba(5,8,16,0.7) 70%)`
-        : 'rgba(5,8,16,0.6)';
+        : view.style === 'final'
+          ? 'rgba(0,0,4,0.94)'
+          : 'rgba(5,8,16,0.6)';
     animate(
       this.root,
       [{ opacity: 0 }, { opacity: 1, offset: 0.15 }, { opacity: 1, offset: 0.8 }, { opacity: 0 }],

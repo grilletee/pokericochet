@@ -170,6 +170,7 @@ export class Renderer {
   /** The biome the backdrop was built for (main:second), and how much of the fade-through is left. */
   private readonly allyArt: (Texture | undefined)[] = [];
   private readonly foeArt: (Texture | undefined)[] = [];
+  private readonly backdropDim: Sprite;
   private backdropKey = -1;
   private backdropSheets: (TilingSprite | undefined)[] = [];
   private fade = 0;
@@ -220,12 +221,12 @@ export class Renderer {
     this.biomeLayer.addChild(this.backdropFade);
     // A dark, desaturating film over the whole backdrop: the playing field is quieter than what
     // moves on it (4G-E).
-    const dim = new Sprite(bar);
-    dim.width = width;
-    dim.height = height;
-    dim.tint = 0x070914;
-    dim.alpha = 0.5;
-    this.biomeLayer.addChild(dim);
+    this.backdropDim = new Sprite(bar);
+    this.backdropDim.width = width;
+    this.backdropDim.height = height;
+    this.backdropDim.tint = 0x070914;
+    this.backdropDim.alpha = 0.5;
+    this.biomeLayer.addChild(this.backdropDim);
     // The floor strip and the line of defence, in pixels: a dark band with a dashed red line.
     const floor = new Graphics()
       .rect(0, defenseLineY, width, height - defenseLineY)
@@ -426,14 +427,17 @@ export class Renderer {
    * colour of the floor, so it never pops.
    */
   private drawBackdrop(curr: Snapshot, elapsedMs: number): void {
-    const main = curr.biomeMain;
+    // The final boss has a stage of its own: the backdrop of its type, darker (4G-E).
+    const ownStage = curr.bossFinal && curr.bossType >= 0;
+    const main = ownStage ? curr.bossType : curr.biomeMain;
     const sheets = this.backdropSheets;
+    this.backdropDim.alpha = ownStage ? 0.66 : 0.5;
     if (main < 0) {
       for (const sheet of sheets) if (sheet !== undefined) sheet.visible = false;
       this.backdropKey = -1;
       return;
     }
-    const second = curr.biomeSecond >= 0 ? curr.biomeSecond : main;
+    const second = ownStage ? main : curr.biomeSecond >= 0 ? curr.biomeSecond : main;
     const key = main * 64 + second;
     if (key !== this.backdropKey) {
       const made = backdropFor(
@@ -953,7 +957,17 @@ export class Renderer {
           FOE_EDGE,
         );
         sprite.scale.set((radius * ENEMY_ART_SCALE) / (art.width / 2));
-        sprite.tint = raging ? 0xff8a8a : worn;
+        // Exposed while it charges (4G-E): the whole body flashes hot orange and white, unmistakable.
+        const isBoss =
+          radius === curr.bossRadius && Math.abs(ex - curr.bossX) < 2 && curr.bossMaxHp > 0;
+        const exposed = isBoss && curr.bossCoreOpen > 0;
+        sprite.tint = exposed
+          ? Math.floor(curr.tick / 6) % 2 === 0
+            ? 0xff7a3a
+            : 0xfff2c0
+          : raging
+            ? 0xff8a8a
+            : worn;
         sprite.alpha = 1;
       }
     }

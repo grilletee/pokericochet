@@ -340,6 +340,47 @@ function advanceMechanic(run: Run, config: GameConfig, pattern: BossPatternDef):
       }
       break;
     }
+    case 'storm':
+    case 'meteors': {
+      run.boss.mechIn -= 1;
+      if (run.boss.mechIn <= 0) {
+        const count = mechanic.count + (fury ? 1 : 0);
+        for (let i = 0; i < count; i++) {
+          const x = 30 + nextFloat(run.rng.boss) * (width - 60);
+          addHazard(
+            run,
+            config,
+            mechanic.kind === 'storm'
+              ? {
+                  kind: 'column',
+                  x,
+                  y: 0,
+                  link: 0,
+                  width: 34,
+                  telegraph: 70 + i * 12,
+                  active: 14,
+                  damage: 1.5,
+                  speed: 0,
+                  struck: false,
+                }
+              : {
+                  kind: 'shot',
+                  x,
+                  y: 0,
+                  link: 0,
+                  width: 30,
+                  telegraph: 70 + i * 10,
+                  active: 0,
+                  damage: 1.5,
+                  speed: 5,
+                  struck: false,
+                },
+          );
+        }
+        run.boss.mechIn = ticksOf(mechanic.everyTicks * (fury ? 0.7 : 1));
+      }
+      break;
+    }
   }
 }
 

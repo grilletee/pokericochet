@@ -9,6 +9,7 @@ import {
   type MoveOverrides,
   movesReport,
   movesToFetch,
+  parseCryUrl,
   parseMove,
   parseName,
   parsePokemon,
@@ -660,5 +661,17 @@ describe('fetch-data: concurrent workers (4H-B1, ADR-048)', () => {
     await all;
     expect(g.peak).toBe(1);
     expect(g.sleeps).toEqual([500]);
+  });
+});
+
+describe('parseCryUrl (4G-E)', () => {
+  it('reads cries.latest and ignores anything else', () => {
+    expect(parseCryUrl({ cries: { latest: 'https://example.test/25.ogg' } })).toBe(
+      'https://example.test/25.ogg',
+    );
+    expect(parseCryUrl({ cries: { latest: 'http://example.test/25.ogg' } })).toBeUndefined();
+    expect(parseCryUrl({ cries: { latest: null } })).toBeUndefined();
+    expect(parseCryUrl({})).toBeUndefined();
+    expect(parseCryUrl(null)).toBeUndefined();
   });
 });

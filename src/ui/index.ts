@@ -2,7 +2,7 @@ export type { SoundId } from './audio';
 export { SoundFx, SoundToggle, soundFor, Throttle } from './audio';
 export { describeBall, describeEffects } from './ballText';
 export type { BossMomentView } from './bossMoment';
-export { BOSS_DEFEAT_MS, BOSS_ENTRY_MS, BossMoment } from './bossMoment';
+export { BOSS_DEFEAT_MS, BOSS_ENTRY_MS, BOSS_FINAL_MS, BossMoment } from './bossMoment';
 export type { CardTextContext } from './cardText';
 export { cardStep, describeCard, typeName } from './cardText';
 export type { ArtLookup } from './cardView';

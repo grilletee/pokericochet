@@ -618,12 +618,21 @@ try {
   await bossPage.waitForTimeout(400);
   check('the boss bar is visible', await bossPage.locator('[data-boss-bar]').isVisible());
   // Wave 7 jumped to: the wave cartel is up, and the boss one waits its turn behind it (A1).
-  await bossPage.waitForFunction(
-    () => document.querySelector('[data-cartel]')?.textContent?.includes('JEFE FINAL'),
-    undefined,
-    { timeout: 6000 },
+  // 4G-E: the final boss is an event of its own: a dark entrance screen with its name (no cartel).
+  await bossPage.waitForSelector('[data-boss-moment][data-style="final"]', { timeout: 6000 });
+  const finalText = (await bossPage.locator('[data-boss-moment]').textContent()) ?? '';
+  check(
+    'the final boss has its own dark entrance, with LEGENDARIO',
+    finalText.includes('LEGENDARIO'),
+    finalText,
   );
-  check('the boss gets its own cartel, after the wave one, with its name', true);
+  await bossPage.screenshot({ path: outFile.replace('.png', '-final-entry.png') });
+  await bossPage.waitForFunction(
+    () => getComputedStyle(document.querySelector('[data-boss-moment]')).display === 'none',
+    undefined,
+    { timeout: 8000 },
+  );
+  check('the entrance ends and the fight begins', true);
   check(
     'the final boss is a legendary named on its bar',
     /(Moltres|Kyogre|Virizion|Zapdos|Articuno|Mewtwo|Mew|Regirock|Regice|Registeel|Regigigas|Rayquaza|Giratina|Groudon|Darkrai|Arceus|Genesect|Lugia|Ho-Oh|Suicune|Entei|Raikou|Celebi|Jirachi|Deoxys|Dialga|Palkia|Heatran|Cresselia|Manaphy|Phione|Shaymin|Uxie|Mesprit|Azelf|Latias|Latios)/.test(

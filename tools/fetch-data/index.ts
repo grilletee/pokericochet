@@ -26,6 +26,7 @@ import {
   type MoveOverrides,
   movesReport,
   movesToFetch,
+  parseCryUrl,
   parseMove,
   parseName,
   parsePokemon,
@@ -55,6 +56,8 @@ const USER_AGENT = 'pokericochet-fetch-data (non-profit fan project; caches ever
 
 const args = process.argv.slice(2);
 const withSprites = !args.includes('--no-sprites');
+const withCries = !args.includes('--no-cries');
+const cryDir = resolve(root, 'src/assets/cries');
 const numberArg = (flag: string, fallback: number): number => {
   const at = args.indexOf(flag);
   const value = at >= 0 ? Number(args[at + 1]) : fallback;
@@ -169,7 +172,8 @@ const loaded = await Promise.all(
       `${API}/pokemon/${id}`,
       resolve(cacheDir, `${id}.json`),
     );
-    const parsed = parsePokemon(id, JSON.parse(new TextDecoder().decode(data)));
+    const rawPokemon: unknown = JSON.parse(new TextDecoder().decode(data));
+    const parsed = parsePokemon(id, rawPokemon);
     const local = parseName(
       id,
       await getJson(`${API}/pokemon-species/${parsed.species.pokedexId}`, `species-${id}.json`),
@@ -181,6 +185,17 @@ const loaded = await Promise.all(
       const target = resolve(spriteDir, `${id}.png`);
       const sprite = await fetcher.get(parsed.spriteUrl, resolve(cacheDir, `${id}.png`));
       if (!existsSync(target)) deps.write(target, sprite.data);
+    }
+    // The cry (PokeAPI/cries), for the bosses' entrance: cached like the rest, kept out of the repo.
+    const cryUrl = withCries ? parseCryUrl(rawPokemon) : undefined;
+    if (cryUrl !== undefined) {
+      const cryTarget = resolve(cryDir, `${id}.ogg`);
+      try {
+        const cry = await fetcher.get(cryUrl, resolve(cacheDir, `${id}.ogg`));
+        if (!existsSync(cryTarget)) deps.write(cryTarget, cry.data);
+      } catch {
+        console.warn(`no cry for ${id}`);
+      }
     }
     return { id, parsed, local };
   }),

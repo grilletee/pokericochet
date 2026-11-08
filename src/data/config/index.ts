@@ -391,11 +391,11 @@ export const baseConfig: Omit<
     // 4G-C (ADR-053): 26 -> 110, clearly above the third boss between waves (the author: "a real
     // challenge you can die in"); only the open core lets most of the damage through, so the time of
     // the fight is set by the bench (B3). Slow and big, so it takes a long time to reach the line.
-    hpScale: 105, // 4G-D: 46 -> 105 (the boss now hovers fully on screen: it is hit much more)
+    hpScale: 120, // 4G-E: 105 -> 120 (135 left the bot at 25 %) (the author takes it down too fast); 4G-D: 46 -> 105 (the boss now hovers fully on screen: it is hit much more)
     speed: 0.04,
     radius: 72,
     summonIntervalTicks: 900,
-    summonCount: 4,
+    summonCount: 0, // 4G-E: the final boss fights alone (4 before); its summon attacks still call a few
     summonSpeedScale: 1,
     summonHpScale: 0.8,
   },
@@ -405,7 +405,7 @@ export const baseConfig: Omit<
     {
       after: 2,
       byType: { fire: 'rapidash', water: 'starmie', grass: 'victreebel', electric: 'electabuzz' },
-      hpScale: 6.5, // 4G-D: 3 -> 6.5 (B3); 3.2 in the 4G-B: the first met a team of level 5; it lasts long enough through the core
+      hpScale: 7.5, // 4G-E: 6.5 -> 7.5; 4G-D: 3 -> 6.5 (B3); 3.2 in the 4G-B: the first met a team of level 5; it lasts long enough through the core
       speed: 0.07,
       radius: 44,
       summonIntervalTicks: 1100,
@@ -418,7 +418,7 @@ export const baseConfig: Omit<
     {
       after: 4,
       byType: { fire: 'arcanine', water: 'gyarados', grass: 'exeggutor', electric: 'ampharos' },
-      hpScale: 28, // 4G-D: 11.5 -> 28 (B3); 7 in the 4G-B
+      hpScale: 32, // 4G-E: 28 -> 32; 4G-D: 11.5 -> 28 (B3); 7 in the 4G-B
       speed: 0.075,
       radius: 52,
       summonIntervalTicks: 1000,
@@ -430,7 +430,7 @@ export const baseConfig: Omit<
     {
       after: 6,
       byType: { fire: 'typhlosion', water: 'kingdra', grass: 'tangrowth', electric: 'luxray' },
-      hpScale: 56, // 4G-D: 24 -> 56 (B3); 16 in the 4G-B
+      hpScale: 64, // 4G-E: 56 -> 64; 4G-D: 24 -> 56 (B3); 16 in the 4G-B
       speed: 0.08,
       radius: 58,
       summonIntervalTicks: 900,
