@@ -58,6 +58,9 @@ const PORTAL_COLOR = 0xb08cff;
 /** Sparks that fly off every attack while it strikes: four per hazard. */
 const SPARKS_PER_HAZARD = 4;
 /** The inner outline of what is yours (cyan) and of what is against you (red). */
+const OUTLINES_PER_FRAME = 2;
+/** Above this many enemies the signs of the states are drawn in a reduced form. */
+const STATUS_LOD_ENEMIES = 40;
 const ALLY_EDGE = '#8ef0ff';
 const FOE_EDGE = '#ff5a5a';
 /** Pixels per millisecond the three layers of the backdrop scroll at (far, middle, near). */
@@ -166,6 +169,14 @@ export class Renderer {
   private readonly backdrop: Partial<Record<'far' | 'mid' | 'near', TilingSprite>> = {};
   private readonly backdropFade: Sprite;
   /** The biome the backdrop was built for (main:second), and how much of the fade-through is left. */
+  private readonly outlineQueue: {
+    cache: (Texture | undefined)[];
+    code: number;
+    art: Texture;
+    edge: string;
+  }[] = [];
+  private readonly outlinePending = new Set<string>();
+  private statusLod = false;
   private readonly allyArt: (Texture | undefined)[] = [];
   private readonly foeArt: (Texture | undefined)[] = [];
   private readonly backdropDim: Sprite;
@@ -399,6 +410,7 @@ export class Renderer {
       (this.app.screen.height - height * scale) / 2,
     );
 
+    this.buildOutlines();
     this.drawBiome(curr, elapsedMs);
     this.drawBossFight(curr);
     this.drawBalls(prev, curr, alpha);
@@ -714,8 +726,10 @@ export class Renderer {
     if (bits === 0) return 0xffffff;
     const t = this.biomeClock;
     const spread = radius * 0.7;
+    // With a crowd on the field each state draws one sign instead of several (render cost, 4G-E).
+    const lod = this.statusLod;
     if (bits & STATUS_BURN) {
-      for (let k = 0; k < 3; k++) {
+      for (let k = 0; k < (lod ? 1 : 3); k++) {
         const f = (t / 700 + k / 3 + seed * 0.13) % 1;
         this.statusDot(
           x + (k - 1) * spread * 0.6 + Math.sin(t / 260 + k + seed) * 2,
@@ -727,7 +741,7 @@ export class Renderer {
       }
     }
     if (bits & STATUS_POISON) {
-      for (let k = 0; k < 3; k++) {
+      for (let k = 0; k < (lod ? 1 : 3); k++) {
         const f = (t / 1100 + k / 3 + seed * 0.21) % 1;
         this.statusRing(
           x + (k - 1) * spread * 0.7 + Math.sin(t / 400 + k * 2) * 3,
@@ -739,7 +753,7 @@ export class Renderer {
       }
     }
     if (bits & STATUS_SLOW) {
-      for (let k = 0; k < 2; k++) {
+      for (let k = 0; k < (lod ? 1 : 2); k++) {
         const f = (t / 1500 + k / 2 + seed * 0.17) % 1;
         this.statusDot(
           x + (k === 0 ? -1 : 1) * spread * 0.8,
@@ -752,14 +766,14 @@ export class Renderer {
     }
     if (bits & STATUS_FROZEN) {
       this.statusRing(x, y, 0x9fe8ff, radius * 1.1, 0.75);
-      for (let k = 0; k < 4; k++) {
+      for (let k = 0; k < (lod ? 1 : 4); k++) {
         const a = (k / 4) * Math.PI * 2 + 0.6;
         this.statusDot(x + Math.cos(a) * radius, y + Math.sin(a) * radius, 0xffffff, 2.6, 0.9);
       }
     }
     if (bits & STATUS_PARALYSED) {
       const frame = Math.floor(t / 80) + seed;
-      for (let k = 0; k < 3; k++) {
+      for (let k = 0; k < (lod ? 1 : 3); k++) {
         const a = ((frame * 2.3 + k * 2.1) % 6.28) + k;
         const flick = (frame + k) % 3 === 0 ? 0.2 : 1;
         this.statusDot(
@@ -775,7 +789,7 @@ export class Renderer {
       this.statusRing(x, y - radius - 7, 0xff5a7a, 5.5, 0.9);
     }
     if (bits & STATUS_CURSE) {
-      for (let k = 0; k < 2; k++) {
+      for (let k = 0; k < (lod ? 1 : 2); k++) {
         const f = (t / 1800 + k / 2 + seed * 0.11) % 1;
         this.statusDot(
           x + (k === 0 ? -1 : 1) * spread * 0.5 + Math.sin(t / 500 + k) * 4,
@@ -787,7 +801,7 @@ export class Renderer {
       }
     }
     if (bits & STATUS_PUSHED) {
-      for (let k = 1; k <= 3; k++)
+      for (let k = 1; k <= (lod ? 1 : 3); k++)
         this.statusDot(x, y - radius - k * 6, 0xffffff, 3.4 - k * 0.6, 0.5 - k * 0.12);
     }
     // The tint of the one that matters most.
@@ -830,6 +844,15 @@ export class Renderer {
     return this.forms[code]?.[stage - 1] ?? code;
   }
 
+  /** Builds the outlines that were asked for, a couple per frame (see `outlined`). */
+  private buildOutlines(): void {
+    for (let n = 0; n < OUTLINES_PER_FRAME && this.outlineQueue.length > 0; n++) {
+      const job = this.outlineQueue.shift();
+      if (job === undefined || job.cache[job.code] !== undefined) continue;
+      job.cache[job.code] = outlinedTexture(job.art, job.edge);
+    }
+  }
+
   /** The outlined picture of art `code` (built once): allies cyan, enemies red (4G-E, legibility). */
   private outlined(
     cache: (Texture | undefined)[],
@@ -837,12 +860,16 @@ export class Renderer {
     art: Texture,
     edge: string,
   ): Texture {
-    let made = cache[code];
-    if (made === undefined) {
-      made = outlinedTexture(art, edge);
-      cache[code] = made;
+    const made = cache[code];
+    if (made !== undefined) return made;
+    // Building an outline costs about 2 ms: never inside a frame in bulk. The plain picture is
+    // drawn until its turn comes (at most `OUTLINES_PER_FRAME` are built per frame).
+    const key = `${edge}:${code}`;
+    if (!this.outlinePending.has(key)) {
+      this.outlinePending.add(key);
+      this.outlineQueue.push({ cache, code, art, edge });
     }
-    return made;
+    return art;
   }
 
   private spriteAt(pool: Sprite[], layer: Container, index: number): Sprite {
@@ -924,6 +951,7 @@ export class Renderer {
       if (used !== undefined) used.visible = false;
     }
     this.statusUsed = 0;
+    this.statusLod = curr.enemyCount > STATUS_LOD_ENEMIES;
     for (let i = 0; i < curr.enemyCount; i++) {
       const sprite = this.spriteAt(this.enemySprites, this.enemyLayer, i);
       sprite.visible = true;
