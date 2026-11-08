@@ -402,7 +402,15 @@ export function advanceBossFight(run: Run, config: GameConfig): void {
   if (fight === undefined) return;
   const boss = liveBoss(run);
   if (boss === undefined) {
-    run.hazards.length = 0;
+    // What a boss left goes with it; the shots of ordinary enemies keep falling.
+    let kept = 0;
+    for (const h of run.hazards) {
+      if (h.link !== ENEMY_SHOT) continue;
+      run.hazards[kept] = h;
+      kept += 1;
+    }
+    run.hazards.length = kept;
+    advanceHazards(run, config);
     return;
   }
   const pattern = patternFor(config, boss.species, boss.type);
@@ -450,7 +458,56 @@ export function advanceBossFight(run: Run, config: GameConfig): void {
     run.boss.attackIn = phase.intervalTicks;
   }
 
-  // What is on the floor: warn, strike, fall, push, block, leave.
+  advanceHazards(run, config);
+}
+
+/** Link value that marks a `shot` fired by an ordinary enemy (4G-E), not by a boss or a portal. */
+export const ENEMY_SHOT = -1;
+
+/**
+ * Some ordinary enemies throw something now and then (4G-E): a shot announced where it will land
+ * (aimed at where the player stands when it is announced), which falls and hurts once. Data-driven
+ * (`config.enemyFire`) and with no randomness at all: who shoots depends on the id of the enemy and
+ * when on the tick count, so the run stays a function of its seed and its commands.
+ */
+export function advanceEnemyFire(run: Run, config: GameConfig): void {
+  const fire = config.enemyFire;
+  if (fire === undefined) return;
+  let shots = 0;
+  for (const h of run.hazards) if (h.link === ENEMY_SHOT) shots += 1;
+  for (const e of run.enemies) {
+    if (shots >= fire.maxAtOnce) break;
+    if (e.id === run.boss.id) continue;
+    const rule = fire.byType[e.type as GameType];
+    if (rule === undefined || e.id % fire.shooterOneIn !== 0) continue;
+    // On the field, not too close to the line (it would be unavoidable), and on its own clock.
+    if (e.y < 30 || e.y > config.arena.defenseLineY - 140) continue;
+    if ((run.tickCount + e.id * 37) % rule.everyTicks !== 0) continue;
+    if (run.hazards.length >= (config.bossFight?.maxHazards ?? 12)) break;
+    run.hazards.push({
+      kind: 'shot',
+      x: run.player.x,
+      link: ENEMY_SHOT,
+      y: e.y,
+      width: fire.width,
+      telegraph: fire.telegraphTicks,
+      active: 0,
+      damage: fire.damage,
+      speed: fire.speed,
+      struck: false,
+    });
+    run.events.push({
+      type: 'bossTelegraph',
+      x: run.player.x,
+      width: fire.width,
+      ticks: fire.telegraphTicks,
+    });
+    shots += 1;
+  }
+}
+
+/** What is on the floor: warn, strike, fall, push, block, leave. Bosses' things and enemies' shots. */
+function advanceHazards(run: Run, config: GameConfig): void {
   let kept = 0;
   const floorY = config.player.y;
   if (run.boss.portalCool > 0) run.boss.portalCool -= 1;

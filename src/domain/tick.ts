@@ -1,5 +1,11 @@
 import { type AimDirection, aimDirection } from './aim';
-import { advanceBossFight, barrierUp, fieldMargin, playerSpeedMult } from './bossFight';
+import {
+  advanceBossFight,
+  advanceEnemyFire,
+  barrierUp,
+  fieldMargin,
+  playerSpeedMult,
+} from './bossFight';
 import { applyCard } from './cards';
 import { ballSpeed, damagePlayer, effectivenessOn, hitDamage, leakDamage } from './combat';
 import type { GameConfig } from './config';
@@ -192,6 +198,7 @@ export function tick(run: Run, cmd: Command, config: GameConfig): TickOutput {
   // The wave clock stops while a boss lives (ADR-028).
   if (!isBossAlive(run)) advanceWave(run, config);
   advanceBoss(run, config);
+  advanceEnemyFire(run, config);
   advanceBossFight(run, config);
 
   // Enemies advance; those that reach the defence line hurt the player and are removed.

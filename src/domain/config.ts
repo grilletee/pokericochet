@@ -118,6 +118,23 @@ export interface BossPatternDef {
   readonly mechanic?: BossMechanicDef;
 }
 
+/**
+ * Which ordinary enemies throw shots (4G-E, 12th playtest: "que algunos enemigos normales también
+ * ataquen"): only types in `byType`, only one enemy in `shooterOneIn` (by id), each on its own clock.
+ */
+export interface EnemyFireDef {
+  readonly byType: Readonly<Partial<Record<GameType, { readonly everyTicks: number }>>>;
+  readonly shooterOneIn: number;
+  /** Ticks the landing spot is announced (>= 60) and pixels per tick the shot falls. */
+  readonly telegraphTicks: number;
+  readonly speed: number;
+  readonly width: number;
+  /** Health points of a hit, before the guard of the team. */
+  readonly damage: number;
+  /** The most enemy shots on the field at once. */
+  readonly maxAtOnce: number;
+}
+
 /** The boss fight rules that do not depend on the boss (ADR-053). */
 export interface BossFightDef {
   /** The fury starts when the boss is at or under this share of its health. */
@@ -413,6 +430,8 @@ export interface GameConfig {
   readonly pool?: PoolDef;
   /** Boss fights with patterns, shield, stun and phases (ADR-046). Without it a boss is a sponge. */
   readonly bossFight?: BossFightDef;
+  /** Ordinary enemies that now and then throw something (4G-E); absent = nobody does. */
+  readonly enemyFire?: EnemyFireDef;
   readonly progression: {
     /** xp needed to go from level n to n + 1, indexed by n - 1; the last value repeats. */
     readonly levelCosts: readonly number[];

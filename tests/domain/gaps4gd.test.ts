@@ -244,3 +244,29 @@ describe('gaps found by the mutants of the 4G-D', () => {
     }
   });
 });
+
+describe('gaps found by the mutants of the 4G-E (final boss)', () => {
+  it('the final boss does not summon on a clock; the snapshot says when it is the final one', () => {
+    const solo: GameConfig = {
+      ...gameConfig,
+      player: { ...gameConfig.player, maxHp: 1e9 },
+      interludes: [],
+      waves: gameConfig.waves.map((w) => ({ ...w, durationTicks: 20 })),
+    };
+    const run = createRun(solo, 3, 'charmander');
+    for (let t = 0; t < 7 * 20 + 5 && !run.boss.spawned; t++) tick(run, { moveX: 0 }, solo);
+    expect(run.boss.spawned).toBe(true);
+    const snap = createSnapshot();
+    writeSnapshot(run, snap);
+    expect(snap.bossFinal).toBe(true);
+    let summons = 0;
+    for (let t = 0; t < 2000; t++) {
+      for (const e of tick(run, { moveX: 0 }, solo).events)
+        if (e.type === 'bossSummon') summons += 1;
+    }
+    expect(summons).toBe(0);
+    const fresh = createRun(solo, 3, 'charmander');
+    writeSnapshot(fresh, snap);
+    expect(snap.bossFinal).toBe(false);
+  });
+});

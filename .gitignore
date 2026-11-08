@@ -24,3 +24,4 @@ playtest-out/
 
 # Cries downloaded by fetch-data (PokeAPI/cries); never committed, fetched per build
 src/assets/cries/
+dist-profile/

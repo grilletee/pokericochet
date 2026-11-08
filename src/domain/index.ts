@@ -5,9 +5,11 @@ export type { AimDirection } from './aim';
 export { aimDirection } from './aim';
 export {
   advanceBossFight,
+  advanceEnemyFire,
   barrierUp,
   bossDamage,
   coreOf,
+  ENEMY_SHOT,
   fieldMargin,
   liveBoss,
   MIN_TELEGRAPH_TICKS,
@@ -42,6 +44,7 @@ export type {
   BossMechanicDef,
   BossPatternDef,
   BossPhaseDef,
+  EnemyFireDef,
   GameConfig,
   InterludeDef,
   MoveShapeDef,

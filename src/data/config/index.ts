@@ -597,6 +597,25 @@ export const baseConfig: Omit<
   },
   // Boss fights: ground attacks, shield with a weak point, stun and three phases (4G-B, ADR-046).
   bossFight,
+  // 4G-E: a few ordinary enemies throw announced shots (about one in five of these types, each
+  // every 6-9 s); moderate damage, at most three on the field. PROVISIONAL: bench `fun`/`balance`.
+  enemyFire: {
+    byType: {
+      fire: { everyTicks: 420 },
+      electric: { everyTicks: 380 },
+      water: { everyTicks: 460 },
+      psychic: { everyTicks: 440 },
+      ghost: { everyTicks: 480 },
+      dragon: { everyTicks: 400 },
+      poison: { everyTicks: 500 },
+    },
+    shooterOneIn: 3,
+    telegraphTicks: 70,
+    speed: 5,
+    width: 28,
+    damage: 1.5,
+    maxAtOnce: 4,
+  },
   // The pool of each run (ADR-048): 3 lines per type (about 40 of the 214), the four starters in.
   pool: {
     linesPerType: 3,
