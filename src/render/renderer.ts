@@ -28,6 +28,7 @@ import {
   outlinedTexture,
   ringTexture,
 } from './pixelArt';
+import { UltimateFx } from './ultimateFx';
 
 /** Placeholder colours per type code (fire, water, grass, electric). No franchise art here. */
 // In the order of the type codes of the snapshot (`typeCode`, the place in GAME_TYPES): normal,
@@ -75,9 +76,6 @@ const PICKUP_GOLD = 0xffd54f;
 const FX_DURATION_MS = 280;
 
 const ENEMY_ART_SCALE = 1.7;
-/** Moves draw their shape for this long (ADR-039); at most this many at once. */
-const SHAPE_POOL = 12;
-const SHAPE_DURATION_MS = 380;
 /** The aura of a ball by stage - 1 (ADR-037): none, thin, thick; its size relative to the ball. */
 const AURA_ALPHA: readonly number[] = [0, 0.5, 0.95];
 const AURA_SIZE: readonly number[] = [0, 2.0, 2.5];
@@ -158,9 +156,9 @@ export class Renderer {
   /** Opaque box of each art texture, by art code (ADR-037). */
   private readonly extents: number[];
   private readonly auras: Sprite[] = [];
-  private readonly shapes: Sprite[] = [];
-  private readonly shapeLife = new Float32Array(SHAPE_POOL);
-  private shapeNext = 0;
+  /** The moves and Ultimates (4G-E): pixel shapes, element showers, flash and shake. */
+  private readonly moves: UltimateFx;
+  private launcherX = 0;
   private enemiesShown = 0;
   private ballsShown = 0;
   private readonly player: Sprite;
@@ -185,18 +183,14 @@ export class Renderer {
     private readonly config: GameConfig,
     private readonly disc: Texture,
     private readonly ring: Texture,
-    private readonly bar: Texture,
+    bar: Texture,
     maxSlots: number,
     maxEnemies: number,
     private readonly art: readonly (Texture | undefined)[],
     private readonly forms: readonly (readonly number[])[],
   ) {
     this.extents = art.map((texture) => (texture === undefined ? 1 : measureExtent(texture)));
-    for (let i = 0; i < SHAPE_POOL; i++) {
-      const sprite = new Sprite(bar);
-      sprite.visible = false;
-      this.shapes.push(sprite);
-    }
+    this.moves = new UltimateFx(bar, config.arena.width, config.arena.height);
     this.scratchBallX = new Float32Array(maxSlots);
     this.scratchBallY = new Float32Array(maxSlots);
     this.scratchEnemyX = new Float32Array(maxEnemies);
@@ -260,8 +254,6 @@ export class Renderer {
       this.aimDots.push(dot);
       this.aimLayer.addChild(dot);
     }
-    const shapeLayer = new Container();
-    for (const sprite of this.shapes) shapeLayer.addChild(sprite);
     // The biome: a tint over the whole field and a few drifting particles (block 3 of 4H-B2).
     this.biomeTint = new Sprite(bar);
     this.biomeTint.width = width;
@@ -341,8 +333,8 @@ export class Renderer {
       this.enemyLayer,
       this.statusLayer,
       this.pickupLayer,
-      shapeLayer,
       this.ballLayer,
+      this.moves.layer,
       this.fxLayer,
       this.barrierSprite,
       ...this.hazardSparks,
@@ -416,7 +408,10 @@ export class Renderer {
     this.reachRing.scale.set(this.config.pickup.radius / 30);
     this.drawPickups(curr);
     this.drawAim(curr);
+    this.launcherX = this.player.x;
     this.drawEffects(events, elapsedMs);
+    // The screen shakes for a moment when an Ultimate lands.
+    this.world.pivot.set(this.moves.shakeX, this.moves.shakeY);
 
     this.app.render();
   }
@@ -1067,62 +1062,21 @@ export class Renderer {
     this.fxSize[index] = size;
   }
 
-  /** One sprite of a move's shape, faded out by `drawEffects`. */
-  private startShape(
-    texture: Texture,
-    x: number,
-    y: number,
-    width: number,
-    height: number,
-    centred: boolean,
-    color: number,
-  ): void {
-    const index = this.shapeNext;
-    this.shapeNext = (this.shapeNext + 1) % SHAPE_POOL;
-    const sprite = this.shapes[index];
-    if (sprite === undefined) return;
-    sprite.texture = texture;
-    sprite.anchor.set(centred ? 0.5 : 0);
-    sprite.position.set(x, y);
-    // `disc` is 64 px wide and `bar` 4 px: scale each to the size asked.
-    sprite.scale.set(width / texture.width, height / texture.height);
-    sprite.tint = color;
-    sprite.visible = true;
-    this.shapeLife[index] = 1;
-  }
-
-  /** The shape of a move (ADR-039): a circle, a column up to the top, a row or a cross. */
+  /** The shape of a move (ADR-039) as animated pixel art, with the launch of an Ultimate (4G-E). */
   private startMove(event: Extract<GameEvent, { type: 'move' }>): void {
     const color = TYPE_COLORS[typeCode(event.element)] ?? 0xffffff;
-    const { width } = this.config.arena;
-    const size = event.size;
-    switch (event.shape) {
-      case 'burst':
-      case 'nova':
-        this.startShape(this.disc, event.x, event.y, size * 2, size * 2, true, color);
-        break;
-      case 'beam':
-        this.startShape(this.bar, event.x - size / 2, 0, size, event.y, false, color);
-        break;
-      case 'wave':
-        this.startShape(this.bar, 0, event.y - size / 2, width, size, false, color);
-        break;
-      case 'cross':
-        this.startShape(
-          this.bar,
-          event.x - size / 2,
-          0,
-          size,
-          this.config.arena.height,
-          false,
-          color,
-        );
-        this.startShape(this.bar, 0, event.y - size / 2, width, size, false, color);
-        break;
-      case 'chain':
-        this.startShape(this.disc, event.x, event.y, 40, 40, true, color);
-        break;
-    }
+    this.moves.start(
+      event.shape,
+      event.element,
+      color,
+      event.x,
+      event.y,
+      event.size,
+      event.tier,
+      event.manual,
+      this.launcherX,
+      this.config.player.y,
+    );
     // A bigger ring marks the move of a late stage, so it reads at a glance.
     if (event.tier >= 3) this.startEffect(event.x, event.y, color, 3.2);
   }
@@ -1142,20 +1096,7 @@ export class Renderer {
         this.startEffect(event.x, event.y, 0xffffff, 1.6);
       }
     }
-    const shapeDecay = elapsedMs / SHAPE_DURATION_MS;
-    for (let i = 0; i < SHAPE_POOL; i++) {
-      const life = this.shapeLife[i] ?? 0;
-      const sprite = this.shapes[i];
-      if (life <= 0 || sprite === undefined) continue;
-      const next = life - shapeDecay;
-      if (next <= 0) {
-        this.shapeLife[i] = 0;
-        sprite.visible = false;
-      } else {
-        this.shapeLife[i] = next;
-        sprite.alpha = next * 0.5;
-      }
-    }
+    this.moves.update(elapsedMs);
     const decay = elapsedMs / FX_DURATION_MS;
     for (let i = 0; i < FX_POOL; i++) {
       const life = this.fxLife[i] ?? 0;

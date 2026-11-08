@@ -78,6 +78,16 @@ try {
   await shot(rep, 'replace');
   await rep.close();
 
+  // The Ultimate of each initial, a moment after it is thrown.
+  for (const starter of ['charmander', 'squirtle', 'bulbasaur', 'pikachu']) {
+    const u = await open(`starter=${starter}&ballLevel=3&charge=30&wave=2&seed=9`);
+    await u.waitForTimeout(1500);
+    await u.keyboard.press('1');
+    await u.waitForTimeout(170);
+    await shot(u, `ultimate-${starter}`);
+    await u.close();
+  }
+
   // A boss fight per iconic legendary (seeds found with tools/browser-bench/finalSeeds.ts).
   const bosses = { kyogre: 99, groudon: 89, mewtwo: 100, dialga: 67, palkia: 260 };
   for (const [name, seed] of Object.entries(bosses)) {
