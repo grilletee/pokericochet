@@ -25,6 +25,7 @@ import {
   FX_FRAMES,
   fxFor,
   launcherTexture,
+  outlinedTexture,
   ringTexture,
 } from './pixelArt';
 
@@ -55,6 +56,9 @@ const LAVA = 0xff7a2e;
 const PORTAL_COLOR = 0xb08cff;
 /** Sparks that fly off every attack while it strikes: four per hazard. */
 const SPARKS_PER_HAZARD = 4;
+/** The inner outline of what is yours (cyan) and of what is against you (red). */
+const ALLY_EDGE = '#8ef0ff';
+const FOE_EDGE = '#ff5a5a';
 /** Pixels per millisecond the three layers of the backdrop scroll at (far, middle, near). */
 const BACKDROP_SPEEDS: readonly number[] = [0.006, 0.016, 0.034];
 const AIM_DOTS = 16;
@@ -164,6 +168,8 @@ export class Renderer {
   private readonly backdrop: Partial<Record<'far' | 'mid' | 'near', TilingSprite>> = {};
   private readonly backdropFade: Sprite;
   /** The biome the backdrop was built for (main:second), and how much of the fade-through is left. */
+  private readonly allyArt: (Texture | undefined)[] = [];
+  private readonly foeArt: (Texture | undefined)[] = [];
   private backdropKey = -1;
   private backdropSheets: (TilingSprite | undefined)[] = [];
   private fade = 0;
@@ -212,6 +218,14 @@ export class Renderer {
     this.backdropFade.tint = 0x14172b;
     this.backdropFade.alpha = 0;
     this.biomeLayer.addChild(this.backdropFade);
+    // A dark, desaturating film over the whole backdrop: the playing field is quieter than what
+    // moves on it (4G-E).
+    const dim = new Sprite(bar);
+    dim.width = width;
+    dim.height = height;
+    dim.tint = 0x070914;
+    dim.alpha = 0.5;
+    this.biomeLayer.addChild(dim);
     // The floor strip and the line of defence, in pixels: a dark band with a dashed red line.
     const floor = new Graphics()
       .rect(0, defenseLineY, width, height - defenseLineY)
@@ -817,6 +831,21 @@ export class Renderer {
     return this.forms[code]?.[stage - 1] ?? code;
   }
 
+  /** The outlined picture of art `code` (built once): allies cyan, enemies red (4G-E, legibility). */
+  private outlined(
+    cache: (Texture | undefined)[],
+    code: number,
+    art: Texture,
+    edge: string,
+  ): Texture {
+    let made = cache[code];
+    if (made === undefined) {
+      made = outlinedTexture(art, edge);
+      cache[code] = made;
+    }
+    return made;
+  }
+
   private spriteAt(pool: Sprite[], layer: Container, index: number): Sprite {
     let sprite = pool[index];
     if (sprite === undefined) {
@@ -846,7 +875,7 @@ export class Renderer {
         sprite.texture = this.disc;
         sprite.scale.set(radius / 32);
       } else {
-        sprite.texture = art;
+        sprite.texture = this.outlined(this.allyArt, code, art, ALLY_EDGE);
         sprite.scale.set(ballVisualScale(this.extents[code] ?? art.width, radius));
       }
       sprite.tint = 0xffffff;
@@ -917,7 +946,12 @@ export class Renderer {
         sprite.tint = worn === 0xffffff ? (TYPE_COLORS[curr.enemyType[i] ?? 0] ?? 0xffffff) : worn;
         sprite.alpha = 0.9;
       } else {
-        sprite.texture = art;
+        sprite.texture = this.outlined(
+          this.foeArt,
+          curr.enemySpecies[i] ?? NO_SPECIES,
+          art,
+          FOE_EDGE,
+        );
         sprite.scale.set((radius * ENEMY_ART_SCALE) / (art.width / 2));
         sprite.tint = raging ? 0xff8a8a : worn;
         sprite.alpha = 1;

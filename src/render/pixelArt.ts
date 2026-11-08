@@ -282,14 +282,19 @@ function layer(
   const look = LOOKS[group];
   const [dark, light] = look[which];
   const random = rng(seed * 31 + (which === 'far' ? 1 : which === 'mid' ? 2 : 3));
-  g.fillStyle = dark;
-  g.fillRect(0, 0, TILE_W, TILE_H);
-  // The field: a checker of the lighter tone in patches, so the plain colour has texture.
-  g.fillStyle = light;
+  // Only the far layer is a solid field. The middle and near ones are see-through films of single
+  // dark or light pixels that give the parallax without covering it (4G-E: what can be touched must
+  // stand out of the backdrop, so nothing the size of a sprite lives near the playing field).
+  if (which === 'far') {
+    g.fillStyle = dark;
+    g.fillRect(0, 0, TILE_W, TILE_H);
+    g.fillStyle = light;
+  } else {
+    g.fillStyle = which === 'mid' ? 'rgba(4,6,16,0.35)' : 'rgba(255,255,255,0.10)';
+  }
   for (let y = 0; y < TILE_H; y += 2) {
     for (let x = (y / 2) % 2; x < TILE_W; x += 2) {
-      if (random() < (which === 'far' ? 0.5 : which === 'mid' ? 0.22 : 0.12))
-        g.fillRect(x, y, 1, 1);
+      if (random() < (which === 'far' ? 0.5 : which === 'mid' ? 0.1 : 0.05)) g.fillRect(x, y, 1, 1);
     }
   }
   const colors = { ...look.decor, d: which === 'near' ? accent : (look.decor.d ?? accent) };
@@ -297,7 +302,14 @@ function layer(
     // Drawn again one tile up and down so a sprite on the edge continues seamlessly.
     for (const oy of [-TILE_H, 0, TILE_H]) stamp(g, rows, x, y + oy, colors);
   };
-  for (const decor of DECOR[group][which]) {
+  // All the big decoration is painted on the far layer (the trees and mountains of the middle
+  // layer too); the near ones keep only single-pixel dust (embers, sparks).
+  const sets = DECOR[group];
+  const list =
+    which === 'far'
+      ? [...sets.far, ...sets.mid]
+      : sets[which].filter((d) => d.rows.length <= 2 && (d.rows[0]?.length ?? 9) <= 1);
+  for (const decor of list) {
     for (let i = 0; i < decor.count; i++) {
       const w = decor.rows[0]?.length ?? 1;
       wrap(decor.rows, Math.floor(random() * (TILE_W - w)), Math.floor(random() * TILE_H));
@@ -569,4 +581,73 @@ export function ringTexture(): Texture {
     { e: '#ffffff' },
   );
   return toTexture(upscale(c, 4));
+}
+
+// ---------------------------------------------------------------------------------------------
+// Pokémon that stand out (4G-E): an outline whose colour says whose it is, and a soft shadow
+// ---------------------------------------------------------------------------------------------
+
+/** Texture pixels of margin around a picture for its outline and shadow (symmetric: the centre stays). */
+export const OUTLINE_PAD = 6;
+const outlineCache = new WeakMap<Texture, Map<string, Texture>>();
+
+/**
+ * The picture of a Pokémon with a two-tone outline (a dark one outside, `edge` inside) and a dark
+ * shadow under its feet, built once per picture and colour. Allies get a cyan outline and enemies a
+ * red one, so what can be touched always stands out of the backdrop and nobody is mistaken for a
+ * flower or a spark of it. Falls back to the plain picture if its pixels cannot be read.
+ */
+export function outlinedTexture(source: Texture, edge: string): Texture {
+  let byColor = outlineCache.get(source);
+  if (byColor === undefined) {
+    byColor = new Map();
+    outlineCache.set(source, byColor);
+  }
+  const hit = byColor.get(edge);
+  if (hit !== undefined) return hit;
+  let made = source;
+  try {
+    const w = source.width;
+    const h = source.height;
+    const resource = source.source.resource as CanvasImageSource;
+    const { c, g } = canvas(w + OUTLINE_PAD * 2, h + OUTLINE_PAD * 2);
+    // A silhouette of the picture in one flat colour.
+    const mask = (color: string): HTMLCanvasElement => {
+      const m = canvas(w, h);
+      m.g.drawImage(resource, 0, 0);
+      m.g.globalCompositeOperation = 'source-in';
+      m.g.fillStyle = color;
+      m.g.fillRect(0, 0, w, h);
+      return m.c;
+    };
+    const dark = mask('#0a0c18');
+    const light = mask(edge);
+    // The shadow: a flat dark ellipse at the feet.
+    g.fillStyle = 'rgba(5,8,16,0.45)';
+    g.beginPath();
+    g.ellipse(
+      c.width / 2,
+      c.height - OUTLINE_PAD - 1,
+      w * 0.36,
+      OUTLINE_PAD * 0.75,
+      0,
+      0,
+      Math.PI * 2,
+    );
+    g.fill();
+    const ring = (image: HTMLCanvasElement, r: number): void => {
+      for (let k = 0; k < 16; k++) {
+        const a = (k / 16) * Math.PI * 2;
+        g.drawImage(image, OUTLINE_PAD + Math.cos(a) * r, OUTLINE_PAD + Math.sin(a) * r);
+      }
+    };
+    ring(dark, OUTLINE_PAD * 0.9);
+    ring(light, OUTLINE_PAD * 0.5);
+    g.drawImage(resource, OUTLINE_PAD, OUTLINE_PAD);
+    made = toTexture(c);
+  } catch {
+    made = source;
+  }
+  byColor.set(edge, made);
+  return made;
 }
