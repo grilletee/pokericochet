@@ -263,6 +263,19 @@ try {
     (await creditsPage.evaluate(() => window.localStorage.getItem('autoAim.v1'))) !== null &&
       ((await aimButton.textContent()) ?? '').includes('sí'),
   );
+  // 4G-F: volumes for everything, the effects and the cries, remembered.
+  check(
+    'the settings screen has three volume sliders, the cries starting low',
+    (await creditsPage.locator('input[data-volume]').count()) === 3 &&
+      Number(await creditsPage.locator('input[data-volume="cries"]').inputValue()) < 50,
+  );
+  await creditsPage.locator('input[data-volume="effects"]').fill('35');
+  check(
+    'a volume is remembered',
+    ((await creditsPage.evaluate(() => window.localStorage.getItem('volumes.v1'))) ?? '').includes(
+      '0.35',
+    ),
+  );
   await aimButton.click(); // back to off, so the rest of the checks run with the default
   await creditsPage.keyboard.press('Escape');
   await creditsPage.waitForFunction(() => window.__debug().screen === 'menu');
@@ -471,7 +484,13 @@ try {
   );
   await moves.bringToFront();
   await moves.waitForFunction(() => typeof window.__debug === 'function');
-  await moves.waitForFunction(() => window.__debug().moveCasts >= 1, undefined, { timeout: 30000 });
+  // The bigger balls (4G-F) hit more, so a level-up can open before the first cast: take a card.
+  for (let i = 0; i < 300 && (await dbg(moves)).moveCasts < 1; i++) {
+    if ((await dbg(moves)).phase === 'levelup') {
+      await moves.locator('button[data-card]').first().click();
+    }
+    await moves.waitForTimeout(100);
+  }
   check('a Pokémon casts its move once its charge is full', true);
   const labelText = (await moves.locator('[data-move-labels]').textContent()) ?? '';
   check(

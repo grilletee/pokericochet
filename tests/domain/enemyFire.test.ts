@@ -155,6 +155,15 @@ describe('gaps found by the mutants of the 4G-E', () => {
     expect(run.hazards.length).toBe(0);
   });
 
+  it('an enemy does not fire again while its own shot is still on the field', () => {
+    const run = createRun(cfg, 1, 'charmander');
+    run.enemies = [shooter(S)];
+    run.tickCount = every - ((S * 37) % every);
+    advanceEnemyFire(run, cfg);
+    advanceEnemyFire(run, cfg);
+    expect(run.hazards.filter((h) => isEnemyShot(h)).length).toBe(1);
+  });
+
   it('never more shots than maxAtOnce', () => {
     const quick = {
       ...cfg,
