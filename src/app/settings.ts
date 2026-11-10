@@ -39,3 +39,44 @@ export function saveAutoAim(store: KeyValueStore | null, auto: boolean): void {
     // ignore
   }
 }
+
+/** Volumes (0..1): everything, the sound effects and the cries of the Pokémon (4G-F). */
+export interface Volumes {
+  readonly master: number;
+  readonly effects: number;
+  readonly cries: number;
+}
+
+/** The cries start low (13th playtest: "demasiado alto"). */
+export const DEFAULT_VOLUMES: Volumes = { master: 1, effects: 1, cries: 0.4 };
+
+/** localStorage key of the volumes. */
+export const VOLUMES_KEY = 'volumes.v1';
+
+const unit = (value: unknown, fallback: number): number =>
+  typeof value === 'number' && Number.isFinite(value) ? Math.max(0, Math.min(1, value)) : fallback;
+
+export function loadVolumes(store: KeyValueStore | null): Volumes {
+  try {
+    const raw = store?.getItem(VOLUMES_KEY);
+    if (raw === null || raw === undefined) return DEFAULT_VOLUMES;
+    const parsed: unknown = JSON.parse(raw);
+    if (typeof parsed !== 'object' || parsed === null) return DEFAULT_VOLUMES;
+    const v = parsed as Record<string, unknown>;
+    return {
+      master: unit(v.master, DEFAULT_VOLUMES.master),
+      effects: unit(v.effects, DEFAULT_VOLUMES.effects),
+      cries: unit(v.cries, DEFAULT_VOLUMES.cries),
+    };
+  } catch {
+    return DEFAULT_VOLUMES;
+  }
+}
+
+export function saveVolumes(store: KeyValueStore | null, volumes: Volumes): void {
+  try {
+    store?.setItem(VOLUMES_KEY, JSON.stringify(volumes));
+  } catch {
+    // ignore
+  }
+}

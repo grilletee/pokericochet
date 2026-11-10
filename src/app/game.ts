@@ -94,7 +94,14 @@ import { FixedStepper } from './fixedStepper';
 import { Input, RELEASE_PICK } from './input';
 import { commandFromInput } from './inputLogic';
 import { FrameMetrics, type Stats, summarize } from './metrics';
-import { loadAutoAim, loadMuted, saveAutoAim, saveMuted } from './settings';
+import {
+  loadAutoAim,
+  loadMuted,
+  loadVolumes,
+  saveAutoAim,
+  saveMuted,
+  saveVolumes,
+} from './settings';
 import { loadSpeciesTextures, spriteUrls } from './sprites';
 import {
   applyTune,
@@ -446,6 +453,9 @@ export async function startGame(host: HTMLElement): Promise<void> {
   // The assisted aim is an accessibility option of the settings screen, off by default (4H-B2).
   let autoAim = loadAutoAim(store);
   const settingsScreen = new SettingsScreen(host);
+  let volumes = loadVolumes(store);
+  sound.masterVolume = volumes.master;
+  sound.effectsVolume = volumes.effects;
   // ?tune: live tuning panel. The knobs rebuild the config from the shipped one on every change.
   if (params.has('tune') && !bench) {
     let tuneValues: TuneValues;
@@ -626,6 +636,13 @@ export async function startGame(host: HTMLElement): Promise<void> {
         saveAutoAim(store, auto);
       },
       showMenu,
+      volumes,
+      (next) => {
+        volumes = next;
+        sound.masterVolume = next.master;
+        sound.effectsVolume = next.effects;
+        saveVolumes(store, next);
+      },
     );
   }
   function showCredits(): void {
@@ -754,7 +771,17 @@ export async function startGame(host: HTMLElement): Promise<void> {
         const types = type === undefined ? [] : [type];
         // The cry (PokeAPI/cries) when the boss lands / lights up; louder for the final one.
         const cryAt = (event.final ? BOSS_FINAL_MS : BOSS_ENTRY_MS) * (event.final ? 0.6 : 0.55);
-        window.setTimeout(() => playCry(event.species, event.final ? 1 : 0.7, sound.muted), cryAt);
+        // The cry's own volume (Ajustes) and the master one scale a base that is lower for a
+        // normal boss than for the final (13th playtest: "demasiado alto").
+        window.setTimeout(
+          () =>
+            playCry(
+              event.species,
+              (event.final ? 0.6 : 0.4) * volumes.cries * volumes.master,
+              sound.muted,
+            ),
+          cryAt,
+        );
         // The final boss has its own entrance (dark screen, name); no cartel over it.
         if (!event.final) {
           cartel.push(

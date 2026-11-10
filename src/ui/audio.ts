@@ -175,6 +175,9 @@ const RECIPES: Record<SoundId, readonly Note[]> = {
  */
 export class SoundFx {
   muted: boolean;
+  /** The master and effects volumes, 0..1 (4G-F, Ajustes): every note is scaled by both. */
+  masterVolume = 1;
+  effectsVolume = 1;
   private context: AudioContext | null = null;
   private readonly throttle = new Throttle();
 
@@ -215,7 +218,7 @@ export class SoundFx {
       oscillator.type = note.wave;
       oscillator.frequency.setValueAtTime(note.from, t0);
       oscillator.frequency.linearRampToValueAtTime(note.to, t0 + note.seconds);
-      gain.gain.setValueAtTime(note.gain, t0);
+      gain.gain.setValueAtTime(note.gain * this.masterVolume * this.effectsVolume, t0);
       gain.gain.exponentialRampToValueAtTime(0.0001, t0 + note.seconds);
       oscillator.connect(gain).connect(context.destination);
       oscillator.start(t0);

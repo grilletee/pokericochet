@@ -163,8 +163,15 @@ export class SettingsScreen {
     host.append(this.root);
   }
 
-  show(autoAim: boolean, onAutoAim: (auto: boolean) => void, onBack: () => void): void {
+  show(
+    autoAim: boolean,
+    onAutoAim: (auto: boolean) => void,
+    onBack: () => void,
+    volumes: VolumeValues,
+    onVolumes: (next: VolumeValues) => void,
+  ): void {
     let auto = autoAim;
+    let current = volumes;
     this.root.replaceChildren(
       el('div', 'font-size:30px;font-weight:800;margin-bottom:6px;', 'Ajustes'),
     );
@@ -190,13 +197,49 @@ export class SettingsScreen {
     back.type = 'button';
     back.dataset.action = 'back';
     back.addEventListener('click', onBack);
-    this.root.append(aim, note, back);
+    // Volumes (4G-F): everything, effects and the cries of the Pokémon; remembered by the app.
+    const sliders: HTMLElement[] = [];
+    for (const [key, label] of [
+      ['master', 'Volumen general'],
+      ['effects', 'Efectos'],
+      ['cries', 'Gritos'],
+    ] as const) {
+      const row = el(
+        'label',
+        'display:flex;align-items:center;gap:10px;font-size:15px;width:320px;',
+      );
+      const name = el('span', 'flex:0 0 120px;text-align:left;', label);
+      const input = document.createElement('input');
+      input.type = 'range';
+      input.min = '0';
+      input.max = '100';
+      input.step = '5';
+      input.value = String(Math.round(current[key] * 100));
+      input.dataset.volume = key;
+      input.style.cssText = 'flex:1;min-height:32px;';
+      const value = el('span', 'flex:0 0 44px;text-align:right;', `${input.value} %`);
+      input.addEventListener('input', () => {
+        current = { ...current, [key]: Number(input.value) / 100 };
+        value.textContent = `${input.value} %`;
+        onVolumes(current);
+      });
+      row.append(name, input, value);
+      sliders.push(row);
+    }
+    this.root.append(aim, note, ...sliders, back);
     this.root.style.display = 'flex';
   }
 
   hide(): void {
     this.root.style.display = 'none';
   }
+}
+
+/** The three volumes of the settings screen, 0..1 (the app keeps them: `app/settings.ts`). */
+export interface VolumeValues {
+  readonly master: number;
+  readonly effects: number;
+  readonly cries: number;
 }
 
 /** Credits and affiliation notice. */
