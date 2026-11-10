@@ -15,6 +15,7 @@ import {
   STATUS_PUSHED,
   STATUS_SLOW,
   typeCode,
+  WARN_TICKS,
 } from '../domain';
 import { ballVisualScale, opaqueExtent } from './artBox';
 import { interpolateBalls, interpolateEnemies } from './interpolate';
@@ -57,6 +58,8 @@ const LAVA = 0xff7a2e;
 const PORTAL_COLOR = 0xb08cff;
 /** Sparks that fly off every attack while it strikes: four per hazard. */
 const SPARKS_PER_HAZARD = 4;
+/** The colour of every danger zone, whoever attacks (4G-F): the one language of danger. */
+const DANGER = 0xff4a3a;
 /** The inner outline of what is yours (cyan) and of what is against you (red). */
 const OUTLINES_PER_FRAME = 2;
 /** Above this many enemies the signs of the states are drawn in a reduced form. */
@@ -177,6 +180,12 @@ export class Renderer {
   }[] = [];
   private readonly outlinePending = new Set<string>();
   private statusLod = false;
+  /** Enemies that are charging a shot (their ids) and whether a boss attack is being announced. */
+  private readonly glowIds = new Int32Array(8);
+  private glowCount = 0;
+  private bossWarn = false;
+  /** The solid fill of the danger zones, which fills like a countdown (4G-F). */
+  private readonly hazardFill: TilingSprite[] = [];
   private readonly allyArt: (Texture | undefined)[] = [];
   private readonly foeArt: (Texture | undefined)[] = [];
   private readonly backdropDim: Sprite;
@@ -291,6 +300,16 @@ export class Renderer {
       mark.visible = false;
       this.hazardFloor.push(mark);
       this.hazardLayer.addChild(mark);
+      const fill = new TilingSprite({
+        texture: fxFor(DANGER).particle,
+        width: 1,
+        height: 1,
+      });
+      fill.tileScale.set(ART_PIXEL);
+      fill.tint = DANGER;
+      fill.visible = false;
+      this.hazardFill.push(fill);
+      this.hazardLayer.addChild(fill);
     }
     const tideArt = fxFor(0x3f8fd8);
     this.tideLeft = new TilingSprite({
@@ -541,17 +560,123 @@ export class Renderer {
    * hatched announcement, sparks on impact and a strong mark on the floor strip; the mechanics of the
    * legendaries (tide, barrier, slow time) and an aura while the boss announces and charges.
    */
+  /** One danger zone: hatched area, a countdown fill and (for shots) the line from the attacker. */
+  private drawDanger(
+    curr: Snapshot,
+    i: number,
+    kind: number,
+    x: number,
+    width: number,
+    left: number,
+    originY: number,
+  ): void {
+    const sprite = this.hazardSprites[i];
+    const mark = this.hazardFloor[i];
+    const fill = this.hazardFill[i];
+    if (sprite === undefined || mark === undefined || fill === undefined) return;
+    if (left > WARN_TICKS) {
+      sprite.visible = false;
+      mark.visible = false;
+      fill.visible = false;
+      return;
+    }
+    const { height, defenseLineY } = this.config.arena;
+    const floorHeight = height - defenseLineY;
+    const p = 1 - left / WARN_TICKS;
+    const flash = left < 14 && Math.floor(curr.tick / 3) % 2 === 0;
+    const hatch = fxFor(DANGER).warn;
+    sprite.visible = true;
+    fill.visible = true;
+    sprite.texture = hatch;
+    sprite.tint = 0xffffff;
+    sprite.tilePosition.set(0, 0);
+    sprite.alpha = 0.34;
+    // Translucent: the balls and the Pokémon stay visible through the fill.
+    fill.alpha = flash ? 0.75 : 0.22 + 0.22 * p;
+    mark.visible = false;
+    if (kind === KIND_SHOT) {
+      // The landing spot on the floor fills from the bottom; a thin line shows where it comes from.
+      const w = Math.max(width, 8 * ART_PIXEL);
+      // The path it will take from its attacker down to the floor (hatched), and the landing spot
+      // on the floor strip, which fills from the bottom.
+      sprite.x = x - w / 2;
+      sprite.y = originY;
+      sprite.width = w;
+      sprite.height = Math.max(0, height - originY);
+      sprite.alpha = 0.3;
+      fill.x = x - w / 2;
+      fill.width = w;
+      fill.height = floorHeight * p;
+      fill.y = defenseLineY + floorHeight - fill.height;
+      mark.visible = true;
+      mark.texture = hatch;
+      mark.tint = 0xffffff;
+      mark.x = x - w / 2;
+      mark.y = defenseLineY;
+      mark.width = w;
+      mark.height = floorHeight;
+      mark.alpha = 0.8;
+    } else if (kind === KIND_ZONE || kind === KIND_CRACK || kind === KIND_GUST) {
+      const top = kind === KIND_GUST ? defenseLineY - 60 : defenseLineY;
+      const h = kind === KIND_GUST ? 46 : floorHeight;
+      const left0 = kind === KIND_GUST ? 0 : x - width / 2;
+      sprite.x = left0;
+      sprite.y = top;
+      sprite.width = width;
+      sprite.height = h;
+      fill.x = left0;
+      fill.y = top;
+      fill.width = width * p;
+      fill.height = h;
+    } else {
+      // Columns, combs, sweeps and rain: a band that fills from the top, and the same band marked
+      // strongly on the floor strip so it reads even with a finger over the field.
+      sprite.x = x - width / 2;
+      sprite.y = 0;
+      sprite.width = width;
+      sprite.height = height;
+      fill.x = x - width / 2;
+      fill.y = 0;
+      fill.width = width;
+      fill.height = height * p;
+      mark.visible = true;
+      mark.texture = hatch;
+      mark.tint = 0xffffff;
+      mark.x = x - width / 2;
+      mark.y = defenseLineY;
+      mark.width = width;
+      mark.height = floorHeight;
+      mark.alpha = 0.55 + 0.4 * p;
+    }
+  }
+
   private drawBossFight(curr: Snapshot): void {
     const { height, defenseLineY } = this.config.arena;
     const floorHeight = height - defenseLineY;
     const bossColor = TYPE_COLORS[curr.bossType] ?? 0xff6b4a;
+    // Who is about to attack: a boss (its own attacks have a link >= 0) or the enemies whose shots
+    // are being announced (link = minus their id), so their bodies can gleam before the strike.
+    this.glowCount = 0;
+    this.bossWarn = false;
+    for (let i = 0; i < curr.hazardCount; i++) {
+      const link = curr.hazardLink[i] ?? 0;
+      const warn = curr.hazardWarn[i] ?? 0;
+      if (warn <= 0 || warn > WARN_TICKS) continue;
+      if (link < 0) {
+        if (this.glowCount < this.glowIds.length) this.glowIds[this.glowCount++] = -link;
+      } else if ((curr.hazardKind[i] ?? 0) !== KIND_PORTAL) {
+        this.bossWarn = true;
+      }
+    }
     for (let i = 0; i < HAZARD_POOL; i++) {
       const sprite = this.hazardSprites[i];
       const mark = this.hazardFloor[i];
-      if (sprite === undefined || mark === undefined) continue;
+      const fill = this.hazardFill[i];
+      if (sprite === undefined || mark === undefined || fill === undefined) continue;
       if (i >= curr.hazardCount) {
         sprite.visible = false;
         mark.visible = false;
+        fill.visible = false;
         continue;
       }
       const kind = curr.hazardKind[i] ?? 0;
@@ -564,6 +689,18 @@ export class Renderer {
       const color = kind === KIND_CRACK ? LAVA : kind === KIND_PORTAL ? PORTAL_COLOR : bossColor;
       const fx = fxFor(color);
       const pulse = 0.5 + 0.5 * Math.sin(curr.tick / Math.max(2, left / 8));
+      // The one language of danger (4G-F): while it is announced every attack is the same hatched
+      // red zone that fills like a countdown and strikes when it is full; before the last
+      // `WARN_TICKS` (staggered attacks) nothing is shown yet.
+      if (warning && kind !== KIND_PORTAL) {
+        this.drawDanger(curr, i, kind, x, width, left, curr.hazardY[i] ?? 0);
+        for (let k = 0; k < SPARKS_PER_HAZARD; k++) {
+          const spark = this.hazardSparks[i * SPARKS_PER_HAZARD + k];
+          if (spark !== undefined) spark.visible = false;
+        }
+        continue;
+      }
+      fill.visible = false;
       sprite.visible = true;
       mark.visible = false;
       sprite.tint = 0xffffff;
@@ -979,18 +1116,29 @@ export class Renderer {
           art,
           FOE_EDGE,
         );
-        sprite.scale.set((radius * ENEMY_ART_SCALE) / (art.width / 2));
-        // Exposed while it charges (4G-E): the whole body flashes hot orange and white, unmistakable.
+        const base = (radius * ENEMY_ART_SCALE) / (art.width / 2);
         const isBoss =
           radius === curr.bossRadius && Math.abs(ex - curr.bossX) < 2 && curr.bossMaxHp > 0;
         const exposed = isBoss && curr.bossCoreOpen > 0;
-        sprite.tint = exposed
-          ? Math.floor(curr.tick / 6) % 2 === 0
-            ? 0xff7a3a
-            : 0xfff2c0
-          : raging
-            ? 0xff8a8a
-            : worn;
+        // The attacker shows what it is about to do (4G-F): a boss gleams red before each attack, an
+        // enemy that is charging a shot glows yellow and white until the shot leaves its body.
+        const id = curr.enemyId[i] ?? 0;
+        let charging = false;
+        for (let k = 0; k < this.glowCount; k++) if (this.glowIds[k] === id) charging = true;
+        const beat = Math.floor(curr.tick / (exposed ? 3 : 5)) % 2 === 0;
+        sprite.scale.set(base * (exposed ? 1 + 0.08 * Math.sin(curr.tick / 2.5) : 1));
+        if (exposed) {
+          // VULNERABLE: gold and white flashes, the body pulsing and a fat gold halo behind it.
+          sprite.tint = beat ? 0xffd23a : 0xffffff;
+          this.statusRing(ex, ey, 0xffd23a, radius * 1.5 + 6 * Math.sin(curr.tick / 4), 0.9);
+        } else if (isBoss && this.bossWarn) {
+          sprite.tint = beat ? 0xff6a5a : 0xffffff;
+        } else if (charging) {
+          sprite.tint = beat ? 0xfff27a : 0xffffff;
+          this.statusRing(ex, ey, 0xfff27a, radius * 1.25, 0.8);
+        } else {
+          sprite.tint = raging ? 0xff8a8a : worn;
+        }
         sprite.alpha = 1;
       }
     }

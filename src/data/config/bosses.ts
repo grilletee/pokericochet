@@ -6,6 +6,7 @@ import type {
   BossPhaseDef,
   GameType,
 } from '../../domain';
+import { WARN_TICKS } from '../../domain';
 
 /**
  * The boss fights as data (4G-D, ADR-054, which replaces the core of ADR-053 and keeps its two
@@ -105,14 +106,18 @@ interface Shape {
 const EVERY_SCALE = 0.62;
 const OPEN_SCALE = 1.2;
 
+/** Every attack that is announced has the one warning time of the game (4G-F). */
+const announced = (a: BossAttackDef): BossAttackDef =>
+  a.kind === 'summon' ? a : { ...a, telegraphTicks: WARN_TICKS };
+
 function phase(
   attacks: readonly BossAttackDef[],
   strong: BossAttackDef,
   shape: Shape & { readonly damageMult: number },
 ): BossPhaseDef {
   return {
-    attacks,
-    strong,
+    attacks: attacks.map(announced),
+    strong: announced(strong),
     intervalTicks: shape.interval,
     perRound: shape.perRound,
     damageMult: shape.damageMult,
@@ -122,7 +127,7 @@ function phase(
 }
 
 /** The softer numbers of the intermediate bosses (the first of them met a team of level 4). */
-const SOFT: Partial<Shape> = { damageScale: 0.6, furyMult: 1.25, interval: 230 }; // 4G-E: 0.5 / 1.2 / 250, "I take them down too fast and they barely hurt"
+const SOFT: Partial<Shape> = { damageScale: 0.6, furyMult: 1.25, interval: 200 }; // 4G-F: interval 230 -> 200 (4G-E: 0.5 / 1.2 / 250)
 
 /**
  * A table: the normal phase and the fury, each with its attacks and its strong attack. The fury is
@@ -193,8 +198,25 @@ const FAMILIES: Record<'shots' | 'tides' | 'haze' | 'quakes' | 'swarms', Family>
   },
 };
 
-const intermediate = (family: Family): BossPatternDef =>
-  table(family.normal, family.fury, family.strong, SOFT);
+/**
+ * 4G-F (13th playtest: "atacan poco y tienen pocos ataques"): the intermediate bosses get one more
+ * verb in each phase and two attacks per round. The final bosses keep the plain family tables.
+ */
+const EXTRA: Record<keyof typeof FAMILIES, { normal: BossAttackDef[]; fury: BossAttackDef[] }> = {
+  shots: { normal: [comb(3, 80, 2)], fury: [rain(34, 3, 80, 2)] },
+  tides: { normal: [shot(34, 1, 80, 5, 2)], fury: [shot(34, 2, 80, 6, 3)] },
+  haze: { normal: [shot(34, 1, 80, 5, 2)], fury: [sweep(80, 80, 3, 2)] },
+  quakes: { normal: [rain(50, 3, 80, 2)], fury: [shot(36, 2, 80, 6, 3)] },
+  swarms: { normal: [column(60, 80, 2)], fury: [comb(4, 80, 2)] },
+};
+
+const intermediate = (family: Family, name: keyof typeof FAMILIES): BossPatternDef =>
+  table(
+    [...family.normal, ...EXTRA[name].normal],
+    [...family.fury, ...EXTRA[name].fury],
+    family.strong,
+    SOFT,
+  );
 
 const byType: Partial<Record<GameType, BossPatternDef>> = {};
 const FAMILY_OF_TYPE: Record<GameType, keyof typeof FAMILIES> = {
@@ -219,11 +241,11 @@ const FAMILY_OF_TYPE: Record<GameType, keyof typeof FAMILIES> = {
 };
 // One table per family, shared by the types of the family.
 const familyTables = {
-  shots: intermediate(FAMILIES.shots),
-  tides: intermediate(FAMILIES.tides),
-  haze: intermediate(FAMILIES.haze),
-  quakes: intermediate(FAMILIES.quakes),
-  swarms: intermediate(FAMILIES.swarms),
+  shots: intermediate(FAMILIES.shots, 'shots'),
+  tides: intermediate(FAMILIES.tides, 'tides'),
+  haze: intermediate(FAMILIES.haze, 'haze'),
+  quakes: intermediate(FAMILIES.quakes, 'quakes'),
+  swarms: intermediate(FAMILIES.swarms, 'swarms'),
 };
 for (const [type, family] of Object.entries(FAMILY_OF_TYPE)) {
   byType[type as GameType] = familyTables[family];

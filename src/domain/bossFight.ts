@@ -110,14 +110,51 @@ export function startFight(run: Run, config: GameConfig, boss: Enemy): void {
   run.boss.mechIn = 240;
 }
 
-function addHazard(run: Run, config: GameConfig, hazard: Hazard): void {
+/**
+ * The one warning time of every attack (4G-F, "un único lenguaje de peligro"): a danger zone is shown
+ * for this many ticks, filling like a countdown, and strikes when it is full. Boss attacks, the
+ * mechanics of the legendaries and the shots of ordinary enemies all use it.
+ */
+export const WARN_TICKS = 80;
+/** Warnings shown at once at most: a new one that would be a fourth waits its turn (is staggered). */
+export const MAX_WARNINGS = 3;
+
+/** True for a shot fired by an ordinary enemy: its `link` is minus the id of that enemy (4G-F). */
+export function isEnemyShot(hazard: Hazard): boolean {
+  return hazard.link < 0;
+}
+
+/**
+ * Puts a hazard on the field. Its warning is moved later while three other warnings would be on
+ * screen at the same time, so the player never has to read more than three danger zones at once.
+ * `together` hazards (the slots of a comb) must strike on the same tick and are never moved.
+ */
+function addHazard(run: Run, config: GameConfig, hazard: Hazard, together = false): void {
   if (run.hazards.length >= (config.bossFight?.maxHazards ?? 12)) return;
+  if (!together && hazard.kind !== 'portal') {
+    let t = hazard.telegraph;
+    for (let guard = 0; guard < 60; guard++) {
+      // Distinct strike moments whose zones would be visible together with this one.
+      const times: number[] = [];
+      for (const h of run.hazards) {
+        if (h.telegraph <= 0 || h.kind === 'portal' || Math.abs(h.telegraph - t) >= WARN_TICKS) {
+          continue;
+        }
+        if (!times.includes(h.telegraph)) times.push(h.telegraph);
+      }
+      if (times.length < MAX_WARNINGS) break;
+      t += 20;
+    }
+    hazard.telegraph = t;
+  }
   run.hazards.push(hazard);
   run.events.push({
     type: 'bossTelegraph',
     x: hazard.x,
     width: hazard.width,
     ticks: hazard.telegraph,
+    kind: hazard.kind,
+    fromEnemy: isEnemyShot(hazard),
   });
 }
 
@@ -153,13 +190,12 @@ function spawnAttack(
       const safe = nextInt(run.rng.boss, count);
       for (let i = 0; i < count; i++) {
         if (i === safe) continue;
-        addHazard(run, config, {
-          ...base,
-          kind: 'comb',
-          x: (i + 0.5) * slot,
-          width: slot,
-          speed: 0,
-        });
+        addHazard(
+          run,
+          config,
+          { ...base, kind: 'comb', x: (i + 0.5) * slot, width: slot, speed: 0 },
+          true,
+        );
       }
       break;
     }
@@ -277,7 +313,7 @@ function advanceMechanic(run: Run, config: GameConfig, pattern: BossPatternDef):
             y: 0,
             link: 0,
             width: 44,
-            telegraph: 80,
+            telegraph: WARN_TICKS,
             active: mechanic.lastTicks,
             damage: 1.5,
             speed: 0,
@@ -328,7 +364,7 @@ function advanceMechanic(run: Run, config: GameConfig, pattern: BossPatternDef):
           y: 0,
           link,
           width: 40,
-          telegraph: 60,
+          telegraph: WARN_TICKS,
           active: mechanic.lastTicks,
           damage: 0,
           speed: 0,
@@ -357,7 +393,7 @@ function advanceMechanic(run: Run, config: GameConfig, pattern: BossPatternDef):
                   y: 0,
                   link: 0,
                   width: 34,
-                  telegraph: 70 + i * 12,
+                  telegraph: WARN_TICKS,
                   active: 14,
                   damage: 1.5,
                   speed: 0,
@@ -369,7 +405,7 @@ function advanceMechanic(run: Run, config: GameConfig, pattern: BossPatternDef):
                   y: 0,
                   link: 0,
                   width: 30,
-                  telegraph: 70 + i * 10,
+                  telegraph: WARN_TICKS,
                   active: 0,
                   damage: 1.5,
                   speed: 5,
@@ -405,7 +441,7 @@ export function advanceBossFight(run: Run, config: GameConfig): void {
     // What a boss left goes with it; the shots of ordinary enemies keep falling.
     let kept = 0;
     for (const h of run.hazards) {
-      if (h.link !== ENEMY_SHOT) continue;
+      if (!isEnemyShot(h)) continue;
       run.hazards[kept] = h;
       kept += 1;
     }
@@ -461,20 +497,19 @@ export function advanceBossFight(run: Run, config: GameConfig): void {
   advanceHazards(run, config);
 }
 
-/** Link value that marks a `shot` fired by an ordinary enemy (4G-E), not by a boss or a portal. */
-export const ENEMY_SHOT = -1;
-
 /**
- * Some ordinary enemies throw something now and then (4G-E): a shot announced where it will land
- * (aimed at where the player stands when it is announced), which falls and hurts once. Data-driven
- * (`config.enemyFire`) and with no randomness at all: who shoots depends on the id of the enemy and
- * when on the tick count, so the run stays a function of its seed and its commands.
+ * Some ordinary enemies shoot now and then (4G-E, reworked in 4G-F): the enemy CHARGES (it glows for
+ * `WARN_TICKS` while a danger line shows under it) and then the shot leaves its own body and falls
+ * straight down from where it stands, so the player can see who attacks and put it first. The
+ * hazard's `link` is minus the id of the enemy (the render makes that enemy glow). Data-driven
+ * (`config.enemyFire`) and with no randomness: who shoots depends on its id and when on the tick
+ * count, so the run stays a function of its seed and its commands.
  */
 export function advanceEnemyFire(run: Run, config: GameConfig): void {
   const fire = config.enemyFire;
   if (fire === undefined) return;
   let shots = 0;
-  for (const h of run.hazards) if (h.link === ENEMY_SHOT) shots += 1;
+  for (const h of run.hazards) if (isEnemyShot(h)) shots += 1;
   for (const e of run.enemies) {
     if (shots >= fire.maxAtOnce) break;
     if (e.id === run.boss.id) continue;
@@ -483,24 +518,20 @@ export function advanceEnemyFire(run: Run, config: GameConfig): void {
     // On the field, not too close to the line (it would be unavoidable), and on its own clock.
     if (e.y < 30 || e.y > config.arena.defenseLineY - 140) continue;
     if ((run.tickCount + e.id * 37) % rule.everyTicks !== 0) continue;
+    // One shot of an enemy at a time.
+    if (run.hazards.some((h) => h.link === -e.id)) continue;
     if (run.hazards.length >= (config.bossFight?.maxHazards ?? 12)) break;
-    run.hazards.push({
+    addHazard(run, config, {
       kind: 'shot',
-      x: run.player.x,
-      link: ENEMY_SHOT,
+      x: e.x,
+      link: -e.id,
       y: e.y,
       width: fire.width,
-      telegraph: fire.telegraphTicks,
+      telegraph: WARN_TICKS,
       active: 0,
       damage: fire.damage,
       speed: fire.speed,
       struck: false,
-    });
-    run.events.push({
-      type: 'bossTelegraph',
-      x: run.player.x,
-      width: fire.width,
-      ticks: fire.telegraphTicks,
     });
     shots += 1;
   }

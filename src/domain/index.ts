@@ -9,14 +9,16 @@ export {
   barrierUp,
   bossDamage,
   coreOf,
-  ENEMY_SHOT,
   fieldMargin,
+  isEnemyShot,
   liveBoss,
+  MAX_WARNINGS,
   MIN_TELEGRAPH_TICKS,
   patternFor,
   playerSpeedMult,
   startFight,
   ultimateOnBoss,
+  WARN_TICKS,
   zoneCovers,
 } from './bossFight';
 export { applyCard, drawOffers } from './cards';

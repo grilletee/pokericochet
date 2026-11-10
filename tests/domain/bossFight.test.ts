@@ -232,7 +232,9 @@ describe('the attacks (ADR-053)', () => {
     const told = run.events
       .filter((e) => e.type === 'bossTelegraph')
       .map((e) => (e as { ticks: number }).ticks);
-    expect(told).toEqual([70, 88, 106, 124, 142]);
+    // 4G-F: one after the other, but never more than three warnings shown together: the fourth and
+    // fifth columns are staggered (moved 20 ticks later) until they fit.
+    expect(told).toEqual([70, 88, 106, 164, 182]);
   });
 
   it('a sweep moves and hurts a player it catches later', () => {

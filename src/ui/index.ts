@@ -1,3 +1,4 @@
+export { AttackNamer, attackLabel } from './attackNames';
 export type { SoundId } from './audio';
 export { SoundFx, SoundToggle, soundFor, Throttle } from './audio';
 export { describeBall, describeEffects } from './ballText';

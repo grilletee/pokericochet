@@ -125,8 +125,7 @@ export interface BossPatternDef {
 export interface EnemyFireDef {
   readonly byType: Readonly<Partial<Record<GameType, { readonly everyTicks: number }>>>;
   readonly shooterOneIn: number;
-  /** Ticks the landing spot is announced (>= 60) and pixels per tick the shot falls. */
-  readonly telegraphTicks: number;
+  /** Pixels per tick the shot falls from the enemy (the warning is `WARN_TICKS`, like every attack). */
   readonly speed: number;
   readonly width: number;
   /** Health points of a hit, before the guard of the team. */

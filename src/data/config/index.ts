@@ -609,12 +609,13 @@ export const baseConfig: Omit<
       dragon: { everyTicks: 400 },
       poison: { everyTicks: 500 },
     },
-    shooterOneIn: 3,
-    telegraphTicks: 70,
+    // 4G-F: the shot leaves the enemy itself (it glows while it charges): fewer shooters, at most
+    // two charging at once, so the player can tell who attacks and put it first.
+    shooterOneIn: 4,
     speed: 5,
-    width: 28,
+    width: 26,
     damage: 1.5,
-    maxAtOnce: 4,
+    maxAtOnce: 2,
   },
   // The pool of each run (ADR-048): 3 lines per type (about 40 of the 214), the four starters in.
   pool: {

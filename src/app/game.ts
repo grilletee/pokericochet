@@ -40,6 +40,7 @@ import {
 } from '../domain';
 import { Renderer } from '../render';
 import {
+  AttackNamer,
   BOSS_DEFEAT_MS,
   BOSS_ENTRY_MS,
   BOSS_FINAL_MS,
@@ -291,6 +292,9 @@ function applyDebugParams(run: Run, config: GameConfig, params: URLSearchParams)
     // The bosses between waves that this jump skips must not appear all at once.
     run.boss.next = (config.interludes ?? []).filter((boss) => boss.after <= wave).length;
   }
+  // bossNo=1..3 brings the intermediate boss of that number right away (use it with wave=its `after`).
+  const bossNo = number('bossNo');
+  if (bossNo !== null) run.boss.next = Math.max(0, bossNo - 1);
   // team=a,b,c replaces the team with these Pokémon (up to six; the first is the starter).
   const team = params.get('team') ?? params.get('loadout');
   if (team !== null) {
@@ -485,6 +489,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
   /** The notices that happen once per run: the signature is ready / was thrown for the first time. */
   let signatureAnnounced = false;
   let vulnerableHinted = false;
+  const namer = new AttackNamer();
   let signatureWasReady = false;
   let readyAnnounced = false;
 
@@ -588,6 +593,8 @@ export async function startGame(host: HTMLElement): Promise<void> {
     cartel.hide();
     pause.reset();
     signatureAnnounced = false;
+    vulnerableHinted = false;
+    namer.reset();
     signatureWasReady = false;
     readyAnnounced = false;
     sheet.hide();
@@ -761,6 +768,16 @@ export async function startGame(host: HTMLElement): Promise<void> {
             true,
           );
         }
+      } else if (event.type === 'bossTelegraph') {
+        // The first time each attack appears in a run, its name and how to dodge it (4G-F).
+        const text = namer.first(event.fromEnemy ? 'enemyShot' : event.kind);
+        if (text !== null) overlay.showToast(text, now);
+      } else if (event.type === 'bossBarrier' && event.up) {
+        const text = namer.first('barrier');
+        if (text !== null) overlay.showToast(text, now);
+      } else if (event.type === 'bossTimeSlow') {
+        const text = namer.first('timeSlow');
+        if (text !== null) overlay.showToast(text, now);
       } else if (event.type === 'bossCore' && event.open && !vulnerableHinted) {
         // The first time in a run: say what the glow means (12th playtest: "no se entiende").
         vulnerableHinted = true;
@@ -1008,6 +1025,14 @@ export async function startGame(host: HTMLElement): Promise<void> {
           ),
     );
     overlay.updateToast(now);
+    if (!bench && curr.bossSqueeze > 0.03) {
+      const tide = namer.first('tide');
+      if (tide !== null) overlay.showToast(tide, now);
+    }
+    // While the boss is exposed the alarm repeats, so it cannot be missed (4G-F).
+    if (!bench && curr.bossCoreOpen > 0 && screen === 'playing' && curr.tick % 45 === 0) {
+      sound.play('vulnerable', now);
+    }
     overlay.setBoss(
       pokemonName(speciesIds[curr.bossSpecies] ?? ''),
       screen === 'playing' ? curr.bossHp : 0,

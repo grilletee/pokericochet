@@ -4,10 +4,12 @@ import {
   advanceEnemyFire,
   cloneRun,
   createRun,
-  ENEMY_SHOT,
   type GameConfig,
+  type Hazard,
   hashRun,
+  isEnemyShot,
   tick,
+  WARN_TICKS,
 } from '../../src/domain';
 import { makeEnemy, quietConfig } from './fixtures';
 
@@ -38,8 +40,16 @@ describe('ordinary enemies that shoot (4G-E)', () => {
     run.tickCount = every - ((S * 37) % every);
     advanceEnemyFire(run, cfg);
     expect(run.hazards.length).toBe(1);
-    expect(run.hazards[0]).toMatchObject({ kind: 'shot', link: ENEMY_SHOT, damage: fire.damage });
-    expect(run.hazards[0]?.telegraph).toBeGreaterThanOrEqual(60);
+    // The shot comes out of the enemy itself: it starts at its x and its link is minus its id.
+    expect(run.hazards[0]).toMatchObject({
+      kind: 'shot',
+      link: -S,
+      x: 100,
+      damage: fire.damage,
+    });
+    expect(isEnemyShot(run.hazards[0] as Hazard)).toBe(true);
+    expect(run.hazards[0]?.telegraph).toBe(WARN_TICKS);
+    expect(run.events.find((e) => e.type === 'bossTelegraph')).toMatchObject({ fromEnemy: true });
     // Not on the clock: nothing.
     const quiet = createRun(cfg, 1, 'charmander');
     quiet.enemies = [shooter(S)];
@@ -67,11 +77,11 @@ describe('ordinary enemies that shoot (4G-E)', () => {
   it('the shot falls where the player was and hurts once, with the guard of the team', () => {
     const run = createRun(cfg, 1, 'charmander');
     run.enemies = [shooter(5)];
-    run.player.x = 200;
+    run.player.x = 100; // the shot falls straight down from the enemy (at x = 100)
     const every = fire.byType.fire?.everyTicks ?? 1;
     run.tickCount = every - ((5 * 37) % every);
     advanceEnemyFire(run, cfg);
-    expect(run.hazards[0]?.x).toBe(200);
+    expect(run.hazards[0]?.x).toBe(100);
     run.enemies = [];
     const before = run.player.hp;
     for (let i = 0; i < 400 && run.hazards.length > 0; i++) tick(run, { moveX: 0 }, cfg);
@@ -83,7 +93,7 @@ describe('ordinary enemies that shoot (4G-E)', () => {
   it('a shot that is dodged does not hurt', () => {
     const run = createRun(cfg, 1, 'charmander');
     run.enemies = [shooter(5)];
-    run.player.x = 200;
+    run.player.x = 100;
     const every = fire.byType.fire?.everyTicks ?? 1;
     run.tickCount = every - ((5 * 37) % every);
     advanceEnemyFire(run, cfg);
@@ -118,7 +128,6 @@ describe('ordinary enemies that shoot (4G-E)', () => {
 
 describe('the shipped table', () => {
   it('has moderate numbers: announced, a few at once, small damage', () => {
-    expect(fire.telegraphTicks).toBeGreaterThanOrEqual(60);
     expect(fire.maxAtOnce).toBeLessThanOrEqual(5);
     expect(fire.damage).toBeLessThanOrEqual(2);
     expect(fire.shooterOneIn).toBeGreaterThanOrEqual(2);
@@ -154,6 +163,6 @@ describe('gaps found by the mutants of the 4G-E', () => {
     const run = createRun(quick, 1, 'charmander');
     run.enemies = [shooter(1), shooter(2), shooter(3), shooter(4)];
     advanceEnemyFire(run, quick);
-    expect(run.hazards.filter((h) => h.link === ENEMY_SHOT).length).toBe(2);
+    expect(run.hazards.filter((h) => isEnemyShot(h)).length).toBe(2);
   });
 });

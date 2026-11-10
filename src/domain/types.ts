@@ -353,6 +353,10 @@ export type GameEvent =
       readonly x: number;
       readonly width: number;
       readonly ticks: number;
+      /** What it is (the verb: column, comb, shot...), so the UI can name it the first time (4G-F). */
+      readonly kind: string;
+      /** True when an ordinary enemy fires it (it comes out of that enemy), false for a boss. */
+      readonly fromEnemy: boolean;
     }
   /**
    * The column struck; `hit` says whether the player stood in it. A moving column that catches the
