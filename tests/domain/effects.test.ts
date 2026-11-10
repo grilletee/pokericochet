@@ -105,7 +105,7 @@ describe('burn', () => {
 });
 
 describe('pierce', () => {
-  const twoEnemies = () => [makeEnemy({ id: 1, y: 380 }), makeEnemy({ id: 2, y: 320 })];
+  const twoEnemies = () => [makeEnemy({ id: 1, y: 380 }), makeEnemy({ id: 2, y: 300 })];
 
   function simulate(ball: Ball, pierce: number) {
     const run = flyingRun(ball, twoEnemies(), makeBody({ pierce }));
@@ -125,11 +125,16 @@ describe('pierce', () => {
   });
 
   it('with pierce 1 it passes through the first enemy, hits it once, and bounces off the second', () => {
-    const { run, hits } = simulate(waterBall(), 1);
-    // Until the ball reaches the second enemy: exactly one hit on the first (not one per tick
-    // of overlap). Afterwards it may legitimately come back and hit the first one again.
-    const untilSecond = hits.slice(0, hits.indexOf(2) + 1);
-    expect(untilSecond).toEqual([1, 2]);
+    // Step until the second enemy is hit: exactly one hit on the first (not one per tick of
+    // overlap), and the ball is reflected by the second (the ball is bigger since 4G-F, so it is
+    // checked at that very tick: afterwards it may come back and hit the first one again).
+    const run = flyingRun(waterBall(), twoEnemies(), makeBody({ pierce: 1 }));
+    const hits: number[] = [];
+    for (let i = 0; i < 60 && !hits.includes(2); i++) {
+      for (const e of tick(run, { moveX: 0 }, cfg).events)
+        if (e.type === 'hit') hits.push(e.enemyId);
+    }
+    expect(hits).toEqual([1, 2]);
     expect(run.bodies[0]?.vy ?? 0).toBeGreaterThan(0); // reflected by the second
     expect(run.bodies[0]?.pierce).toBe(0);
   });

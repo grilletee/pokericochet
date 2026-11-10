@@ -28,6 +28,7 @@ import {
   launcherTexture,
   outlinedTexture,
   ringTexture,
+  sphereTexture,
 } from './pixelArt';
 import { UltimateFx } from './ultimateFx';
 
@@ -60,12 +61,14 @@ const PORTAL_COLOR = 0xb08cff;
 const SPARKS_PER_HAZARD = 4;
 /** The colour of every danger zone, whoever attacks (4G-F): the one language of danger. */
 const DANGER = 0xff4a3a;
-/** The inner outline of what is yours (cyan) and of what is against you (red). */
 const OUTLINES_PER_FRAME = 2;
 /** Above this many enemies the signs of the states are drawn in a reduced form. */
 const STATUS_LOD_ENEMIES = 40;
-const ALLY_EDGE = '#8ef0ff';
+/** The outline of what is against you (red); what is yours is a sphere, no outline (4G-F). */
 const FOE_EDGE = '#ff5a5a';
+/** Circle of the sphere texture (24 px canvas, circle of about 23 px) and share of the diameter the picture fills. */
+const SPHERE_CIRCLE = 23.2;
+const SPHERE_CONTENT = 0.8;
 /** Pixels per millisecond the three layers of the backdrop scroll at (far, middle, near). */
 const BACKDROP_SPEEDS: readonly number[] = [0.006, 0.016, 0.034];
 const AIM_DOTS = 16;
@@ -82,9 +85,6 @@ const PICKUP_GOLD = 0xffd54f;
 const FX_DURATION_MS = 280;
 
 const ENEMY_ART_SCALE = 1.7;
-/** The aura of a ball by stage - 1 (ADR-037): none, thin, thick; its size relative to the ball. */
-const AURA_ALPHA: readonly number[] = [0, 0.5, 0.95];
-const AURA_SIZE: readonly number[] = [0, 2.0, 2.5];
 
 /**
  * Side of the box that holds the visible pixels of a texture (ADR-037), measured once. If the
@@ -161,7 +161,6 @@ export class Renderer {
   private fxNext = 0;
   /** Opaque box of each art texture, by art code (ADR-037). */
   private readonly extents: number[];
-  private readonly auras: Sprite[] = [];
   /** The moves and Ultimates (4G-E): pixel shapes, element showers, flash and shake. */
   private readonly moves: UltimateFx;
   private launcherX = 0;
@@ -186,7 +185,9 @@ export class Renderer {
   private bossWarn = false;
   /** The solid fill of the danger zones, which fills like a countdown (4G-F). */
   private readonly hazardFill: TilingSprite[] = [];
-  private readonly allyArt: (Texture | undefined)[] = [];
+  /** The glass spheres under the pictures of the balls (4G-F), and their layer. */
+  private readonly ballSpheres: Sprite[] = [];
+  private readonly sphereLayer = new Container();
   private readonly foeArt: (Texture | undefined)[] = [];
   private readonly backdropDim: Sprite;
   private backdropKey = -1;
@@ -363,6 +364,7 @@ export class Renderer {
       this.enemyLayer,
       this.statusLayer,
       this.pickupLayer,
+      this.sphereLayer,
       this.ballLayer,
       this.moves.layer,
       this.fxLayer,
@@ -1034,50 +1036,33 @@ export class Renderer {
       const stage = curr.ballLevel[slot] ?? 1;
       const code = this.artCode(curr.ballSpecies[slot] ?? NO_SPECIES, stage);
       const art = this.art[code];
+      // The ball IS a glass sphere (4G-F) of exactly the collision radius, with the Pokémon inside.
+      const sphere = this.spriteAt(this.ballSpheres, this.sphereLayer, shown);
+      sphere.visible = true;
+      sphere.position.set(sprite.x, sprite.y);
+      sphere.texture = sphereTexture(TYPE_COLORS[curr.ballType[slot] ?? 0] ?? 0xffffff);
+      sphere.scale.set((2 * radius) / SPHERE_CIRCLE);
       if (art === undefined) {
         sprite.texture = this.disc;
-        sprite.scale.set(radius / 32);
+        sprite.scale.set((radius * 0.7) / 32);
       } else {
-        sprite.texture = this.outlined(this.allyArt, code, art, ALLY_EDGE);
-        sprite.scale.set(ballVisualScale(this.extents[code] ?? art.width, radius));
+        sprite.texture = art;
+        // The visible part of the picture fits inside the sphere (not its whole canvas).
+        sprite.scale.set(
+          (2 * radius * SPHERE_CONTENT) / Math.max(1, this.extents[code] ?? art.width),
+        );
       }
       sprite.tint = 0xffffff;
       sprite.alpha = 1;
-      this.drawAura(shown, sprite.x, sprite.y, radius, stage, curr.ballType[slot] ?? 0);
       shown += 1;
     }
     for (let i = shown; i < this.ballsShown; i++) {
       const sprite = this.ballSprites[i];
       if (sprite) sprite.visible = false;
-      const aura = this.auras[i];
-      if (aura) aura.visible = false;
+      const sphere = this.ballSpheres[i];
+      if (sphere) sphere.visible = false;
     }
     this.ballsShown = shown;
-  }
-
-  /** A ring in the colour of the type around balls of stage 2 and 3, so a stage always shows. */
-  private drawAura(
-    index: number,
-    x: number,
-    y: number,
-    radius: number,
-    stage: number,
-    type: number,
-  ): void {
-    let aura = this.auras[index];
-    if (aura === undefined) {
-      aura = new Sprite(this.ring);
-      aura.anchor.set(0.5);
-      this.auras[index] = aura;
-      this.ballLayer.addChild(aura);
-    }
-    const alpha = AURA_ALPHA[stage - 1] ?? 0;
-    aura.visible = alpha > 0;
-    if (alpha === 0) return;
-    aura.position.set(x, y);
-    aura.tint = TYPE_COLORS[type] ?? 0xffffff;
-    aura.alpha = alpha;
-    aura.scale.set((radius * (AURA_SIZE[stage - 1] ?? 2)) / 30);
   }
 
   private drawEnemies(prev: Snapshot, curr: Snapshot, alpha: number): void {

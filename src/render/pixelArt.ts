@@ -651,3 +651,63 @@ export function outlinedTexture(source: Texture, edge: string): Texture {
   byColor.set(edge, made);
   return made;
 }
+
+// ---------------------------------------------------------------------------------------------
+// The balls of the player (4G-F): an original glass sphere, not a Poké Ball
+// ---------------------------------------------------------------------------------------------
+
+const SPHERE = 24;
+const sphereCache = new Map<number, Texture>();
+
+/**
+ * The sphere a Pokémon of the team lives in (13th playtest: "mis Pokémon deberían ser BOLAS"): a
+ * glass bubble with a rim in the colour of its type, a dark translucent inside that lets the sprite
+ * read, and a highlight. Drawn by code, original (it is not the Poké Ball, a franchise design: no
+ * halves, no button). 24 x 24 art pixels, scaled to the diameter of the ball.
+ */
+export function sphereTexture(color: number): Texture {
+  const hit = sphereCache.get(color);
+  if (hit !== undefined) return hit;
+  const { c, g } = canvas(SPHERE, SPHERE);
+  const light = shade(color, 1.3);
+  const body = shade(color, 1);
+  const dark = shade(color, 0.5);
+  const mid = (SPHERE - 1) / 2;
+  for (let y = 0; y < SPHERE; y++) {
+    for (let x = 0; x < SPHERE; x++) {
+      const dx = x - mid;
+      const dy = y - mid;
+      const d = Math.sqrt(dx * dx + dy * dy);
+      if (d > 11.6) continue;
+      // The lit side is the top left.
+      const lit = dx + dy < -2;
+      if (d > 10) {
+        g.fillStyle = lit ? light : dx + dy > 6 ? dark : body;
+      } else if (d > 8.8) {
+        g.fillStyle = dark;
+      } else {
+        // Inside: deep blue glass, a little lighter towards the bottom right (a dither of two tones).
+        const low = dx + dy > 4 && (x + y) % 2 === 0;
+        g.fillStyle = low ? 'rgba(48,60,120,0.80)' : 'rgba(14,18,46,0.82)';
+      }
+      g.fillRect(x, y, 1, 1);
+    }
+  }
+  // The highlight: a short arc at the top left and a speck.
+  g.fillStyle = 'rgba(255,255,255,0.9)';
+  for (const [x, y] of [
+    [6, 5],
+    [7, 4],
+    [8, 4],
+    [5, 6],
+    [5, 7],
+  ] as const) {
+    g.fillRect(x, y, 1, 1);
+  }
+  g.fillStyle = 'rgba(255,255,255,0.45)';
+  g.fillRect(16, 17, 1, 1);
+  g.fillRect(17, 16, 1, 1);
+  const made = toTexture(c);
+  sphereCache.set(color, made);
+  return made;
+}

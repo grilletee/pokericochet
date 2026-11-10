@@ -121,7 +121,9 @@ export const baseConfig: Omit<
     ballsByLevel: [1, 1, 2, 2, 2, 3, 3, 3],
     stageLevels: [3, 6],
     starterBonus: 0.6,
-    ballRadiusByStage: [6, 7, 9],
+    // 4G-F: [6, 7, 9] -> [10, 12, 15]: the ball is now a sphere with the Pokémon drawn inside it and
+    // the collision radius is what is seen ("que se vea claramente qué Pokémon hay dentro").
+    ballRadiusByStage: [10, 12, 15],
     // A stage that keeps the form is worth as much as one that changes it (ADR-037): the damage of
     // every line grows at least x1.2 at stage 2 and x1.45 at stage 3, which is what the lines of
     // three forms bring by their stats (measured by M14 of the fun bench).
@@ -316,7 +318,7 @@ export const baseConfig: Omit<
   arena: { width: 480, height: 720, defenseLineY: 640 },
   player: { y: 680, speed: 5, margin: 20, maxHp: 10 },
   ball: {
-    radius: 6,
+    radius: 10, // 6 before 4G-F (see team.ballRadiusByStage)
     cooldownTicks: 72,
     // 4F-C: at the new difficulty the old values (0.3 and x1.8) left the assisted aim at 4 % wins
     // against 51 % by hand (47 points); the author plays with it when there are many enemies, so it

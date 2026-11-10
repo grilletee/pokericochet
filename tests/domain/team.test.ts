@@ -702,7 +702,7 @@ describe('the hash sees every field of the team model', () => {
 describe('the size of the ball counts in the physics (ADR-031)', () => {
   it('a last-stage ball touches an enemy that a first-stage ball misses', () => {
     const reach = (stage: number): boolean => {
-      const enemy = makeEnemy({ id: 1, x: 240 + 24, y: 400, hp: 1e6 });
+      const enemy = makeEnemy({ id: 1, x: 240 + 28, y: 400, hp: 1e6 });
       const run = createRun(quietConfig, 1, 'charmander');
       run.loadout = [{ ...(run.loadout[0] as Run['loadout'][number]), stage }];
       run.cooldowns = [-1];
@@ -710,7 +710,7 @@ describe('the size of the ball counts in the physics (ADR-031)', () => {
       run.enemies = [enemy];
       return tick(run, { moveX: 0 }, quietConfig).events.some((e) => e.type === 'hit');
     };
-    expect(reach(1)).toBe(false); // 6 + 16 = 22 < 24
-    expect(reach(3)).toBe(true); // 9 + 16 = 25 > 24
+    expect(reach(1)).toBe(false); // 10 + 16 = 26 < 28
+    expect(reach(3)).toBe(true); // 15 + 16 = 31 > 28
   });
 });
