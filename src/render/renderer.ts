@@ -21,6 +21,7 @@ import { ballVisualScale, opaqueExtent } from './artBox';
 import { interpolateBalls, interpolateEnemies } from './interpolate';
 import {
   ART_PIXEL,
+  arenaTexture,
   backdropFor,
   dotTexture,
   FX_FRAMES,
@@ -459,7 +460,29 @@ export class Renderer {
     const ownStage = curr.bossFinal && curr.bossType >= 0;
     const main = ownStage ? curr.bossType : curr.biomeMain;
     const sheets = this.backdropSheets;
-    this.backdropDim.alpha = ownStage ? 0.66 : 0.5;
+    this.backdropDim.alpha = ownStage ? 0.25 : 0.5;
+    if (ownStage) {
+      // A scenario of its own: a dark temple floor in the colour of the type, nothing of the biome.
+      const key = 100000 + main;
+      const far = sheets[0];
+      if (key !== this.backdropKey && far !== undefined) {
+        far.texture = arenaTexture(TYPE_COLORS[main] ?? 0xffffff);
+        far.visible = true;
+        for (let i = 1; i < sheets.length; i++) {
+          const rest = sheets[i];
+          if (rest !== undefined) rest.visible = false;
+        }
+        this.backdropKey = key;
+        this.fade = 1;
+      }
+      this.fade = Math.max(0, this.fade - elapsedMs / 900);
+      this.backdropFade.alpha = this.fade;
+      this.scroll += elapsedMs;
+      if (far !== undefined) {
+        far.tilePosition.y = Math.floor((this.scroll * 0.012) / ART_PIXEL) * ART_PIXEL;
+      }
+      return;
+    }
     if (main < 0) {
       for (const sheet of sheets) if (sheet !== undefined) sheet.visible = false;
       this.backdropKey = -1;
@@ -508,7 +531,8 @@ export class Renderer {
    */
   private drawBiome(curr: Snapshot, elapsedMs: number): void {
     const main = curr.biomeMain;
-    const has = main >= 0;
+    // Nothing of the biome (particles, tint) in the arena of the final boss (4G-F).
+    const has = main >= 0 && !curr.bossFinal;
     this.drawBackdrop(curr, elapsedMs);
     const target = has ? (TYPE_COLORS[main] ?? 0xffffff) : 0;
     const step = Math.min(1, elapsedMs / BIOME_FADE_MS);
@@ -1247,8 +1271,11 @@ export class Renderer {
       if (event.type === 'move') this.startMove(event);
       else if (event.type === 'hit') this.startEffect(event.x, event.y, 0xffffff);
       else if (event.type === 'kill') this.startEffect(event.x, event.y, 0xffd54f);
-      else if (event.type === 'chain') this.startEffect(event.toX, event.toY, 0xfff176);
-      else if (event.type === 'collect') this.startEffect(event.x, this.config.player.y, 0x81d4fa);
+      else if (event.type === 'chain') {
+        this.startEffect(event.toX, event.toY, 0xfff176);
+        this.moves.bolt(event.fromX, event.fromY, event.toX, event.toY);
+      } else if (event.type === 'collect')
+        this.startEffect(event.x, this.config.player.y, 0x81d4fa);
       else if (event.type === 'capture')
         this.startEffect(event.x, this.config.player.y, PICKUP_GOLD, 2.2);
       else if (event.type === 'captureDrop') {

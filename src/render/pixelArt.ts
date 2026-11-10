@@ -711,3 +711,70 @@ export function sphereTexture(color: number): Texture {
   sphereCache.set(color, made);
   return made;
 }
+
+// ---------------------------------------------------------------------------------------------
+// The arena of the final boss (4G-F): a scenario that has nothing to do with the biomes
+// ---------------------------------------------------------------------------------------------
+
+const arenaCache = new Map<number, Texture>();
+
+/**
+ * The scenario of the fight against a legendary (13th playtest: "la pelea pasa a un escenario
+ * totalmente distinto"): a near-black temple floor of big plates with glowing seams and a ring of
+ * runes in the colour of the type of the boss, nothing alive and no decoration of the biomes. One
+ * texture per type, 120 x 180 art pixels, tiled and scrolled slowly.
+ */
+export function arenaTexture(color: number): Texture {
+  const hit = arenaCache.get(color);
+  if (hit !== undefined) return hit;
+  const { c, g } = canvas(TILE_W, TILE_H);
+  const base = shade(color, 0.16);
+  const plate = shade(color, 0.24);
+  const seam = shade(color, 0.9);
+  const glow = shade(color, 0.45);
+  g.fillStyle = base;
+  g.fillRect(0, 0, TILE_W, TILE_H);
+  const PLATE = 30;
+  const random = rng(color * 7 + 3);
+  // Plates: every one a slightly different dark tone, with a dither at its corner.
+  for (let py = 0; py < TILE_H; py += PLATE) {
+    for (let px = 0; px < TILE_W; px += PLATE) {
+      g.fillStyle = (px / PLATE + py / PLATE) % 2 === 0 ? plate : base;
+      g.fillRect(px + 1, py + 1, PLATE - 2, PLATE - 2);
+      for (let k = 0; k < 14; k++) {
+        g.fillStyle = base;
+        g.fillRect(
+          px + 2 + Math.floor(random() * (PLATE - 4)),
+          py + 2 + Math.floor(random() * (PLATE - 4)),
+          1,
+          1,
+        );
+      }
+    }
+  }
+  // The seams glow: a bright line with a dim one beside it.
+  for (let i = 0; i <= TILE_W; i += PLATE) {
+    g.fillStyle = glow;
+    g.fillRect(i - 1, 0, 3, TILE_H);
+    g.fillStyle = seam;
+    g.fillRect(i, 0, 1, TILE_H);
+  }
+  for (let j = 0; j <= TILE_H; j += PLATE) {
+    g.fillStyle = glow;
+    g.fillRect(0, j - 1, TILE_W, 3);
+    g.fillStyle = seam;
+    g.fillRect(0, j, TILE_W, 1);
+  }
+  // Runes at the crossings: small diamonds.
+  g.fillStyle = seam;
+  for (let i = 0; i < TILE_W; i += PLATE) {
+    for (let j = 0; j < TILE_H; j += PLATE) {
+      g.fillRect(i - 2, j, 5, 1);
+      g.fillRect(i, j - 2, 1, 5);
+      g.fillRect(i - 1, j - 1, 3, 3);
+    }
+  }
+  const made = toTexture(c);
+  arenaCache.set(color, made);
+  return made;
+}

@@ -12,11 +12,12 @@ import { ART_PIXEL, FX_FRAMES, fxFor } from './pixelArt';
  */
 
 const BIG = 8;
-const PARTS = 160;
+const PARTS = 320;
 /** How long a beam or a row stays, in milliseconds. */
 const BIG_MS = 520;
 
 type Flourish = 'fire' | 'water' | 'grass' | 'spark' | 'radial';
+const ELEMENT_CODE: Record<Flourish, number> = { radial: 0, fire: 1, water: 2, grass: 3, spark: 4 };
 
 /** Which flourish each type of attack gets: the four initials are fire, water, grass and electric. */
 function flourishOf(element: GameType): Flourish {
@@ -52,6 +53,11 @@ export class UltimateFx {
   private readonly pvy = new Float32Array(PARTS);
   private readonly plife = new Float32Array(PARTS);
   private readonly pgrav = new Float32Array(PARTS);
+  /** How long each particle lives, in ms (lightning is quick, embers slow). */
+  private readonly plifeMs = new Float32Array(PARTS);
+  /** Full width of a row (it grows from the left over the first part of its life) and its element. */
+  private readonly bigFull = new Float32Array(BIG);
+  private readonly bigElem = new Uint8Array(BIG);
   private partNext = 0;
   private readonly flash: Sprite;
   private flashLife = 0;
@@ -100,11 +106,13 @@ export class UltimateFx {
     grav: number,
     color: number,
     size: number,
+    lifeMs = 700,
   ): void {
     const i = this.partNext;
     this.partNext = (this.partNext + 1) % PARTS;
     const dot = this.parts[i];
     if (dot === undefined) return;
+    this.plifeMs[i] = lifeMs;
     this.px[i] = x;
     this.py[i] = y;
     this.pvx[i] = vx;
@@ -116,7 +124,15 @@ export class UltimateFx {
     dot.visible = true;
   }
 
-  private bigAt(kind: 0 | 1, x: number, y: number, w: number, h: number, color: number): void {
+  private bigAt(
+    kind: 0 | 1,
+    x: number,
+    y: number,
+    w: number,
+    h: number,
+    color: number,
+    element: Flourish = 'radial',
+  ): void {
     const i = this.bigNext;
     this.bigNext = (this.bigNext + 1) % BIG;
     const sheet = this.big[i];
@@ -124,8 +140,11 @@ export class UltimateFx {
     this.bigKind[i] = kind;
     this.bigLife[i] = 1;
     this.bigColor[i] = color;
+    this.bigFull[i] = w;
+    this.bigElem[i] = ELEMENT_CODE[element];
     sheet.position.set(x, y);
-    sheet.width = Math.max(1, w);
+    // A row sweeps in from the left (a wave); a beam is there at once.
+    sheet.width = Math.max(1, kind === 1 ? 1 : w);
     sheet.height = Math.max(1, h);
     sheet.visible = true;
   }
@@ -213,16 +232,37 @@ export class UltimateFx {
     const fx = fxFor(color);
     const kind = flourishOf(element);
     const strong = manual ? 2 : 1;
+    // A thrown Ultimate (not one that goes off by itself) is bigger than the move it comes from, and
+    // a streak of the element joins the launcher with the target so it is seen where it goes.
+    const boost = manual ? 1.6 : 1;
+    if (manual && shape !== 'cross') {
+      const dx = x - launcherX;
+      const dy = y - launcherY;
+      for (let k = 0; k <= 22; k++) {
+        const t = k / 22;
+        this.particle(
+          launcherX + dx * t + Math.sin(k * 1.7) * 5,
+          launcherY + dy * t,
+          0,
+          0,
+          0,
+          k % 2 === 0 ? 0xffffff : color,
+          ART_PIXEL * 1.3,
+          380,
+        );
+      }
+      this.bigAt(0, launcherX - 10, y, 20, Math.max(0, launcherY - y), color, kind);
+    }
     switch (shape) {
       case 'beam':
-        this.bigAt(0, x - size / 2, 0, size, y, color);
+        this.bigAt(0, x - (size * boost) / 2, 0, size * boost, y, color, kind);
         break;
       case 'wave':
-        this.bigAt(1, 0, y - size / 2, this.width, size, color);
+        this.bigAt(1, 0, y - (size * boost) / 2, this.width, size * boost, color, kind);
         break;
       case 'cross':
-        this.bigAt(0, x - size / 2, 0, size, this.height, color);
-        this.bigAt(1, 0, y - size / 2, this.width, size, color);
+        this.bigAt(0, x - size / 2, 0, size, this.height, color, kind);
+        this.bigAt(1, 0, y - size / 2, this.width, size, color, kind);
         break;
       case 'burst':
       case 'nova': {
@@ -247,6 +287,13 @@ export class UltimateFx {
           const a = k * 0.8;
           this.particle(x, y, Math.cos(a) * 3, Math.sin(a) * 3, 0, 0xfff176, ART_PIXEL);
         }
+        // A thrown electric Ultimate: a star of bolts from the target.
+        if (manual) {
+          for (let k = 0; k < 7; k++) {
+            const a = (k / 7) * Math.PI * 2 + 0.3;
+            this.bolt(x, y, x + Math.cos(a) * 120, y + Math.sin(a) * 120);
+          }
+        }
         break;
     }
     void fx;
@@ -267,6 +314,44 @@ export class UltimateFx {
       this.flash.tint = color;
       this.flashLife = 1;
       this.shakeLife = 1;
+    }
+  }
+
+  /**
+   * A bolt of lightning from one enemy to the next (an electric chain): a jagged line of bright
+   * pixels that is gone in a blink, with a flash of sparks where it lands.
+   */
+  bolt(x0: number, y0: number, x1: number, y1: number): void {
+    const n = 9;
+    const dx = x1 - x0;
+    const dy = y1 - y0;
+    const len = Math.max(1, Math.sqrt(dx * dx + dy * dy));
+    const nx = -dy / len;
+    const ny = dx / len;
+    for (let k = 0; k <= n; k++) {
+      const t = k / n;
+      const jag = k === 0 || k === n ? 0 : (k % 2 === 0 ? 1 : -1) * (6 + (k % 3) * 3);
+      const x = x0 + dx * t + nx * jag;
+      const y = y0 + dy * t + ny * jag;
+      this.particle(x, y, 0, 0, 0, k % 2 === 0 ? 0xffffff : 0xfff176, ART_PIXEL * 1.1, 220);
+      // The pixels between the knots, so the line is continuous.
+      if (k < n) {
+        const t2 = (k + 0.5) / n;
+        this.particle(x0 + dx * t2, y0 + dy * t2, 0, 0, 0, 0xfff176, ART_PIXEL * 0.8, 220);
+      }
+    }
+    for (let k = 0; k < 5; k++) {
+      const a = k * 1.3;
+      this.particle(
+        x1,
+        y1,
+        Math.cos(a) * 2.5,
+        Math.sin(a) * 2.5,
+        0,
+        0xffffff,
+        ART_PIXEL * 0.8,
+        300,
+      );
     }
   }
 
@@ -297,12 +382,68 @@ export class UltimateFx {
       }
       // Quick in, slow out: a beam is solid at first and thins out.
       sheet.alpha = Math.min(1, next * 2.2) * 0.92;
+      const elem = this.bigElem[i] ?? 0;
+      if (this.bigKind[i] === 1) {
+        // A row sweeps across the field in the first 40 % of its life, throwing spray at its head.
+        const grown = Math.min(1, (1 - next) / 0.4);
+        const full = this.bigFull[i] ?? this.width;
+        sheet.width = Math.max(1, full * grown);
+        if (grown < 1) {
+          const headX = sheet.x + sheet.width;
+          const mid = sheet.y + sheet.height / 2;
+          for (let k = 0; k < 2; k++) {
+            this.particle(
+              headX,
+              mid + (k - 0.5) * sheet.height * 0.7,
+              1.5 + k,
+              -2 - k * 1.5,
+              elem === 2 ? 0.18 : 0.05,
+              k === 0 ? 0xffffff : (this.bigColor[i] ?? 0xffffff),
+              ART_PIXEL,
+              500,
+            );
+          }
+        }
+      } else {
+        // A beam sheds the matter of its element along its length: embers, leaves in a spiral,
+        // sparks or drops, a few per frame.
+        const cx = sheet.x + sheet.width / 2;
+        const y = sheet.y + ((this.clock * 0.9 + i * 53) % Math.max(40, sheet.height));
+        const spin = Math.sin(this.clock / 90 + i) * sheet.width * 0.8;
+        if (elem === 3) {
+          this.particle(
+            cx + spin,
+            y,
+            Math.cos(this.clock / 90) * 1.2,
+            1.2,
+            0,
+            0xbff59a,
+            ART_PIXEL,
+            600,
+          );
+        } else if (elem === 1) {
+          this.particle(cx + spin * 0.6, y, 0, -2, -0.02, 0xffe27a, ART_PIXEL * 0.8, 600);
+        } else if (elem === 4) {
+          this.particle(
+            cx + spin,
+            y,
+            (Math.random() - 0.5) * 5,
+            (Math.random() - 0.5) * 5,
+            0,
+            0xffffff,
+            ART_PIXEL * 0.8,
+            260,
+          );
+        } else if (elem === 2) {
+          this.particle(cx + spin, y, spin * 0.05, -2.5, 0.2, 0xdff4ff, ART_PIXEL * 0.8, 600);
+        }
+      }
     }
     for (let i = 0; i < PARTS; i++) {
       const life = this.plife[i] ?? 0;
       const dot = this.parts[i];
       if (life <= 0 || dot === undefined) continue;
-      const next = life - ms / 700;
+      const next = life - ms / (this.plifeMs[i] ?? 700);
       if (next <= 0) {
         this.plife[i] = 0;
         dot.visible = false;

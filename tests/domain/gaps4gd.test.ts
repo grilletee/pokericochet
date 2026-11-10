@@ -270,3 +270,34 @@ describe('gaps found by the mutants of the 4G-E (final boss)', () => {
     expect(snap.bossFinal).toBe(false);
   });
 });
+
+describe('the final boss is a change of scenario (4G-F)', () => {
+  it('when it arrives every other enemy and every ball on the floor leaves the field', () => {
+    const solo: GameConfig = {
+      ...gameConfig,
+      player: { ...gameConfig.player, maxHp: 1e9 },
+      interludes: [],
+      waves: gameConfig.waves.map((w) => ({ ...w, durationTicks: 20 })),
+    };
+    const run = createRun(solo, 3, 'charmander');
+    // Keep the field busy right until the boss spawns.
+    let spawned = false;
+    for (let t = 0; t < 7 * 20 + 40 && !spawned; t++) {
+      if (!run.boss.spawned) {
+        run.enemies.push(makeEnemy({ id: 9000 + t, y: 100, hp: 1e9 }));
+        run.pickups.push({
+          x: 100,
+          y: 300,
+          kind: 'ball',
+          // biome-ignore lint/suspicious/noExplicitAny: a minimal pickup is enough for the test
+        } as any);
+      }
+      tick(run, { moveX: 0 }, solo);
+      spawned = run.boss.spawned;
+    }
+    expect(spawned).toBe(true);
+    expect(run.enemies.length).toBe(1);
+    expect(run.enemies[0]?.id).toBe(run.boss.id);
+    expect(run.pickups.length).toBe(0);
+  });
+});

@@ -163,6 +163,12 @@ function placeBoss(
   isFinal: boolean,
 ): void {
   const species = getSpecies(config, speciesId);
+  // The final boss is a change of scenario (4G-F, 13th playtest): everything else leaves the field
+  // (the enemies of the wave, the balls waiting on the floor) and it fights alone.
+  if (isFinal) {
+    run.enemies = [];
+    run.pickups = [];
+  }
   // The health stat of a boss counts between 60 and 110 (4H-B2): the champion of a biome is the
   // strongest line of its types, and a stat of 255 (Blissey) or 1 (Shedinja) must not decide the fight.
   const bossHpStat = Math.max(60, Math.min(110, species.baseStats.hp));
