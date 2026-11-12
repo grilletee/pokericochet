@@ -54,6 +54,7 @@ function threatOf(hazard: Hazard, config: GameConfig): Threat | undefined {
     case 'column':
     case 'comb':
     case 'rain':
+    case 'blast':
       if (hazard.struck && wait <= 0) return undefined;
       return {
         from: wait,

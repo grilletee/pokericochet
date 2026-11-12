@@ -72,7 +72,17 @@ export interface BossState {
 
 /** Something a boss put on the floor or in the air (ADR-053). */
 export interface Hazard {
-  kind: 'column' | 'comb' | 'sweep' | 'rain' | 'shot' | 'zone' | 'gust' | 'crack' | 'portal';
+  kind:
+    | 'column'
+    | 'comb'
+    | 'sweep'
+    | 'rain'
+    | 'shot'
+    | 'zone'
+    | 'gust'
+    | 'crack'
+    | 'portal'
+    | 'blast';
   x: number;
   /** A `portal` carries whoever touches it to this x (its pair); 0 for the rest. */
   link: number;

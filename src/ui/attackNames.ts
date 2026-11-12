@@ -12,6 +12,10 @@ const NAMES: Readonly<Record<string, { readonly name: string; readonly tip: stri
   gust: { name: 'Ráfaga', tip: 'te empuja de lado: muévete en contra' },
   crack: { name: 'Grieta', tip: 'quema cada segundo: no te quedes encima' },
   portal: { name: 'Portal', tip: 'te lleva al portal pareja' },
+  blast: {
+    name: 'Enemigo marcado',
+    tip: 'va a explotar: derrótalo antes de que acabe la cuenta o sal de la franja',
+  },
   enemyShot: { name: 'Disparo de enemigo', tip: 'el que brilla va a disparar: derrótalo primero' },
   tide: { name: 'Marea', tip: 'el campo se estrecha por los lados' },
   barrier: { name: 'Barrera', tip: 'tus bolas rebotan en el jefe: espera a que baje' },

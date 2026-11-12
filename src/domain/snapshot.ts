@@ -21,6 +21,7 @@ export const HAZARD_KINDS = [
   'gust',
   'crack',
   'portal',
+  'blast',
 ] as const;
 
 /** Bits of `Snapshot.enemyStatus`: one sign for each thing that can be wrong with an enemy. */

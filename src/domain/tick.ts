@@ -24,6 +24,7 @@ import { checkLevelUp } from './progression';
 import { nextFloat } from './rng';
 import type { Run } from './run';
 import { ballRadius, resolveReplace } from './team';
+import { advanceThreats } from './threats';
 import type { BallBody, Command, Enemy, GameEvent } from './types';
 import { advanceBoss, advanceWave, isBossAlive } from './waves';
 
@@ -198,6 +199,7 @@ export function tick(run: Run, cmd: Command, config: GameConfig): TickOutput {
   if (!isBossAlive(run)) advanceWave(run, config);
   advanceBoss(run, config);
   advanceEnemyFire(run, config);
+  advanceThreats(run, config);
   advanceBossFight(run, config);
 
   // Enemies advance; those that reach the defence line hurt the player and are removed.

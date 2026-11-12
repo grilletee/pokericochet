@@ -628,6 +628,25 @@ export const baseConfig: Omit<
     damage: 1.5,
     maxAtOnce: 2,
   },
+  // 4G-G: every 15 s an ordinary enemy is marked as a threat (aura and countdown over it): kill it in
+  // time or it explodes in a column of danger under it. Themed species first (what explodes or quakes
+  // in the games); any other enemy on every second mark when no themed one is on the field.
+  // PROVISIONAL: bench `fun`/`bosses` and the author's own play.
+  enemyThreat: {
+    everyTicks: 900,
+    maxAtOnce: 1,
+    countdownTicks: 160,
+    hits: 5,
+    markBonus: 0.5,
+    themed: {
+      voltorb: { width: 110, damage: 2 },
+      electrode: { width: 140, damage: 2.5 },
+      geodude: { width: 90, damage: 2 },
+      graveler: { width: 120, damage: 2.5 },
+      exeggcute: { width: 100, damage: 2 },
+    },
+    other: { width: 90, damage: 1.5, otherOneIn: 2 },
+  },
   // The pool of each run (ADR-048): 3 lines per type (about 40 of the 214), the four starters in.
   pool: {
     linesPerType: 3,

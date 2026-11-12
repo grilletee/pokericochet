@@ -26,7 +26,7 @@ import {
   WARN_TICKS,
 } from '../domain';
 import { ballVisualScale, opaqueExtent } from './artBox';
-import { HurtFx } from './hurtFx';
+import { CountdownFx, HurtFx } from './hurtFx';
 import { interpolateBalls, interpolateEnemies } from './interpolate';
 import {
   ART_PIXEL,
@@ -64,6 +64,7 @@ const KIND_ZONE = 5;
 const KIND_GUST = 6;
 const KIND_CRACK = 7;
 const KIND_PORTAL = 8;
+const KIND_BLAST = 9;
 /** Colour of the cracks (lava) and of the portals, which do not take the colour of the boss. */
 const LAVA = 0xff7a2e;
 const PORTAL_COLOR = 0xb08cff;
@@ -156,6 +157,8 @@ export class Renderer {
   private readonly world = new Container();
   /** The feel of a hit on the player (4G-G): red flash, shake, floating number, blink. */
   private readonly hurt = new HurtFx();
+  /** The seconds left over an enemy marked as a threat (4G-G). */
+  private readonly countdown = new CountdownFx();
   private clockMs = 0;
   private readonly enemyLayer = new Container();
   private readonly ballLayer = new Container();
@@ -417,6 +420,7 @@ export class Renderer {
       this.shieldRing,
       this.reachRing,
       this.player,
+      this.countdown.layer,
       this.hurt.numbers,
     );
     app.stage.addChild(this.world);
@@ -481,6 +485,7 @@ export class Renderer {
     this.drawBossFight(curr);
     this.drawBalls(prev, curr, alpha);
     this.drawEnemies(prev, curr, alpha);
+    this.drawCountdowns(curr);
     this.player.x = prev.playerX + (curr.playerX - prev.playerX) * alpha;
     this.reachRing.x = this.player.x;
     this.reachRing.scale.set(this.config.pickup.radius / 30);
@@ -738,7 +743,8 @@ export class Renderer {
     for (let i = 0; i < curr.hazardCount; i++) {
       const link = curr.hazardLink[i] ?? 0;
       const warn = curr.hazardWarn[i] ?? 0;
-      if (warn <= 0 || warn > WARN_TICKS) continue;
+      // The enemy marked as a threat glows during its whole countdown, not only the last WARN_TICKS.
+      if (warn <= 0 || (warn > WARN_TICKS && (curr.hazardKind[i] ?? 0) !== KIND_BLAST)) continue;
       if (link < 0) {
         if (this.glowCount < this.glowIds.length) this.glowIds[this.glowCount++] = -link;
       } else if ((curr.hazardKind[i] ?? 0) !== KIND_PORTAL) {
@@ -1138,6 +1144,28 @@ export class Renderer {
       if (sphere) sphere.visible = false;
     }
     this.ballsShown = shown;
+  }
+
+  /** The seconds left over each enemy marked as a threat (a `blast` with the enemy's id as link). */
+  private drawCountdowns(curr: Snapshot): void {
+    this.countdown.begin();
+    for (let i = 0; i < curr.hazardCount; i++) {
+      if ((curr.hazardKind[i] ?? 0) !== KIND_BLAST) continue;
+      const left = curr.hazardWarn[i] ?? 0;
+      if (left <= 0) continue;
+      const id = -(curr.hazardLink[i] ?? 0);
+      for (let e = 0; e < curr.enemyCount; e++) {
+        if (curr.enemyId[e] !== id) continue;
+        const radius = curr.enemyRadius[e] ?? 16;
+        this.countdown.show(
+          this.scratchEnemyX[e] ?? 0,
+          (this.scratchEnemyY[e] ?? 0) - radius - 20,
+          left,
+        );
+        break;
+      }
+    }
+    this.countdown.end();
   }
 
   private drawEnemies(prev: Snapshot, curr: Snapshot, alpha: number): void {

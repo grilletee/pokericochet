@@ -134,6 +134,34 @@ export interface EnemyFireDef {
   readonly maxAtOnce: number;
 }
 
+/**
+ * The enemy that becomes a threat (4G-G, 14th playtest: "de vez en cuando un enemigo normal se marca
+ * y tienes que dejar lo que haces para matarlo"). At a fixed rhythm one ordinary enemy is marked:
+ * an aura and a countdown show over it, it can be killed in `hits` strong hits (its health is
+ * lowered to that) and takes `markBonus` more damage; if it is alive when the countdown ends it
+ * explodes in a column of danger under it. The explosion is a hazard like any other: announced for the
+ * whole countdown and never without a way through (`isDodgeable`).
+ */
+export interface EnemyThreatDef {
+  /** A new mark at most this often (ticks), while fewer than `maxAtOnce` are alive. */
+  readonly everyTicks: number;
+  readonly maxAtOnce: number;
+  /** Ticks of countdown, at least `WARN_TICKS`. */
+  readonly countdownTicks: number;
+  /** The marked enemy dies in this many hits of the strongest ball of the team. */
+  readonly hits: number;
+  /** Extra damage the marked enemy takes (0.5 = +50 %). */
+  readonly markBonus: number;
+  /** Species that are chosen first, with the width of their blast and its damage. */
+  readonly themed: Readonly<Record<string, { readonly width: number; readonly damage: number }>>;
+  /** Any other enemy, when no themed one is on the field, on one mark in `otherOneIn`. */
+  readonly other: {
+    readonly width: number;
+    readonly damage: number;
+    readonly otherOneIn: number;
+  };
+}
+
 /** The boss fight rules that do not depend on the boss (ADR-053). */
 export interface BossFightDef {
   /** The fury starts when the boss is at or under this share of its health. */
@@ -436,6 +464,8 @@ export interface GameConfig {
   readonly bossFight?: BossFightDef;
   /** Ordinary enemies that now and then throw something (4G-E); absent = nobody does. */
   readonly enemyFire?: EnemyFireDef;
+  /** Ordinary enemies that are marked as a threat now and then (4G-G); none without it. */
+  readonly enemyThreat?: EnemyThreatDef;
   readonly progression: {
     /** xp needed to go from level n to n + 1, indexed by n - 1; the last value repeats. */
     readonly levelCosts: readonly number[];

@@ -134,6 +134,11 @@ function addHazard(run: Run, config: GameConfig, hazard: Hazard, together = fals
   addHazards(run, config, [hazard], together);
 }
 
+/** Puts one hazard of an ordinary enemy on the field if it is fair; true if it was placed (4G-G). */
+export function placeHazard(run: Run, config: GameConfig, hazard: Hazard): boolean {
+  return addHazards(run, config, [hazard], false);
+}
+
 /** How many times a new attack is pushed back 20 ticks looking for a fair moment, before it is dropped. */
 const MAX_DELAYS = 14;
 
@@ -156,9 +161,9 @@ function warningsFit(run: Run, t: number): boolean {
  * what "se retrasa" means), and dropped if no moment within `MAX_DELAYS` works: a missed attack is
  * better than an unfair one. `together` groups keep their relative timing (a comb strikes at once).
  */
-function addHazards(run: Run, config: GameConfig, group: Hazard[], together: boolean): void {
+function addHazards(run: Run, config: GameConfig, group: Hazard[], together: boolean): boolean {
   const room = (config.bossFight?.maxHazards ?? 12) - run.hazards.length;
-  if (group.length === 0 || room < group.length) return;
+  if (group.length === 0 || room < group.length) return false;
   const originals = group.map((h) => h.telegraph);
   let placed = false;
   for (let delay = 0; delay <= MAX_DELAYS; delay++) {
@@ -172,7 +177,7 @@ function addHazards(run: Run, config: GameConfig, group: Hazard[], together: boo
       break;
     }
   }
-  if (!placed) return;
+  if (!placed) return false;
   for (const hazard of group) {
     run.hazards.push(hazard);
     run.events.push({
@@ -184,6 +189,7 @@ function addHazards(run: Run, config: GameConfig, group: Hazard[], together: boo
       fromEnemy: isEnemyShot(hazard),
     });
   }
+  return true;
 }
 
 function spawnAttack(
@@ -579,6 +585,16 @@ function advanceHazards(run: Run, config: GameConfig): void {
   const floorY = config.player.y;
   if (run.boss.portalCool > 0) run.boss.portalCool -= 1;
   for (const hazard of run.hazards) {
+    if (hazard.kind === 'blast' && hazard.telegraph > 0) {
+      // The blast of a marked enemy follows it, and is gone if the enemy was killed in time (4G-G).
+      const owner = run.enemies.find((e) => e.id === -hazard.link && e.hp > 0);
+      if (owner === undefined) continue;
+      hazard.x = owner.x;
+      if (hazard.telegraph === 1) {
+        // The countdown ends: it explodes (it is gone, with no reward) and the column strikes.
+        run.enemies = run.enemies.filter((e) => e.id !== owner.id);
+      }
+    }
     if (hazard.telegraph > 0) {
       hazard.telegraph -= 1;
       if (hazard.telegraph === 0) {
@@ -586,7 +602,8 @@ function advanceHazards(run: Run, config: GameConfig): void {
           hazard.kind === 'column' ||
           hazard.kind === 'comb' ||
           hazard.kind === 'rain' ||
-          hazard.kind === 'sweep'
+          hazard.kind === 'sweep' ||
+          hazard.kind === 'blast'
         ) {
           const hit = covers(run, hazard);
           if (hit) strike(run, config, hazard);

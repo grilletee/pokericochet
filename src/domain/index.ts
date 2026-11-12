@@ -47,6 +47,7 @@ export type {
   BossPatternDef,
   BossPhaseDef,
   EnemyFireDef,
+  EnemyThreatDef,
   GameConfig,
   InterludeDef,
   MoveShapeDef,
@@ -150,6 +151,7 @@ export {
   teamIsFull,
   trainMember,
 } from './team';
+export { advanceThreats } from './threats';
 export type { TickOutput } from './tick';
 export { tick } from './tick';
 export type {
