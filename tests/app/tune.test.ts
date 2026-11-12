@@ -192,8 +192,8 @@ describe('mergeConfig', () => {
     expect(tuned('stage2', 4).team.stageLevels).toEqual([4, base.team.stageLevels[1]]);
     expect(tuned('stage3', 7).team.stageLevels).toEqual([base.team.stageLevels[0], 7]);
     // The balls by level move in two blocks (levels 3-5 and 6-8); levels 1 and 2 keep their value.
-    expect(tuned('ballsMid', 4).team.ballsByLevel).toEqual([1, 1, 4, 4, 4, 3, 3, 3]);
-    expect(tuned('ballsMax', 5).team.ballsByLevel).toEqual([1, 1, 2, 2, 2, 5, 5, 5]);
+    expect(tuned('ballsMid', 4).team.ballsByLevel).toEqual([1, 1, 4, 4, 4, 2, 2, 2]);
+    expect(tuned('ballsMax', 5).team.ballsByLevel).toEqual([1, 1, 1, 1, 1, 5, 5, 5]);
     expect(tuned('powerStep', 0.4).team).toEqual(base.team); // nothing else moves
   });
 

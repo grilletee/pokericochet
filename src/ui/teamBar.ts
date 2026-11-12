@@ -136,7 +136,8 @@ export class TeamBar {
 
   private buildTile(member: Member, index: number): HTMLElement {
     const form = this.formOf(member);
-    const tile = spriteTile(this.art.spriteUrl(form), form, member.type, 44, member.level);
+    // A sphere like the ones that fly in the field (4G-G): the same Pokémon, the same glass.
+    const tile = spriteTile(this.art.spriteUrl(form), form, member.type, 48, member.level, true);
     tile.dataset.teamTile = String(index);
     tile.title = `${pokemonName(form)} Nv${member.level}`;
     tile.style.cssText += 'pointer-events:auto;cursor:pointer;position:relative;';

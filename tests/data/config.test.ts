@@ -44,8 +44,11 @@ describe('stat mapping', () => {
     const levels = baseConfig.stats.levelMultiplier;
     expect(levels).toHaveLength(baseConfig.team.maxLevel);
     expect(levels[0]).toBe(1);
-    for (let i = 1; i < levels.length; i++)
-      expect(levels[i] ?? 0).toBeGreaterThan(levels[i - 1] ?? 0);
+    // What grows with every level is what a Pokémon puts on the field: its balls x the damage of each
+    // (since 4G-G the damage of one ball dips when a second ball arrives, the total does not).
+    const balls = baseConfig.team.ballsByLevel;
+    const total = levels.map((m, i) => m * (balls[i] ?? 1));
+    for (let i = 1; i < total.length; i++) expect(total[i] ?? 0).toBeGreaterThan(total[i - 1] ?? 0);
   });
 
   it('keeps the ball speed below the smallest enemy radius (no tunnelling)', () => {
@@ -196,7 +199,9 @@ describe('stat mapping', () => {
       expect(t.ballsByLevel[i] ?? 0).toBeGreaterThanOrEqual(t.ballsByLevel[i - 1] ?? 0);
     }
     expect(t.stageLevels).toEqual([3, 6]);
-    expect(Math.max(...t.ballRadiusByStage)).toBeLessThan(baseConfig.enemy.radius);
+    // A ball is a readable sphere (4G-G): the last stage may be a bit bigger than a small enemy, but
+    // never so much that it swallows it, and it must stay slower than the smallest enemy is wide.
+    expect(Math.max(...t.ballRadiusByStage)).toBeLessThan(baseConfig.enemy.radius * 1.4);
     expect(t.ballRadiusByStage[0]).toBe(baseConfig.ball.radius);
   });
 

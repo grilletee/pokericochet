@@ -51,8 +51,8 @@ describe('the rules of the team (ADR-030, ADR-031)', () => {
   });
 
   it('ballsFor reads the table by level and repeats the last value', () => {
-    expect([1, 2, 3, 5, 6, 8].map((l) => ballsFor(quietConfig, l))).toEqual([1, 1, 2, 2, 3, 3]);
-    expect(ballsFor(quietConfig, 20)).toBe(3);
+    expect([1, 2, 3, 5, 6, 8].map((l) => ballsFor(quietConfig, l))).toEqual([1, 1, 1, 1, 2, 2]);
+    expect(ballsFor(quietConfig, 20)).toBe(2);
     expect(ballsFor(withConfig({ team: { ...t, ballsByLevel: [] } }), 3)).toBe(1);
   });
 
@@ -156,13 +156,17 @@ describe('levels give balls, stages and effects (syncMember, trainMember)', () =
     const run = teamRun();
     const before = run.loadout[0];
     trainMember(run, quietConfig, 0, 'card');
-    trainMember(run, quietConfig, 0, 'card'); // level 3: the second stage and a second ball
+    trainMember(run, quietConfig, 0, 'card'); // level 3: the second stage (one ball since 4G-G)
     expect(run.loadout[0]?.id).toBe(before?.id);
-    expect(run.loadout.map((b) => [b.level, b.stage])).toEqual([
-      [3, 2],
-      [3, 2],
-    ]);
+    expect(run.loadout.map((b) => [b.level, b.stage])).toEqual([[3, 2]]);
     expect(run.loadout[0]?.effects).toEqual(abilitiesFor(quietConfig, 'charmander', 'fire', 2));
+    for (let i = 0; i < 3; i++) trainMember(run, quietConfig, 0, 'card'); // level 6: a second ball
+    expect(run.loadout.map((b) => [b.level, b.stage])).toEqual([
+      [6, 3],
+      [6, 3],
+    ]);
+    expect(run.loadout[0]?.id).toBe(before?.id);
+    expect(run.loadout[1]?.effects).toEqual(abilitiesFor(quietConfig, 'charmander', 'fire', 3));
   });
 
   it('every level reaches the balls that exist, also when the stage does not change', () => {
@@ -171,10 +175,7 @@ describe('levels give balls, stages and effects (syncMember, trainMember)', () =
     expect(run.loadout).toHaveLength(1);
     expect(run.loadout[0]).toMatchObject({ level: 2, stage: 1 });
     for (let i = 0; i < 3; i++) trainMember(run, quietConfig, 0, 'card'); // level 5: stage 2
-    expect(run.loadout.map((b) => [b.level, b.stage])).toEqual([
-      [5, 2],
-      [5, 2],
-    ]);
+    expect(run.loadout.map((b) => [b.level, b.stage])).toEqual([[5, 2]]);
   });
 
   it('reports each level, and an evolution only when a stage is crossed', () => {
@@ -404,7 +405,7 @@ describe('the replace screen (ADR-030)', () => {
   it('swaps the Pokémon at the chosen place: its balls, level and cards go, the newcomer starts fresh', () => {
     const run = full();
     const ownedBefore = run.loadout.filter((b) => b.owner === 2).length;
-    expect(ownedBefore).toBe(2);
+    expect(ownedBefore).toBe(1);
     resolveReplace(run, quietConfig, { type: 'replace', slot: 2 });
     expect(run.phase).toBe('playing');
     expect(run.pendingCapture).toBeNull();
@@ -702,7 +703,7 @@ describe('the hash sees every field of the team model', () => {
 describe('the size of the ball counts in the physics (ADR-031)', () => {
   it('a last-stage ball touches an enemy that a first-stage ball misses', () => {
     const reach = (stage: number): boolean => {
-      const enemy = makeEnemy({ id: 1, x: 240 + 28, y: 400, hp: 1e6 });
+      const enemy = makeEnemy({ id: 1, x: 240 + 32, y: 400, hp: 1e6 });
       const run = createRun(quietConfig, 1, 'charmander');
       run.loadout = [{ ...(run.loadout[0] as Run['loadout'][number]), stage }];
       run.cooldowns = [-1];
@@ -710,7 +711,7 @@ describe('the size of the ball counts in the physics (ADR-031)', () => {
       run.enemies = [enemy];
       return tick(run, { moveX: 0 }, quietConfig).events.some((e) => e.type === 'hit');
     };
-    expect(reach(1)).toBe(false); // 10 + 16 = 26 < 28
-    expect(reach(3)).toBe(true); // 15 + 16 = 31 > 28
+    expect(reach(1)).toBe(false); // 14 + 16 = 30 < 32
+    expect(reach(3)).toBe(true); // 21 + 16 = 37 > 32
   });
 });

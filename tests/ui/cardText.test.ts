@@ -69,13 +69,13 @@ describe('card text', () => {
   });
 
   it('says what a level gives: the next level, a new ball, an evolution into a named form', () => {
-    // Charmander Nv2 -> Nv3 reaches the second stage (and a second ball): Charmeleon.
+    // Charmander Nv2 -> Nv3 reaches the second stage (no new ball since 4G-G): Charmeleon.
     // The card is the announcement (4F-D): the title names both forms.
     expect(describeCard({ kind: 'train', member: 0 }, context)).toEqual({
       title: '¡Charmander evolucionará a Charmeleon!',
-      detail: 'Nv 2 → 3 · +1 bola',
+      detail: 'Nv 2 → 3',
     });
-    // Squirtle Nv5 is Wartortle: Nv6 gives a third ball and the last form, Blastoise.
+    // Squirtle Nv5 is Wartortle: Nv6 gives a second ball and the last form, Blastoise.
     expect(describeCard({ kind: 'train', member: 1 }, context)).toEqual({
       title: '¡Wartortle evolucionará a Blastoise!',
       detail: 'Nv 5 → 6 · +1 bola',

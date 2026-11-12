@@ -118,12 +118,17 @@ export const baseConfig: Omit<
   team: {
     maxMembers: 6,
     maxLevel: 8,
-    ballsByLevel: [1, 1, 2, 2, 2, 3, 3, 3],
+    // 4G-G: [1, 1, 2, 2, 2, 3, 3, 3] -> fewer balls, each one bigger and stronger ("menos bolas pero
+    // más grandes por Pokémon"). The damage per ball in `stats.levelMultiplier` was scaled by
+    // old count / new count, so the total per Pokémon is the same (measured: win rate 54 % -> 55 %,
+    // 25 runs per starter; balls on the field 16.9 -> 10.9).
+    ballsByLevel: [1, 1, 1, 1, 1, 2, 2, 2],
     stageLevels: [3, 6],
     starterBonus: 0.6,
     // 4G-F: [6, 7, 9] -> [10, 12, 15]: the ball is now a sphere with the Pokémon drawn inside it and
     // the collision radius is what is seen ("que se vea claramente qué Pokémon hay dentro").
-    ballRadiusByStage: [10, 12, 15],
+    // 4G-G: [10, 12, 15] -> [14, 17, 21]: in flight only the colour could be told (14th playtest).
+    ballRadiusByStage: [14, 17, 21],
     // A stage that keeps the form is worth as much as one that changes it (ADR-037): the damage of
     // every line grows at least x1.2 at stage 2 and x1.45 at stage 3, which is what the lines of
     // three forms bring by their stats (measured by M14 of the fun bench).
@@ -319,7 +324,7 @@ export const baseConfig: Omit<
   // hitInvulnTicks (4G-G): 50 ticks (0.8 s) in which attacks of bosses and enemies do not hurt again.
   player: { y: 680, speed: 5, margin: 20, maxHp: 10, hitInvulnTicks: 50 },
   ball: {
-    radius: 10, // 6 before 4G-F (see team.ballRadiusByStage)
+    radius: 14, // 6 before 4G-F, 10 before 4G-G (see team.ballRadiusByStage)
     cooldownTicks: 72,
     // 4F-C: at the new difficulty the old values (0.3 and x1.8) left the assisted aim at 4 % wins
     // against 51 % by hand (47 points); the author plays with it when there are many enemies, so it
@@ -533,7 +538,10 @@ export const baseConfig: Omit<
     // The stats of a new form already bring part of the growth, so the table is divided by the
     // mean form growth (about x1.2 at stage 2 and x1.45 at stage 3) from the 4F-B table
     // [1, 1.3, 1.6, 2, 2.4, 2.9, 3.5, 4.2]; still strictly growing, so every level matters.
-    levelMultiplier: [1, 1.3, 1.35, 1.7, 2, 2.1, 2.5, 3],
+    // 4G-G: this is the damage of ONE ball and there are fewer balls now (team.ballsByLevel), so each
+    // value is the old one x old count / new count: [1, 1.3, 1.35x2, 1.7x2, 2x2, 2.1x3/2, 2.5x3/2,
+    // 3x3/2]. The total of a Pokémon (balls x damage) is the same as before and still strictly grows.
+    levelMultiplier: [1, 1.3, 2.7, 3.4, 4, 3.15, 3.75, 4.5],
     speedStatMin: 20,
     speedStatMax: 130,
     // Damage = attack / damageDivisor * typeDamage. Grass has no offensive effect (it only

@@ -30,14 +30,21 @@ export function spriteTile(
   type: GameType | undefined,
   size: number,
   level?: number,
+  /** True: drawn as the glass sphere of the field (4G-G), so a Pokémon looks the same everywhere. */
+  sphere = false,
 ): HTMLElement {
   const color = type === undefined ? '#5b6aa8' : TYPE_COLORS[type];
   const tile = box(
     `display:flex;flex-direction:column;align-items:center;gap:2px;font-size:11px;font-weight:700;`,
   );
   const frame = box(
-    `width:${size}px;height:${size}px;border-radius:12px;border:2px solid ${color};` +
-      `background:${color}33;display:flex;align-items:center;justify-content:center;overflow:hidden;`,
+    sphere
+      ? `width:${size}px;height:${size}px;border-radius:50%;border:3px solid ${color};` +
+          `background:radial-gradient(circle at 32% 28%,${color}77 0,#2a3a8ccc 34%,#0e122ee6 70%);` +
+          `box-shadow:inset 0 0 0 2px #0006,inset 3px 3px 5px #ffffff44;position:relative;` +
+          `display:flex;align-items:center;justify-content:center;overflow:hidden;`
+      : `width:${size}px;height:${size}px;border-radius:12px;border:2px solid ${color};` +
+          `background:${color}33;display:flex;align-items:center;justify-content:center;overflow:hidden;`,
   );
   if (url === undefined) {
     frame.textContent = pokemonName(form).charAt(0);
@@ -47,7 +54,11 @@ export function spriteTile(
     img.src = url;
     img.alt = pokemonName(form);
     img.draggable = false;
-    img.style.cssText = `width:${size - 6}px;height:${size - 6}px;image-rendering:pixelated;`;
+    // In a sphere the picture is drawn a little larger than the glass is wide: the empty margin of
+    // the 96 px canvas falls outside the circle and the Pokémon fills it, as it does in flight.
+    img.style.cssText = sphere
+      ? `width:${size - 6}px;height:${size - 6}px;image-rendering:pixelated;transform:scale(1.3);`
+      : `width:${size - 6}px;height:${size - 6}px;image-rendering:pixelated;`;
     frame.append(img);
   }
   tile.append(frame);

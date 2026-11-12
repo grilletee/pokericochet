@@ -1,4 +1,12 @@
-import { Application, Container, Graphics, Sprite, Texture, TilingSprite } from 'pixi.js';
+import {
+  Application,
+  Container,
+  Graphics,
+  Rectangle,
+  Sprite,
+  Texture,
+  TilingSprite,
+} from 'pixi.js';
 import {
   type AimDirection,
   aimDirection,
@@ -70,7 +78,7 @@ const STATUS_LOD_ENEMIES = 40;
 const FOE_EDGE = '#ff5a5a';
 /** Circle of the sphere texture (24 px canvas, circle of about 23 px) and share of the diameter the picture fills. */
 const SPHERE_CIRCLE = 23.2;
-const SPHERE_CONTENT = 0.8;
+const SPHERE_CONTENT = 0.86;
 /** Pixels per millisecond the three layers of the backdrop scroll at (far, middle, near). */
 const BACKDROP_SPEEDS: readonly number[] = [0.006, 0.016, 0.034];
 const AIM_DOTS = 16;
@@ -92,7 +100,13 @@ const ENEMY_ART_SCALE = 1.7;
  * Side of the box that holds the visible pixels of a texture (ADR-037), measured once. If the
  * pixels cannot be read, the whole picture counts.
  */
-function measureExtent(texture: Texture): number {
+/**
+ * The visible part of a sprite: the side of its opaque box (ADR-037) and the same sprite cut to that
+ * box (4G-G: "recorta el espacio vacío de los sprites para que el Pokémon llene la esfera"), so a
+ * ball shows the Pokémon, not the empty margin of its 96 px canvas. If the pixels cannot be read,
+ * the whole picture counts and nothing is cut.
+ */
+function measureArt(texture: Texture): { extent: number; trimmed: Texture | undefined } {
   const whole = Math.max(texture.width, texture.height);
   try {
     const resource = texture.source.resource as CanvasImageSource;
@@ -100,16 +114,34 @@ function measureExtent(texture: Texture): number {
     canvas.width = texture.width;
     canvas.height = texture.height;
     const context = canvas.getContext('2d', { willReadFrequently: true });
-    if (context === null) return whole;
+    if (context === null) return { extent: whole, trimmed: undefined };
     context.drawImage(resource, 0, 0);
     const { data } = context.getImageData(0, 0, canvas.width, canvas.height);
-    return opaqueExtent(
-      (x, y) => data[(y * canvas.width + x) * 4 + 3] ?? 0,
-      canvas.width,
-      canvas.height,
+    const alpha = (x: number, y: number) => data[(y * canvas.width + x) * 4 + 3] ?? 0;
+    const extent = opaqueExtent(alpha, canvas.width, canvas.height);
+    let minX = canvas.width;
+    let minY = canvas.height;
+    let maxX = -1;
+    let maxY = -1;
+    for (let y = 0; y < canvas.height; y++) {
+      for (let x = 0; x < canvas.width; x++) {
+        if (alpha(x, y) <= 20) continue;
+        if (x < minX) minX = x;
+        if (x > maxX) maxX = x;
+        if (y < minY) minY = y;
+        if (y > maxY) maxY = y;
+      }
+    }
+    if (maxX < 0) return { extent, trimmed: undefined };
+    const frame = new Rectangle(
+      texture.frame.x + minX,
+      texture.frame.y + minY,
+      maxX - minX + 1,
+      maxY - minY + 1,
     );
+    return { extent, trimmed: new Texture({ source: texture.source, frame }) };
   } catch {
-    return whole;
+    return { extent: whole, trimmed: undefined };
   }
 }
 
@@ -166,6 +198,8 @@ export class Renderer {
   private fxNext = 0;
   /** Opaque box of each art texture, by art code (ADR-037). */
   private readonly extents: number[];
+  /** The same textures cut to their opaque box, for the inside of a sphere (4G-G). */
+  private readonly trimmed: (Texture | undefined)[];
   /** The moves and Ultimates (4G-E): pixel shapes, element showers, flash and shake. */
   private readonly moves: UltimateFx;
   private launcherX = 0;
@@ -215,7 +249,11 @@ export class Renderer {
     private readonly art: readonly (Texture | undefined)[],
     private readonly forms: readonly (readonly number[])[],
   ) {
-    this.extents = art.map((texture) => (texture === undefined ? 1 : measureExtent(texture)));
+    const measured = art.map((texture) =>
+      texture === undefined ? undefined : measureArt(texture),
+    );
+    this.extents = measured.map((m) => m?.extent ?? 1);
+    this.trimmed = measured.map((m) => m?.trimmed);
     this.moves = new UltimateFx(bar, config.arena.width, config.arena.height);
     this.scratchBallX = new Float32Array(maxSlots);
     this.scratchBallY = new Float32Array(maxSlots);
@@ -1083,11 +1121,11 @@ export class Renderer {
         sprite.texture = this.disc;
         sprite.scale.set((radius * 0.7) / 32);
       } else {
-        sprite.texture = art;
-        // The visible part of the picture fits inside the sphere (not its whole canvas).
-        sprite.scale.set(
-          (2 * radius * SPHERE_CONTENT) / Math.max(1, this.extents[code] ?? art.width),
-        );
+        // The Pokémon cut to its visible box fills the glass: its longest side is the share
+        // `SPHERE_CONTENT` of the diameter (the empty margin of the canvas is not drawn).
+        const cut = this.trimmed[code] ?? art;
+        sprite.texture = cut;
+        sprite.scale.set((2 * radius * SPHERE_CONTENT) / Math.max(1, cut.width, cut.height));
       }
       sprite.tint = 0xffffff;
       sprite.alpha = 1;
