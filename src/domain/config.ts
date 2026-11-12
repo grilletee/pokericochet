@@ -284,6 +284,11 @@ export interface GameConfig {
     readonly speed: number;
     readonly margin: number;
     readonly maxHp: number;
+    /**
+     * Ticks of invulnerability to attacks of bosses and enemies after one of them hurts (4G-G, the
+     * standard of the genre). A leak at the defence line neither gives nor respects it.
+     */
+    readonly hitInvulnTicks: number;
   };
   readonly ball: {
     readonly radius: number;

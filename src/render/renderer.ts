@@ -18,6 +18,7 @@ import {
   WARN_TICKS,
 } from '../domain';
 import { ballVisualScale, opaqueExtent } from './artBox';
+import { HurtFx } from './hurtFx';
 import { interpolateBalls, interpolateEnemies } from './interpolate';
 import {
   ART_PIXEL,
@@ -121,6 +122,9 @@ function measureExtent(texture: Texture): number {
  */
 export class Renderer {
   private readonly world = new Container();
+  /** The feel of a hit on the player (4G-G): red flash, shake, floating number, blink. */
+  private readonly hurt = new HurtFx();
+  private clockMs = 0;
   private readonly enemyLayer = new Container();
   private readonly ballLayer = new Container();
   private readonly fxLayer = new Container();
@@ -375,8 +379,10 @@ export class Renderer {
       this.shieldRing,
       this.reachRing,
       this.player,
+      this.hurt.numbers,
     );
     app.stage.addChild(this.world);
+    app.stage.addChild(this.hurt.flash);
   }
 
   static async create(
@@ -444,8 +450,15 @@ export class Renderer {
     this.drawAim(curr);
     this.launcherX = this.player.x;
     this.drawEffects(events, elapsedMs);
-    // The screen shakes for a moment when an Ultimate lands.
-    this.world.pivot.set(this.moves.shakeX, this.moves.shakeY);
+    // The hit on the player: veil, shake, number, and the launcher blinks while it is invulnerable.
+    this.clockMs += elapsedMs;
+    this.hurt.update(elapsedMs, this.app.screen.width, this.app.screen.height);
+    this.player.alpha = HurtFx.blink(curr.playerInvuln, this.clockMs);
+    // The screen shakes for a moment when an Ultimate lands or the player is hurt.
+    this.world.pivot.set(
+      this.moves.shakeX + this.hurt.shakeX,
+      this.moves.shakeY + this.hurt.shakeY,
+    );
 
     this.app.render();
   }
@@ -1269,6 +1282,8 @@ export class Renderer {
   private drawEffects(events: readonly GameEvent[], elapsedMs: number): void {
     for (const event of events) {
       if (event.type === 'move') this.startMove(event);
+      else if (event.type === 'playerHurt')
+        this.hurt.hurt(this.player.x, this.config.player.y, event.damage);
       else if (event.type === 'hit') this.startEffect(event.x, event.y, 0xffffff);
       else if (event.type === 'kill') this.startEffect(event.x, event.y, 0xffd54f);
       else if (event.type === 'chain') {

@@ -26,6 +26,8 @@ export interface Player {
   damageMult: number;
   /** Accumulated drain strength, towards healing 1 hp. */
   drain: number;
+  /** Ticks left in which attacks of bosses and enemies do not hurt (after a hit, 4G-G). */
+  invuln: number;
 }
 
 /** The boss fight (ADR-016). `id` is 0 until the boss has spawned. */
@@ -253,6 +255,7 @@ export function createRun(config: GameConfig, seed: number, starterSpecies: stri
       level: 1,
       damageMult: 1,
       drain: 0,
+      invuln: 0,
     },
     team: [],
     pendingCapture: null,
@@ -418,6 +421,7 @@ export function hashRun(run: Run): string {
   h.int(p.level);
   h.num(p.damageMult);
   h.num(p.drain);
+  h.int(p.invuln);
   h.int(run.team.length);
   for (const member of run.team) {
     h.str(member.species);

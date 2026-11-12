@@ -89,6 +89,8 @@ export interface Snapshot {
   phase: number;
   playerX: number;
   playerHp: number;
+  /** Ticks of invulnerability left after a hit (the render blinks the launcher while > 0). */
+  playerInvuln: number;
   playerMaxHp: number;
   playerLevel: number;
   playerXp: number;
@@ -194,6 +196,7 @@ export function createSnapshot(maxSlots = 64, maxEnemies = 512, maxPickups = 64)
     phase: PHASE_PLAYING,
     playerX: 0,
     playerHp: 0,
+    playerInvuln: 0,
     playerMaxHp: 0,
     playerLevel: 1,
     playerXp: 0,
@@ -272,6 +275,7 @@ export function writeSnapshot(
   snap.phase = phaseCode(run.phase);
   snap.playerX = run.player.x;
   snap.playerHp = run.player.hp;
+  snap.playerInvuln = run.player.invuln;
   snap.playerMaxHp = run.player.maxHp;
   snap.playerLevel = run.player.level;
   snap.playerXp = run.player.xp;

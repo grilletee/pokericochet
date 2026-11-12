@@ -179,7 +179,6 @@ export function tick(run: Run, cmd: Command, config: GameConfig): TickOutput {
 
   const { arena, ball: ballConfig } = config;
   const guardBonus = config.effects.guardBonus ?? 0.15;
-
   // Slower while Dialga's time slow lasts, and the tide of Kyogre narrows the field (ADR-054).
   const margin = fieldMargin(run, config);
   run.player.x = clamp(
@@ -224,6 +223,9 @@ export function tick(run: Run, cmd: Command, config: GameConfig): TickOutput {
           : leakDamage(config, run.team, e.threat, run.guardTicks > 0 ? guardBonus : 0);
       damagePlayer(run, cost);
       run.events.push({ type: 'leak', enemyId: e.id, damage: cost });
+      if (cost > 0) {
+        run.events.push({ type: 'playerHurt', damage: cost, x: run.player.x, source: 'leak' });
+      }
     } else {
       run.enemies[kept] = e;
       kept += 1;

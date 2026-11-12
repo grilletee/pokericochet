@@ -31,7 +31,8 @@ function branch(run: Run): Run {
   return {
     ...run,
     hazards: run.hazards.map((h) => ({ ...h })),
-    player: { ...run.player },
+    // Strict: a blink that has just been given must not hide a hit that would land.
+    player: { ...run.player, invuln: 0 },
     boss: { ...run.boss, attackIn: 1e9, coreIn: 1e9, mechIn: 1e9 },
     events: [],
   };

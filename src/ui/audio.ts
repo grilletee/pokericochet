@@ -11,6 +11,7 @@ export type SoundId =
   | 'hybrid'
   | 'captureDrop'
   | 'damage'
+  | 'hurt'
   | 'win'
   | 'lose'
   | 'collect'
@@ -45,8 +46,10 @@ export function soundFor(event: GameEvent): SoundId | null {
       return 'capture';
     case 'train':
       return 'collect';
-    case 'leak':
-      return 'damage';
+    // Any health lost (a leak, a boss attack, an enemy shot) has its own sound (4G-F playtest: "no
+    // suena nada"). The old 'leak' sound is gone: the same hit would sound twice.
+    case 'playerHurt':
+      return 'hurt';
     case 'won':
       return 'win';
     case 'lost':
@@ -67,6 +70,8 @@ const MIN_GAP_MS: Record<SoundId, number> = {
   hybrid: 0,
   captureDrop: 0,
   damage: 120,
+  // Every hit must be heard, but two within the blink would only be a buzz.
+  hurt: 250,
   win: 0,
   lose: 0,
   collect: 60,
@@ -134,6 +139,13 @@ const RECIPES: Record<SoundId, readonly Note[]> = {
     { from: 1568, to: 1568, seconds: 0.14, wave: 'sine', gain: 0.1, at: 0.07 },
   ],
   damage: [{ from: 180, to: 70, seconds: 0.22, wave: 'sawtooth', gain: 0.12 }],
+  // Hurt: a heavy low thump with a harsh falling buzz on top and a sharp crack at the start, louder
+  // than anything else in the fight so it is never missed.
+  hurt: [
+    { from: 150, to: 45, seconds: 0.32, wave: 'sine', gain: 0.26 },
+    { from: 260, to: 90, seconds: 0.26, wave: 'sawtooth', gain: 0.16 },
+    { from: 1800, to: 300, seconds: 0.07, wave: 'square', gain: 0.1 },
+  ],
   collect: [{ from: 440, to: 660, seconds: 0.07, wave: 'sine', gain: 0.1 }],
   // Capture joins the team: a three-note jingle, the most recognisable sound of the game.
   capture: [

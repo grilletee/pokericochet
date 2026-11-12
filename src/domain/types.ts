@@ -370,6 +370,16 @@ export type GameEvent =
     }
   /** The player lost `damage` health to a column of the boss (after the guard of the team). */
   | { readonly type: 'bossHurt'; readonly damage: number }
+  /**
+   * The player lost health, from any source (4G-G): the one event the feel of a hit hangs on (sound,
+   * red flash, shake, floating number). `source` is where it came from; `x` where the player stood.
+   */
+  | {
+      readonly type: 'playerHurt';
+      readonly damage: number;
+      readonly x: number;
+      readonly source: 'leak' | 'boss' | 'shot';
+    }
   /** The barrier of a legendary went up or down (reflects balls while it is up, ADR-054). */
   | { readonly type: 'bossBarrier'; readonly up: boolean }
   /** Dialga slowed the player's time (ADR-054). */

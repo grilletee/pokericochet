@@ -303,9 +303,18 @@ function covers(run: Run, hazard: Hazard): boolean {
 
 function strike(run: Run, config: GameConfig, hazard: Hazard): void {
   hazard.struck = true;
+  // Just hit: nothing hurts again until the blink is over (the hit is used up, not saved for later).
+  if (run.player.invuln > 0) return;
   const cost = leakDamage(config, run.team, hazard.damage);
   damagePlayer(run, cost);
+  run.player.invuln = config.player.hitInvulnTicks;
   run.events.push({ type: 'bossHurt', damage: cost });
+  run.events.push({
+    type: 'playerHurt',
+    damage: cost,
+    x: run.player.x,
+    source: isEnemyShot(hazard) ? 'shot' : 'boss',
+  });
 }
 
 /**
@@ -461,6 +470,8 @@ export function zoneCovers(run: Run, x: number): boolean {
 export function advanceBossFight(run: Run, config: GameConfig): void {
   const fight = config.bossFight;
   if (fight === undefined) return;
+  // The blink after a hit runs down here, where the attacks that respect it are resolved.
+  if (run.player.invuln > 0) run.player.invuln -= 1;
   const boss = liveBoss(run);
   if (boss === undefined) {
     // What a boss left goes with it; the shots of ordinary enemies keep falling.

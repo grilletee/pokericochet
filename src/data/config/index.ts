@@ -316,7 +316,8 @@ export const baseConfig: Omit<
     ],
   },
   arena: { width: 480, height: 720, defenseLineY: 640 },
-  player: { y: 680, speed: 5, margin: 20, maxHp: 10 },
+  // hitInvulnTicks (4G-G): 50 ticks (0.8 s) in which attacks of bosses and enemies do not hurt again.
+  player: { y: 680, speed: 5, margin: 20, maxHp: 10, hitInvulnTicks: 50 },
   ball: {
     radius: 10, // 6 before 4G-F (see team.ballRadiusByStage)
     cooldownTicks: 72,
