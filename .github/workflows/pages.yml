@@ -51,7 +51,8 @@ jobs:
           path: |
             tools/fetch-data/.cache
             src/assets/sprites
-          key: fetch-data-${{ hashFiles('tools/fetch-data/roster.json', 'tools/fetch-data/moves-overrides.json', 'tools/fetch-data/typechart.ts') }}
+            src/assets/cries
+          key: fetch-data-v2-${{ hashFiles('tools/fetch-data/roster.json', 'tools/fetch-data/moves-overrides.json', 'tools/fetch-data/typechart.ts') }}
       - name: Stop if the data cache is missing
         if: steps.data-cache.outputs.cache-hit != 'true'
         run: |

@@ -13,6 +13,9 @@ jobs:
   # table and the list of the 18 types in typechart.ts), not on the rest of the tool's code, and `restore-keys` starts from the closest older cache: adding
   # a species downloads only the new ones. Raw responses are keyed by URL, so changing how they
   # are parsed never downloads anything.
+  # The key carries a version (`v2`): bump it whenever the cache gains a new kind of file. v2 added
+  # the cries (src/assets/cries); a v1 cache without them still hit its exact key, so nothing was
+  # saved again and every job downloaded the cries by itself under a 3-minute limit.
   # Every other job (the Node matrix below, the Pages deploy) only RESTORES this cache and fails
   # fast if it is missing; none of them can start a second cold download in parallel (ADR-040).
   data:
@@ -36,9 +39,10 @@ jobs:
           path: |
             tools/fetch-data/.cache
             src/assets/sprites
-          key: fetch-data-${{ hashFiles('tools/fetch-data/roster.json', 'tools/fetch-data/moves-overrides.json', 'tools/fetch-data/typechart.ts') }}
+            src/assets/cries
+          key: fetch-data-v2-${{ hashFiles('tools/fetch-data/roster.json', 'tools/fetch-data/moves-overrides.json', 'tools/fetch-data/typechart.ts') }}
           restore-keys: |
-            fetch-data-${{ hashFiles('tools/fetch-data/roster.json', 'tools/fetch-data/moves-overrides.json', 'tools/fetch-data/typechart.ts') }}-partial-
+            fetch-data-v2-${{ hashFiles('tools/fetch-data/roster.json', 'tools/fetch-data/moves-overrides.json', 'tools/fetch-data/typechart.ts') }}-partial-
             fetch-data-
       # 4 workers with 500 ms each (about 6 requests a second): the step limit stays under the job's,
       # so the partial save below always has time to run.
@@ -53,7 +57,8 @@ jobs:
           path: |
             tools/fetch-data/.cache
             src/assets/sprites
-          key: fetch-data-${{ hashFiles('tools/fetch-data/roster.json', 'tools/fetch-data/moves-overrides.json', 'tools/fetch-data/typechart.ts') }}
+            src/assets/cries
+          key: fetch-data-v2-${{ hashFiles('tools/fetch-data/roster.json', 'tools/fetch-data/moves-overrides.json', 'tools/fetch-data/typechart.ts') }}
       - name: Save what was downloaded so far (the step failed or ran out of time)
         if: failure()
         uses: actions/cache/save@v4
@@ -61,7 +66,8 @@ jobs:
           path: |
             tools/fetch-data/.cache
             src/assets/sprites
-          key: fetch-data-${{ hashFiles('tools/fetch-data/roster.json', 'tools/fetch-data/moves-overrides.json', 'tools/fetch-data/typechart.ts') }}-partial-${{ github.run_id }}
+            src/assets/cries
+          key: fetch-data-v2-${{ hashFiles('tools/fetch-data/roster.json', 'tools/fetch-data/moves-overrides.json', 'tools/fetch-data/typechart.ts') }}-partial-${{ github.run_id }}
 
   check:
     needs: data
@@ -89,7 +95,8 @@ jobs:
           path: |
             tools/fetch-data/.cache
             src/assets/sprites
-          key: fetch-data-${{ hashFiles('tools/fetch-data/roster.json', 'tools/fetch-data/moves-overrides.json', 'tools/fetch-data/typechart.ts') }}
+            src/assets/cries
+          key: fetch-data-v2-${{ hashFiles('tools/fetch-data/roster.json', 'tools/fetch-data/moves-overrides.json', 'tools/fetch-data/typechart.ts') }}
       - name: Stop if the data cache is missing
         if: steps.data-cache.outputs.cache-hit != 'true'
         run: |

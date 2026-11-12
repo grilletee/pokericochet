@@ -43,7 +43,9 @@ try {
     const { profile } = await cdp.send('Profiler.stop');
     const self = new Map();
     const dt = profile.timeDeltas;
-    profile.samples.forEach((id, i) => self.set(id, (self.get(id) ?? 0) + (dt[i] ?? 0)));
+    for (const [i, id] of profile.samples.entries()) {
+      self.set(id, (self.get(id) ?? 0) + (dt[i] ?? 0));
+    }
     for (const node of profile.nodes) {
       const f = node.callFrame;
       const key = `${f.functionName || '(anon)'} ${f.url.split('/').pop()}:${f.lineNumber + 1}`;
@@ -62,7 +64,7 @@ try {
   const top = [...rows.entries()].sort((a, b) => b[1] - a[1]).slice(0, 45);
   for (const [k, v] of top)
     console.log(
-      `${(cpu ? v.toFixed(1) + ' ms' : `${Math.round(v / 1024)} KB`).padStart(10)}  ${k}`,
+      `${(cpu ? `${v.toFixed(1)} ms` : `${Math.round(v / 1024)} KB`).padStart(10)}  ${k}`,
     );
 } finally {
   await browser.close();
