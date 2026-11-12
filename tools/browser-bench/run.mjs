@@ -4,6 +4,7 @@
 //   pnpm bench:browser                    headed Edge (real GPU path)
 //   pnpm bench:browser -- --real          the real peak load (24 balls, 30 enemies) instead of the stress scene
 //   pnpm bench:browser -- --headless      headless
+//   pnpm bench:browser -- --mobile        phone size (390 x 760 at 2x), where the game is played now
 //   pnpm bench:browser -- --out result.json
 //
 // Env: BROWSER_PATH overrides the browser executable.
@@ -57,7 +58,13 @@ const browser = await chromium.launch({
 });
 
 try {
-  const page = await browser.newPage({ viewport: { width: 800, height: 760 } });
+  // --mobile: a phone in portrait (the game is now played mostly there): 390 x 760 at 2x density.
+  const mobile = args.includes('--mobile');
+  const page = await browser.newPage(
+    mobile
+      ? { viewport: { width: 390, height: 760 }, deviceScaleFactor: 2, hasTouch: true }
+      : { viewport: { width: 800, height: 760 } },
+  );
   page.on('pageerror', (e) => console.error('[pageerror]', e.message));
   page.on('console', (m) => {
     if (m.type() === 'error') console.error('[console.error]', m.text());
@@ -70,7 +77,14 @@ try {
   });
   const result = await page.evaluate(() => window.__benchResult);
   const isolated = await page.evaluate(() => window.crossOriginIsolated);
-  const report = { browser: browser.version(), headless, query: extraQuery, isolated, ...result };
+  const report = {
+    browser: browser.version(),
+    headless,
+    mobile,
+    query: extraQuery,
+    isolated,
+    ...result,
+  };
   const json = JSON.stringify(report, null, 2);
   console.log(json);
   if (outFile) writeFileSync(outFile, `${json}\n`);

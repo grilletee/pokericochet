@@ -59,6 +59,8 @@ export class UltimateFx {
   private readonly bigFull = new Float32Array(BIG);
   private readonly bigElem = new Uint8Array(BIG);
   private partNext = 0;
+  /** True while anything of this layer may be alive; false lets `update` skip everything. */
+  private busy = false;
   private readonly flash: Sprite;
   private flashLife = 0;
   private shakeLife = 0;
@@ -119,6 +121,7 @@ export class UltimateFx {
     this.pvy[i] = vy;
     this.pgrav[i] = grav;
     this.plife[i] = 1;
+    this.busy = true;
     dot.tint = color;
     dot.scale.set(size);
     dot.visible = true;
@@ -139,6 +142,7 @@ export class UltimateFx {
     if (sheet === undefined) return;
     this.bigKind[i] = kind;
     this.bigLife[i] = 1;
+    this.busy = true;
     this.bigColor[i] = color;
     this.bigFull[i] = w;
     this.bigElem[i] = ELEMENT_CODE[element];
@@ -314,6 +318,7 @@ export class UltimateFx {
       this.flash.tint = color;
       this.flashLife = 1;
       this.shakeLife = 1;
+      this.busy = true;
     }
   }
 
@@ -358,7 +363,16 @@ export class UltimateFx {
   /** Advances every effect by `ms` and draws the frame of each (the beams animate by life). */
   update(ms: number): void {
     this.clock += ms;
+    // Nothing is alive (the normal state of a fight): the whole layer is out of the scene, so the
+    // renderer does not even walk its ~350 sprites (4G-G, performance).
+    if (!this.busy) {
+      this.layer.visible = false;
+      return;
+    }
+    this.layer.visible = true;
+    this.busy = false; // set again by whatever is born during this update, or still alive at its end
     const step = ms / 16.67;
+    let alive = false;
     const decay = ms / BIG_MS;
     for (let i = 0; i < BIG; i++) {
       const life = this.bigLife[i] ?? 0;
@@ -371,6 +385,7 @@ export class UltimateFx {
         continue;
       }
       this.bigLife[i] = next;
+      alive = true;
       const fx = fxFor(this.bigColor[i] ?? 0xffffff);
       const frame = Math.floor(this.clock / 70) % FX_FRAMES;
       if (this.bigKind[i] === 0) {
@@ -450,6 +465,7 @@ export class UltimateFx {
         continue;
       }
       this.plife[i] = next;
+      alive = true;
       this.pvy[i] = (this.pvy[i] ?? 0) + (this.pgrav[i] ?? 0) * step;
       this.px[i] = (this.px[i] ?? 0) + (this.pvx[i] ?? 0) * step;
       this.py[i] = (this.py[i] ?? 0) + (this.pvy[i] ?? 0) * step;
@@ -475,5 +491,6 @@ export class UltimateFx {
       this.shakeX = 0;
       this.shakeY = 0;
     }
+    this.busy = this.busy || alive || this.flashLife > 0 || this.shakeLife > 0;
   }
 }

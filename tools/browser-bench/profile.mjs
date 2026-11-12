@@ -26,7 +26,9 @@ const browser = await chromium.launch({ executablePath, headless: false });
 try {
   const page = await browser.newPage({ viewport: { width: 800, height: 760 } });
   const cdp = await page.context().newCDPSession(page);
-  await page.goto(`http://127.0.0.1:4177/?bench${extraQuery}`);
+  // --real: the real peak load (24 balls, 30 enemies), the one the budget is about.
+  const load = args.includes('--real') ? 'bench=real' : 'bench';
+  await page.goto(`http://127.0.0.1:4177/?${load}${extraQuery}`);
   await page.bringToFront();
   if (cpu) await cdp.send('Profiler.enable');
   if (cpu) await cdp.send('Profiler.start');

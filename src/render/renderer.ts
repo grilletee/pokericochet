@@ -26,7 +26,7 @@ import {
   typeCode,
   WARN_TICKS,
 } from '../domain';
-import { ballVisualScale, opaqueExtent } from './artBox';
+import { ballVisualScale } from './artBox';
 import { CountdownFx, HurtFx } from './hurtFx';
 import { interpolateBalls, interpolateEnemies } from './interpolate';
 import {
@@ -120,22 +120,24 @@ function measureArt(texture: Texture): { extent: number; trimmed: Texture | unde
     if (context === null) return { extent: whole, trimmed: undefined };
     context.drawImage(resource, 0, 0);
     const { data } = context.getImageData(0, 0, canvas.width, canvas.height);
-    const alpha = (x: number, y: number) => data[(y * canvas.width + x) * 4 + 3] ?? 0;
-    const extent = opaqueExtent(alpha, canvas.width, canvas.height);
-    let minX = canvas.width;
+    // One pass over the pixels for the box (this runs for every species at start-up, so no closure
+    // per pixel): same rule as `opaqueExtent` (alpha above 20).
+    const w = canvas.width;
+    let minX = w;
     let minY = canvas.height;
     let maxX = -1;
     let maxY = -1;
-    for (let y = 0; y < canvas.height; y++) {
-      for (let x = 0; x < canvas.width; x++) {
-        if (alpha(x, y) <= 20) continue;
+    for (let y = 0, at = 3; y < canvas.height; y++) {
+      for (let x = 0; x < w; x++, at += 4) {
+        if ((data[at] ?? 0) <= 20) continue;
         if (x < minX) minX = x;
         if (x > maxX) maxX = x;
         if (y < minY) minY = y;
         if (y > maxY) maxY = y;
       }
     }
-    if (maxX < 0) return { extent, trimmed: undefined };
+    if (maxX < 0) return { extent: whole, trimmed: undefined };
+    const extent = Math.max(maxX - minX + 1, maxY - minY + 1);
     const frame = new Rectangle(
       texture.frame.x + minX,
       texture.frame.y + minY,
@@ -171,6 +173,8 @@ export class Renderer {
   private readonly pickupRings: Sprite[] = [];
   private readonly aimDots: Sprite[] = [];
   private readonly hazardLayer = new Container();
+  /** The sparks of the hazards in their own layer, so it can leave the scene when there are none. */
+  private readonly sparkLayer = new Container();
   private readonly hazardSprites: TilingSprite[] = [];
   /** The bright mark each hazard leaves on the floor strip, and the pool of the status signs. */
   private readonly hazardFloor: TilingSprite[] = [];
@@ -392,6 +396,7 @@ export class Renderer {
       spark.scale.set(ART_PIXEL / 2);
       spark.visible = false;
       this.hazardSparks.push(spark);
+      this.sparkLayer.addChild(spark);
     }
     for (let i = 0; i < STATUS_POOL; i++) {
       const sign = new Sprite(disc);
@@ -417,7 +422,7 @@ export class Renderer {
       this.moves.layer,
       this.fxLayer,
       this.barrierSprite,
-      ...this.hazardSparks,
+      this.sparkLayer,
       this.slowVeil,
       this.shieldRing,
       this.reachRing,
@@ -504,6 +509,12 @@ export class Renderer {
       this.moves.shakeX + this.hurt.shakeX,
       this.moves.shakeY + this.hurt.shakeY,
     );
+
+    // A layer with nothing to show leaves the scene: the renderer does not walk its pool of sprites
+    // (hundreds of invisible ones) every frame (4G-G, performance).
+    this.hazardLayer.visible = curr.hazardCount > 0;
+    this.sparkLayer.visible = curr.hazardCount > 0;
+    this.statusLayer.visible = this.statusUsed > 0;
 
     this.app.render();
   }
@@ -1379,6 +1390,7 @@ export class Renderer {
     }
     this.moves.update(elapsedMs);
     const decay = elapsedMs / FX_DURATION_MS;
+    let anyFx = false;
     for (let i = 0; i < FX_POOL; i++) {
       const life = this.fxLife[i] ?? 0;
       const sprite = this.fxSprites[i];
@@ -1389,10 +1401,12 @@ export class Renderer {
         sprite.visible = false;
       } else {
         this.fxLife[i] = next;
+        anyFx = true;
         sprite.alpha = next;
         sprite.scale.set((this.fxSize[i] ?? 1) * (0.35 + (1 - next) * 0.6));
       }
     }
+    this.fxLayer.visible = anyFx;
   }
 
   destroy(): void {

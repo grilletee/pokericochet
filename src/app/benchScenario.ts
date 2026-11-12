@@ -24,8 +24,11 @@ export function benchScenario(
   seed: number,
   load: BenchLoad,
 ): { run: Run; config: GameConfig } {
+  // No threat marks (4G-G): they make an enemy killable, and this scene counts on unkillable ones so
+  // that the load is the same from the first frame to the last.
+  const { enemyThreat: _threat, ...rest } = config;
   const benchConfig: GameConfig = {
-    ...config,
+    ...rest,
     ball: { ...config.ball, cooldownTicks: 1 },
     waves: [],
   };
