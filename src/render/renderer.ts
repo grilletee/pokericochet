@@ -10,6 +10,7 @@ import {
 import {
   type AimDirection,
   aimDirection,
+  GAME_TYPES,
   type GameConfig,
   type GameEvent,
   NO_SPECIES,
@@ -40,6 +41,7 @@ import {
   ringTexture,
   sphereTexture,
 } from './pixelArt';
+import { chargeLook, shotFrames } from './shotArt';
 import { UltimateFx } from './ultimateFx';
 
 /** Placeholder colours per type code (fire, water, grass, electric). No franchise art here. */
@@ -794,7 +796,10 @@ export class Renderer {
         // A falling orb with a pixel trail; its landing spot is hatched on the floor while it is announced.
         const y = curr.hazardY[i] ?? 0;
         const size = Math.max(width, 3 * ART_PIXEL);
-        sprite.texture = fx.orb[frame] ?? Texture.EMPTY;
+        // A shot of an enemy is the projectile of its type (4G-G): spark, ember, bubble, leaf...
+        const shotCode = curr.hazardType[i] ?? 255;
+        const own = shotCode === 255 ? [] : shotFrames(shotCode, TYPE_COLORS[shotCode] ?? 0xffffff);
+        sprite.texture = (own.length > 0 ? own[frame] : fx.orb[frame]) ?? Texture.EMPTY;
         sprite.width = ART_PIXEL * 12;
         sprite.height = ART_PIXEL * 18;
         sprite.x = x - sprite.width / 2;
@@ -1222,8 +1227,15 @@ export class Renderer {
         } else if (isBoss && this.bossWarn) {
           sprite.tint = beat ? 0xff6a5a : 0xffffff;
         } else if (charging) {
-          sprite.tint = beat ? 0xfff27a : 0xffffff;
-          this.statusRing(ex, ey, 0xfff27a, radius * 1.25, 0.8);
+          // Its own warning on its body (4G-G): the colour of its type and a pace that goes with
+          // it (electric flickers, water breathes, rock glows heavy, a ghost fades).
+          const typeCode = curr.enemyType[i] ?? 0;
+          const look = chargeLook(GAME_TYPES[typeCode] ?? 'normal');
+          const tone = TYPE_COLORS[typeCode] ?? 0xfff27a;
+          const on = Math.floor(curr.tick / look.blink) % 2 === 0;
+          sprite.tint = on ? tone : 0xffffff;
+          const fade = look.fade ? 0.45 + 0.4 * Math.sin(curr.tick / look.blink) : 0.85;
+          this.statusRing(ex, ey, tone, radius * look.ring, fade);
         } else {
           sprite.tint = raging ? 0xff8a8a : worn;
         }

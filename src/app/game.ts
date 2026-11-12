@@ -41,6 +41,7 @@ import {
 import { Renderer } from '../render';
 import {
   AttackNamer,
+  attackKey,
   BOSS_DEFEAT_MS,
   BOSS_ENTRY_MS,
   BOSS_FINAL_MS,
@@ -797,7 +798,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
         }
       } else if (event.type === 'bossTelegraph') {
         // The first time each attack appears in a run, its name and how to dodge it (4G-F).
-        const text = namer.first(event.fromEnemy ? 'enemyShot' : event.kind);
+        const text = namer.first(attackKey(event.kind, event.fromEnemy, event.shotType));
         if (text !== null) overlay.showToast(text, now);
       } else if (event.type === 'bossBarrier' && event.up) {
         const text = namer.first('barrier');

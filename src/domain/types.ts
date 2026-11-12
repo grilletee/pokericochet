@@ -357,6 +357,8 @@ export type GameEvent =
       readonly kind: string;
       /** True when an ordinary enemy fires it (it comes out of that enemy), false for a boss. */
       readonly fromEnemy: boolean;
+      /** The type of the enemy that fired it, for a shot of an enemy (4G-G): "Chispa", "Ascua"... */
+      readonly shotType?: GameType;
     }
   /**
    * The column struck; `hit` says whether the player stood in it. A moving column that catches the

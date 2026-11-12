@@ -611,14 +611,19 @@ export const baseConfig: Omit<
   // 4G-E: a few ordinary enemies throw announced shots (about one in five of these types, each
   // every 6-9 s); moderate damage, at most three on the field. PROVISIONAL: bench `fun`/`balance`.
   enemyFire: {
+    // 4G-G: each type has its own projectile (spark, ember, bubble, leaf, rock, shadow...) drawn by
+    // the render and its own speed: sparks are fast, bubbles and shadows slow, rocks heavy.
     byType: {
-      fire: { everyTicks: 420 },
-      electric: { everyTicks: 380 },
-      water: { everyTicks: 460 },
-      psychic: { everyTicks: 440 },
-      ghost: { everyTicks: 480 },
-      dragon: { everyTicks: 400 },
-      poison: { everyTicks: 500 },
+      fire: { everyTicks: 420, speedMult: 1 },
+      electric: { everyTicks: 380, speedMult: 1.35 },
+      water: { everyTicks: 460, speedMult: 0.85 },
+      psychic: { everyTicks: 440, speedMult: 1.1 },
+      ghost: { everyTicks: 480, speedMult: 0.8 },
+      dragon: { everyTicks: 400, speedMult: 1.2 },
+      poison: { everyTicks: 500, speedMult: 0.9 },
+      grass: { everyTicks: 480, speedMult: 1 },
+      rock: { everyTicks: 520, speedMult: 1.15 },
+      ground: { everyTicks: 520, speedMult: 1.15 },
     },
     // 4G-F: the shot leaves the enemy itself (it glows while it charges): fewer shooters, at most
     // two charging at once, so the player can tell who attacks and put it first.

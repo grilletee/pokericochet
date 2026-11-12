@@ -58,6 +58,46 @@ describe('ordinary enemies that shoot (4G-E)', () => {
     expect(quiet.hazards.length).toBe(0);
   });
 
+  it('the shot carries the type of its enemy and its own speed (4G-G)', () => {
+    const run = createRun(cfg, 1, 'charmander');
+    run.enemies = [shooter(S)];
+    const every = fire.byType.fire?.everyTicks ?? 0;
+    run.tickCount = every - ((S * 37) % every);
+    advanceEnemyFire(run, cfg);
+    expect(run.hazards[0]?.type).toBe('fire');
+    expect(run.events.find((e) => e.type === 'bossTelegraph')).toMatchObject({ shotType: 'fire' });
+    expect(run.hazards[0]?.speed).toBe(fire.speed * (fire.byType.fire?.speedMult ?? 1));
+    // An electric shot is faster than a water one; a ghost's is the slowest (the shipped table).
+    const mult = (t: 'electric' | 'water' | 'ghost') => fire.byType[t]?.speedMult ?? 1;
+    expect(mult('electric')).toBeGreaterThan(mult('water'));
+    expect(mult('ghost')).toBeLessThan(mult('water'));
+    // The type is part of the hash: two shots that differ only in type are different states.
+    const other = createRun(cfg, 1, 'charmander');
+    other.enemies = [shooter(S)];
+    other.tickCount = run.tickCount;
+    advanceEnemyFire(other, cfg);
+    expect(hashRun(other)).toBe(hashRun(run));
+    other.hazards[0] = { ...(other.hazards[0] as Hazard), type: 'water' };
+    expect(hashRun(other)).not.toBe(hashRun(run));
+  });
+
+  it('every type of the table throws a shot with a name', () => {
+    for (const type of Object.keys(fire.byType)) {
+      expect([
+        'electric',
+        'fire',
+        'water',
+        'grass',
+        'rock',
+        'ground',
+        'ghost',
+        'poison',
+        'psychic',
+        'dragon',
+      ]).toContain(type);
+    }
+  });
+
   it('does not fire from the top edge or from too close to the line, nor beyond maxAtOnce', () => {
     const run = createRun(cfg, 1, 'charmander');
     const every = fire.byType.fire?.everyTicks ?? 1;

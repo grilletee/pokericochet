@@ -56,6 +56,7 @@ export function advanceThreats(run: Run, config: GameConfig): void {
     damage: def.damage,
     speed: 0,
     struck: false,
+    type: pick.type,
   });
   if (!placed) return;
 

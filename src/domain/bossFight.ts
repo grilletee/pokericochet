@@ -187,6 +187,7 @@ function addHazards(run: Run, config: GameConfig, group: Hazard[], together: boo
       ticks: hazard.telegraph,
       kind: hazard.kind,
       fromEnemy: isEnemyShot(hazard),
+      ...(hazard.type === undefined ? {} : { shotType: hazard.type }),
     });
   }
   return true;
@@ -572,8 +573,9 @@ export function advanceEnemyFire(run: Run, config: GameConfig): void {
       telegraph: WARN_TICKS,
       active: 0,
       damage: fire.damage,
-      speed: fire.speed,
+      speed: fire.speed * (rule.speedMult ?? 1),
       struck: false,
+      type: e.type,
     });
     shots += 1;
   }

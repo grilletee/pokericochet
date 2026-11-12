@@ -22,6 +22,35 @@ const NAMES: Readonly<Record<string, { readonly name: string; readonly tip: stri
   timeSlow: { name: 'Tiempo lento', tip: 'te mueves más despacio un rato' },
 };
 
+// The shot of each type has its own name (4G-G): "Chispa", "Ascua", "Burbuja"...
+const SHOTS: Readonly<Record<string, { readonly name: string; readonly tip: string }>> = {
+  electric: { name: 'Chispa', tip: 'rápida: sal de la marca en cuanto el enemigo brille' },
+  fire: { name: 'Ascua', tip: 'cae recta desde el enemigo que arde: apártate' },
+  water: { name: 'Burbuja', tip: 'lenta: tienes tiempo, pero sigue la marca' },
+  grass: { name: 'Hoja', tip: 'cae recta sobre la marca: apártate' },
+  rock: { name: 'Roca', tip: 'pesada y algo más rápida: no te quedes bajo ella' },
+  ground: { name: 'Roca', tip: 'pesada y algo más rápida: no te quedes bajo ella' },
+  ghost: { name: 'Sombra', tip: 'muy lenta: vigila dónde caerá' },
+  poison: { name: 'Gota tóxica', tip: 'cae sobre la marca del suelo: apártate' },
+  psychic: { name: 'Pulso mental', tip: 'cae sobre la marca del suelo: apártate' },
+  dragon: { name: 'Colmillo', tip: 'rápido: sal de la marca enseguida' },
+};
+for (const [type, entry] of Object.entries(SHOTS)) {
+  (NAMES as Record<string, { name: string; tip: string }>)[`enemyShot-${type}`] = entry;
+}
+
+/**
+ * Which name an announced attack is told by: a blast of a marked enemy, the shot of its type if it
+ * has a name, or the verb of the boss's attack.
+ */
+export function attackKey(kind: string, fromEnemy: boolean, shotType?: string): string {
+  if (kind === 'blast') return 'blast';
+  if (!fromEnemy) return kind;
+  return shotType !== undefined && `enemyShot-${shotType}` in NAMES
+    ? `enemyShot-${shotType}`
+    : 'enemyShot';
+}
+
 /** The text of the first appearance of `key`, or null if it is unknown. */
 export function attackLabel(key: string): string | null {
   const entry = NAMES[key];

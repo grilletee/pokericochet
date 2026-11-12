@@ -6,7 +6,7 @@ import { biomeLines, drawPool, fairLines } from './pool';
 import { xpCost } from './progression';
 import { cloneRng, deriveRng, nextInt, type RngState } from './rng';
 import { addMember } from './team';
-import type { Ball, BallBody, Card, Enemy, GameEvent, Member, Pickup } from './types';
+import type { Ball, BallBody, Card, Enemy, GameEvent, GameType, Member, Pickup } from './types';
 
 /**
  * `levelup` pauses the simulation until a card is picked (ADR-014); `replace` until the player
@@ -98,6 +98,8 @@ export interface Hazard {
   speed: number;
   /** True once it hurt the player: it hurts once. */
   struck: boolean;
+  /** The type of the enemy that fired it (shots of enemies only): the render draws it by type (4G-G). */
+  type?: GameType;
 }
 
 export interface RunRng {
@@ -555,6 +557,7 @@ export function hashRun(run: Run): string {
     h.num(hz.damage);
     h.num(hz.speed);
     h.int(hz.struck ? 1 : 0);
+    h.str(hz.type ?? '');
   }
   h.int(run.waveThemes.length);
   for (const theme of run.waveThemes) h.str(theme);

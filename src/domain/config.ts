@@ -123,7 +123,18 @@ export interface BossPatternDef {
  * ataquen"): only types in `byType`, only one enemy in `shooterOneIn` (by id), each on its own clock.
  */
 export interface EnemyFireDef {
-  readonly byType: Readonly<Partial<Record<GameType, { readonly everyTicks: number }>>>;
+  readonly byType: Readonly<
+    Partial<
+      Record<
+        GameType,
+        {
+          readonly everyTicks: number;
+          /** The shot of this type falls this many times as fast as `speed` (default 1, 4G-G). */
+          readonly speedMult?: number;
+        }
+      >
+    >
+  >;
   readonly shooterOneIn: number;
   /** Pixels per tick the shot falls from the enemy (the warning is `WARN_TICKS`, like every attack). */
   readonly speed: number;
