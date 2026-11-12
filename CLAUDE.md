@@ -28,6 +28,7 @@ Regla permanente del usuario (2026-11-05), tras romperla cuatro veces:
 - Nada de `sed -i`, scripts de Python ni ningún otro comando que reescriba ficheros (ni de código ni de notas).
 - Se permiten scripts de solo lectura (medir, listar, comprobar) y el formateador del proyecto (biome).
 - Antes de dar comandos de commit, revisa `git diff --stat` y confirma que no hay borrados inesperados.
+- Antes de dar comandos de commit, ejecuta EXACTAMENTE los pasos de la CI sobre todo el repo, uno por uno y en este orden: `corepack pnpm lint`, `corepack pnpm typecheck`, `corepack pnpm test`. Si alguno falla, arréglalo antes. (2026-11-12: la CI estuvo en rojo por un error de lint que solo corrí como tests; `pnpm check` no vale aquí porque anida `pnpm`.)
 
 ## Fases
 0 validación, 1 GDD (1 página), 2 arquitectura (1 página), 3 vertical slice (2 semanas), 4 iteraciones, 5 publicación.

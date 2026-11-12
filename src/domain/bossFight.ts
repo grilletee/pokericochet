@@ -1,5 +1,6 @@
 import { damagePlayer, leakDamage } from './combat';
 import type { BossAttackDef, BossPatternDef, BossPhaseDef, GameConfig } from './config';
+import { isDodgeable } from './dodge';
 import { nextFloat, nextInt } from './rng';
 import type { Hazard, Run } from './run';
 import type { Enemy, GameType } from './types';
@@ -130,32 +131,59 @@ export function isEnemyShot(hazard: Hazard): boolean {
  * `together` hazards (the slots of a comb) must strike on the same tick and are never moved.
  */
 function addHazard(run: Run, config: GameConfig, hazard: Hazard, together = false): void {
-  if (run.hazards.length >= (config.bossFight?.maxHazards ?? 12)) return;
-  if (!together && hazard.kind !== 'portal') {
-    let t = hazard.telegraph;
-    for (let guard = 0; guard < 60; guard++) {
-      // Distinct strike moments whose zones would be visible together with this one.
-      const times: number[] = [];
-      for (const h of run.hazards) {
-        if (h.telegraph <= 0 || h.kind === 'portal' || Math.abs(h.telegraph - t) >= WARN_TICKS) {
-          continue;
-        }
-        if (!times.includes(h.telegraph)) times.push(h.telegraph);
-      }
-      if (times.length < MAX_WARNINGS) break;
-      t += 20;
+  addHazards(run, config, [hazard], together);
+}
+
+/** How many times a new attack is pushed back 20 ticks looking for a fair moment, before it is dropped. */
+const MAX_DELAYS = 14;
+
+/** Are there fewer than MAX_WARNINGS other warnings visible at the same time as one that strikes at `t`? */
+function warningsFit(run: Run, t: number): boolean {
+  const times: number[] = [];
+  for (const h of run.hazards) {
+    if (h.telegraph <= 0 || h.kind === 'portal' || Math.abs(h.telegraph - t) >= WARN_TICKS) {
+      continue;
     }
-    hazard.telegraph = t;
+    if (!times.includes(h.telegraph)) times.push(h.telegraph);
   }
-  run.hazards.push(hazard);
-  run.events.push({
-    type: 'bossTelegraph',
-    x: hazard.x,
-    width: hazard.width,
-    ticks: hazard.telegraph,
-    kind: hazard.kind,
-    fromEnemy: isEnemyShot(hazard),
-  });
+  return times.length < MAX_WARNINGS;
+}
+
+/**
+ * Puts a group of hazards (one, or the slots of a comb) on the field if the result is fair (4G-G):
+ * never more than three warnings together (4G-F) and ALWAYS somewhere safe to stand that the player
+ * can reach in time (`isDodgeable`). If not, the whole group is delayed 20 ticks at a time (this is
+ * what "se retrasa" means), and dropped if no moment within `MAX_DELAYS` works: a missed attack is
+ * better than an unfair one. `together` groups keep their relative timing (a comb strikes at once).
+ */
+function addHazards(run: Run, config: GameConfig, group: Hazard[], together: boolean): void {
+  const room = (config.bossFight?.maxHazards ?? 12) - run.hazards.length;
+  if (group.length === 0 || room < group.length) return;
+  const originals = group.map((h) => h.telegraph);
+  let placed = false;
+  for (let delay = 0; delay <= MAX_DELAYS; delay++) {
+    for (let i = 0; i < group.length; i++) {
+      (group[i] as Hazard).telegraph = (originals[i] as number) + delay * 20;
+    }
+    const first = group[0] as Hazard;
+    const calm = together || first.kind === 'portal' || warningsFit(run, first.telegraph);
+    if (calm && isDodgeable(run, config, group)) {
+      placed = true;
+      break;
+    }
+  }
+  if (!placed) return;
+  for (const hazard of group) {
+    run.hazards.push(hazard);
+    run.events.push({
+      type: 'bossTelegraph',
+      x: hazard.x,
+      width: hazard.width,
+      ticks: hazard.telegraph,
+      kind: hazard.kind,
+      fromEnemy: isEnemyShot(hazard),
+    });
+  }
 }
 
 function spawnAttack(
@@ -188,15 +216,12 @@ function spawnAttack(
       // The floor in `count` equal slots and one of them left safe: there is always somewhere to stand.
       const slot = width / count;
       const safe = nextInt(run.rng.boss, count);
+      const slots: Hazard[] = [];
       for (let i = 0; i < count; i++) {
         if (i === safe) continue;
-        addHazard(
-          run,
-          config,
-          { ...base, kind: 'comb', x: (i + 0.5) * slot, width: slot, speed: 0 },
-          true,
-        );
+        slots.push({ ...base, kind: 'comb', x: (i + 0.5) * slot, width: slot, speed: 0 });
       }
+      addHazards(run, config, slots, true);
       break;
     }
     case 'sweep': {

@@ -55,6 +55,7 @@ export type {
   ThemeDef,
   WaveDef,
 } from './config';
+export { isDodgeable, MIN_GAP, PLAYER_WIDTH, SAFE_MARGIN } from './dodge';
 export {
   applyHitEffects,
   ballPower,
