@@ -39,7 +39,7 @@ export function spriteTile(
   );
   const frame = box(
     sphere
-      ? `width:${size}px;height:${size}px;border-radius:50%;border:3px solid ${color};` +
+      ? `width:${size}px;height:${size}px;border-radius:50% !important;border:3px solid ${color};` +
           `background:radial-gradient(circle at 32% 28%,${color}77 0,#2a3a8ccc 34%,#0e122ee6 70%);` +
           `box-shadow:inset 0 0 0 2px #0006,inset 3px 3px 5px #ffffff44;position:relative;` +
           `display:flex;align-items:center;justify-content:center;overflow:hidden;`

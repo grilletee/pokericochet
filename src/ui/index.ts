@@ -8,6 +8,14 @@ export type { CardTextContext } from './cardText';
 export { cardStep, describeCard, typeName } from './cardText';
 export type { ArtLookup } from './cardView';
 export { buildCardArt, STEP_COLOR, spriteTile } from './cardView';
+export {
+  CONTROL_SCHEMES,
+  type ControlScheme,
+  DEFAULT_SCHEME,
+  defaultSchemeFor,
+  isControlScheme,
+  schemeTip,
+} from './controlSchemes';
 export type { CreditLine } from './creditsText';
 export { creditLines, disclaimerShort, POKEAPI_URL, SPRITES_URL } from './creditsText';
 export type { MomentView } from './evolutionMoment';

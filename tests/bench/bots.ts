@@ -1,4 +1,6 @@
+import { slingAim } from '../../src/app/touchLogic';
 import {
+  type AimMode,
   type Card,
   type Command,
   captureLevel,
@@ -30,6 +32,10 @@ export interface Policy {
   replace?(run: Run, config: GameConfig): ReplaceAction;
   /** Use the assisted aim (the launcher picks the nearest enemy by itself). */
   readonly autoAim?: boolean;
+  /** The touch scheme of the bot (4G-G): the aim mode it sends with every command. */
+  readonly aimMode?: AimMode;
+  /** `sling` only: true on the tick the bot lifts its finger (the ready balls leave). */
+  fire?(run: Run, config: GameConfig): boolean;
   /**
    * Ticks the bot takes to throw the starter's signature once it is ready (a human reaction, 4F-D);
    * default `SIGNATURE_REACTION_TICKS`. A negative value never throws it: the control group that
@@ -107,10 +113,13 @@ export function commandFor(policy: Policy, run: Run, config: GameConfig): Comman
   const moveX = policy.move(run, config);
   const aim = policy.aim?.(run, config) ?? null;
   const cast = signatureToCast(policy, run, config);
+  const fire = policy.fire?.(run, config) === true;
   return {
     moveX,
     autoAim: policy.autoAim === true,
+    ...(policy.aimMode === undefined ? {} : { aimMode: policy.aimMode }),
     ...(aim === null ? {} : { aimX: aim.x, aimY: aim.y }),
+    ...(fire ? { fire: true } : {}),
     ...(cast === null ? {} : { cast }),
   };
 }
@@ -362,6 +371,27 @@ export const activePolicy: Policy = {
   pick: balancedPick,
   // The Ultimate waits for the open core of a boss (and is thrown at once when it opens).
   holdSignature: (run) => liveBoss(run) !== undefined && run.boss.coreOpen <= 0,
+};
+
+/**
+ * The touch schemes (4G-G), played by the same bot that dodges and collects, so the only thing that
+ * changes is what the launcher does with the balls:
+ *  - smart: the launcher picks the target (the domain's `smartTarget`), the bot only moves;
+ *  - motion: no aim at all, the balls lean with the bot's own movement;
+ *  - sling: the bot lifts its finger every `SLING_EVERY` ticks and the ready balls leave towards the
+ *    smart target (a quiet release), like a player who taps now and then.
+ */
+export const SLING_EVERY = Number(process.env.SLING_EVERY ?? 45);
+// The same bot without its hand aim: these schemes aim for it (or not at all).
+const { aim: _handAim, ...withoutHandAim } = activePolicy;
+export const schemeSmartPolicy: Policy = { ...withoutHandAim, name: 'smart', aimMode: 'smart' };
+export const schemeMotionPolicy: Policy = { ...withoutHandAim, name: 'motion', aimMode: 'motion' };
+export const schemeSlingPolicy: Policy = {
+  ...activePolicy,
+  name: 'sling',
+  aimMode: 'sling',
+  aim: (run, config) => slingAim(run, config, null),
+  fire: (run) => run.tickCount % SLING_EVERY === 0 && run.cooldowns.some((c) => c === 0),
 };
 
 /** The same bot that never dodges (ADR-046): shows that the health of the player matters. */

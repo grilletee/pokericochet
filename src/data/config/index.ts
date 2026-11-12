@@ -633,6 +633,14 @@ export const baseConfig: Omit<
     damage: 1.5,
     maxAtOnce: 2,
   },
+  // 4G-G: the three touch schemes. The smart aim picks the target by itself (a little imprecise and
+  // a little slower than a hand); the Arkanoid leans with the speed of the launcher; the sling fires
+  // only on release. PROVISIONAL: bench `controls` (bots with each scheme) and the author's phone.
+  controls: {
+    smart: { jitter: 0.08, reloadMult: 1.1 },
+    motion: { jitter: 0.03, reloadMult: 1, maxSlope: 0.9 },
+    sling: { jitter: 0.02, reloadMult: 1 },
+  },
   // 4G-G: every 15 s an ordinary enemy is marked as a threat (aura and countdown over it): kill it in
   // time or it explodes in a column of danger under it. Themed species first (what explodes or quakes
   // in the games); any other enemy on every second mark when no themed one is on the field.

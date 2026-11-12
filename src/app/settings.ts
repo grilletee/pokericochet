@@ -1,3 +1,4 @@
+import { type ControlScheme, defaultSchemeFor, isControlScheme } from '../ui';
 import type { KeyValueStore } from './bestRun';
 
 /** localStorage key of the mute switch (neutral name, like the best-run key). */
@@ -35,6 +36,31 @@ export function loadAutoAim(store: KeyValueStore | null): boolean {
 export function saveAutoAim(store: KeyValueStore | null, auto: boolean): void {
   try {
     store?.setItem(AUTO_AIM_KEY, auto ? '1' : '0');
+  } catch {
+    // ignore
+  }
+}
+
+/** localStorage key of the control scheme (4G-G). */
+export const CONTROLS_KEY = 'controls.v1';
+
+/**
+ * The scheme to play with: the one the player chose, else the one that suits the device (a touch
+ * screen starts with the smart aim). A bad or missing value falls back to the device default.
+ */
+export function loadScheme(store: KeyValueStore | null, coarsePointer: boolean): ControlScheme {
+  try {
+    const raw = store?.getItem(CONTROLS_KEY);
+    if (isControlScheme(raw)) return raw;
+  } catch {
+    // fall through to the default
+  }
+  return defaultSchemeFor(coarsePointer);
+}
+
+export function saveScheme(store: KeyValueStore | null, scheme: ControlScheme): void {
+  try {
+    store?.setItem(CONTROLS_KEY, scheme);
   } catch {
     // ignore
   }

@@ -19,7 +19,13 @@ function clamp(value: number, min: number, max: number): number {
 export function reloadTicks(run: Run, config: GameConfig, slot = -1): number {
   const owner = run.loadout[slot]?.owner;
   const member = owner === undefined ? undefined : run.team[owner];
-  const mult = cadenceMult(config, member) * (run.autoAim ? config.ball.autoCooldownMult : 1);
+  // The assisted aim reloads slower on purpose (ADR-021); so does each touch scheme by its own factor.
+  const aimMult = run.autoAim
+    ? config.ball.autoCooldownMult
+    : run.aimMode === 'manual'
+      ? 1
+      : (config.controls?.[run.aimMode]?.reloadMult ?? 1);
+  const mult = cadenceMult(config, member) * aimMult;
   return Math.max(1, Math.floor(config.ball.cooldownTicks * mult + 0.5));
 }
 

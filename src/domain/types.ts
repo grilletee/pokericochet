@@ -227,6 +227,14 @@ export interface Pickup {
   ticks: number;
 }
 
+/**
+ * How the launcher decides where the balls go when the assisted aim is off (4G-G, touch controls):
+ * `manual` towards the aim point (mouse, or a finger above the floor); `smart` at what matters most
+ * (`smartTarget`), the thumb only moves; `motion` leaning with the sideways speed of the launcher, like
+ * an Arkanoid; `sling` towards the aim point but only on the tick the player releases (`fire`).
+ */
+export type AimMode = 'manual' | 'smart' | 'motion' | 'sling';
+
 /** One command per tick: the player's input (ADR-004). */
 export interface Command {
   readonly moveX: -1 | 0 | 1;
@@ -238,6 +246,12 @@ export interface Command {
   readonly aimY?: number;
   /** Switches the assisted aim on or off; omitted = keep. */
   readonly autoAim?: boolean;
+  /** How the launcher aims when the assisted aim is off (4G-G); omitted = keep. */
+  readonly aimMode?: AimMode;
+  /** The enemy the player tapped to make it the target of the smart aim (0 = none); omitted = keep. */
+  readonly lock?: number;
+  /** `sling` mode: the player released this tick, so the balls that are ready leave now. */
+  readonly fire?: boolean;
   /**
    * Place in the team of the Pokémon whose signature the player throws this tick (4F-D). Omitted =
    * none. It does nothing if that Pokémon's signature is not ready.

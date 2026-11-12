@@ -1,4 +1,6 @@
+import type { ControlScheme } from '../ui';
 import { FLOOR_Y, type InputState } from './inputLogic';
+import { PAD_ZONE_Y, type PadInput, type PadRelease, ThumbPad } from './touchLogic';
 
 /** Value of `takePick` that means "let the capture go" (the replace screen, ADR-030). */
 export const RELEASE_PICK = -1;
@@ -32,16 +34,25 @@ export class Input {
   private aimId: number | null = null;
   /** Card, starter or Pokémon chosen with the keys 1-6 or a click, waiting for the game loop. */
   private pickIndex: number | null = null;
+  /** The thumb of the touch schemes (4G-G) and what it did since the last tick. */
+  private readonly pad = new ThumbPad();
+  private padId: number | null = null;
+  private padTap: { x: number; y: number } | null = null;
+  private padRelease: Extract<PadRelease, { kind: 'release' }> | null = null;
 
   constructor(
     host: HTMLElement,
     private readonly view: () => ArenaView,
+    /** The control scheme in force and where the launcher is (arena x), read at each pointer event. */
+    private readonly scheme: () => ControlScheme = () => 'classic',
+    private readonly playerX: () => number = () => 0,
   ) {
     window.addEventListener('keydown', (e) => this.onKey(e, true));
     window.addEventListener('keyup', (e) => this.onKey(e, false));
     host.style.touchAction = 'none';
     host.addEventListener('pointerdown', (e) => {
       const { x, y } = this.toArena(e);
+      if (this.padStarts(e, x, y)) return;
       if (y >= FLOOR_Y) {
         this.steerId = e.pointerId;
         this.state.pointerX = x;
@@ -53,6 +64,11 @@ export class Input {
     });
     host.addEventListener('pointermove', (e) => {
       const { x, y } = this.toArena(e);
+      if (e.pointerId === this.padId) {
+        this.pad.move(x, y, e.timeStamp);
+        this.state.pointerX = this.pad.target();
+        return;
+      }
       if (e.pointerId === this.steerId) {
         this.state.pointerX = x;
       } else if (
@@ -67,6 +83,11 @@ export class Input {
       }
     });
     const release = (e: PointerEvent): void => {
+      if (e.pointerId === this.padId) {
+        const { x, y } = this.toArena(e);
+        this.padEnds(e.type === 'pointercancel' ? null : this.pad.up(x, y, e.timeStamp), x, y);
+        return;
+      }
       if (e.pointerId === this.steerId) {
         this.steerId = null;
         this.state.pointerX = null;
@@ -80,8 +101,55 @@ export class Input {
       this.state.right = false;
       this.steerId = null;
       this.aimId = null;
+      this.padId = null;
+      this.pad.cancel();
       this.state.pointerX = null;
     });
+  }
+
+  /**
+   * A touch of the touch schemes (4G-G): the smart scheme steers only with the lower part of the
+   * field and a quick touch above it is a tap on an enemy; the motion and sling schemes steer with a
+   * finger anywhere. The launcher follows how far the thumb DRAGS, not where it is.
+   */
+  private padStarts(e: PointerEvent, x: number, y: number): boolean {
+    const scheme = this.scheme();
+    if (scheme === 'classic' || this.padId !== null) return false;
+    const steers = scheme !== 'smart' || y >= PAD_ZONE_Y;
+    if (!steers) {
+      // Above the thumb zone: only a tap means anything (the smart scheme: fix a target).
+      this.padTap = { x, y };
+      return true;
+    }
+    this.padId = e.pointerId;
+    this.pad.down(x, y, e.timeStamp, this.playerX());
+    this.state.pointerX = this.pad.target();
+    return true;
+  }
+
+  private padEnds(result: PadRelease | null, x: number, y: number): void {
+    this.padId = null;
+    this.state.pointerX = null;
+    this.pad.cancel();
+    if (result === null) return;
+    if (this.scheme() === 'sling') {
+      // Every lift is a volley in the sling: a tap too (without a flick).
+      this.padRelease = result.kind === 'release' ? result : { kind: 'release', x, y, flick: null };
+    } else if (result.kind === 'tap') {
+      this.padTap = { x: result.x, y: result.y };
+    }
+  }
+
+  /** What the thumb did since the last call (steering, a tap, a release); each event is given once. */
+  takePad(): PadInput {
+    const pad: PadInput = {
+      steerX: this.padId === null ? null : this.pad.target(),
+      tap: this.padTap,
+      release: this.padRelease,
+    };
+    this.padTap = null;
+    this.padRelease = null;
+    return pad;
   }
 
   /** For the on-screen buttons of the results screen (same effect as R and M). */

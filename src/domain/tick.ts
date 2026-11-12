@@ -23,6 +23,7 @@ import { advancePickups, dropBall } from './pickups';
 import { checkLevelUp } from './progression';
 import { nextFloat } from './rng';
 import type { Run } from './run';
+import { motionDirection, smartTarget } from './smartAim';
 import { ballRadius, resolveReplace } from './team';
 import { advanceThreats } from './threats';
 import type { BallBody, Command, Enemy, GameEvent } from './types';
@@ -53,6 +54,37 @@ function nearestEnemy(enemies: readonly Enemy[], x: number, y: number): Enemy | 
 }
 
 const scratchDirection: AimDirection = { x: 0, y: -1 };
+/** How far from the launcher the aim point of the `motion` scheme is put (so the preview and the Ultimate have one). */
+const MOTION_AIM_REACH = 320;
+
+/**
+ * Sets the aim point of this tick for the touch schemes (4G-G): the `smart` aim at what matters most,
+ * the `motion` aim leaning with the speed of the launcher. `manual` and `sling` keep the point the
+ * command gave. The Ultimate and the preview read `run.aimX/aimY`, so every scheme has one.
+ */
+function applyAimMode(run: Run, config: GameConfig): void {
+  if (run.autoAim) return;
+  if (run.aimMode === 'smart') {
+    const target = smartTarget(run, config);
+    if (target !== null) {
+      run.aimX = clamp(Math.floor(target.x + 0.5), 0, config.arena.width);
+      run.aimY = clamp(Math.floor(target.y + 0.5), 0, config.arena.height);
+    }
+  } else if (run.aimMode === 'motion') {
+    const slope = config.controls?.motion.maxSlope ?? 0.9;
+    const dir = motionDirection(run.player.vel, config.player.speed, slope, scratchDirection);
+    run.aimX = clamp(
+      Math.floor(run.player.x + dir.x * MOTION_AIM_REACH + 0.5),
+      0,
+      config.arena.width,
+    );
+    run.aimY = clamp(
+      Math.floor(config.player.y + dir.y * MOTION_AIM_REACH + 0.5),
+      0,
+      config.arena.height,
+    );
+  }
+}
 /** A boss comes down at this speed (pixels per tick) until its centre is `radius + BOSS_HOVER` from the top. */
 const BOSS_ENTRY_SPEED = 1.6;
 const BOSS_HOVER = 60;
@@ -90,8 +122,16 @@ function launchBalls(run: Run, config: GameConfig): void {
     );
     ux = scratchDirection.x;
     uy = scratchDirection.y;
+    // The smart aim waits while there is nothing to shoot at, like the assisted one; the sling keeps
+    // the balls until the player releases (4G-G).
+    if (run.aimMode === 'smart') canAim = smartTarget(run, config) !== null;
+    else if (run.aimMode === 'sling') canAim = run.fireNow;
   }
-  const spread = run.autoAim ? config.ball.aimJitter : config.ball.manualAimJitter;
+  const spread = run.autoAim
+    ? config.ball.aimJitter
+    : run.aimMode === 'manual'
+      ? config.ball.manualAimJitter
+      : (config.controls?.[run.aimMode]?.jitter ?? config.ball.manualAimJitter);
   for (let slot = 0; slot < run.loadout.length; slot++) {
     let cooldown = run.cooldowns[slot] ?? 0;
     if (cooldown > 0) {
@@ -182,16 +222,23 @@ export function tick(run: Run, cmd: Command, config: GameConfig): TickOutput {
   const guardBonus = config.effects.guardBonus ?? 0.15;
   // Slower while Dialga's time slow lasts, and the tide of Kyogre narrows the field (ADR-054).
   const margin = fieldMargin(run, config);
+  const fromX = run.player.x;
   run.player.x = clamp(
     run.player.x + cmd.moveX * config.player.speed * playerSpeedMult(run, config),
     margin,
     arena.width - margin,
   );
+  // The sideways speed, smoothed over about a tenth of a second: what the `motion` aim leans with.
+  run.player.vel = run.player.vel * 0.8 + (run.player.x - fromX) * 0.2;
+  if (cmd.aimMode !== undefined) run.aimMode = cmd.aimMode;
+  if (cmd.lock !== undefined) run.lockId = cmd.lock;
+  run.fireNow = cmd.fire === true;
   // The aim is part of the command (ADR-021): whole pixels inside the arena, so two recordings
   // that mean the same aim hash the same.
   if (cmd.aimX !== undefined) run.aimX = clamp(Math.floor(cmd.aimX + 0.5), 0, arena.width);
   if (cmd.aimY !== undefined) run.aimY = clamp(Math.floor(cmd.aimY + 0.5), 0, arena.height);
   if (cmd.autoAim !== undefined) run.autoAim = cmd.autoAim;
+  applyAimMode(run, config);
   // The signature of the starter is thrown by the player (4F-D); it needs the aim of this tick.
   if (cmd.cast !== undefined) castSignature(run, config, cmd.cast);
 

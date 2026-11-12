@@ -50,6 +50,7 @@ import {
   bossCartel,
   bossLabel,
   type CardTextContext,
+  type ControlScheme,
   CreditsScreen,
   creditLines,
   describeEvent,
@@ -58,6 +59,7 @@ import {
   EvolutionMoment,
   GamePause,
   installPixelStyle,
+  isControlScheme,
   isRealEvolution,
   labelPriority,
   MemberSheet,
@@ -76,6 +78,7 @@ import {
   STEP_COLOR,
   type StarterOption,
   StartScreen,
+  schemeTip,
   setNames,
   signatureLine,
   spriteTile,
@@ -98,12 +101,15 @@ import { FrameMetrics, type Stats, summarize } from './metrics';
 import {
   loadAutoAim,
   loadMuted,
+  loadScheme,
   loadVolumes,
   saveAutoAim,
   saveMuted,
+  saveScheme,
   saveVolumes,
 } from './settings';
 import { loadSpeciesTextures, spriteUrls } from './sprites';
+import { commandForScheme } from './touchLogic';
 import {
   applyTune,
   changedKnobs,
@@ -168,6 +174,11 @@ declare global {
       starter: string;
       pickups: number;
       autoAim: boolean;
+      aimMode: string;
+      lockId: number;
+      threats: number;
+      scheme: string;
+      invuln: number;
       aimX: number;
       aimY: number;
       /** Biome of each wave, the lines in the pool of the run and the tint of the field now. */
@@ -234,7 +245,16 @@ function finishBench(metrics: FrameMetrics, load: BenchLoad): BrowserBenchResult
 }
 
 /** One command for the next tick: a card choice while a level-up is pending, otherwise movement. */
-function nextCommand(run: Run, input: Input, deadZone: number, autoAim: boolean): Command {
+function nextCommand(
+  run: Run,
+  input: Input,
+  deadZone: number,
+  autoAim: boolean,
+  scheme: ControlScheme,
+  config: GameConfig,
+): Command {
+  // Whatever the thumb did while a card or a screen was open is not a command for the game.
+  const pad = input.takePad();
   if (run.phase === 'levelup') {
     const index = input.takePick();
     return index === null
@@ -253,7 +273,14 @@ function nextCommand(run: Run, input: Input, deadZone: number, autoAim: boolean)
   // Outside a card or replace choice a number key (or a tap on a Pokémon's tile) throws the
   // signature of that place of the team; the domain ignores it if it is not ready (4F-D).
   const cast = input.takePick();
-  const command = commandFromInput(input.state, run.player.x, deadZone, autoAim);
+  // The touch schemes (4G-G) build the command from the thumb; the classic one from keys and pointer.
+  const command =
+    scheme === 'classic'
+      ? {
+          ...commandFromInput(input.state, run.player.x, deadZone, autoAim),
+          aimMode: 'manual' as const,
+        }
+      : commandForScheme(scheme, pad, run, config, deadZone);
   return cast !== null && cast >= 0 ? { ...command, cast } : command;
 }
 
@@ -440,8 +467,19 @@ export async function startGame(host: HTMLElement): Promise<void> {
   const startScreen = new StartScreen(host);
   const creditsScreen = new CreditsScreen(host);
   const resultsScreen = new ResultsScreen(host);
-  const input = new Input(host, () => renderer.view);
+  // The control scheme (4G-G): the player's choice, else what suits the device; ?controls=smart|
+  // motion|sling|classic forces one (used by the browser tests and to try them on the phone).
+  let scheme: ControlScheme = 'classic';
+  const input = new Input(
+    host,
+    () => renderer.view,
+    () => scheme,
+    () => run.player.x,
+  );
   const store = browserStore();
+  const coarse = window.matchMedia?.('(pointer: coarse)').matches === true;
+  const forced = params.get('controls');
+  scheme = isControlScheme(forced) ? forced : loadScheme(store, coarse);
   // Sound: starts muted only if the player chose so; the audio context wakes on the first gesture.
   const sound = new SoundFx(loadMuted(store));
   new SoundToggle(host, sound.muted, (muted) => {
@@ -534,6 +572,12 @@ export async function startGame(host: HTMLElement): Promise<void> {
       starter: run.starter,
       pickups: run.pickups.length,
       autoAim: run.autoAim,
+      aimMode: run.aimMode,
+      lockId: run.lockId,
+      /** Enemies marked as a threat now (4G-G). */
+      threats: run.hazards.filter((h) => h.kind === 'blast').length,
+      scheme,
+      invuln: run.player.invuln,
       aimX: run.aimX,
       aimY: run.aimY,
       waveThemes: run.waveThemes,
@@ -610,6 +654,9 @@ export async function startGame(host: HTMLElement): Promise<void> {
     readyAnnounced = false;
     sheet.hide();
     screen = 'playing';
+    // The first seconds of a touch scheme say what the thumb does (4G-G).
+    const tip = schemeTip(scheme);
+    if (tip !== null) overlay.showToast(tip, performance.now());
   };
   const showMenu = (): void => {
     screen = 'menu';
@@ -643,6 +690,11 @@ export async function startGame(host: HTMLElement): Promise<void> {
         sound.masterVolume = next.master;
         sound.effectsVolume = next.effects;
         saveVolumes(store, next);
+      },
+      scheme,
+      (next) => {
+        scheme = next;
+        saveScheme(store, next);
       },
     );
   }
@@ -941,7 +993,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
     for (let s = 0; s < steps && !stopped; s++) {
       const cmd = bench
         ? benchCommand(run.tickCount)
-        : nextCommand(run, input, POINTER_DEAD_ZONE, autoAim);
+        : nextCommand(run, input, POINTER_DEAD_ZONE, autoAim, scheme, config);
       const t0 = performance.now();
       const output = tick(run, cmd, config);
       const t1 = performance.now();

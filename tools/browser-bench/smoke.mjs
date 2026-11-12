@@ -336,8 +336,9 @@ try {
   await evo.waitForFunction(() => window.__debug().phase === 'playing');
   const levelAfter = await dbg(evo);
   check(
-    'training gives a ball: the level-3 Pokémon fires two',
-    levelBefore.loadout === 1 && levelAfter.loadout === 2,
+    // Since the 4G-G a Pokémon fires one ball (bigger) until level 5: the second arrives at level 6.
+    'training to level 3 evolves it and keeps one (bigger) ball',
+    levelBefore.loadout === 1 && levelAfter.loadout === 1,
   );
   // The evolution moment (4F-D): slow motion, silhouette, flash and the big name, in the centre.
   const moment = evo.locator('[data-evolution-moment]');

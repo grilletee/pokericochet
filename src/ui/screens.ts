@@ -1,4 +1,5 @@
 import type { GameType, RunSummary } from '../domain';
+import { CONTROL_SCHEMES, type ControlScheme } from './controlSchemes';
 import type { CreditLine } from './creditsText';
 import { pokemonName } from './names';
 import { type BestRunView, describeBest, describeResults, starterBlurb } from './screenText';
@@ -159,6 +160,10 @@ export class SettingsScreen {
 
   constructor(host: HTMLElement) {
     this.root.dataset.screen = 'settings';
+    // Many rows now (controls, volumes): on a small phone the screen scrolls, from the top.
+    this.root.style.overflowY = 'auto';
+    this.root.style.justifyContent = 'flex-start';
+    this.root.style.gap = '8px';
     this.root.addEventListener('pointerdown', (e) => e.stopPropagation());
     host.append(this.root);
   }
@@ -169,8 +174,11 @@ export class SettingsScreen {
     onBack: () => void,
     volumes: VolumeValues,
     onVolumes: (next: VolumeValues) => void,
+    scheme: ControlScheme = 'classic',
+    onScheme: (next: ControlScheme) => void = () => {},
   ): void {
     let auto = autoAim;
+    let chosen = scheme;
     let current = volumes;
     this.root.replaceChildren(
       el('div', 'font-size:30px;font-weight:800;margin-bottom:6px;', 'Ajustes'),
@@ -226,7 +234,34 @@ export class SettingsScreen {
       row.append(name, input, value);
       sliders.push(row);
     }
-    this.root.append(aim, note, ...sliders, back);
+    // The control scheme (4G-G): one button per scheme, the chosen one lit, and its hint below.
+    const hint = el(
+      'div',
+      'font-size:13px;opacity:0.8;max-width:380px;line-height:1.4;min-height:54px;',
+    );
+    const schemeButtons: HTMLButtonElement[] = [];
+    const paint = (): void => {
+      for (const button of schemeButtons) {
+        const on = button.dataset.scheme === chosen;
+        button.style.outline = on ? '3px solid #ffd54f' : 'none';
+        button.style.opacity = on ? '1' : '0.7';
+      }
+      hint.textContent = CONTROL_SCHEMES.find((s) => s.id === chosen)?.hint ?? '';
+    };
+    const schemeTitle = el('div', 'font-size:17px;font-weight:700;margin-top:8px;', 'Controles');
+    for (const info of CONTROL_SCHEMES) {
+      const button = el('button', `${BUTTON}text-align:center;width:340px;`, info.name);
+      button.type = 'button';
+      button.dataset.scheme = info.id;
+      button.addEventListener('click', () => {
+        chosen = info.id;
+        paint();
+        onScheme(info.id);
+      });
+      schemeButtons.push(button);
+    }
+    paint();
+    this.root.append(aim, note, schemeTitle, ...schemeButtons, hint, ...sliders, back);
     this.root.style.display = 'flex';
   }
 

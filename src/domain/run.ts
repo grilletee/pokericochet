@@ -6,7 +6,17 @@ import { biomeLines, drawPool, fairLines } from './pool';
 import { xpCost } from './progression';
 import { cloneRng, deriveRng, nextInt, type RngState } from './rng';
 import { addMember } from './team';
-import type { Ball, BallBody, Card, Enemy, GameEvent, GameType, Member, Pickup } from './types';
+import type {
+  AimMode,
+  Ball,
+  BallBody,
+  Card,
+  Enemy,
+  GameEvent,
+  GameType,
+  Member,
+  Pickup,
+} from './types';
 
 /**
  * `levelup` pauses the simulation until a card is picked (ADR-014); `replace` until the player
@@ -28,6 +38,8 @@ export interface Player {
   drain: number;
   /** Ticks left in which attacks of bosses and enemies do not hurt (after a hit, 4G-G). */
   invuln: number;
+  /** Smoothed sideways speed in pixels per tick (4G-G, `motion` aim: the launch leans with it). */
+  vel: number;
 }
 
 /** The boss fight (ADR-016). `id` is 0 until the boss has spawned. */
@@ -152,6 +164,12 @@ export interface Run {
   aimY: number;
   /** Assisted aim: the launcher targets the nearest enemy by itself. */
   autoAim: boolean;
+  /** How the launcher aims when the assisted aim is off (4G-G, touch controls). */
+  aimMode: AimMode;
+  /** Id of the enemy the player tapped as the target of the smart aim; 0 = none. */
+  lockId: number;
+  /** True only on the tick of a `fire` command (`sling` mode). */
+  fireNow: boolean;
   /** Theme id of each wave, drawn when the run starts ('' = none). */
   waveThemes: string[];
   /** Base species of the run's pool (ADR-048): enemies, recruit cards and captures come from it. */
@@ -268,6 +286,7 @@ export function createRun(config: GameConfig, seed: number, starterSpecies: stri
       damageMult: 1,
       drain: 0,
       invuln: 0,
+      vel: 0,
     },
     team: [],
     pendingCapture: null,
@@ -278,6 +297,9 @@ export function createRun(config: GameConfig, seed: number, starterSpecies: stri
     aimX: config.arena.width / 2,
     aimY: 0,
     autoAim: false,
+    aimMode: 'manual',
+    lockId: 0,
+    fireNow: false,
     waveThemes,
     pool,
     guardTicks: 0,
@@ -344,6 +366,9 @@ export function cloneRun(run: Run): Run {
     aimX: run.aimX,
     aimY: run.aimY,
     autoAim: run.autoAim,
+    aimMode: run.aimMode,
+    lockId: run.lockId,
+    fireNow: run.fireNow,
     waveThemes: run.waveThemes.slice(),
     pool: run.pool.slice(),
     guardTicks: run.guardTicks,
@@ -482,6 +507,10 @@ export function hashRun(run: Run): string {
   h.num(run.aimX);
   h.num(run.aimY);
   h.int(run.autoAim ? 1 : 0);
+  h.str(run.aimMode);
+  h.int(run.lockId);
+  h.int(run.fireNow ? 1 : 0);
+  h.num(run.player.vel);
   h.int(run.nextBallId);
   h.int(run.bodies.length);
   for (const b of run.bodies) {

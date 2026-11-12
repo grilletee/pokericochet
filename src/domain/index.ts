@@ -111,6 +111,7 @@ export type { RngState } from './rng';
 export { cloneRng, createRng, deriveRng, nextFloat, nextInt, nextU32 } from './rng';
 export type { BossState, Hazard, Phase, Player, Run, RunRng } from './run';
 export { cloneRun, createRun, hashRun } from './run';
+export { motionDirection, smartTarget } from './smartAim';
 export type { Snapshot } from './snapshot';
 export {
   createSnapshot,
@@ -155,6 +156,7 @@ export { advanceThreats } from './threats';
 export type { TickOutput } from './tick';
 export { tick } from './tick';
 export type {
+  AimMode,
   Ball,
   BallBody,
   BaseStats,

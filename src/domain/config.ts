@@ -475,6 +475,20 @@ export interface GameConfig {
   readonly bossFight?: BossFightDef;
   /** Ordinary enemies that now and then throw something (4G-E); absent = nobody does. */
   readonly enemyFire?: EnemyFireDef;
+  /**
+   * What each touch control scheme (4G-G) costs and gives: the sideways spread of the launch and how
+   * much slower the balls reload than with the mouse. Absent = the same as the manual aim.
+   */
+  readonly controls?: {
+    readonly smart: { readonly jitter: number; readonly reloadMult: number };
+    readonly motion: {
+      readonly jitter: number;
+      readonly reloadMult: number;
+      /** Pixels sideways per pixel up when the launcher moves at full speed. */
+      readonly maxSlope: number;
+    };
+    readonly sling: { readonly jitter: number; readonly reloadMult: number };
+  };
   /** Ordinary enemies that are marked as a threat now and then (4G-G); none without it. */
   readonly enemyThreat?: EnemyThreatDef;
   readonly progression: {
