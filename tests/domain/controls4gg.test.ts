@@ -37,40 +37,25 @@ function launched(run: Run, cmd: Command, ticks = 3) {
 }
 
 describe('smartTarget: what the launcher shoots at when the thumb only moves', () => {
-  it('goes by priority: tapped enemy, marked threat, exposed boss, boss, enemy nearest the line', () => {
+  it('goes by priority: tapped enemy, boss, enemy nearest the line', () => {
     const run = base();
     const far = makeEnemy({ id: 1, x: 100, y: 200, speed: 0 });
     const near = makeEnemy({ id: 2, x: 300, y: 500, speed: 0 });
     run.enemies = [far, near];
-    // 5. The enemy nearest to the defence line.
+    // 3. The enemy nearest to the defence line.
     expect(smartTarget(run, cfg)).toMatchObject({ id: 2, x: 300, y: 500 });
-    // 4. A boss beats ordinary enemies; 3. its exposed point beats its body.
+    // 2. A boss beats ordinary enemies, at its centre also while it charges (4G-H: no weak point).
     const boss = makeEnemy({ id: 9, x: 240, y: 120, hp: 1e6, radius: 40, speed: 0 });
     run.enemies.push(boss);
     run.boss.id = 9;
     expect(smartTarget(run, cfg)).toMatchObject({ id: 9, x: 240, y: 120 });
     run.boss.coreOpen = 50;
-    run.boss.weakX = 20;
-    expect(smartTarget(run, cfg)).toMatchObject({ id: 9, x: 260, y: 120 });
-    // 2. An enemy marked as a threat beats the boss: it must die before it explodes.
-    run.hazards.push({
-      kind: 'blast',
-      x: 100,
-      y: 200,
-      link: -1,
-      width: 100,
-      telegraph: 100,
-      active: 14,
-      damage: 2,
-      speed: 0,
-      struck: false,
-    });
-    expect(smartTarget(run, cfg)).toMatchObject({ id: 1 });
+    expect(smartTarget(run, cfg)).toMatchObject({ id: 9, x: 240, y: 120 });
     // 1. The enemy the player tapped beats everything while it lives.
-    run.lockId = 2;
-    expect(smartTarget(run, cfg)).toMatchObject({ id: 2 });
-    run.enemies = run.enemies.filter((e) => e.id !== 2); // it died: the lock is ignored
+    run.lockId = 1;
     expect(smartTarget(run, cfg)).toMatchObject({ id: 1 });
+    run.enemies = run.enemies.filter((e) => e.id !== 1); // it died: the lock is ignored
+    expect(smartTarget(run, cfg)).toMatchObject({ id: 9 });
   });
 
   it('a locked enemy that is dead (hp 0, not yet removed) does not hold the aim', () => {

@@ -343,14 +343,19 @@ export function dodgeMove(
 }
 
 /**
- * While the core of a boss is open, aims at it with the imprecision of a hand (about 14 pixels, from
- * the run's numbers); otherwise at the most dangerous enemy (ADR-053).
+ * With a boss alive, aims at it with the imprecision of a hand (about 14 pixels, from the run's
+ * numbers), unless a summoned enemy is about to reach the line; otherwise at the most dangerous
+ * enemy. 4G-H: the boss takes the same damage all the time, so there is no window to wait for.
  */
 function bossAwareAim(run: Run, config: GameConfig): AimPoint | null {
   const boss = liveBoss(run);
-  if (boss === undefined || run.boss.coreOpen <= 0) return dangerousTarget(run, config);
+  if (boss === undefined) return dangerousTarget(run, config);
+  const close = run.enemies.some(
+    (e) => e.id !== boss.id && e.hp > 0 && e.y > config.arena.defenseLineY - 160,
+  );
+  if (close) return dangerousTarget(run, config);
   const wobble = (((run.seed + run.tickCount * 7) % 29) - 14) | 0;
-  return { x: boss.x + run.boss.weakX + wobble, y: boss.y };
+  return { x: boss.x + wobble, y: boss.y };
 }
 
 /** Dodges the columns of a boss, collects, and otherwise goes under the most dangerous enemy. */
@@ -359,18 +364,17 @@ function dodgingMove(run: Run, config: GameConfig): -1 | 0 | 1 {
 }
 
 /**
- * The player that uses everything: aims by hand at the most dangerous enemy (leading it) and at the
- * weak point of a boss's shield, dodges the columns with a human reaction, keeps the Ultimate for
- * the stun of a shielded boss, collects every ball that falls or drops, spends level-ups with the
- * balanced scores and answers the replace screen sensibly.
+ * The player that uses everything: aims by hand at the most dangerous enemy (leading it) and at a
+ * boss, dodges the columns with a human reaction, throws the Ultimate as soon as it is ready,
+ * collects every ball that falls or drops, spends level-ups with the balanced scores and answers the
+ * replace screen sensibly.
  */
 export const activePolicy: Policy = {
   name: 'active',
   move: dodgingMove,
   aim: bossAwareAim,
   pick: balancedPick,
-  // The Ultimate waits for the open core of a boss (and is thrown at once when it opens).
-  holdSignature: (run) => liveBoss(run) !== undefined && run.boss.coreOpen <= 0,
+  holdSignature: () => false,
 };
 
 /**

@@ -15,7 +15,6 @@ import {
   type Run,
   startFight,
   tick,
-  ultimateOnBoss,
   zoneCovers,
 } from '../../src/domain';
 import { makeBall, makeBody, makeEnemy, quietConfig } from './fixtures';
@@ -154,7 +153,8 @@ describe('the data of the boss fights (ADR-053)', () => {
     expect(mids.map((m) => m.hpScale)).toEqual(
       [...mids.map((m) => m.hpScale)].sort((a, b) => a - b),
     );
-    expect(gameConfig.boss?.hpScale ?? 0).toBeGreaterThan(1.8 * (mids[2]?.hpScale ?? 0));
+    // 4G-H: 1.7 times the third (111 s of the bot against 72 s: its team hits harder by then).
+    expect(gameConfig.boss?.hpScale ?? 0).toBeGreaterThan(1.6 * (mids[2]?.hpScale ?? 0));
     for (const m of mids) expect(m.radius).toBeGreaterThanOrEqual(44);
     expect(gameConfig.boss?.radius ?? 0).toBeGreaterThan(mids[2]?.radius ?? 0);
   });
@@ -453,10 +453,10 @@ describe('the fury (ADR-053)', () => {
   });
 });
 
-describe('the core, the skill of the fight (ADR-053)', () => {
-  it('is closed at first, is announced, opens for a while at a place on the body and closes again', () => {
+describe('the charge of the strong attack (ADR-054; a warning only since 4G-H)', () => {
+  it('is not charging at first, is announced, charges for a while and stops again', () => {
     const cfg = testConfig();
-    const { run, boss } = withBoss(cfg);
+    const { run } = withBoss(cfg);
     expect(run.boss.coreOpen).toBe(0);
     let announced = false;
     let opened = false;
@@ -467,7 +467,6 @@ describe('the core, the skill of the fight (ADR-053)', () => {
         if (e.type === 'bossCore' && e.warning) announced = true;
         if (e.type === 'bossCore' && e.open) {
           opened = true;
-          expect(Math.abs(run.boss.weakX)).toBeLessThanOrEqual(boss.radius * 0.55 + 1e-9);
           expect(run.boss.coreOpen).toBe(90);
         }
         if (e.type === 'bossCore' && !e.open && !e.warning) closedAgain = true;
@@ -477,20 +476,19 @@ describe('the core, the skill of the fight (ADR-053)', () => {
     expect(announced && opened && closedAgain).toBe(true);
   });
 
-  it('little damage gets through while it is guarded and much more while it is charging', () => {
+  it('the boss takes all the damage, the same charging or not (15th playtest)', () => {
     const cfg = testConfig();
     const { run, boss } = withBoss(cfg);
-    expect(bossDamage(run, cfg, boss, 100)).toBeCloseTo(100 * fight.closedMult, 9);
+    expect(bossDamage(run, cfg, boss, 100)).toBeCloseTo(100, 9);
     run.boss.coreOpen = 50;
-    expect(bossDamage(run, cfg, boss, 100)).toBeCloseTo(100 * fight.openMult, 9);
-    expect(fight.openMult).toBeGreaterThan(fight.closedMult * 3);
+    expect(bossDamage(run, cfg, boss, 100)).toBeCloseTo(100, 9);
   });
 
-  it('a ball that hits the boss while it charges really does more, through the tick', () => {
+  it('a ball that hits the boss does the same while it charges, through the tick', () => {
     const cfg = testConfig();
-    const hit = (exposed: boolean): number => {
+    const hit = (charging: boolean): number => {
       const { run, boss } = withBoss(cfg);
-      run.boss.coreOpen = exposed ? 50 : 0;
+      run.boss.coreOpen = charging ? 50 : 0;
       run.loadout = [makeBall({ effects: [] })];
       run.cooldowns = [-1];
       run.bodies = [makeBody({ x: boss.x, y: boss.y + 30, vy: -1 })];
@@ -498,15 +496,8 @@ describe('the core, the skill of the fight (ADR-053)', () => {
       tick(run, { moveX: 0 }, cfg);
       return before - boss.hp;
     };
-    expect(hit(true)).toBeGreaterThan(hit(false) * 2);
-  });
-
-  it('an Ultimate hits extra only while the core is open', () => {
-    const cfg = testConfig();
-    const { run } = withBoss(cfg);
-    expect(ultimateOnBoss(run, cfg)).toBe(1);
-    run.boss.coreOpen = 10;
-    expect(ultimateOnBoss(run, cfg)).toBe(fight.ultimateOpenBonus);
+    expect(hit(false)).toBeGreaterThan(0);
+    expect(hit(true)).toBeCloseTo(hit(false), 9);
   });
 });
 
@@ -540,9 +531,6 @@ describe('the fight is part of the run state', () => {
       },
       (r: Run) => {
         r.boss.coreIn += 1;
-      },
-      (r: Run) => {
-        r.boss.weakX += 1;
       },
       (r: Run) => {
         r.boss.summonDebt += 1;

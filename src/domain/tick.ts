@@ -359,6 +359,8 @@ export function tick(run: Run, cmd: Command, config: GameConfig): TickOutput {
     run.events.push({ type: 'lost' });
   } else if (isWon(run, config, alive)) {
     run.phase = 'won';
+    // Nothing of the fight stays on the floor while the legendary dies (4G-H: its death is played).
+    run.hazards.length = 0;
     run.events.push({ type: 'won' });
   } else if (run.phase === 'playing') {
     // A capture that opened the replace screen this tick goes first; the level-up waits its turn.

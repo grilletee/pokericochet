@@ -27,8 +27,12 @@ import {
   WARN_TICKS,
 } from '../domain';
 import { ballVisualScale } from './artBox';
+import { strikeLook } from './bossArt';
+import { legendArenaTexture, strikeFrames } from './bossTextures';
+import { BossDeathFx } from './deathFx';
 import { CountdownFx, HurtFx } from './hurtFx';
 import { interpolateBalls, interpolateEnemies } from './interpolate';
+import { arenaOf, LEGEND_ARENAS } from './legendArena';
 import {
   ART_PIXEL,
   arenaTexture,
@@ -163,6 +167,13 @@ export class Renderer {
   private readonly hurt = new HurtFx();
   /** The seconds left over an enemy marked as a threat (4G-G). */
   private readonly countdown = new CountdownFx();
+  /** The death of a boss (4G-H): it shakes, flashes, swells and bursts before it is gone. */
+  private readonly death: BossDeathFx;
+  /** The boss as it was in the last frame it was alive: where its death is played. */
+  private readonly lastBoss = { x: 0, y: 0, radius: 0, species: 0, type: -1, final: false };
+  private speciesIds: readonly string[] = [];
+  /** The rings round a legendary (4G-H). */
+  private readonly legendRings: Sprite[] = [];
   private clockMs = 0;
   private readonly enemyLayer = new Container();
   private readonly ballLayer = new Container();
@@ -408,13 +419,22 @@ export class Renderer {
     this.shieldRing = new Sprite(ring);
     this.shieldRing.anchor.set(0.5);
     this.shieldRing.visible = false;
+    this.death = new BossDeathFx(ring);
+    for (let k = 0; k < 2; k++) {
+      const legendRing = new Sprite(ring);
+      legendRing.anchor.set(0.5);
+      legendRing.visible = false;
+      this.legendRings.push(legendRing);
+    }
     this.world.addChild(
       background,
       this.biomeLayer,
       this.floorStrip,
       this.hazardLayer,
+      ...this.legendRings,
       this.aimLayer,
       this.enemyLayer,
+      this.death.layer,
       this.statusLayer,
       this.pickupLayer,
       this.sphereLayer,
@@ -432,6 +452,17 @@ export class Renderer {
     );
     app.stage.addChild(this.world);
     app.stage.addChild(this.hurt.flash);
+    app.stage.addChild(this.death.flash);
+  }
+
+  /** The species id of every art code: the arena of a legendary is looked up by its id (4G-H). */
+  setSpeciesIds(ids: readonly string[]): void {
+    this.speciesIds = ids;
+  }
+
+  /** True while the death of a boss is being played: the app waits for it before the summary. */
+  get dying(): boolean {
+    return this.death.active;
   }
 
   static async create(
@@ -490,6 +521,15 @@ export class Renderer {
     this.buildOutlines();
     this.drawBiome(curr, elapsedMs);
     this.drawBossFight(curr);
+    if (curr.bossMaxHp > 0 && curr.bossHp > 0) {
+      const b = this.lastBoss;
+      b.x = curr.bossX;
+      b.y = curr.bossY;
+      b.radius = curr.bossRadius;
+      b.species = curr.bossSpecies;
+      b.type = curr.bossType;
+      b.final = curr.bossFinal;
+    }
     this.drawBalls(prev, curr, alpha);
     this.drawEnemies(prev, curr, alpha);
     this.drawCountdowns(curr);
@@ -503,11 +543,12 @@ export class Renderer {
     // The hit on the player: veil, shake, number, and the launcher blinks while it is invulnerable.
     this.clockMs += elapsedMs;
     this.hurt.update(elapsedMs, this.app.screen.width, this.app.screen.height);
+    this.death.update(elapsedMs, this.app.screen.width, this.app.screen.height);
     this.player.alpha = HurtFx.blink(curr.playerInvuln, this.clockMs);
-    // The screen shakes for a moment when an Ultimate lands or the player is hurt.
+    // The screen shakes for a moment when an Ultimate lands, the player is hurt or a boss dies.
     this.world.pivot.set(
-      this.moves.shakeX + this.hurt.shakeX,
-      this.moves.shakeY + this.hurt.shakeY,
+      this.moves.shakeX + this.hurt.shakeX + this.death.shakeX,
+      this.moves.shakeY + this.hurt.shakeY + this.death.shakeY,
     );
 
     // A layer with nothing to show leaves the scene: the renderer does not walk its pool of sprites
@@ -531,11 +572,16 @@ export class Renderer {
     const sheets = this.backdropSheets;
     this.backdropDim.alpha = ownStage ? 0.25 : 0.5;
     if (ownStage) {
-      // A scenario of its own: a dark temple floor in the colour of the type, nothing of the biome.
-      const key = 100000 + main;
+      // A scenario of its own, nothing of the biome: since 4G-H the arena of THIS legendary (the
+      // depths of the sea, a field of magma, the sky...); the temple of its type if it has none.
+      const legend = this.speciesIds[curr.bossSpecies] ?? '';
+      const key = 100000 + curr.bossSpecies;
       const far = sheets[0];
       if (key !== this.backdropKey && far !== undefined) {
-        far.texture = arenaTexture(TYPE_COLORS[main] ?? 0xffffff);
+        far.texture =
+          legend in LEGEND_ARENAS
+            ? legendArenaTexture(legend)
+            : arenaTexture(TYPE_COLORS[main] ?? 0xffffff);
         far.visible = true;
         for (let i = 1; i < sheets.length; i++) {
           const rest = sheets[i];
@@ -618,13 +664,15 @@ export class Renderer {
     this.biomeClock += elapsedMs;
     const { width, height } = this.config.arena;
     const second = curr.biomeSecond >= 0 ? curr.biomeSecond : main;
-    const rising = RISING.has(main);
-    const falling = FALLING.has(main);
+    // The arena of a legendary has its own dust in the air (4G-H): embers, snow, motes, stars.
+    const legend = curr.bossFinal ? arenaOf(this.speciesIds[curr.bossSpecies] ?? '') : null;
+    const rising = legend !== null ? legend.motion === 'rise' : RISING.has(main);
+    const falling = legend !== null ? legend.motion === 'fall' : FALLING.has(main);
     for (let i = 0; i < BIOME_DOTS; i++) {
       const dot = this.biomeDots[i];
       if (dot === undefined) continue;
-      dot.visible = has;
-      if (!has) continue;
+      dot.visible = has || legend !== null;
+      if (!dot.visible) continue;
       const phase = (i * 0.61803398875) % 1; // a spread of the dots that never lines them up
       const speed = 0.012 + (i % 5) * 0.004; // pixels per millisecond
       const travel = (this.biomeClock * speed + phase * height) % height;
@@ -641,6 +689,11 @@ export class Renderer {
       dot.y = y;
       const size = 2.2 + (i % 4) * 0.9;
       dot.scale.set(size / 32);
+      if (legend !== null) {
+        dot.tint = legend.dust[i % 2] ?? 0xffffff;
+        dot.alpha = 0.35 + 0.35 * Math.sin(this.biomeClock / 400 + i * 1.7);
+        continue;
+      }
       dot.tint = TYPE_COLORS[i % 2 === 0 ? main : second] ?? 0xffffff;
       // Electric and Fairy blink; the rest stay steady.
       const blink =
@@ -867,34 +920,38 @@ export class Renderer {
         mark.height = ART_PIXEL * 12;
         mark.alpha = sprite.alpha;
       } else {
-        // Columns, combs, sweeps and rain: beams (announced as a hatched band), orbs for rain, and a
-        // strong mark on the floor strip so it reads even when a finger covers the field.
+        // Columns, combs, sweeps and rain strike with the look of the type of who throws them (4G-H:
+        // pillars of flame, curtains of water, rocks, shadows, lightning...); rain is the projectile
+        // of the type, falling. A strong mark on the floor strip so it reads under a finger.
+        const typeCode = curr.hazardType[i] ?? 255;
+        const typeName = GAME_TYPES[typeCode === 255 ? curr.bossType : typeCode] ?? 'normal';
+        const tone = TYPE_COLORS[typeCode === 255 ? curr.bossType : typeCode] ?? bossColor;
+        const look = strikeLook(typeName);
+        const strike = strikeFrames(typeName, tone);
         const stream = kind === KIND_RAIN;
-        sprite.texture = warning
-          ? fx.warn
-          : stream
-            ? (fx.orb[frame] ?? Texture.EMPTY)
-            : (fx.beam[frame] ?? Texture.EMPTY);
+        const drop = stream && typeCode !== 255 ? shotFrames(typeCode, tone) : [];
+        sprite.texture = stream
+          ? (drop[frame] ?? fx.orb[frame] ?? Texture.EMPTY)
+          : (strike[frame] ?? Texture.EMPTY);
         sprite.width = width;
         sprite.height = height;
         sprite.x = x - width / 2;
         sprite.y = 0;
-        // Centre the art in the band, scroll upwards (beam) or downwards (rain).
+        // Centre the art in the band and move it as the type moves (flames rise, rocks fall).
         const artWidth = 12 * ART_PIXEL;
-        sprite.tilePosition.set(width / 2 - artWidth / 2, stream ? curr.tick * 9 : -curr.tick * 6);
-        sprite.alpha = warning
-          ? 0.25 + 0.35 * pulse
-          : kind === KIND_COMB || kind === KIND_SWEEP
-            ? 0.95
-            : 1;
+        sprite.tilePosition.set(
+          width / 2 - artWidth / 2,
+          stream ? curr.tick * 9 : curr.tick * look.scroll,
+        );
+        sprite.alpha = kind === KIND_COMB || kind === KIND_SWEEP ? 0.95 : 1;
         mark.visible = true;
-        mark.texture = warning ? fx.warn : (fx.beam[frame] ?? Texture.EMPTY);
+        mark.texture = strike[frame] ?? Texture.EMPTY;
         mark.x = x - width / 2;
         mark.y = defenseLineY;
         mark.width = width;
         mark.height = floorHeight;
-        mark.tilePosition.set(width / 2 - 6 * ART_PIXEL, -curr.tick * 6);
-        mark.alpha = warning ? 0.55 + 0.45 * pulse : 1;
+        mark.tilePosition.set(width / 2 - 6 * ART_PIXEL, curr.tick * look.scroll);
+        mark.alpha = 1;
       }
       // Sparks fly off an attack while it strikes: the impact.
       for (let k = 0; k < SPARKS_PER_HAZARD; k++) {
@@ -937,18 +994,32 @@ export class Renderer {
     }
     this.slowVeil.visible = curr.bossTimeSlow;
     this.slowVeil.alpha = curr.bossTimeSlow ? 0.12 + 0.05 * Math.sin(curr.tick / 12) : 0;
-    // The charge: the boss is announced with a pulsing yellow aura and, while it charges (exposed),
-    // wears a red-hot aura that throbs fast. Guarded, there is nothing around it.
+    // The charge of the strong attack (a warning since 4G-H): announced with a soft aura and, while
+    // it charges, an aura in the colour of its type (the colour of what is coming).
     const charging = alive && curr.bossCoreOpen > 0;
     const announcing = alive && curr.bossCoreWarning;
     this.shieldRing.visible = charging || announcing;
     if (this.shieldRing.visible) {
       this.shieldRing.x = curr.bossX;
       this.shieldRing.y = curr.bossY;
-      const beat = Math.sin(curr.tick / (charging ? 3 : 6));
-      this.shieldRing.scale.set((curr.bossRadius + (charging ? 14 : 8) + beat * 4) / 30);
-      this.shieldRing.tint = charging ? 0xff4b3a : 0xffd54f;
-      this.shieldRing.alpha = charging ? 0.85 : 0.5 + 0.3 * beat;
+      const beat = Math.sin(curr.tick / (charging ? 4 : 6));
+      this.shieldRing.scale.set((curr.bossRadius + (charging ? 12 : 8) + beat * 4) / 30);
+      this.shieldRing.tint = charging ? (TYPE_COLORS[curr.bossType] ?? 0xff4b3a) : 0xffffff;
+      this.shieldRing.alpha = charging ? 0.7 : 0.35 + 0.2 * beat;
+    }
+    // A legendary is never just another boss (4G-H, "que se sienta legendario"): two slow rings of
+    // gold and of its colour turn round it the whole fight.
+    const legendary = alive && curr.bossFinal;
+    for (let k = 0; k < this.legendRings.length; k++) {
+      const ring = this.legendRings[k];
+      if (ring === undefined) continue;
+      ring.visible = legendary;
+      if (!legendary) continue;
+      const breath = Math.sin(curr.tick / 40 + k * 2.1);
+      ring.position.set(curr.bossX, curr.bossY);
+      ring.scale.set((curr.bossRadius * (1.35 + 0.25 * k) + 5 * breath) / 30);
+      ring.tint = k === 0 ? 0xffd54f : (TYPE_COLORS[curr.bossType] ?? 0xffffff);
+      ring.alpha = 0.3 + 0.15 * breath;
     }
   }
 
@@ -1223,18 +1294,20 @@ export class Renderer {
         const base = (radius * ENEMY_ART_SCALE) / (art.width / 2);
         const isBoss =
           radius === curr.bossRadius && Math.abs(ex - curr.bossX) < 2 && curr.bossMaxHp > 0;
-        const exposed = isBoss && curr.bossCoreOpen > 0;
+        const strongCharge = isBoss && curr.bossCoreOpen > 0;
         // The attacker shows what it is about to do (4G-F): a boss gleams red before each attack, an
         // enemy that is charging a shot glows yellow and white until the shot leaves its body.
         const id = curr.enemyId[i] ?? 0;
         let charging = false;
         for (let k = 0; k < this.glowCount; k++) if (this.glowIds[k] === id) charging = true;
-        const beat = Math.floor(curr.tick / (exposed ? 3 : 5)) % 2 === 0;
-        sprite.scale.set(base * (exposed ? 1 + 0.08 * Math.sin(curr.tick / 2.5) : 1));
-        if (exposed) {
-          // VULNERABLE: gold and white flashes, the body pulsing and a fat gold halo behind it.
-          sprite.tint = beat ? 0xffd23a : 0xffffff;
-          this.statusRing(ex, ey, 0xffd23a, radius * 1.5 + 6 * Math.sin(curr.tick / 4), 0.9);
+        const beat = Math.floor(curr.tick / 5) % 2 === 0;
+        sprite.scale.set(base * (strongCharge ? 1 + 0.04 * Math.sin(curr.tick / 4) : 1));
+        if (strongCharge) {
+          // Charging its strong attack (4G-H: a warning, no longer "exposed"): it swells a little and
+          // glows in the colour of its type, the colour its attack will have.
+          const tone = TYPE_COLORS[curr.bossType] ?? 0xff6a5a;
+          sprite.tint = beat ? tone : 0xffffff;
+          this.statusRing(ex, ey, tone, radius * 1.35 + 4 * Math.sin(curr.tick / 5), 0.6);
         } else if (isBoss && this.bossWarn) {
           sprite.tint = beat ? 0xff6a5a : 0xffffff;
         } else if (charging) {
@@ -1368,9 +1441,26 @@ export class Renderer {
     if (event.tier >= 3) this.startEffect(event.x, event.y, color, 3.2);
   }
 
+  /** The boss that was alive in the last frame has died: play its death where it was (4G-H). */
+  private startDeath(): void {
+    const b = this.lastBoss;
+    if (b.radius <= 0) return;
+    const art = this.art[b.species];
+    const color = TYPE_COLORS[b.type] ?? 0xffffff;
+    if (art === undefined) {
+      this.death.start(b.x, b.y, b.radius, this.disc, b.radius / 32, color, b.final);
+    } else {
+      const texture = this.outlined(this.foeArt, b.species, art, FOE_EDGE);
+      const scale = (b.radius * ENEMY_ART_SCALE) / (art.width / 2);
+      this.death.start(b.x, b.y, b.radius, texture, scale, color, b.final);
+    }
+    b.radius = 0;
+  }
+
   private drawEffects(events: readonly GameEvent[], elapsedMs: number): void {
     for (const event of events) {
       if (event.type === 'move') this.startMove(event);
+      else if (event.type === 'bossDefeated') this.startDeath();
       else if (event.type === 'playerHurt')
         this.hurt.hurt(this.player.x, this.config.player.y, event.damage);
       else if (event.type === 'hit') this.startEffect(event.x, event.y, 0xffffff);

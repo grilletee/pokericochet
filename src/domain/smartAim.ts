@@ -10,9 +10,8 @@ import type { Enemy } from './types';
  *
  *  1. the enemy the player tapped (`run.lockId`), while it lives;
  *  2. an enemy marked as a threat (its explosion is counting down): it must die first;
- *  3. the exposed point of a boss, while its core is open (the window to hurt it);
- *  4. the boss itself;
- *  5. the enemy nearest to the defence line (the one that will hurt first).
+ *  3. the boss (4G-H: it has no exposed point any more);
+ *  4. the enemy nearest to the defence line (the one that will hurt first).
  *
  * Pure and deterministic: ties go to the lowest id. Returns null when nothing is alive.
  */
@@ -30,12 +29,7 @@ export function smartTarget(
     if (threat !== undefined) return { x: threat.x, y: threat.y, id: threat.id };
   }
   const boss = liveBoss(run);
-  if (boss !== undefined) {
-    if (run.boss.coreOpen > 0) {
-      return { x: boss.x + run.boss.weakX, y: boss.y, id: boss.id };
-    }
-    return { x: boss.x, y: boss.y, id: boss.id };
-  }
+  if (boss !== undefined) return { x: boss.x, y: boss.y, id: boss.id };
   const line = config.arena.defenseLineY;
   let best: Enemy | undefined;
   for (const e of run.enemies) {

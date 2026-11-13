@@ -13,8 +13,6 @@ export class Overlay {
   private readonly cards: HTMLDivElement;
   private readonly toast: HTMLDivElement;
   private readonly bossBar: HTMLDivElement;
-  private readonly vulnerable: HTMLDivElement;
-  private readonly exposedFrame: HTMLDivElement;
   private readonly bossFill: HTMLDivElement;
   private readonly bossLabel: HTMLDivElement;
   private lastBossKey = '';
@@ -68,38 +66,9 @@ export class Overlay {
     notch.style.cssText =
       'position:absolute;left:50%;top:0;width:2px;height:100%;background:#0b0e16cc;';
     this.bossBar.append(notch, this.bossLabel);
-    // The sign of the exposure (4G-E): big, blinking, right over the bar. The boss is charging: hit it now.
-    this.vulnerable = document.createElement('div');
-    this.vulnerable.dataset.vulnerable = '';
-    this.vulnerable.textContent = '¡VULNERABLE!';
-    // 4G-F ("imposible de ignorar"): a huge plate in the middle of the upper field, a gold frame round
-    // the whole screen that pulses, and the body of the boss flashing (render) with a repeating alarm.
-    this.vulnerable.style.cssText =
-      `${base}left:8%;right:8%;top:19%;display:none;text-align:center;font-size:46px;padding:6px 0;` +
-      'font-weight:900;letter-spacing:4px;color:#ffe27a;background:rgba(122,16,16,0.82);' +
-      'text-shadow:0 4px 0 #3a0808,0 0 18px #ff5a3a;box-shadow:0 0 0 4px #ffd75a;' +
-      'animation:vulnerable-blink 0.4s steps(2) infinite;pointer-events:none;z-index:4;';
-    this.exposedFrame = document.createElement('div');
-    this.exposedFrame.dataset.exposedFrame = '';
-    this.exposedFrame.style.cssText =
-      `${base}inset:0;display:none;pointer-events:none;z-index:3;` +
-      'box-shadow:inset 0 0 0 8px #ffd75a,inset 0 0 70px 10px rgba(255,120,40,0.75);' +
-      'animation:vulnerable-pulse 0.5s steps(3) infinite;';
-    const blink = document.createElement('style');
-    blink.textContent =
-      '@keyframes vulnerable-blink{0%{opacity:1}50%{opacity:0.45}}' +
-      '@keyframes vulnerable-pulse{0%{opacity:1}50%{opacity:0.35}100%{opacity:1}}';
-    document.head.append(blink);
-    host.append(
-      this.hud,
-      this.toast,
-      this.bossBar,
-      this.exposedFrame,
-      this.vulnerable,
-      this.message,
-      this.debug,
-      this.cards,
-    );
+    // 4G-H (15th playtest): the "¡VULNERABLE!" plate and the gold frame are gone; the boss takes the
+    // same damage all the time, and its charge is only the warning of its strong attack.
+    host.append(this.hud, this.toast, this.bossBar, this.message, this.debug, this.cards);
   }
 
   setHud(text: string): void {
@@ -193,19 +162,24 @@ export class Overlay {
     open = false,
     warning = false,
     rage = false,
+    legendary = false,
   ): void {
     const visible = maxHp > 0 && hp > 0;
     const percent = visible ? Math.max(1, Math.ceil((100 * hp) / maxHp)) : 0;
-    const key = `${name}|${percent}|${open}|${warning}|${rage}`;
+    const key = `${name}|${percent}|${open}|${warning}|${rage}|${legendary}`;
     if (key === this.lastBossKey) return;
     this.lastBossKey = key;
     this.bossBar.style.display = visible ? 'block' : 'none';
-    this.vulnerable.style.display = visible && open ? 'block' : 'none';
-    this.exposedFrame.style.display = visible && open ? 'block' : 'none';
-    this.bossLabel.textContent = `${name} ${percent} %${open ? ' · ¡CARGANDO, EXPUESTO! ¡ATACA!' : warning ? ' · va a cargar…' : ''}`;
+    // A legendary says so on its bar, with a gold edge the whole fight (4G-H).
+    const title = legendary ? `★ ${name} · LEGENDARIO` : name;
+    this.bossLabel.textContent = `${title} ${percent} %${open ? ' · carga su ataque fuerte' : warning ? ' · va a cargar…' : ''}`;
     this.bossFill.style.width = `${percent}%`;
     this.bossFill.style.background = rage ? '#a3141f' : '#e8503a';
-    this.bossBar.style.borderColor = open ? '#ffd54f' : warning ? '#ffffff88' : 'transparent';
+    this.bossBar.style.borderColor = legendary
+      ? '#ffd54f'
+      : open || warning
+        ? '#ffffff88'
+        : 'transparent';
   }
 
   setDebug(text: string | null): void {

@@ -1,5 +1,4 @@
 import { themeTypes } from './advice';
-import { coreOf } from './bossFight';
 import type { GameConfig } from './config';
 import type { Run } from './run';
 import { ballRadius } from './team';
@@ -175,9 +174,6 @@ export interface Snapshot {
   hazardLink: Float32Array;
   /** Type code of the enemy that fired a shot (see `typeCode`), 255 for what has none (4G-G). */
   hazardType: Uint8Array;
-  bossWeakX: number;
-  bossWeakY: number;
-  bossWeakRadius: number;
   bossPhase: number;
   /**
    * What is wrong with each enemy (ADR-053, "estados visibles"), as a set of `STATUS_*` bits: the
@@ -253,9 +249,6 @@ export function createSnapshot(maxSlots = 64, maxEnemies = 512, maxPickups = 64)
     bossTimeSlow: false,
     hazardLink: new Float32Array(MAX_HAZARDS),
     hazardType: new Uint8Array(MAX_HAZARDS),
-    bossWeakX: 0,
-    bossWeakY: 0,
-    bossWeakRadius: 0,
     bossPhase: 0,
     bossX: 0,
     bossY: 0,
@@ -296,7 +289,6 @@ export function writeSnapshot(
     run.boss.spawned && run.boss.id !== 0 && run.enemies.some((e) => e.id === run.boss.id);
   snap.bossTimeSlow = run.boss.timeSlow > 0;
   snap.bossPhase = 0;
-  snap.bossWeakRadius = 0;
   if (run.boss.id !== 0) {
     for (const e of run.enemies) {
       if (e.id !== run.boss.id) continue;
@@ -312,10 +304,6 @@ export function writeSnapshot(
       const fight = config?.bossFight;
       snap.bossCoreWarning =
         fight !== undefined && run.boss.coreOpen === 0 && run.boss.coreIn <= fight.coreWarnTicks;
-      const core = coreOf(run, e);
-      snap.bossWeakX = core.x;
-      snap.bossWeakY = core.y;
-      snap.bossWeakRadius = run.boss.coreOpen > 0 || snap.bossCoreWarning ? core.radius : 0;
     }
   }
   const hazards = Math.min(run.hazards.length, snap.hazardX.length);

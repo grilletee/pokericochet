@@ -8,7 +8,6 @@ export {
   advanceEnemyFire,
   barrierUp,
   bossDamage,
-  coreOf,
   fieldMargin,
   isEnemyShot,
   liveBoss,
@@ -17,7 +16,6 @@ export {
   patternFor,
   playerSpeedMult,
   startFight,
-  ultimateOnBoss,
   WARN_TICKS,
   zoneCovers,
 } from './bossFight';

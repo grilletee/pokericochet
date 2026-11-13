@@ -170,6 +170,26 @@ describe('boss: the end of the run', () => {
     expect(out.events.some((e) => e.type === 'won')).toBe(true);
   });
 
+  it('4G-H: nothing of the fight stays on the floor once it is won (its death is played clean)', () => {
+    const run = runWithBoss();
+    run.hazards.push({
+      kind: 'column',
+      x: 100,
+      y: 0,
+      link: 0,
+      width: 60,
+      telegraph: 50,
+      active: 20,
+      damage: 1,
+      speed: 0,
+      struck: false,
+    });
+    bossOf(run).hp = 0;
+    tick(run, autoCommand(run), bossConfig);
+    expect(run.phase).toBe('won');
+    expect(run.hazards).toHaveLength(0);
+  });
+
   // Accepted surviving mutant (3C, ADR-016): the win rule `spawned && !isBossAlive` without the
   // `spawned` half is equivalent in practice, because the boss spawns in the very tick in which
   // the wave index reaches the end of the table, before the win check. `spawned` stays as a guard.

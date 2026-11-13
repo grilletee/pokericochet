@@ -20,7 +20,7 @@ export const CONTROL_SCHEMES: readonly SchemeInfo[] = [
   {
     id: 'smart',
     name: 'A · Arrastrar + apuntado inteligente',
-    hint: 'Arrastra abajo para moverte; el lanzador elige a quién disparar (amenazas, punto vulnerable del jefe, el más cercano a la línea). Toca un enemigo para fijarlo.',
+    hint: 'Arrastra abajo para moverte; el lanzador elige a quién disparar (el jefe, el más cercano a la línea). Toca un enemigo para fijarlo.',
   },
   {
     id: 'motion',

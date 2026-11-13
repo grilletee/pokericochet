@@ -399,7 +399,9 @@ export const baseConfig: Omit<
     // 4G-C (ADR-053): 26 -> 110, clearly above the third boss between waves (the author: "a real
     // challenge you can die in"); only the open core lets most of the damage through, so the time of
     // the fight is set by the bench (B3). Slow and big, so it takes a long time to reach the line.
-    hpScale: 120, // 4G-E: 105 -> 120 (135 left the bot at 25 %) (the author takes it down too fast); 4G-D: 46 -> 105 (the boss now hovers fully on screen: it is hit much more)
+    // 4G-H (15th playtest: "más vida y que se sienta legendario"): set in SECONDS of fight of the
+    // bot (bench:bosses, DPS by place: 237 health per second at the final, 64 s with 120). Fixed.
+    hpScale: 260, // 4G-H: 120 -> 260 (300 gave 151 s and too many deaths); 4G-E: 105 -> 120; 4G-D: 46 -> 105
     speed: 0.04,
     radius: 72,
     summonIntervalTicks: 900,
@@ -413,6 +415,7 @@ export const baseConfig: Omit<
     {
       after: 2,
       byType: { fire: 'rapidash', water: 'starmie', grass: 'victreebel', electric: 'electabuzz' },
+      // 4G-H: the first stays as it is (the author: "el primero está bien"): ~48 s of the bot, 19/s.
       hpScale: 7.5, // 4G-E: 6.5 -> 7.5; 4G-D: 3 -> 6.5 (B3); 3.2 in the 4G-B: the first met a team of level 5; it lasts long enough through the core
       speed: 0.07,
       radius: 44,
@@ -426,7 +429,9 @@ export const baseConfig: Omit<
     {
       after: 4,
       byType: { fire: 'arcanine', water: 'gyarados', grass: 'exeggutor', electric: 'ampharos' },
-      hpScale: 32, // 4G-E: 28 -> 32; 4G-D: 11.5 -> 28 (B3); 7 in the 4G-B
+      // 4G-H (15th playtest: "el segundo y el tercero me los bajo muy rápido"): the bot's team does
+      // ~90 health per second here (4.7 times the first boss): 42 s with 32, target ~75 s.
+      hpScale: 52, // 4G-H: 32 -> 52 (57 gave 64 s and a win rate of the bot of 19 %); 4G-E: 28 -> 32; 4G-D: 11.5 -> 28 (B3); 7 in the 4G-B
       speed: 0.075,
       radius: 52,
       summonIntervalTicks: 1000,
@@ -438,7 +443,8 @@ export const baseConfig: Omit<
     {
       after: 6,
       byType: { fire: 'typhlosion', water: 'kingdra', grass: 'tangrowth', electric: 'luxray' },
-      hpScale: 64, // 4G-E: 56 -> 64; 4G-D: 24 -> 56 (B3); 16 in the 4G-B
+      // 4G-H: ~200 health per second of the bot's team here: 35 s with 64, target ~95 s.
+      hpScale: 150, // 4G-H: 64 -> 150 (174 gave 81 s); 4G-E: 56 -> 64; 4G-D: 24 -> 56 (B3); 16 in the 4G-B
       speed: 0.08,
       radius: 58,
       summonIntervalTicks: 900,

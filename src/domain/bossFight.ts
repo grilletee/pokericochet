@@ -31,25 +31,17 @@ export function liveBoss(run: Run): Enemy | undefined {
   return undefined;
 }
 
-/** The core is a circle on the body of the boss: where it is, and how big (arena pixels). */
-export function coreOf(
-  run: Run,
-  boss: Enemy,
-): { readonly x: number; readonly y: number; readonly radius: number } {
-  return { x: boss.x + run.boss.weakX, y: boss.y, radius: boss.radius * 0.45 };
-}
-
 /**
- * What a hit of `amount` really does to the boss (ADR-053): little while the core is closed, half
- * while it is open, and never enough to cross into the fury before it has started, so the fury is
- * always played. Anything that hurts the boss goes through here (balls, burns, chains, moves).
+ * What a hit of `amount` really does to the boss: all of it, always the same (4G-H, 15th playtest:
+ * "quitar el ¡VULNERABLE!: que al jefe le hagas siempre el mismo daño"), but never enough to cross
+ * into the fury before it has started, so the fury is always played. Anything that hurts the boss
+ * goes through here (balls, burns, chains, moves).
  */
 export function bossDamage(run: Run, config: GameConfig, boss: Enemy, amount: number): number {
   const fight = config.bossFight;
   if (fight === undefined) return amount;
-  const hurt = amount * (run.boss.coreOpen > 0 ? fight.openMult : fight.closedMult);
   const floor = run.boss.phase === 0 ? fight.rageAt * run.boss.maxHp : 0;
-  return Math.max(0, Math.min(hurt, boss.hp - floor));
+  return Math.max(0, Math.min(amount, boss.hp - floor));
 }
 
 /**
@@ -86,14 +78,7 @@ function bossTypeOf(run: Run, config: GameConfig): string {
   return run.enemies.find((e) => e.id === run.boss.id)?.type ?? '';
 }
 
-/** An Ultimate that lands while the boss is exposed hits extra hard (ADR-054); 1 otherwise. */
-export function ultimateOnBoss(run: Run, config: GameConfig): number {
-  const fight = config.bossFight;
-  if (fight === undefined) return 1;
-  return run.boss.coreOpen > 0 ? fight.ultimateOpenBonus : 1;
-}
-
-/** A boss has just been put on the field: its fight starts calm, with the core closed (ADR-053). */
+/** A boss has just been put on the field: its fight starts calm, not charging (ADR-053). */
 export function startFight(run: Run, config: GameConfig, boss: Enemy): void {
   run.hazards.length = 0;
   const fight = config.bossFight;
@@ -102,7 +87,6 @@ export function startFight(run: Run, config: GameConfig, boss: Enemy): void {
   run.boss.phase = 0;
   run.boss.coreOpen = 0;
   run.boss.coreIn = phase?.coreEvery ?? 0;
-  run.boss.weakX = 0;
   run.boss.attackIn = fight.calmTicks;
   run.boss.summonDebt = 0;
   run.boss.squeeze = 0;
@@ -203,6 +187,8 @@ function spawnAttack(
   const { width } = config.arena;
   const telegraph = Math.max(MIN_TELEGRAPH_TICKS, attack.telegraphTicks);
   const damage = attack.damage * phase.damageMult;
+  // The attack carries the boss's type (4G-H): the render gives each type its own look (pillars of
+  // flame, waves, falling rocks, shadows...) over the one language of danger.
   const base = {
     y: 0,
     link: 0,
@@ -210,6 +196,7 @@ function spawnAttack(
     active: attack.activeTicks,
     damage,
     struck: false,
+    type: boss.type as GameType,
   };
   const half = attack.width / 2;
   const count = Math.max(1, attack.count ?? 1);
@@ -439,6 +426,7 @@ function advanceMechanic(run: Run, config: GameConfig, pattern: BossPatternDef):
                   damage: 1.5,
                   speed: 0,
                   struck: false,
+                  type: 'electric',
                 }
               : {
                   kind: 'shot',
@@ -451,6 +439,7 @@ function advanceMechanic(run: Run, config: GameConfig, pattern: BossPatternDef):
                   damage: 1.5,
                   speed: 5,
                   struck: false,
+                  type: 'fire',
                 },
           );
         }
@@ -506,8 +495,8 @@ export function advanceBossFight(run: Run, config: GameConfig): void {
     return;
   }
 
-  // The charge (ADR-054): guarded, announced, then the boss stops and charges its strong attack,
-  // exposed (it takes much more damage, and the Ultimate is worth most), and launches it.
+  // The charge (ADR-054): announced, then the boss stops and charges its strong attack and launches
+  // it. Since 4G-H it is only a warning: it takes the same damage as ever.
   if (run.boss.coreOpen > 0) {
     run.boss.coreOpen -= 1;
     if (run.boss.coreOpen === 0) {

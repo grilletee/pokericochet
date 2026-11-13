@@ -57,13 +57,12 @@ export interface BossState {
   /** Type of the current boss's summons; '' = any type. */
   type: string;
   /**
-   * The fight (ADR-053): 0 = normal, 1 = fury. The core is closed (`coreOpen` 0) until `coreIn`
-   * runs out, then open for a while; `weakX` is where it is, as an offset from the boss's centre.
+   * The fight (ADR-053): 0 = normal, 1 = fury. The boss is not charging (`coreOpen` 0) until
+   * `coreIn` runs out, then it charges its strong attack for a while (a warning only since 4G-H).
    */
   phase: number;
   coreOpen: number;
   coreIn: number;
-  weakX: number;
   /** Ticks until the next round of attacks. */
   attackIn: number;
   /** Reinforcements a `summon` attack asked for and the wave code has not spawned yet. */
@@ -320,7 +319,6 @@ export function createRun(config: GameConfig, seed: number, starterSpecies: stri
       phase: 0,
       coreOpen: 0,
       coreIn: 0,
-      weakX: 0,
       attackIn: 0,
       summonDebt: 0,
       squeeze: 0,
@@ -564,7 +562,6 @@ export function hashRun(run: Run): string {
   h.int(run.boss.phase);
   h.int(run.boss.coreOpen);
   h.int(run.boss.coreIn);
-  h.num(run.boss.weakX);
   h.int(run.boss.attackIn);
   h.int(run.boss.summonDebt);
   h.num(run.boss.squeeze);

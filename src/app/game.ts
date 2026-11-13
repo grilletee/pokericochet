@@ -171,6 +171,8 @@ declare global {
       kills: number;
       bossHp: number;
       bossMaxHp: number;
+      bossSpecies: string;
+      dying: boolean;
       starter: string;
       pickups: number;
       autoAim: boolean;
@@ -187,6 +189,7 @@ declare global {
       biomeColor: number;
       /** The fight of a boss: things on the floor, the phase (1 = fury) and the ticks the core is open. */
       hazards: number;
+      striking: number;
       bossPhase: number;
       bossCoreOpen: number;
       /** Kinds of the things on the floor now, for the smoke test. */
@@ -402,6 +405,25 @@ export async function startGame(host: HTMLElement): Promise<void> {
     run = createRun(config, newSeed(), starter);
   }
   if (showDebug && !bench) applyDebugParams(run, config, params);
+  // ?debug&bossHp=0.05 scales the health of every boss (4G-H: to see the death of a legendary).
+  // ?debug&legend=kyogre makes that legendary the final boss (to see its arena and its attacks).
+  const legendParam = params.get('legend');
+  if (showDebug && !bench && legendParam !== null && config.boss !== undefined) {
+    config = { ...config, boss: { ...config.boss, finals: [legendParam] } };
+  }
+  const bossHpParam = Number(params.get('bossHp'));
+  if (showDebug && !bench && bossHpParam > 0) {
+    config = {
+      ...config,
+      ...(config.boss === undefined
+        ? {}
+        : { boss: { ...config.boss, hpScale: config.boss.hpScale * bossHpParam } }),
+      interludes: (config.interludes ?? []).map((b) => ({
+        ...b,
+        hpScale: b.hpScale * bossHpParam,
+      })),
+    };
+  }
 
   // The names the screens show come from the data layer once (ADR-036): Pokémon and moves in Spanish.
   setNames(POKEMON_NAMES, MOVE_NAMES);
@@ -429,6 +451,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
     await loadSpeciesTextures(speciesIds),
     forms,
   );
+  renderer.setSpeciesIds(speciesIds);
   installPixelStyle(host, pixelFontUrl);
   const overlay = new Overlay(host);
   const teamBar = new TeamBar(
@@ -537,7 +560,9 @@ export async function startGame(host: HTMLElement): Promise<void> {
   let moveCasts = 0;
   /** The notices that happen once per run: the signature is ready / was thrown for the first time. */
   let signatureAnnounced = false;
-  let vulnerableHinted = false;
+  let chargeHinted = false;
+  /** When the run was won (ms), while the death of the legendary plays; 0 otherwise. */
+  let victoryAt = 0;
   const namer = new AttackNamer();
   let signatureWasReady = false;
   let readyAnnounced = false;
@@ -569,6 +594,8 @@ export async function startGame(host: HTMLElement): Promise<void> {
       kills: run.kills,
       bossHp: curr.bossHp,
       bossMaxHp: curr.bossMaxHp,
+      bossSpecies: curr.bossMaxHp > 0 ? (speciesIds[curr.bossSpecies] ?? '') : '',
+      dying: renderer.dying,
       starter: run.starter,
       pickups: run.pickups.length,
       autoAim: run.autoAim,
@@ -584,6 +611,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
       poolSize: run.pool.length,
       biomeColor: renderer.biomeColor,
       hazards: run.hazards.length,
+      striking: run.hazards.filter((h) => h.telegraph <= 0 && h.kind !== 'zone').length,
       bossPhase: run.boss.phase,
       bossCoreOpen: run.boss.coreOpen,
       hazardKinds: run.hazards.map((h) => h.kind),
@@ -648,7 +676,8 @@ export async function startGame(host: HTMLElement): Promise<void> {
     cartel.hide();
     pause.reset();
     signatureAnnounced = false;
-    vulnerableHinted = false;
+    chargeHinted = false;
+    victoryAt = 0;
     namer.reset();
     signatureWasReady = false;
     readyAnnounced = false;
@@ -798,7 +827,8 @@ export async function startGame(host: HTMLElement): Promise<void> {
     }
     // Only two pauses per boss (10th playtest): a big one on entry and a shorter one on defeat. The
     // change of phase never stops the game.
-    if (event.type === 'bossDefeated') {
+    // The final boss has no card (4G-H): its death plays on the field, and then the summary comes.
+    if (event.type === 'bossDefeated' && run.phase !== 'won') {
       return {
         ms: BOSS_DEFEAT_MS,
         view: {
@@ -858,13 +888,11 @@ export async function startGame(host: HTMLElement): Promise<void> {
       } else if (event.type === 'bossTimeSlow') {
         const text = namer.first('timeSlow');
         if (text !== null) overlay.showToast(text, now);
-      } else if (event.type === 'bossCore' && event.open && !vulnerableHinted) {
-        // The first time in a run: say what the glow means (12th playtest: "no se entiende").
-        vulnerableHinted = true;
-        overlay.showToast(
-          '¡Está cargando su ataque y queda EXPUESTO! Golpéalo ahora y lanza tu Ultimate',
-          now,
-        );
+      } else if (event.type === 'bossCore' && event.open && !chargeHinted) {
+        // The first time in a run: say what the glow means (12th playtest: "no se entiende"). Since
+        // 4G-H it is only a warning: the strong attack comes next.
+        chargeHinted = true;
+        overlay.showToast('Brilla: está cargando su ataque fuerte. Prepárate para esquivar', now);
       } else if (event.type === 'capture') {
         const from = toScreen(event.x, config.player.y);
         teamBar.flyCapture(
@@ -986,7 +1014,9 @@ export async function startGame(host: HTMLElement): Promise<void> {
     // The Pokémon sheet pauses the game here, in the app: the run takes no command, so it is the same run.
     // An evolution pauses the game for about a second in the same way (4F-E).
     const steps =
-      screen === 'playing' && !sheet.open && !pause.active(now) ? stepper.advance(elapsed) : 0;
+      screen === 'playing' && !sheet.open && !pause.active(now) && victoryAt === 0
+        ? stepper.advance(elapsed)
+        : 0;
     let tickMs = 0;
     let snapshotMs = 0;
     let stopped = false; // a stage step pauses the game: no more ticks in this frame
@@ -1036,10 +1066,20 @@ export async function startGame(host: HTMLElement): Promise<void> {
       const t2 = performance.now();
       tickMs += t1 - t0;
       snapshotMs += t2 - t1;
-      if (!bench && (run.phase === 'lost' || run.phase === 'won')) {
+      if (!bench && run.phase === 'lost') {
         finishRun();
         break;
       }
+      // Won: the death of the legendary is played whole first, and the summary comes after it
+      // (15th playtest: "ahora sale la victoria encima nada más morir").
+      if (!bench && run.phase === 'won') {
+        if (victoryAt === 0) victoryAt = now;
+        break;
+      }
+    }
+    if (victoryAt > 0 && screen === 'playing' && !renderer.dying && now - victoryAt > 300) {
+      victoryAt = 0;
+      finishRun();
     }
 
     cartel.update(now);
@@ -1109,10 +1149,6 @@ export async function startGame(host: HTMLElement): Promise<void> {
       const tide = namer.first('tide');
       if (tide !== null) overlay.showToast(tide, now);
     }
-    // While the boss is exposed the alarm repeats, so it cannot be missed (4G-F).
-    if (!bench && curr.bossCoreOpen > 0 && screen === 'playing' && curr.tick % 45 === 0) {
-      sound.play('vulnerable', now);
-    }
     overlay.setBoss(
       pokemonName(speciesIds[curr.bossSpecies] ?? ''),
       screen === 'playing' ? curr.bossHp : 0,
@@ -1120,6 +1156,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
       curr.bossCoreOpen > 0,
       curr.bossCoreWarning,
       curr.bossPhase === 1,
+      curr.bossFinal,
     );
     overlay.setCards(
       screen === 'playing' && curr.phase === PHASE_LEVELUP ? run.offers : null,

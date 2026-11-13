@@ -70,7 +70,7 @@ describe('gaps found by the mutants of the 4G-C', () => {
     expect(hashRun(a)).not.toBe(hashRun(b));
   });
 
-  it('through the tick, a ball does the open multiplier while the boss charges and the closed one otherwise', () => {
+  it('through the tick, a ball does the same to the boss charging or not (4G-H: no exposed bonus)', () => {
     const cfg = testConfig();
     const dealt = (open: number): number => {
       const { run, boss } = withBoss(cfg);
@@ -84,7 +84,7 @@ describe('gaps found by the mutants of the 4G-C', () => {
     };
     const guarded = dealt(0);
     expect(guarded).toBeGreaterThan(0);
-    expect(dealt(50) / guarded).toBeCloseTo(fight.openMult / fight.closedMult, 6);
+    expect(dealt(50) / guarded).toBeCloseTo(1, 6);
   });
 
   it('balls on a patch of floor made by a boss are not collected, and are outside it', () => {

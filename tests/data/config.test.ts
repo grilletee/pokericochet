@@ -135,8 +135,9 @@ describe('stat mapping', () => {
   it('pins the provisional boss hp multiplier, so changing it is a conscious decision', () => {
     // 4G-C (ADR-053): 3.2 / 7 / 16 and 26 before; the fight lasts through the core, and the final boss
     // is clearly above the third in between.
-    expect(baseConfig.boss?.hpScale).toBe(120);
-    expect((baseConfig.interludes ?? []).map((b) => b.hpScale)).toEqual([7.5, 32, 64]);
+    // 4G-H: measured in seconds of fight of the bot (bench:bosses, DPS by place).
+    expect(baseConfig.boss?.hpScale).toBe(260);
+    expect((baseConfig.interludes ?? []).map((b) => b.hpScale)).toEqual([7.5, 52, 150]);
   });
 
   it('gives every type an effect at each of the three stages, and the first stage is the old one', () => {

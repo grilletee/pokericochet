@@ -11,9 +11,8 @@ import { WARN_TICKS } from '../../domain';
 /**
  * The boss fights as data (4G-D, ADR-054, which replaces the core of ADR-053 and keeps its two
  * phases, its eight verbs and its fury). A boss attacks in rounds of the verbs of its family of
- * type; every so often it STOPS and CHARGES its strong attack, glowing and exposed (it takes much
- * more damage and the Ultimate is worth most), and then launches it: the author's own idea, and
- * readable on the sprite itself. The legendaries add a mechanic that is theirs alone.
+ * type; every so often it STOPS and CHARGES its strong attack, glowing, and then launches it (since
+ * 4G-H the charge is only a warning: no exposed damage). The legendaries add a mechanic of their own.
  * PROVISIONAL: calibrated with `pnpm bench:bosses` and, above all, with the author's own play.
  */
 
@@ -390,11 +389,9 @@ export const FINAL_BOSSES: readonly string[] = Object.keys(LEGENDS);
 export const bossFight: BossFightDef = {
   // The fury starts at half health, with a message and no pause.
   rageAt: 0.5,
-  // Guarded, a boss takes a third of what a ball does; charging its strong attack it is exposed and
-  // takes 1.7 times, and an Ultimate thrown in that window does half as much again.
-  closedMult: 0.35,
-  openMult: 1.7,
-  ultimateOpenBonus: 1.5,
+  // 4G-H (15th playtest): no guarded / exposed damage any more; a boss always takes what it is hit
+  // with (it was 0.35 guarded, 1.7 exposed and 1.5 more for an Ultimate). The health of each boss
+  // (`hpScale` in the config) was measured again for it.
   coreWarnTicks: 60,
   calmTicks: 150,
   maxHazards: 16,

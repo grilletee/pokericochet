@@ -7,7 +7,7 @@ describe('sound: which event makes which sound', () => {
   const events: Array<[GameEvent, string | null]> = [
     [{ type: 'hit', ballId: 1, enemyId: 1, damage: 1, effectiveness: 1, x: 0, y: 0 }, 'bounce'],
     [{ type: 'kill', enemyId: 1, x: 0, y: 0 }, 'kill'],
-    [{ type: 'bossCore', open: true, warning: false }, 'vulnerable'],
+    [{ type: 'bossCore', open: true, warning: false }, 'charge'],
     [{ type: 'bossCore', open: false, warning: true }, null],
     [
       { type: 'bossSpawn', enemyId: 1, species: 'kyogre', number: 4, interludes: 3, final: true },

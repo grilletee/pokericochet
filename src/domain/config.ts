@@ -77,8 +77,10 @@ export interface BossPhaseDef {
   readonly damageMult: number;
   /**
    * The strong attack (ADR-054, which replaces the core of ADR-053): every `coreEvery` ticks the
-   * boss stops and CHARGES it for `coreOpen` ticks, exposed (it is announced first and it glows), and
-   * then launches `strong`. The names `core*` are historical: they mean "charge".
+   * boss stops and CHARGES it for `coreOpen` ticks (it is announced first and it glows), and then
+   * launches `strong`. The names `core*` are historical: they mean "charge". Since 4G-H the charge
+   * is only a warning: the boss takes the same damage all the time (15th playtest, "quitar el
+   * ¡VULNERABLE!").
    */
   readonly coreEvery: number;
   readonly coreOpen: number;
@@ -177,12 +179,7 @@ export interface EnemyThreatDef {
 export interface BossFightDef {
   /** The fury starts when the boss is at or under this share of its health. */
   readonly rageAt: number;
-  /** Damage multiplier while the boss is guarded (normal) and while it is exposed, charging its strong attack. */
-  readonly closedMult: number;
-  readonly openMult: number;
-  /** An Ultimate that lands while the boss is exposed does this much extra. */
-  readonly ultimateOpenBonus: number;
-  /** Ticks the charge is announced before it starts. */
+  /** Ticks the charge of the strong attack is announced before it starts. */
   readonly coreWarnTicks: number;
   /** Ticks of calm after the boss appears and after the fury starts. */
   readonly calmTicks: number;
