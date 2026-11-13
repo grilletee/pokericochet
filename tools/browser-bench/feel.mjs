@@ -1,5 +1,5 @@
-// Captures the new feedback of the 4G-G in a real Edge: the enemy marked as a threat (aura and
-// countdown), the projectile of an enemy by type, and the moment a hit lands (red flash, number).
+// Captures the feedback of the 4G-G in a real Edge: the shots of the enemies (4G-H: aimed, in bursts,
+// by type) and the moment a hit lands (red flash, number).
 //
 //   pnpm exec node tools/browser-bench/feel.mjs --out folder [--mobile] [--seed 9]
 import { existsSync, mkdirSync } from 'node:fs';
@@ -42,7 +42,7 @@ try {
   const page = await context.newPage();
   const errors = [];
   page.on('pageerror', (e) => errors.push(e.message));
-  // A fire-type starter at a late wave: many enemies, several types, threats and shots.
+  // A fire-type starter at a late wave: many enemies, several types, many shots.
   await page.goto(
     `http://127.0.0.1:4179/?debug&seed=${seed}&starter=charmander&wave=5&ballLevel=3&hp=99&controls=smart`,
   );
@@ -55,9 +55,9 @@ try {
   for (let i = 0; i < 400 && !(threat && hurt); i++) {
     await page.waitForTimeout(150);
     const s = await state();
-    if (!threat && s.threats > 0) {
-      await page.waitForTimeout(500);
-      await page.screenshot({ path: join(outDir, `amenaza-${tag}.png`) });
+    if (!threat && s.enemyShots >= 2) {
+      await page.waitForTimeout(700);
+      await page.screenshot({ path: join(outDir, `disparos-${tag}.png`) });
       threat = true;
     }
     if (!hurt && s.hp < lastHp) {
@@ -70,7 +70,7 @@ try {
     await page.waitForTimeout(40);
     await page.keyboard.up(i % 20 < 10 ? 'ArrowLeft' : 'ArrowRight');
   }
-  console.log(`threat captured: ${threat}, hurt captured: ${hurt}, errors: ${errors.length}`);
+  console.log(`shots captured: ${threat}, hurt captured: ${hurt}, errors: ${errors.length}`);
   if (errors.length > 0) console.error(errors.slice(0, 3).join('\n'));
 } finally {
   await browser.close();

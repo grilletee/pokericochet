@@ -9,9 +9,8 @@ import type { Enemy } from './types';
  * this order, and the thumb only chooses where to stand:
  *
  *  1. the enemy the player tapped (`run.lockId`), while it lives;
- *  2. an enemy marked as a threat (its explosion is counting down): it must die first;
- *  3. the boss (4G-H: it has no exposed point any more);
- *  4. the enemy nearest to the defence line (the one that will hurt first).
+ *  2. the boss (4G-H: it has no exposed point, and the marked enemies are gone);
+ *  3. the enemy nearest to the defence line (the one that will hurt first).
  *
  * Pure and deterministic: ties go to the lowest id. Returns null when nothing is alive.
  */
@@ -22,11 +21,6 @@ export function smartTarget(
   if (run.lockId > 0) {
     const locked = run.enemies.find((e) => e.id === run.lockId && e.hp > 0);
     if (locked !== undefined) return { x: locked.x, y: locked.y, id: locked.id };
-  }
-  for (const h of run.hazards) {
-    if (h.kind !== 'blast' || h.telegraph <= 0) continue;
-    const threat = run.enemies.find((e) => e.id === -h.link && e.hp > 0);
-    if (threat !== undefined) return { x: threat.x, y: threat.y, id: threat.id };
   }
   const boss = liveBoss(run);
   if (boss !== undefined) return { x: boss.x, y: boss.y, id: boss.id };

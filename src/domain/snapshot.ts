@@ -20,7 +20,6 @@ export const HAZARD_KINDS = [
   'gust',
   'crack',
   'portal',
-  'blast',
 ] as const;
 
 /** Bits of `Snapshot.enemyStatus`: one sign for each thing that can be wrong with an enemy. */
@@ -174,6 +173,9 @@ export interface Snapshot {
   hazardLink: Float32Array;
   /** Type code of the enemy that fired a shot (see `typeCode`), 255 for what has none (4G-G). */
   hazardType: Uint8Array;
+  /** Where an enemy's shot left from (4G-H), -1 for the rest: it flies from there to its mark. */
+  hazardFromX: Float32Array;
+  hazardFromY: Float32Array;
   bossPhase: number;
   /**
    * What is wrong with each enemy (ADR-053, "estados visibles"), as a set of `STATUS_*` bits: the
@@ -249,6 +251,8 @@ export function createSnapshot(maxSlots = 64, maxEnemies = 512, maxPickups = 64)
     bossTimeSlow: false,
     hazardLink: new Float32Array(MAX_HAZARDS),
     hazardType: new Uint8Array(MAX_HAZARDS),
+    hazardFromX: new Float32Array(MAX_HAZARDS),
+    hazardFromY: new Float32Array(MAX_HAZARDS),
     bossPhase: 0,
     bossX: 0,
     bossY: 0,
@@ -315,6 +319,8 @@ export function writeSnapshot(
     snap.hazardY[i] = h.y;
     snap.hazardLink[i] = h.link;
     snap.hazardType[i] = h.type === undefined ? 255 : typeCode(h.type);
+    snap.hazardFromX[i] = h.fromX ?? -1;
+    snap.hazardFromY[i] = h.fromY ?? -1;
     snap.hazardX[i] = h.x;
     snap.hazardWidth[i] = h.width;
     snap.hazardWarn[i] = h.telegraph;

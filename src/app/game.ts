@@ -178,7 +178,7 @@ declare global {
       autoAim: boolean;
       aimMode: string;
       lockId: number;
-      threats: number;
+      enemyShots: number;
       scheme: string;
       invuln: number;
       aimX: number;
@@ -601,8 +601,8 @@ export async function startGame(host: HTMLElement): Promise<void> {
       autoAim: run.autoAim,
       aimMode: run.aimMode,
       lockId: run.lockId,
-      /** Enemies marked as a threat now (4G-G). */
-      threats: run.hazards.filter((h) => h.kind === 'blast').length,
+      /** Shots of ordinary enemies on the field now (4G-H). */
+      enemyShots: run.hazards.filter((h) => h.link < 0).length,
       scheme,
       invuln: run.player.invuln,
       aimX: run.aimX,

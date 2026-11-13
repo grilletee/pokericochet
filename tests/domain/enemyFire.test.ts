@@ -4,9 +4,11 @@ import {
   advanceEnemyFire,
   cloneRun,
   createRun,
+  GAME_TYPES,
   type GameConfig,
   type Hazard,
   hashRun,
+  isDodgeable,
   isEnemyShot,
   tick,
   WARN_TICKS,
@@ -19,11 +21,17 @@ if (fire === undefined) throw new Error('no enemy fire table');
 const bossTable = gameConfig.bossFight;
 if (bossTable === undefined) throw new Error('no boss fight table');
 // The shots fall through the hazard code of the boss fights, so the config needs its table too.
+// The 4G-G shot (straight down from the enemy, alone) for these tests; the aimed bursts of the 4G-H
+// have their own tests below, with the shipped table.
+const single = Object.fromEntries(
+  Object.entries(fire.byType).map(([type, rule]) => [type, { ...rule, burst: 1 }]),
+);
 const cfg: GameConfig = {
   ...quietConfig,
-  enemyFire: { ...fire, shooterOneIn: 5 },
+  enemyFire: { ...fire, shooterOneIn: 5, aimed: false, byType: single },
   bossFight: bossTable,
 };
+const shipped: GameConfig = { ...quietConfig, enemyFire: fire, bossFight: bossTable };
 
 const S = 5; // the first id that shoots with the test table (one in five)
 /** A fire-type enemy whose id makes it a shooter, placed in the middle of the field. */
@@ -81,21 +89,9 @@ describe('ordinary enemies that shoot (4G-E)', () => {
     expect(hashRun(other)).not.toBe(hashRun(run));
   });
 
-  it('every type of the table throws a shot with a name', () => {
-    for (const type of Object.keys(fire.byType)) {
-      expect([
-        'electric',
-        'fire',
-        'water',
-        'grass',
-        'rock',
-        'ground',
-        'ghost',
-        'poison',
-        'psychic',
-        'dragon',
-      ]).toContain(type);
-    }
+  it('every type shoots (4G-H: "quiero más enemigos que ataquen")', () => {
+    for (const type of GAME_TYPES) expect(fire.byType[type], type).toBeDefined();
+    expect(fire.shooterOneIn).toBeLessThanOrEqual(2);
   });
 
   it('does not fire from the top edge or from too close to the line, nor beyond maxAtOnce', () => {
@@ -215,3 +211,149 @@ describe('gaps found by the mutants of the 4G-E', () => {
     expect(run.hazards.filter((h) => isEnemyShot(h)).length).toBe(2);
   });
 });
+
+describe('4G-H: shots aimed at the player, in short bursts, and always with a way through', () => {
+  const on = (id: number, type: keyof typeof fire.byType) => {
+    const every = fire.byType[type]?.everyTicks ?? 1;
+    return every - ((id * 37) % every);
+  };
+
+  it('the shot is aimed where the player stands, and flies from the body of its enemy', () => {
+    const run = createRun(shipped, 1, 'charmander');
+    run.player.x = 330;
+    run.enemies = [makeEnemy({ id: 2, type: 'steel', x: 100, y: 150, hp: 1000 })];
+    run.tickCount = on(2, 'steel');
+    advanceEnemyFire(run, shipped);
+    expect(run.hazards).toHaveLength(1);
+    expect(run.hazards[0]).toMatchObject({
+      kind: 'shot',
+      x: 330,
+      fromX: 100,
+      fromY: 150,
+      link: -2,
+    });
+  });
+
+  it('a burst lands side by side round the player, one after another, all of the same enemy', () => {
+    const run = createRun(shipped, 1, 'charmander');
+    run.player.x = 240;
+    run.enemies = [makeEnemy({ id: 2, type: 'electric', x: 100, y: 150, hp: 1000 })];
+    run.tickCount = on(2, 'electric');
+    advanceEnemyFire(run, shipped);
+    const burst = fire.byType.electric?.burst ?? 1;
+    expect(burst).toBe(3);
+    expect(run.hazards).toHaveLength(3);
+    const spread = fire.burstSpread ?? 0;
+    const gap = fire.burstGapTicks ?? 0;
+    expect(run.hazards.map((h) => h.x)).toEqual([240 - spread, 240, 240 + spread]);
+    expect(run.hazards.map((h) => h.telegraph)).toEqual([
+      WARN_TICKS,
+      WARN_TICKS + gap,
+      WARN_TICKS + 2 * gap,
+    ]);
+    for (const h of run.hazards) expect(h.link).toBe(-2);
+  });
+
+  it('a burst never goes over maxAtOnce: it is cut to the room left', () => {
+    const run = createRun(shipped, 1, 'charmander');
+    run.enemies = [makeEnemy({ id: 2, type: 'electric', x: 100, y: 150, hp: 1000 })];
+    run.tickCount = on(2, 'electric');
+    const tight = { ...shipped, enemyFire: { ...fire, maxAtOnce: 2 } };
+    advanceEnemyFire(run, tight);
+    expect(run.hazards).toHaveLength(2);
+  });
+
+  it('a burst that would leave no way through waits (the guarantee of 4G-G): it comes later', () => {
+    const run = createRun(shipped, 1, 'charmander');
+    run.player.x = 240;
+    // A wall over the whole field except where the burst would land: with the burst, nowhere is safe.
+    run.hazards.push(
+      { ...wallAt(90, 180), telegraph: WARN_TICKS + 30 },
+      { ...wallAt(390, 180), telegraph: WARN_TICKS + 30 },
+    );
+    run.enemies = [makeEnemy({ id: 2, type: 'electric', x: 100, y: 150, hp: 1000 })];
+    run.tickCount = on(2, 'electric');
+    advanceEnemyFire(run, shipped);
+    const shots = run.hazards.filter((h) => isEnemyShot(h));
+    // Thrown, but pushed back past the moment it would have closed the only gap.
+    expect(shots).toHaveLength(3);
+    expect(shots[0]?.telegraph ?? 0).toBeGreaterThan(WARN_TICKS);
+    expect(isDodgeable(run, shipped, [])).toBe(true);
+    // Without the delay it would have been unfair.
+    const undelayed = shots.map((h, k) => ({
+      ...h,
+      telegraph: WARN_TICKS + k * (fire.burstGapTicks ?? 0),
+    }));
+    const bare = createRun(shipped, 1, 'charmander');
+    bare.player.x = 240;
+    bare.hazards.push(...run.hazards.filter((h) => !isEnemyShot(h)));
+    expect(isDodgeable(bare, shipped, undelayed)).toBe(false);
+  });
+
+  it('property: in busy fields, with every type shooting, there is always a way through', () => {
+    for (let seed = 1; seed <= 12; seed++) {
+      const run = createRun(shipped, seed, 'charmander');
+      run.enemies = GAME_TYPES.map((type, k) =>
+        makeEnemy({
+          id: 2 * (k + 1),
+          type,
+          x: 30 + ((k * 97 + seed * 13) % 420),
+          y: 100 + ((k * 53) % 300),
+          hp: 1e9,
+          speed: 0,
+        }),
+      );
+      for (let t = 0; t < 900; t++) {
+        run.player.x = 40 + ((t * 7 + seed * 31) % 400);
+        const before = run.hazards.length;
+        tick(run, { moveX: 0 }, shipped);
+        if (run.hazards.length > before) expect(isDodgeable(run, shipped, [])).toBe(true);
+        run.player.hp = run.player.maxHp;
+      }
+    }
+  });
+
+  it('through the tick: an aimed shot lands on the player who stays, and misses one who moves', () => {
+    const play = (move: -1 | 0 | 1): number => {
+      const run = createRun(shipped, 1, 'charmander');
+      run.player.x = 240;
+      run.enemies = [makeEnemy({ id: 2, type: 'steel', x: 100, y: 150, hp: 1e9, speed: 0 })];
+      run.tickCount = on(2, 'steel') - 1;
+      const before = run.player.hp;
+      for (let t = 0; t < 240; t++) tick(run, { moveX: move }, shipped);
+      return before - run.player.hp;
+    };
+    expect(play(0)).toBeGreaterThan(0);
+    expect(play(1)).toBe(0);
+  });
+
+  it('the place it flies from is part of the hash and the clone', () => {
+    const run = createRun(shipped, 1, 'charmander');
+    run.enemies = [makeEnemy({ id: 2, type: 'steel', x: 100, y: 150, hp: 1000 })];
+    run.tickCount = on(2, 'steel');
+    advanceEnemyFire(run, shipped);
+    const base = hashRun(run);
+    expect(hashRun(cloneRun(run))).toBe(base);
+    const moved = cloneRun(run);
+    (moved.hazards[0] as Hazard).fromX = 101;
+    expect(hashRun(moved)).not.toBe(base);
+    const lower = cloneRun(run);
+    (lower.hazards[0] as Hazard).fromY = 151;
+    expect(hashRun(lower)).not.toBe(base);
+  });
+});
+
+function wallAt(x: number, width: number): Hazard {
+  return {
+    kind: 'column',
+    x,
+    y: 0,
+    link: 0,
+    width,
+    telegraph: WARN_TICKS,
+    active: 40,
+    damage: 2,
+    speed: 0,
+    struck: false,
+  };
+}

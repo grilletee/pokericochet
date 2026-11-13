@@ -83,17 +83,7 @@ export interface BossState {
 
 /** Something a boss put on the floor or in the air (ADR-053). */
 export interface Hazard {
-  kind:
-    | 'column'
-    | 'comb'
-    | 'sweep'
-    | 'rain'
-    | 'shot'
-    | 'zone'
-    | 'gust'
-    | 'crack'
-    | 'portal'
-    | 'blast';
+  kind: 'column' | 'comb' | 'sweep' | 'rain' | 'shot' | 'zone' | 'gust' | 'crack' | 'portal';
   x: number;
   /** A `portal` carries whoever touches it to this x (its pair); 0 for the rest. */
   link: number;
@@ -109,8 +99,18 @@ export interface Hazard {
   speed: number;
   /** True once it hurt the player: it hurts once. */
   struck: boolean;
-  /** The type of the enemy that fired it (shots of enemies only): the render draws it by type (4G-G). */
+  /**
+   * The type of who threw it: the projectile of an enemy (4G-G) and, since 4G-H, every attack of a
+   * boss, so the render draws each type its own way.
+   */
   type?: GameType;
+  /**
+   * Where an enemy's shot leaves from (4G-H): the shot is aimed at where the player stands, so it
+   * flies from the enemy's body (fromX, fromY) to the mark on the floor at `x`. Cosmetic for the
+   * render; where it lands (`x`) is what hurts.
+   */
+  fromX?: number;
+  fromY?: number;
 }
 
 export interface RunRng {
@@ -584,6 +584,8 @@ export function hashRun(run: Run): string {
     h.num(hz.speed);
     h.int(hz.struck ? 1 : 0);
     h.str(hz.type ?? '');
+    h.num(hz.fromX ?? -1);
+    h.num(hz.fromY ?? -1);
   }
   h.int(run.waveThemes.length);
   for (const theme of run.waveThemes) h.str(theme);

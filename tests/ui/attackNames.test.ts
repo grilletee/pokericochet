@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { GAME_TYPES } from '../../src/domain';
 import { AttackNamer, attackKey, attackLabel } from '../../src/ui/attackNames';
 
 describe('the first appearance of an attack is named (4G-F)', () => {
@@ -23,7 +24,7 @@ describe('the first appearance of an attack is named (4G-F)', () => {
     expect(attackLabel('nothing')).toBeNull();
   });
 
-  it('the shot of each type has its own name, and the blast of a marked enemy too (4G-G)', () => {
+  it('the shot of each type has its own name (4G-G; every type since 4G-H)', () => {
     expect(attackKey('shot', true, 'electric')).toBe('enemyShot-electric');
     expect(attackLabel('enemyShot-electric')).toContain('Chispa');
     expect(attackLabel('enemyShot-fire')).toContain('Ascua');
@@ -31,12 +32,16 @@ describe('the first appearance of an attack is named (4G-F)', () => {
     expect(attackLabel('enemyShot-grass')).toContain('Hoja');
     expect(attackLabel('enemyShot-rock')).toContain('Roca');
     expect(attackLabel('enemyShot-ghost')).toContain('Sombra');
-    // A type with no name of its own, or none given: the generic one. A boss keeps its verb.
-    expect(attackKey('shot', true, 'normal')).toBe('enemyShot');
+    // Every type that shoots has its name (4G-H: all 18).
+    for (const type of GAME_TYPES) {
+      expect(attackLabel(attackKey('shot', true, type)), type).toMatch(/^⚠ .+: .+/);
+      expect(attackKey('shot', true, type)).toBe(`enemyShot-${type}`);
+    }
+    // None given: the generic one. A boss keeps its verb, even with a type (4G-H).
     expect(attackKey('shot', true)).toBe('enemyShot');
     expect(attackKey('column', false)).toBe('column');
-    expect(attackKey('blast', true, 'electric')).toBe('blast');
-    expect(attackLabel('blast')).toContain('Enemigo marcado');
+    expect(attackKey('column', false, 'fire')).toBe('column');
+    expect(attackLabel('blast')).toBeNull();
   });
 
   it('says it once per run per attack, and again after a reset', () => {

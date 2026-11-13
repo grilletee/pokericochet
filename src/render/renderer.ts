@@ -30,7 +30,7 @@ import { ballVisualScale } from './artBox';
 import { strikeLook } from './bossArt';
 import { legendArenaTexture, strikeFrames } from './bossTextures';
 import { BossDeathFx } from './deathFx';
-import { CountdownFx, HurtFx } from './hurtFx';
+import { HurtFx } from './hurtFx';
 import { interpolateBalls, interpolateEnemies } from './interpolate';
 import { arenaOf, LEGEND_ARENAS } from './legendArena';
 import {
@@ -70,7 +70,6 @@ const KIND_ZONE = 5;
 const KIND_GUST = 6;
 const KIND_CRACK = 7;
 const KIND_PORTAL = 8;
-const KIND_BLAST = 9;
 /** Colour of the cracks (lava) and of the portals, which do not take the colour of the boss. */
 const LAVA = 0xff7a2e;
 const PORTAL_COLOR = 0xb08cff;
@@ -165,8 +164,6 @@ export class Renderer {
   private readonly world = new Container();
   /** The feel of a hit on the player (4G-G): red flash, shake, floating number, blink. */
   private readonly hurt = new HurtFx();
-  /** The seconds left over an enemy marked as a threat (4G-G). */
-  private readonly countdown = new CountdownFx();
   /** The death of a boss (4G-H): it shakes, flashes, swells and bursts before it is gone. */
   private readonly death: BossDeathFx;
   /** The boss as it was in the last frame it was alive: where its death is played. */
@@ -447,7 +444,6 @@ export class Renderer {
       this.shieldRing,
       this.reachRing,
       this.player,
-      this.countdown.layer,
       this.hurt.numbers,
     );
     app.stage.addChild(this.world);
@@ -532,7 +528,6 @@ export class Renderer {
     }
     this.drawBalls(prev, curr, alpha);
     this.drawEnemies(prev, curr, alpha);
-    this.drawCountdowns(curr);
     this.player.x = prev.playerX + (curr.playerX - prev.playerX) * alpha;
     this.reachRing.x = this.player.x;
     this.reachRing.scale.set(this.config.pickup.radius / 30);
@@ -809,8 +804,7 @@ export class Renderer {
     for (let i = 0; i < curr.hazardCount; i++) {
       const link = curr.hazardLink[i] ?? 0;
       const warn = curr.hazardWarn[i] ?? 0;
-      // The enemy marked as a threat glows during its whole countdown, not only the last WARN_TICKS.
-      if (warn <= 0 || (warn > WARN_TICKS && (curr.hazardKind[i] ?? 0) !== KIND_BLAST)) continue;
+      if (warn <= 0 || warn > WARN_TICKS) continue;
       if (link < 0) {
         if (this.glowCount < this.glowIds.length) this.glowIds[this.glowCount++] = -link;
       } else if ((curr.hazardKind[i] ?? 0) !== KIND_PORTAL) {
@@ -866,7 +860,16 @@ export class Renderer {
         sprite.texture = (own.length > 0 ? own[frame] : fx.orb[frame]) ?? Texture.EMPTY;
         sprite.width = ART_PIXEL * 12;
         sprite.height = ART_PIXEL * 18;
-        sprite.x = x - sprite.width / 2;
+        // An aimed shot (4G-H) flies from the body of its enemy to its mark on the floor.
+        const fromX = curr.hazardFromX[i] ?? -1;
+        const fromY = curr.hazardFromY[i] ?? -1;
+        let drawX = x;
+        if (!warning && fromX >= 0) {
+          const travel = Math.max(1, defenseLineY - fromY);
+          const p = Math.max(0, Math.min(1, (y - fromY) / travel));
+          drawX = fromX + (x - fromX) * p;
+        }
+        sprite.x = drawX - sprite.width / 2;
         sprite.y = (warning ? defenseLineY - ART_PIXEL * 18 : y - ART_PIXEL * 12) - 0;
         sprite.alpha = warning ? 0.35 + 0.4 * pulse : 1;
         sprite.tilePosition.set(0, 0);
@@ -1231,28 +1234,6 @@ export class Renderer {
       if (sphere) sphere.visible = false;
     }
     this.ballsShown = shown;
-  }
-
-  /** The seconds left over each enemy marked as a threat (a `blast` with the enemy's id as link). */
-  private drawCountdowns(curr: Snapshot): void {
-    this.countdown.begin();
-    for (let i = 0; i < curr.hazardCount; i++) {
-      if ((curr.hazardKind[i] ?? 0) !== KIND_BLAST) continue;
-      const left = curr.hazardWarn[i] ?? 0;
-      if (left <= 0) continue;
-      const id = -(curr.hazardLink[i] ?? 0);
-      for (let e = 0; e < curr.enemyCount; e++) {
-        if (curr.enemyId[e] !== id) continue;
-        const radius = curr.enemyRadius[e] ?? 16;
-        this.countdown.show(
-          this.scratchEnemyX[e] ?? 0,
-          (this.scratchEnemyY[e] ?? 0) - radius - 20,
-          left,
-        );
-        break;
-      }
-    }
-    this.countdown.end();
   }
 
   private drawEnemies(prev: Snapshot, curr: Snapshot, alpha: number): void {

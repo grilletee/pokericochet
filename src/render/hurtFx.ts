@@ -106,62 +106,6 @@ export class HurtFx {
   }
 }
 
-/**
- * The countdown over an enemy marked as a threat (4G-G): a big number of whole seconds left, in
- * red, that follows the enemy. A small pool, refilled every frame.
- */
-export class CountdownFx {
-  readonly layer = new Container();
-  private readonly texts: Text[] = [];
-  private used = 0;
-
-  constructor(size = 3) {
-    for (let i = 0; i < size; i++) {
-      const text = new Text({
-        text: '',
-        style: {
-          fontFamily: 'Pixelify, monospace',
-          fontSize: 34,
-          fontWeight: '700',
-          fill: 0xfff176,
-          stroke: { color: 0xb71c1c, width: 7 },
-        },
-      });
-      text.anchor.set(0.5);
-      text.visible = false;
-      this.texts.push(text);
-      this.layer.addChild(text);
-    }
-  }
-
-  /** Call once per frame before the `show`s. */
-  begin(): void {
-    this.used = 0;
-  }
-
-  /** The number of whole seconds left over the enemy at (x, y). */
-  show(x: number, y: number, ticksLeft: number): void {
-    const text = this.texts[this.used];
-    if (text === undefined) return;
-    this.used += 1;
-    const seconds = Math.ceil(ticksLeft / 60);
-    if (text.text !== String(seconds)) text.text = String(seconds);
-    text.position.set(x, y);
-    // It beats faster as the end nears.
-    const pulse = 1 + 0.12 * Math.sin(ticksLeft / (ticksLeft < 70 ? 2 : 5));
-    text.scale.set(pulse);
-    text.visible = true;
-  }
-
-  /** Call once per frame after the `show`s: hides what was not shown. */
-  end(): void {
-    for (let i = this.used; i < this.texts.length; i++) {
-      const text = this.texts[i];
-      if (text !== undefined) text.visible = false;
-    }
-  }
-}
-
 /** One decimal only when it matters (a half point of health), otherwise a whole number. */
 export function formatDamage(damage: number): string {
   const whole = damage | 0;

@@ -401,7 +401,7 @@ export const baseConfig: Omit<
     // the fight is set by the bench (B3). Slow and big, so it takes a long time to reach the line.
     // 4G-H (15th playtest: "más vida y que se sienta legendario"): set in SECONDS of fight of the
     // bot (bench:bosses, DPS by place: 237 health per second at the final, 64 s with 120). Fixed.
-    hpScale: 260, // 4G-H: 120 -> 260 (300 gave 151 s and too many deaths); 4G-E: 105 -> 120; 4G-D: 46 -> 105
+    hpScale: 230, // 4G-H: 120 -> 230 (300 gave 151 s and too many deaths); 4G-E: 105 -> 120; 4G-D: 46 -> 105
     speed: 0.04,
     radius: 72,
     summonIntervalTicks: 900,
@@ -431,7 +431,8 @@ export const baseConfig: Omit<
       byType: { fire: 'arcanine', water: 'gyarados', grass: 'exeggutor', electric: 'ampharos' },
       // 4G-H (15th playtest: "el segundo y el tercero me los bajo muy rápido"): the bot's team does
       // ~90 health per second here (4.7 times the first boss): 42 s with 32, target ~75 s.
-      hpScale: 52, // 4G-H: 32 -> 52 (57 gave 64 s and a win rate of the bot of 19 %); 4G-E: 28 -> 32; 4G-D: 11.5 -> 28 (B3); 7 in the 4G-B
+      // 52 after the first measure; 46 once more enemies shoot (block 2), for a bot win of ~22 %.
+      hpScale: 46, // 4G-H: 32 -> 46 (57 gave 64 s and a win rate of the bot of 19 %); 4G-E: 28 -> 32; 4G-D: 11.5 -> 28 (B3); 7 in the 4G-B
       speed: 0.075,
       radius: 52,
       summonIntervalTicks: 1000,
@@ -444,7 +445,7 @@ export const baseConfig: Omit<
       after: 6,
       byType: { fire: 'typhlosion', water: 'kingdra', grass: 'tangrowth', electric: 'luxray' },
       // 4G-H: ~200 health per second of the bot's team here: 35 s with 64, target ~95 s.
-      hpScale: 150, // 4G-H: 64 -> 150 (174 gave 81 s); 4G-E: 56 -> 64; 4G-D: 24 -> 56 (B3); 16 in the 4G-B
+      hpScale: 135, // 4G-H: 64 -> 135 (174 gave 81 s); 4G-E: 56 -> 64; 4G-D: 24 -> 56 (B3); 16 in the 4G-B
       speed: 0.08,
       radius: 58,
       summonIntervalTicks: 900,
@@ -614,30 +615,44 @@ export const baseConfig: Omit<
   },
   // Boss fights: ground attacks, shield with a weak point, stun and three phases (4G-B, ADR-046).
   bossFight,
-  // 4G-E: a few ordinary enemies throw announced shots (about one in five of these types, each
-  // every 6-9 s); moderate damage, at most three on the field. PROVISIONAL: bench `fun`/`balance`.
+  // 4G-E: a few ordinary enemies throw announced shots; moderate damage. PROVISIONAL: bench `fun`.
   enemyFire: {
     // 4G-G: each type has its own projectile (spark, ember, bubble, leaf, rock, shadow...) drawn by
     // the render and its own speed: sparks are fast, bubbles and shadows slow, rocks heavy.
+    // 4G-H (15th playtest: "quiero más enemigos que ataquen, con ataques menos fáciles de esquivar;
+    // ahora son muy fáciles y hay muy pocos"): EVERY type shoots, half the enemies of a type do (one
+    // in four before), the shots are faster and aimed at the player, and many types throw a short
+    // burst of 2-3 that lands side by side. Each burst is placed only if it leaves a way through.
     byType: {
-      fire: { everyTicks: 420, speedMult: 1 },
-      electric: { everyTicks: 380, speedMult: 1.35 },
-      water: { everyTicks: 460, speedMult: 0.85 },
-      psychic: { everyTicks: 440, speedMult: 1.1 },
-      ghost: { everyTicks: 480, speedMult: 0.8 },
-      dragon: { everyTicks: 400, speedMult: 1.2 },
-      poison: { everyTicks: 500, speedMult: 0.9 },
-      grass: { everyTicks: 480, speedMult: 1 },
-      rock: { everyTicks: 520, speedMult: 1.15 },
-      ground: { everyTicks: 520, speedMult: 1.15 },
+      fire: { everyTicks: 400, speedMult: 1, burst: 2 },
+      electric: { everyTicks: 380, speedMult: 1.35, burst: 3 },
+      water: { everyTicks: 440, speedMult: 0.85, burst: 2 },
+      psychic: { everyTicks: 420, speedMult: 1.3 },
+      ghost: { everyTicks: 460, speedMult: 0.8, burst: 2 },
+      dragon: { everyTicks: 400, speedMult: 1.2, burst: 2 },
+      poison: { everyTicks: 460, speedMult: 0.9, burst: 3 },
+      grass: { everyTicks: 440, speedMult: 1, burst: 3 },
+      rock: { everyTicks: 480, speedMult: 1.25 },
+      ground: { everyTicks: 480, speedMult: 1.2 },
+      ice: { everyTicks: 440, speedMult: 1.1, burst: 3 },
+      steel: { everyTicks: 460, speedMult: 1.4 },
+      fighting: { everyTicks: 420, speedMult: 1.3, burst: 2 },
+      flying: { everyTicks: 400, speedMult: 1.4, burst: 2 },
+      bug: { everyTicks: 440, speedMult: 1, burst: 3 },
+      fairy: { everyTicks: 460, speedMult: 0.9, burst: 2 },
+      dark: { everyTicks: 420, speedMult: 1.2, burst: 2 },
+      normal: { everyTicks: 480, speedMult: 1.1 },
     },
-    // 4G-F: the shot leaves the enemy itself (it glows while it charges): fewer shooters, at most
-    // two charging at once, so the player can tell who attacks and put it first.
-    shooterOneIn: 4,
-    speed: 5,
+    // 4G-F: the shot leaves the enemy itself (it glows while it charges), so the player can tell who
+    // attacks and put it first. 4G-H: one in two (4 before), 7 px per tick (5), at most 5 shots (2).
+    shooterOneIn: 2,
+    speed: 7,
     width: 26,
     damage: 1.5,
-    maxAtOnce: 2,
+    maxAtOnce: 4,
+    aimed: true,
+    burstGapTicks: 12,
+    burstSpread: 34,
   },
   // 4G-G: the three touch schemes. The smart aim picks the target by itself (a little imprecise and
   // a little slower than a hand); the Arkanoid leans with the speed of the launcher; the sling fires
@@ -647,25 +662,8 @@ export const baseConfig: Omit<
     motion: { jitter: 0.03, reloadMult: 1, maxSlope: 0.9 },
     sling: { jitter: 0.02, reloadMult: 1 },
   },
-  // 4G-G: every 15 s an ordinary enemy is marked as a threat (aura and countdown over it): kill it in
-  // time or it explodes in a column of danger under it. Themed species first (what explodes or quakes
-  // in the games); any other enemy on every second mark when no themed one is on the field.
-  // PROVISIONAL: bench `fun`/`bosses` and the author's own play.
-  enemyThreat: {
-    everyTicks: 900,
-    maxAtOnce: 1,
-    countdownTicks: 160,
-    hits: 5,
-    markBonus: 0.5,
-    themed: {
-      voltorb: { width: 110, damage: 2 },
-      electrode: { width: 140, damage: 2.5 },
-      geodude: { width: 90, damage: 2 },
-      graveler: { width: 120, damage: 2.5 },
-      exeggcute: { width: 100, damage: 2 },
-    },
-    other: { width: 90, damage: 1.5, otherOneIn: 2 },
-  },
+  // 4G-H (15th playtest: "enemigos amenaza: no me gusta el concepto; fuera"): the enemy marked as a
+  // threat of the 4G-G is gone; more enemies shoot instead (`enemyFire`).
   // The pool of each run (ADR-048): 3 lines per type (about 40 of the 214), the four starters in.
   pool: {
     linesPerType: 3,

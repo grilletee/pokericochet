@@ -68,8 +68,7 @@ export const config: GameConfig = {
 };
 
 /** Same config with spawning disabled, no boss and no aim jitter, for hand-built scenarios. */
-// No threat marks either (4G-G): they have their own tests with their own table.
-const { boss: _boss, enemyThreat: _threat, ...configWithoutBoss } = config;
+const { boss: _boss, ...configWithoutBoss } = config;
 
 export const quietConfig: GameConfig = {
   ...configWithoutBoss,

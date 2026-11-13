@@ -194,7 +194,7 @@ describe('there is always a way through (4G-G)', () => {
     expect(isDodgeable(run, cfg, [{ ...wall, kind: 'column', damage: 2 }])).toBe(false);
   });
 
-  it('a column that already struck does not block anything, and a blast counts like a column', () => {
+  it('a column that already struck does not block anything', () => {
     const run = createRun(cfg, 1, 'bulbasaur');
     const wall = {
       kind: 'column' as const,
@@ -211,13 +211,6 @@ describe('there is always a way through (4G-G)', () => {
     expect(isDodgeable(run, cfg, [wall])).toBe(false);
     // Used up (it hurt, or the blink absorbed it): it is only a drawing now.
     expect(isDodgeable(run, cfg, [{ ...wall, struck: true }])).toBe(true);
-    // The blast of a marked enemy is as dangerous as the column it is.
-    expect(isDodgeable(run, cfg, [{ ...wall, kind: 'blast', link: -3, telegraph: 90 }])).toBe(
-      false,
-    );
-    expect(
-      isDodgeable(run, cfg, [{ ...wall, kind: 'blast', link: -3, width: 90, telegraph: 90 }]),
-    ).toBe(true);
   });
 
   it('it must be reachable in time: a gap on the other side of the field is not a gap', () => {

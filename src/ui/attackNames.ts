@@ -12,11 +12,7 @@ const NAMES: Readonly<Record<string, { readonly name: string; readonly tip: stri
   gust: { name: 'Ráfaga', tip: 'te empuja de lado: muévete en contra' },
   crack: { name: 'Grieta', tip: 'quema cada segundo: no te quedes encima' },
   portal: { name: 'Portal', tip: 'te lleva al portal pareja' },
-  blast: {
-    name: 'Enemigo marcado',
-    tip: 'va a explotar: derrótalo antes de que acabe la cuenta o sal de la franja',
-  },
-  enemyShot: { name: 'Disparo de enemigo', tip: 'el que brilla va a disparar: derrótalo primero' },
+  enemyShot: { name: 'Disparo de enemigo', tip: 'el que brilla te apunta: sal de la marca' },
   tide: { name: 'Marea', tip: 'el campo se estrecha por los lados' },
   barrier: { name: 'Barrera', tip: 'tus bolas rebotan en el jefe: espera a que baje' },
   timeSlow: { name: 'Tiempo lento', tip: 'te mueves más despacio un rato' },
@@ -24,27 +20,35 @@ const NAMES: Readonly<Record<string, { readonly name: string; readonly tip: stri
 
 // The shot of each type has its own name (4G-G): "Chispa", "Ascua", "Burbuja"...
 const SHOTS: Readonly<Record<string, { readonly name: string; readonly tip: string }>> = {
-  electric: { name: 'Chispa', tip: 'rápida: sal de la marca en cuanto el enemigo brille' },
-  fire: { name: 'Ascua', tip: 'cae recta desde el enemigo que arde: apártate' },
-  water: { name: 'Burbuja', tip: 'lenta: tienes tiempo, pero sigue la marca' },
-  grass: { name: 'Hoja', tip: 'cae recta sobre la marca: apártate' },
-  rock: { name: 'Roca', tip: 'pesada y algo más rápida: no te quedes bajo ella' },
-  ground: { name: 'Roca', tip: 'pesada y algo más rápida: no te quedes bajo ella' },
-  ghost: { name: 'Sombra', tip: 'muy lenta: vigila dónde caerá' },
-  poison: { name: 'Gota tóxica', tip: 'cae sobre la marca del suelo: apártate' },
-  psychic: { name: 'Pulso mental', tip: 'cae sobre la marca del suelo: apártate' },
-  dragon: { name: 'Colmillo', tip: 'rápido: sal de la marca enseguida' },
+  // 4G-H: the shots are aimed at the player and many come in bursts of 2-3 side by side.
+  electric: { name: 'Chispa', tip: 'ráfaga de tres, rápida: sal de las marcas en cuanto brille' },
+  fire: { name: 'Ascua', tip: 'dos ascuas apuntadas a ti: apártate de las marcas' },
+  water: { name: 'Burbuja', tip: 'lentas, de dos en dos: sigue las marcas' },
+  grass: { name: 'Hoja', tip: 'tres hojas en abanico: sal por un lado' },
+  rock: { name: 'Roca', tip: 'pesada y rápida: no te quedes bajo la marca' },
+  ground: { name: 'Roca', tip: 'pesada y rápida: no te quedes bajo la marca' },
+  ghost: { name: 'Sombra', tip: 'lentas, de dos en dos: vigila dónde caerán' },
+  poison: { name: 'Gota tóxica', tip: 'tres gotas seguidas: sal de las marcas' },
+  psychic: { name: 'Pulso mental', tip: 'muy rápido y apuntado: muévete en cuanto brille' },
+  dragon: { name: 'Colmillo', tip: 'dos, rápidos: sal de las marcas enseguida' },
+  ice: { name: 'Carámbano', tip: 'tres en fila: sal por un lado' },
+  steel: { name: 'Esquirla', tip: 'la más rápida: muévete en cuanto brille' },
+  fighting: { name: 'Puño', tip: 'dos golpes rápidos: apártate de las marcas' },
+  flying: { name: 'Cuchilla de aire', tip: 'dos, muy rápidas: sal de las marcas' },
+  bug: { name: 'Picadura', tip: 'tres en abanico: sal por un lado' },
+  fairy: { name: 'Destello', tip: 'dos, lentos: sigue las marcas' },
+  dark: { name: 'Mordisco', tip: 'dos, rápidos: apártate de las marcas' },
+  normal: { name: 'Golpe', tip: 'apuntado a ti: apártate de la marca' },
 };
 for (const [type, entry] of Object.entries(SHOTS)) {
   (NAMES as Record<string, { name: string; tip: string }>)[`enemyShot-${type}`] = entry;
 }
 
 /**
- * Which name an announced attack is told by: a blast of a marked enemy, the shot of its type if it
- * has a name, or the verb of the boss's attack.
+ * Which name an announced attack is told by: the shot of its type if it has a name, or the verb of
+ * the boss's attack.
  */
 export function attackKey(kind: string, fromEnemy: boolean, shotType?: string): string {
-  if (kind === 'blast') return 'blast';
   if (!fromEnemy) return kind;
   return shotType !== undefined && `enemyShot-${shotType}` in NAMES
     ? `enemyShot-${shotType}`

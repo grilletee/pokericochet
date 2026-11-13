@@ -133,6 +133,8 @@ export interface EnemyFireDef {
           readonly everyTicks: number;
           /** The shot of this type falls this many times as fast as `speed` (default 1, 4G-G). */
           readonly speedMult?: number;
+          /** Shots in a burst (default 1, 4G-H): they land side by side, one after the other. */
+          readonly burst?: number;
         }
       >
     >
@@ -145,34 +147,15 @@ export interface EnemyFireDef {
   readonly damage: number;
   /** The most enemy shots on the field at once. */
   readonly maxAtOnce: number;
-}
-
-/**
- * The enemy that becomes a threat (4G-G, 14th playtest: "de vez en cuando un enemigo normal se marca
- * y tienes que dejar lo que haces para matarlo"). At a fixed rhythm one ordinary enemy is marked:
- * an aura and a countdown show over it, it can be killed in `hits` strong hits (its health is
- * lowered to that) and takes `markBonus` more damage; if it is alive when the countdown ends it
- * explodes in a column of danger under it. The explosion is a hazard like any other: announced for the
- * whole countdown and never without a way through (`isDodgeable`).
- */
-export interface EnemyThreatDef {
-  /** A new mark at most this often (ticks), while fewer than `maxAtOnce` are alive. */
-  readonly everyTicks: number;
-  readonly maxAtOnce: number;
-  /** Ticks of countdown, at least `WARN_TICKS`. */
-  readonly countdownTicks: number;
-  /** The marked enemy dies in this many hits of the strongest ball of the team. */
-  readonly hits: number;
-  /** Extra damage the marked enemy takes (0.5 = +50 %). */
-  readonly markBonus: number;
-  /** Species that are chosen first, with the width of their blast and its damage. */
-  readonly themed: Readonly<Record<string, { readonly width: number; readonly damage: number }>>;
-  /** Any other enemy, when no themed one is on the field, on one mark in `otherOneIn`. */
-  readonly other: {
-    readonly width: number;
-    readonly damage: number;
-    readonly otherOneIn: number;
-  };
+  /**
+   * 4G-H (15th playtest: "ataques menos fáciles de esquivar"): the shots are AIMED at where the
+   * player stands when they are announced (they fly from the enemy to that mark), and a burst lands
+   * `burstSpread` pixels apart, `burstGapTicks` after one another. Without them, the 4G-G shot
+   * (straight down from the enemy, alone).
+   */
+  readonly aimed?: boolean;
+  readonly burstGapTicks?: number;
+  readonly burstSpread?: number;
 }
 
 /** The boss fight rules that do not depend on the boss (ADR-053). */
@@ -486,8 +469,6 @@ export interface GameConfig {
     };
     readonly sling: { readonly jitter: number; readonly reloadMult: number };
   };
-  /** Ordinary enemies that are marked as a threat now and then (4G-G); none without it. */
-  readonly enemyThreat?: EnemyThreatDef;
   readonly progression: {
     /** xp needed to go from level n to n + 1, indexed by n - 1; the last value repeats. */
     readonly levelCosts: readonly number[];
