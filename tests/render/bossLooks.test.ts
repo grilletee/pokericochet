@@ -21,6 +21,8 @@ describe('the look of a boss attack by type (4G-H, 15th playtest)', () => {
     expect(strikeLook('fire').scroll).toBeLessThan(0);
     expect(strikeLook('water').scroll).toBeGreaterThan(0);
     expect(strikeLook('rock').scroll).toBeGreaterThan(0);
+    // Anything unknown is a plain shockwave, never the look of a real type.
+    expect(strikeLook('nothing').motif).toBe('shock');
   });
 
   it('the looks are really different pictures, of the right size, and they move frame to frame', () => {

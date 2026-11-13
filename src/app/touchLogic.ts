@@ -150,10 +150,80 @@ export function slingAim(
   return target === null ? { x: originX, y: originY - 400 } : { x: target.x, y: target.y };
 }
 
+/**
+ * The left thumb of the two-thumb scheme (4G-H, 15th playtest: "debería ir a la velocidad del
+ * dedo"): the launcher follows the finger's DRAG at once, 1:1 on the screen (`perPixel` arena pixels
+ * per screen pixel), from wherever the finger lands, so the thumb never sits on the field. It
+ * integrates every movement and clamps at the walls, so turning back answers at once, with no dead
+ * travel. Pure.
+ */
+export class SlideTrack {
+  active = false;
+  private lastX = 0;
+  private value = 0;
+
+  down(screenX: number, value: number): void {
+    this.active = true;
+    this.lastX = screenX;
+    this.value = value;
+  }
+
+  /** The finger moved to `screenX`: the target moves as much, kept between `min` and `max`. */
+  move(screenX: number, perPixel: number, min: number, max: number): void {
+    if (!this.active) return;
+    this.value = Math.max(min, Math.min(max, this.value + (screenX - this.lastX) * perPixel));
+    this.lastX = screenX;
+  }
+
+  target(): number {
+    return this.value;
+  }
+
+  up(): void {
+    this.active = false;
+  }
+}
+
+/**
+ * Arena pixels the launcher moves per screen pixel of the left thumb: 1:1 on the screen, and more
+ * when the side panel is narrower than the field, so a sweep of the whole panel crosses the whole
+ * field ("el dedo llega al extremo y él va por la mitad").
+ */
+export function twinMovePerPixel(scale: number, fieldScreenW: number, panelW: number): number {
+  const reach = Math.max(1, fieldScreenW / Math.max(1, panelW));
+  return reach / Math.max(1e-6, scale);
+}
+
+/** How many times the drag of the right thumb moves the aim (a little more than 1:1: a short reach). */
+export const AIM_GAIN = 1.6;
+/** The aim never goes lower than this above the launcher (the balls always go up). */
+export const AIM_FLOOR = 60;
+
+/**
+ * The right thumb aims by dragging (4G-H): the aim point moves with the drag, like a mouse, from where
+ * it was (it is not where the finger is, so the finger never covers the target). In arena pixels.
+ */
+export function aimDrag(
+  anchor: { readonly x: number; readonly y: number },
+  dxScreen: number,
+  dyScreen: number,
+  scale: number,
+  arena: { readonly width: number },
+  playerY: number,
+): { x: number; y: number } {
+  const k = AIM_GAIN / Math.max(1e-6, scale);
+  return {
+    x: Math.max(0, Math.min(arena.width, anchor.x + dxScreen * k)),
+    y: Math.max(0, Math.min(playerY - AIM_FLOOR, anchor.y + dyScreen * k)),
+  };
+}
+
 /** What the player is doing with the pointer, as the game loop reads it each tick. */
 export interface PadInput {
   /** The launcher heads to this arena x while the thumb is down; null when it is not. */
   readonly steerX: number | null;
+  /** The two thumbs (4G-H): where the right thumb has put the aim since the last tick, or null. */
+  readonly aim?: { readonly x: number; readonly y: number } | null;
   /** A tap since the last tick, in arena pixels, or null. */
   readonly tap: { readonly x: number; readonly y: number } | null;
   /** The release of the thumb since the last tick (sling; a tap counts as a quiet one), or null. */
@@ -178,6 +248,15 @@ export function commandForScheme(
     else if (delta < -deadZone) moveX = -1;
   }
   switch (scheme) {
+    case 'twin':
+      // The left thumb says where to be (the domain goes straight there, fast); the right one aims.
+      return {
+        moveX: 0,
+        ...(pad.steerX === null ? {} : { moveTo: pad.steerX }),
+        autoAim: false,
+        aimMode: 'manual',
+        ...(pad.aim === null || pad.aim === undefined ? {} : { aimX: pad.aim.x, aimY: pad.aim.y }),
+      };
     case 'smart': {
       // A tap on an enemy fixes it as the target; a tap on empty floor frees the target.
       const lock = pad.tap === null ? undefined : enemyAtTap(run.enemies, pad.tap.x, pad.tap.y);

@@ -15,6 +15,7 @@ export {
   defaultSchemeFor,
   isControlScheme,
   schemeTip,
+  VISIBLE_SCHEMES,
 } from './controlSchemes';
 export type { CreditLine } from './creditsText';
 export { creditLines, disclaimerShort, POKEAPI_URL, SPRITES_URL } from './creditsText';
@@ -50,9 +51,11 @@ export {
   waveCartel,
   waveLabel,
 } from './screenText';
+export { asksToRotate, dock, type SidePanels, sidePanels } from './sideLayout';
 export { barPercent, oneDecimal, STAT_BAR_MAX, STAT_ROWS, statBars, statSummary } from './statBars';
 export type { TileGlow } from './teamBar';
 export { EvolutionBanner, TeamBar } from './teamBar';
+export { TouchLayout } from './touchLayout';
 export type { TuneRow } from './tunePanel';
 export { TunePanel } from './tunePanel';
 export { TYPE_COLORS } from './typeColors';

@@ -239,6 +239,12 @@ export type AimMode = 'manual' | 'smart' | 'motion' | 'sling';
 export interface Command {
   readonly moveX: -1 | 0 | 1;
   /**
+   * The arena x the launcher goes to this tick (4G-H, the two thumbs in landscape: "siguiendo al
+   * dedo 1:1 sin retraso"): it moves straight there, up to `player.touchStep` pixels per tick
+   * (instead of `moveX` x `speed`). Omitted = use `moveX`. Rounded to whole pixels.
+   */
+  readonly moveTo?: number;
+  /**
    * Point of the arena the player aims at; the balls leave the launcher towards it (ADR-021).
    * Omitted = keep the last one. Rounded to whole pixels and clamped to the arena.
    */

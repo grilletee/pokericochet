@@ -10,6 +10,7 @@ import {
   schemeMotionPolicy,
   schemeSlingPolicy,
   schemeSmartPolicy,
+  schemeTwinPolicy,
 } from './bots';
 
 /**
@@ -18,6 +19,7 @@ import {
  * balanced cards) plays every scheme; only what the launcher does with the balls changes:
  *
  *  classic  the mouse: the bot aims by hand (the reference)
+ *  twin     4G-H, the two thumbs in landscape: aims by hand, moves with a finger the launcher follows
  *  smart    A: the launcher picks the target, the bot only moves
  *  motion   B: no aim, the balls lean with the movement
  *  sling    C: the balls leave when the bot lifts its finger (every 45 ticks)
@@ -30,6 +32,7 @@ const STARTERS = ['charmander', 'squirtle', 'bulbasaur', 'pikachu'];
 
 const SCHEMES: readonly { name: string; policy: Policy }[] = [
   { name: 'classic (mouse)', policy: activePolicy },
+  { name: 'twin (2 thumbs)', policy: schemeTwinPolicy },
   { name: 'A smart', policy: schemeSmartPolicy },
   { name: 'B motion', policy: schemeMotionPolicy },
   { name: 'C sling', policy: schemeSlingPolicy },

@@ -1,6 +1,7 @@
 import type { GameType, Member } from '../domain';
 import { type ArtLookup, spriteTile } from './cardView';
 import { pokemonName } from './names';
+import { dock, type SidePanels } from './sideLayout';
 import { TYPE_COLORS } from './typeColors';
 
 const FLY_MS = 700;
@@ -71,6 +72,19 @@ export class TeamBar {
       'max-width:min(340px,calc(100% - 180px));pointer-events:none;' +
       'font-family:system-ui,sans-serif;color:#e8ecf8;';
     host.append(this.root);
+  }
+
+  /**
+   * The landscape layout of the touch screen (4G-H): the team in the left panel, under the HUD and
+   * above the thumb, never over the field; null puts it back.
+   */
+  setSidePanels(panels: SidePanels | null): void {
+    dock(
+      this.root,
+      panels === null
+        ? null
+        : `left:${panels.left.x + 8}px;top:58px;max-width:${panels.left.w - 16}px;`,
+    );
   }
 
   /** Called with the place of the Pokémon whose "i" was pressed (the sheet of ADR-038). */

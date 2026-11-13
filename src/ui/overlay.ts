@@ -1,6 +1,7 @@
 import type { Card } from '../domain';
 import { type CardTextContext, cardStep, describeCard } from './cardText';
 import { type ArtLookup, buildCardArt, STEP_COLOR } from './cardView';
+import { dock, type SidePanels } from './sideLayout';
 
 /**
  * DOM overlay on top of the canvas: health, a message (lost, restart hint) and an optional
@@ -180,6 +181,36 @@ export class Overlay {
       : open || warning
         ? '#ffffff88'
         : 'transparent';
+  }
+
+  /**
+   * The landscape layout of the touch screen (4G-H): the HUD in the left panel, the bar of the boss
+   * and the messages in the right one (below the sound button), never over the field; null puts
+   * everything back where it was.
+   */
+  setSidePanels(panels: SidePanels | null): void {
+    if (panels === null) {
+      for (const element of [this.hud, this.bossBar, this.toast, this.debug]) dock(element, null);
+    } else {
+      const { left, right, height } = panels;
+      dock(
+        this.hud,
+        `left:${left.x + 8}px;top:8px;width:${left.w - 16}px;font-size:13px;white-space:pre-wrap;`,
+      );
+      dock(
+        this.bossBar,
+        `left:${right.x + 8}px;right:auto;top:62px;bottom:auto;width:${right.w - 16}px;` +
+          'height:auto;min-height:26px;font-size:11px;line-height:14px;padding:4px 6px;',
+      );
+      dock(
+        this.toast,
+        `left:${right.x + right.w / 2}px;top:${Math.round(height * 0.3)}px;` +
+          `max-width:${right.w - 16}px;font-size:13px;`,
+      );
+      dock(this.debug, `right:auto;left:${left.x + 8}px;top:auto;bottom:8px;font-size:10px;`);
+    }
+    // The bar is drawn again on the next frame, with its dynamic colours.
+    this.lastBossKey = '';
   }
 
   setDebug(text: string | null): void {

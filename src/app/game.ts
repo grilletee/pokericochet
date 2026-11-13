@@ -85,6 +85,7 @@ import {
   strongerText,
   TeamBar,
   type TileGlow,
+  TouchLayout,
   TunePanel,
   typeName,
   WaveBanner,
@@ -258,6 +259,7 @@ function nextCommand(
 ): Command {
   // Whatever the thumb did while a card or a screen was open is not a command for the game.
   const pad = input.takePad();
+  const ultimateAsked = input.takeUltimate();
   if (run.phase === 'levelup') {
     const index = input.takePick();
     return index === null
@@ -274,8 +276,11 @@ function nextCommand(
     };
   }
   // Outside a card or replace choice a number key (or a tap on a Pokémon's tile) throws the
-  // signature of that place of the team; the domain ignores it if it is not ready (4F-D).
-  const cast = input.takePick();
+  // signature of that place of the team; the domain ignores it if it is not ready (4F-D). The ULTI
+  // button of the two thumbs (4G-H) throws the first one that is ready.
+  const picked = input.takePick();
+  const ultimate = ultimateAsked ? firstReadySignature(run, config) : null;
+  const cast = picked ?? ultimate;
   // The touch schemes (4G-G) build the command from the thumb; the classic one from keys and pointer.
   const command =
     scheme === 'classic'
@@ -285,6 +290,12 @@ function nextCommand(
         }
       : commandForScheme(scheme, pad, run, config, deadZone);
   return cast !== null && cast >= 0 ? { ...command, cast } : command;
+}
+
+/** The first place of the team whose signature is ready (4G-H, the ULTI button), or null. */
+function firstReadySignature(run: Run, config: GameConfig): number | null {
+  for (let i = 0; i < run.team.length; i++) if (signatureReady(run, config, i)) return i;
+  return null;
 }
 
 /** `boss` is "Jefe 2/3" or "Jefe final" while a boss lives; it replaces the wave in the HUD (4F-E). */
@@ -466,6 +477,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
     },
   );
   const cartel = new WaveBanner(host);
+  const touchLayout = new TouchLayout(host, () => input.requestUltimate());
   const replaceScreen = new ReplaceScreen(host);
   const sheet = new MemberSheet(host);
   const moveLabels = new MoveLabels(host);
@@ -498,6 +510,13 @@ export async function startGame(host: HTMLElement): Promise<void> {
     () => renderer.view,
     () => scheme,
     () => run.player.x,
+    () => ({ x: run.aimX, y: run.aimY }),
+    {
+      width: config.arena.width,
+      height: config.arena.height,
+      playerY: config.player.y,
+      margin: config.player.margin,
+    },
   );
   const store = browserStore();
   const coarse = window.matchMedia?.('(pointer: coarse)').matches === true;
@@ -1014,10 +1033,34 @@ export async function startGame(host: HTMLElement): Promise<void> {
       input.menuRequested = false;
     }
 
+    // The two thumbs in landscape (4G-H): the side panels take the HUD, the team and the messages;
+    // held upright, the phone is asked to turn and the game waits.
+    const field = renderer.view;
+    renderer.setReticle(scheme === 'twin');
+    const touchFrame = touchLayout.update({
+      twin: scheme === 'twin',
+      playing: screen === 'playing',
+      screenW: host.clientWidth,
+      screenH: host.clientHeight,
+      fieldX: field.offsetX,
+      fieldW: config.arena.width * field.scale,
+      ultimateReady: screen === 'playing' && firstReadySignature(run, config) !== null,
+    });
+    if (touchFrame.panelsChanged) {
+      const sides = touchLayout.sides;
+      overlay.setSidePanels(sides);
+      teamBar.setSidePanels(sides);
+      cartel.setSidePanels(sides);
+    }
+
     // The Pokémon sheet pauses the game here, in the app: the run takes no command, so it is the same run.
     // An evolution pauses the game for about a second in the same way (4F-E).
     const steps =
-      screen === 'playing' && !sheet.open && !pause.active(now) && victoryAt === 0
+      screen === 'playing' &&
+      !sheet.open &&
+      !pause.active(now) &&
+      victoryAt === 0 &&
+      !touchFrame.wait
         ? stepper.advance(elapsed)
         : 0;
     let tickMs = 0;

@@ -1,4 +1,5 @@
 import type { CartelText } from './screenText';
+import { dock, type SidePanels } from './sideLayout';
 import { typeIcons } from './typeIcons';
 
 /** How long each cartel stays up. A boss gets a little longer than a wave. */
@@ -76,6 +77,18 @@ export class WaveBanner {
 
   get visible(): boolean {
     return this.queue.current !== null;
+  }
+
+  /** The landscape layout of the touch screen (4G-H): the sign in the right panel, smaller. */
+  setSidePanels(panels: SidePanels | null): void {
+    dock(
+      this.root,
+      panels === null
+        ? null
+        : `left:${panels.right.x + panels.right.w / 2}px;top:${Math.round(panels.height * 0.5)}px;` +
+            `max-width:${panels.right.w - 12}px;padding:6px 8px;font-size:12px;` +
+            'transform:translateX(-50%) scale(0.85);transform-origin:top center;',
+    );
   }
 
   /** Puts a sign in the line; it shows now if none is up. */

@@ -249,7 +249,10 @@ export class SettingsScreen {
       hint.textContent = CONTROL_SCHEMES.find((s) => s.id === chosen)?.hint ?? '';
     };
     const schemeTitle = el('div', 'font-size:17px;font-weight:700;margin-top:8px;', 'Controles');
+    // 4G-H: only the classic scheme and the two thumbs; the old portrait prototypes are hidden (and
+    // still shown if one of them is the one in force, so the choice is never invisible).
     for (const info of CONTROL_SCHEMES) {
+      if (info.hidden === true && info.id !== chosen) continue;
       const button = el('button', `${BUTTON}text-align:center;width:340px;`, info.name);
       button.type = 'button';
       button.dataset.scheme = info.id;

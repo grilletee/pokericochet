@@ -1,4 +1,4 @@
-import { type ControlScheme, defaultSchemeFor, isControlScheme } from '../ui';
+import { CONTROL_SCHEMES, type ControlScheme, defaultSchemeFor, isControlScheme } from '../ui';
 import type { KeyValueStore } from './bestRun';
 
 /** localStorage key of the mute switch (neutral name, like the best-run key). */
@@ -51,7 +51,11 @@ export const CONTROLS_KEY = 'controls.v1';
 export function loadScheme(store: KeyValueStore | null, coarsePointer: boolean): ControlScheme {
   try {
     const raw = store?.getItem(CONTROLS_KEY);
-    if (isControlScheme(raw)) return raw;
+    // A portrait prototype of the 4G-G remembered on the phone gives way to the default (4G-H: they
+    // are hidden now); `?controls=` still opens them.
+    if (isControlScheme(raw) && CONTROL_SCHEMES.find((s) => s.id === raw)?.hidden !== true) {
+      return raw;
+    }
   } catch {
     // fall through to the default
   }

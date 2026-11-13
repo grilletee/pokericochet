@@ -37,6 +37,14 @@ export interface Policy {
   /** `sling` only: true on the tick the bot lifts its finger (the ready balls leave). */
   fire?(run: Run, config: GameConfig): boolean;
   /**
+   * The two thumbs (4G-H): the bot moves with a finger the launcher follows (`moveTo`), this many
+   * arena pixels per tick in the direction `move` chose (never a second call of `move`, which keeps
+   * the bot's own memory of reactions).
+   */
+  readonly fingerStep?: number;
+  /** With `fingerStep`: the exact point the finger goes to (null: it stays). */
+  goal?(run: Run, config: GameConfig): number | null;
+  /**
    * Ticks the bot takes to throw the starter's signature once it is ready (a human reaction, 4F-D);
    * default `SIGNATURE_REACTION_TICKS`. A negative value never throws it: the control group that
    * shows what the signature is worth.
@@ -114,8 +122,14 @@ export function commandFor(policy: Policy, run: Run, config: GameConfig): Comman
   const aim = policy.aim?.(run, config) ?? null;
   const cast = signatureToCast(policy, run, config);
   const fire = policy.fire?.(run, config) === true;
+  // The finger of the two thumbs goes straight to the point the bot wants, as fast as a thumb.
+  const goal = policy.fingerStep === undefined ? null : (policy.goal?.(run, config) ?? null);
+  const step = policy.fingerStep ?? 0;
+  const moveTo =
+    goal === null ? null : Math.max(run.player.x - step, Math.min(run.player.x + step, goal));
   return {
     moveX,
+    ...(moveTo === null ? {} : { moveTo }),
     autoAim: policy.autoAim === true,
     ...(policy.aimMode === undefined ? {} : { aimMode: policy.aimMode }),
     ...(aim === null ? {} : { aimX: aim.x, aimY: aim.y }),
@@ -258,7 +272,8 @@ function dangerousTarget(run: Run, config: GameConfig): AimPoint | null {
 }
 
 /** Moves to the nearest pickup if there is one, otherwise under the most dangerous enemy. */
-function collectingMove(run: Run, config: GameConfig): -1 | 0 | 1 {
+/** Where the bot goes when nothing threatens it: the nearest ball to collect, else under the danger. */
+function collectTarget(run: Run, config: GameConfig): number | null {
   let goal: number | null = null;
   let nearest = Number.POSITIVE_INFINITY;
   for (const p of run.pickups) {
@@ -268,7 +283,11 @@ function collectingMove(run: Run, config: GameConfig): -1 | 0 | 1 {
       goal = p.x;
     }
   }
-  if (goal === null) goal = dangerousTarget(run, config)?.x ?? null;
+  return goal ?? dangerousTarget(run, config)?.x ?? null;
+}
+
+function collectingMove(run: Run, config: GameConfig): -1 | 0 | 1 {
+  const goal = collectTarget(run, config);
   if (goal === null) return 0;
   const delta = goal - run.player.x;
   return delta > 4 ? 1 : delta < -4 ? -1 : 0;
@@ -313,8 +332,55 @@ export function dodgeMove(
   config: GameConfig,
   reaction = DODGE_REACTION_TICKS,
 ): -1 | 0 | 1 | null {
+  const best = dodgeTarget(run, config, reaction);
+  if (best === null) return null;
+  const here = run.player.x;
+  return best > here + 2 ? 1 : best < here - 2 ? -1 : 0;
+}
+
+/** The free point `dodgeMove` heads to, or null (4G-H: the finger of the two thumbs goes straight there). */
+export function dodgeTarget(
+  run: Run,
+  config: GameConfig,
+  reaction = DODGE_REACTION_TICKS,
+): number | null {
   const margin = config.player.margin;
   const widthOfFloor = config.arena.width;
+  const spans = noticedSpans(run, reaction);
+  const here = run.player.x;
+  if (!spans.some((s) => here >= s.lo && here <= s.hi)) return null;
+  const free = (x: number): boolean =>
+    x >= margin && x <= widthOfFloor - margin && !spans.some((s) => x >= s.lo && x <= s.hi);
+  let best: number | null = null;
+  for (const s of spans) {
+    for (const x of [s.lo - 1, s.hi + 1, margin, widthOfFloor - margin]) {
+      if (free(x) && (best === null || Math.abs(x - here) < Math.abs(best - here))) best = x;
+    }
+  }
+  return best;
+}
+
+/**
+ * The finger of the two thumbs (4G-H) goes to collect or under the danger, but never walks into a
+ * danger the bot has noticed: it stops at its edge (a slow bot never got far into one in a tick; a
+ * fast finger would cross it whole).
+ */
+function safeGoal(run: Run, config: GameConfig): number | null {
+  const dodge = dodgeTarget(run, config);
+  if (dodge !== null) return dodge;
+  const goal = collectTarget(run, config);
+  if (goal === null) return null;
+  const here = run.player.x;
+  let stop = goal;
+  for (const s of noticedSpans(run, DODGE_REACTION_TICKS)) {
+    if (goal > here && s.lo > here && s.lo <= stop) stop = s.lo - 1;
+    if (goal < here && s.hi < here && s.hi >= stop) stop = s.hi + 1;
+  }
+  return stop;
+}
+
+/** The floor the bot has noticed is in danger: one span per thing that hurts (after its reaction). */
+function noticedSpans(run: Run, reaction: number): { lo: number; hi: number }[] {
   const spans: { lo: number; hi: number }[] = [];
   for (const h of run.hazards) {
     if (h.kind === 'zone' || h.kind === 'gust') continue;
@@ -328,18 +394,7 @@ export function dodgeMove(
       hi: Math.max(h.x, h.x + ahead) + h.width / 2 + 8,
     });
   }
-  const here = run.player.x;
-  if (!spans.some((s) => here >= s.lo && here <= s.hi)) return null;
-  const free = (x: number): boolean =>
-    x >= margin && x <= widthOfFloor - margin && !spans.some((s) => x >= s.lo && x <= s.hi);
-  let best: number | null = null;
-  for (const s of spans) {
-    for (const x of [s.lo - 1, s.hi + 1, margin, widthOfFloor - margin]) {
-      if (free(x) && (best === null || Math.abs(x - here) < Math.abs(best - here))) best = x;
-    }
-  }
-  if (best === null) return null;
-  return best > here + 2 ? 1 : best < here - 2 ? -1 : 0;
+  return spans;
 }
 
 /**
@@ -396,6 +451,20 @@ export const schemeSlingPolicy: Policy = {
   aimMode: 'sling',
   aim: (run, config) => slingAim(run, config, null),
   fire: (run) => run.tickCount % SLING_EVERY === 0 && run.cooldowns.some((c) => c === 0),
+};
+
+/**
+ * The two thumbs in landscape (4G-H): the same bot, that aims by hand like the mouse, and moves with
+ * a finger that the launcher follows at once. A human thumb sweeps about 700 arena pixels a second,
+ * `FINGER_STEP` per tick, so the bot's finger is that fast (the launcher could go faster).
+ */
+export const FINGER_STEP = 12;
+export const schemeTwinPolicy: Policy = {
+  ...activePolicy,
+  name: 'twin',
+  aimMode: 'manual',
+  fingerStep: FINGER_STEP,
+  goal: safeGoal,
 };
 
 /** The same bot that never dodges (ADR-046): shows that the health of the player matters. */

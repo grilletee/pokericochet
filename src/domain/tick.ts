@@ -222,11 +222,18 @@ export function tick(run: Run, cmd: Command, config: GameConfig): TickOutput {
   // Slower while Dialga's time slow lasts, and the tide of Kyogre narrows the field (ADR-054).
   const margin = fieldMargin(run, config);
   const fromX = run.player.x;
-  run.player.x = clamp(
-    run.player.x + cmd.moveX * config.player.speed * playerSpeedMult(run, config),
-    margin,
-    arena.width - margin,
-  );
+  const slow = playerSpeedMult(run, config);
+  // A finger (4G-H) says where to be: the launcher goes straight there, fast but not teleported
+  // (`touchStep` per tick, slowed by time slow like any movement); keys and pointer give a direction.
+  const step =
+    cmd.moveTo === undefined
+      ? cmd.moveX * config.player.speed * slow
+      : clamp(
+          Math.floor(cmd.moveTo + 0.5) - run.player.x,
+          -(config.player.touchStep ?? config.player.speed) * slow,
+          (config.player.touchStep ?? config.player.speed) * slow,
+        );
+  run.player.x = clamp(run.player.x + step, margin, arena.width - margin);
   // The sideways speed, smoothed over about a tenth of a second: what the `motion` aim leans with.
   run.player.vel = run.player.vel * 0.8 + (run.player.x - fromX) * 0.2;
   if (cmd.aimMode !== undefined) run.aimMode = cmd.aimMode;

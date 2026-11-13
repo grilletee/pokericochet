@@ -308,6 +308,11 @@ export interface GameConfig {
      * standard of the genre). A leak at the defence line neither gives nor respects it.
      */
     readonly hitInvulnTicks: number;
+    /**
+     * The most pixels per tick the launcher moves towards a `moveTo` (4G-H, the thumb of the touch
+     * screen follows the finger with no delay); `speed` when absent.
+     */
+    readonly touchStep?: number;
   };
   readonly ball: {
     readonly radius: number;

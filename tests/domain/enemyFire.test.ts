@@ -4,6 +4,7 @@ import {
   advanceEnemyFire,
   cloneRun,
   createRun,
+  createSnapshot,
   GAME_TYPES,
   type GameConfig,
   type Hazard,
@@ -12,6 +13,7 @@ import {
   isEnemyShot,
   tick,
   WARN_TICKS,
+  writeSnapshot,
 } from '../../src/domain';
 import { makeEnemy, quietConfig } from './fixtures';
 
@@ -325,6 +327,40 @@ describe('4G-H: shots aimed at the player, in short bursts, and always with a wa
     };
     expect(play(0)).toBeGreaterThan(0);
     expect(play(1)).toBe(0);
+  });
+
+  it('a burst waits while three other warnings are on screen (the limit of 4G-F)', () => {
+    const run = createRun(shipped, 1, 'charmander');
+    run.player.x = 240;
+    // Three thin columns far away, each announced at its own moment, all on screen now.
+    for (const [x, t] of [
+      [40, WARN_TICKS],
+      [440, WARN_TICKS - 10],
+      [60, WARN_TICKS - 20],
+    ] as const) {
+      run.hazards.push({ ...wallAt(x, 20), telegraph: t });
+    }
+    run.enemies = [makeEnemy({ id: 2, type: 'electric', x: 100, y: 150, hp: 1000 })];
+    run.tickCount = on(2, 'electric');
+    advanceEnemyFire(run, shipped);
+    const shots = run.hazards.filter((h) => isEnemyShot(h));
+    expect(shots).toHaveLength(3);
+    // Pushed back until the first of the three has struck: never a fourth warning at once.
+    expect(shots[0]?.telegraph ?? 0).toBeGreaterThan(WARN_TICKS);
+  });
+
+  it('the snapshot carries where a shot flies from, and -1 for what has no origin', () => {
+    const run = createRun(shipped, 1, 'charmander');
+    run.enemies = [makeEnemy({ id: 2, type: 'steel', x: 100, y: 150, hp: 1000 })];
+    run.tickCount = on(2, 'steel');
+    advanceEnemyFire(run, shipped);
+    run.hazards.push(wallAt(400, 20));
+    const snap = createSnapshot();
+    writeSnapshot(run, snap, undefined, shipped);
+    expect(snap.hazardFromX[0]).toBe(100);
+    expect(snap.hazardFromY[0]).toBe(150);
+    expect(snap.hazardFromX[1]).toBe(-1);
+    expect(snap.hazardFromY[1]).toBe(-1);
   });
 
   it('the place it flies from is part of the hash and the clone', () => {

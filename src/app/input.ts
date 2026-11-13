@@ -1,6 +1,14 @@
 import type { ControlScheme } from '../ui';
 import { FLOOR_Y, type InputState } from './inputLogic';
-import { PAD_ZONE_Y, type PadInput, type PadRelease, ThumbPad } from './touchLogic';
+import {
+  aimDrag,
+  PAD_ZONE_Y,
+  type PadInput,
+  type PadRelease,
+  SlideTrack,
+  ThumbPad,
+  twinMovePerPixel,
+} from './touchLogic';
 
 /** Value of `takePick` that means "let the capture go" (the replace screen, ADR-030). */
 export const RELEASE_PICK = -1;
@@ -39,18 +47,42 @@ export class Input {
   private padId: number | null = null;
   private padTap: { x: number; y: number } | null = null;
   private padRelease: Extract<PadRelease, { kind: 'release' }> | null = null;
+  /**
+   * The two thumbs of the landscape touch screen (4G-H): one pointer moves (the left half of the
+   * screen) and another aims (the right half), each tracked by its own id, both at once.
+   */
+  private readonly slide = new SlideTrack();
+  private moveId: number | null = null;
+  private twinAimId: number | null = null;
+  private aimAnchor = { x: 0, y: 0, screenX: 0, screenY: 0 };
+  private twinAim: { x: number; y: number } | null = null;
+  private ultimateAsked = false;
 
   constructor(
-    host: HTMLElement,
+    private readonly host: HTMLElement,
     private readonly view: () => ArenaView,
     /** The control scheme in force and where the launcher is (arena x), read at each pointer event. */
     private readonly scheme: () => ControlScheme = () => 'classic',
     private readonly playerX: () => number = () => 0,
+    /** Where the aim is now (arena), and the arena: the right thumb drags it from there (4G-H). */
+    private readonly aimNow: () => { x: number; y: number } = () => ({ x: 0, y: 0 }),
+    private readonly arena: {
+      readonly width: number;
+      readonly height: number;
+      readonly playerY: number;
+      readonly margin: number;
+    } = {
+      width: 480,
+      height: 760,
+      playerY: 680,
+      margin: 20,
+    },
   ) {
     window.addEventListener('keydown', (e) => this.onKey(e, true));
     window.addEventListener('keyup', (e) => this.onKey(e, false));
     host.style.touchAction = 'none';
     host.addEventListener('pointerdown', (e) => {
+      if (this.twinStarts(e)) return;
       const { x, y } = this.toArena(e);
       if (this.padStarts(e, x, y)) return;
       if (y >= FLOOR_Y) {
@@ -63,6 +95,7 @@ export class Input {
       }
     });
     host.addEventListener('pointermove', (e) => {
+      if (this.twinMoves(e)) return;
       const { x, y } = this.toArena(e);
       if (e.pointerId === this.padId) {
         this.pad.move(x, y, e.timeStamp);
@@ -83,6 +116,15 @@ export class Input {
       }
     });
     const release = (e: PointerEvent): void => {
+      if (e.pointerId === this.moveId) {
+        this.moveId = null;
+        this.slide.up();
+        return;
+      }
+      if (e.pointerId === this.twinAimId) {
+        this.twinAimId = null; // the aim stays where the thumb left it
+        return;
+      }
       if (e.pointerId === this.padId) {
         const { x, y } = this.toArena(e);
         this.padEnds(e.type === 'pointercancel' ? null : this.pad.up(x, y, e.timeStamp), x, y);
@@ -103,8 +145,71 @@ export class Input {
       this.aimId = null;
       this.padId = null;
       this.pad.cancel();
+      this.moveId = null;
+      this.twinAimId = null;
+      this.slide.up();
       this.state.pointerX = null;
     });
+  }
+
+  /**
+   * A finger of the two-thumb scheme (4G-H) lands: on the left half of the screen it moves the
+   * launcher, on the right half it aims. Only touches on the game itself count (a tap on a portrait
+   * or a button is theirs).
+   */
+  private twinStarts(e: PointerEvent): boolean {
+    if (this.scheme() !== 'twin') return false;
+    if (!(e.target instanceof HTMLCanvasElement) && e.target !== this.host) return true;
+    const rect = this.host.getBoundingClientRect();
+    const sx = e.clientX - rect.left;
+    if (sx < rect.width / 2) {
+      if (this.moveId !== null) return true;
+      this.moveId = e.pointerId;
+      this.slide.down(sx, this.playerX());
+    } else {
+      if (this.twinAimId !== null) return true;
+      this.twinAimId = e.pointerId;
+      const now = this.aimNow();
+      this.aimAnchor = { x: now.x, y: now.y, screenX: e.clientX, screenY: e.clientY };
+    }
+    return true;
+  }
+
+  private twinMoves(e: PointerEvent): boolean {
+    if (this.scheme() !== 'twin') return false;
+    const { scale, offsetX } = this.view();
+    if (e.pointerId === this.moveId) {
+      const rect = this.host.getBoundingClientRect();
+      const perPixel = twinMovePerPixel(scale, this.arena.width * scale, offsetX);
+      this.slide.move(
+        e.clientX - rect.left,
+        perPixel,
+        this.arena.margin,
+        this.arena.width - this.arena.margin,
+      );
+    } else if (e.pointerId === this.twinAimId) {
+      this.twinAim = aimDrag(
+        this.aimAnchor,
+        e.clientX - this.aimAnchor.screenX,
+        e.clientY - this.aimAnchor.screenY,
+        scale,
+        this.arena,
+        this.arena.playerY,
+      );
+    }
+    return true;
+  }
+
+  /** The ULTI button of the two-thumb scheme (4G-H): throw the Ultimate that is ready. */
+  requestUltimate(): void {
+    this.ultimateAsked = true;
+  }
+
+  /** Whether the Ultimate was asked for since the last call. */
+  takeUltimate(): boolean {
+    const asked = this.ultimateAsked;
+    this.ultimateAsked = false;
+    return asked;
   }
 
   /**
@@ -142,6 +247,16 @@ export class Input {
 
   /** What the thumb did since the last call (steering, a tap, a release); each event is given once. */
   takePad(): PadInput {
+    if (this.scheme() === 'twin') {
+      const aim = this.twinAim;
+      this.twinAim = null;
+      return {
+        steerX: this.slide.active ? this.slide.target() : null,
+        aim,
+        tap: null,
+        release: null,
+      };
+    }
     const pad: PadInput = {
       steerX: this.padId === null ? null : this.pad.target(),
       tap: this.padTap,

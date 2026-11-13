@@ -15,7 +15,13 @@ import {
 } from '../../src/app/touchLogic';
 import { gameConfig } from '../../src/data';
 import { createRun } from '../../src/domain';
-import { CONTROL_SCHEMES, defaultSchemeFor, isControlScheme, schemeTip } from '../../src/ui';
+import {
+  CONTROL_SCHEMES,
+  defaultSchemeFor,
+  isControlScheme,
+  schemeTip,
+  VISIBLE_SCHEMES,
+} from '../../src/ui';
 import { makeEnemy } from '../domain/fixtures';
 
 /** 4G-G, part 2: what a thumb does, as numbers; and the settings of the schemes. */
@@ -186,24 +192,36 @@ describe('the scheme is a setting, with a default that suits the device', () => 
     };
   };
 
-  it('a touch screen starts with the smart aim, anything else with the classic', () => {
-    expect(defaultSchemeFor(true)).toBe('smart');
+  it('a touch screen starts with the two thumbs (4G-H), anything else with the classic', () => {
+    expect(defaultSchemeFor(true)).toBe('twin');
     expect(defaultSchemeFor(false)).toBe('classic');
-    expect(loadScheme(null, true)).toBe('smart');
+    expect(loadScheme(null, true)).toBe('twin');
     expect(loadScheme(memory(), false)).toBe('classic');
   });
 
-  it('remembers the choice, and a bad stored value falls back to the device default', () => {
+  it('remembers the choice; a bad value, or a hidden prototype of the 4G-G, gives the default', () => {
     const store = memory();
-    saveScheme(store, 'sling');
-    expect(store.data.get(CONTROLS_KEY)).toBe('sling');
-    expect(loadScheme(store, true)).toBe('sling');
+    saveScheme(store, 'twin');
+    expect(store.data.get(CONTROLS_KEY)).toBe('twin');
+    expect(loadScheme(store, true)).toBe('twin');
+    saveScheme(store, 'classic');
+    expect(loadScheme(store, true)).toBe('classic');
     store.data.set(CONTROLS_KEY, 'nonsense');
-    expect(loadScheme(store, true)).toBe('smart');
+    expect(loadScheme(store, true)).toBe('twin');
+    // The phone of the author remembers the scheme it tried in the 4G-G: it moves to the new one.
+    store.data.set(CONTROLS_KEY, 'smart');
+    expect(loadScheme(store, true)).toBe('twin');
   });
 
-  it('lists the four schemes, each with a name and a hint, and tips for the touch ones', () => {
-    expect(CONTROL_SCHEMES.map((s) => s.id)).toEqual(['classic', 'smart', 'motion', 'sling']);
+  it('lists the schemes with a name and a hint; Settings shows only the classic and the two thumbs', () => {
+    expect(CONTROL_SCHEMES.map((s) => s.id)).toEqual([
+      'classic',
+      'twin',
+      'smart',
+      'motion',
+      'sling',
+    ]);
+    expect(VISIBLE_SCHEMES.map((s) => s.id)).toEqual(['classic', 'twin']);
     for (const s of CONTROL_SCHEMES) {
       expect(s.name.length).toBeGreaterThan(3);
       expect(s.hint.length).toBeGreaterThan(20);
@@ -211,6 +229,8 @@ describe('the scheme is a setting, with a default that suits the device', () => 
     }
     expect(isControlScheme('x')).toBe(false);
     expect(schemeTip('classic')).toBeNull();
-    for (const id of ['smart', 'motion', 'sling'] as const) expect(schemeTip(id)).toContain('.');
+    for (const id of ['twin', 'smart', 'motion', 'sling'] as const) {
+      expect(schemeTip(id)).toContain('.');
+    }
   });
 });

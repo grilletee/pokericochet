@@ -322,7 +322,10 @@ export const baseConfig: Omit<
   },
   arena: { width: 480, height: 720, defenseLineY: 640 },
   // hitInvulnTicks (4G-G): 50 ticks (0.8 s) in which attacks of bosses and enemies do not hurt again.
-  player: { y: 680, speed: 5, margin: 20, maxHp: 10, hitInvulnTicks: 50 },
+  // 4G-H: touchStep, the launcher follows the thumb of the touch screen with no delay (15th playtest:
+  // "el dedo llega al extremo y él va por la mitad"): up to 40 pixels per tick, the whole field in
+  // 12 ticks, faster than any thumb; the keys keep `speed`.
+  player: { y: 680, speed: 5, margin: 20, maxHp: 10, hitInvulnTicks: 50, touchStep: 40 },
   ball: {
     radius: 14, // 6 before 4G-F, 10 before 4G-G (see team.ballRadiusByStage)
     cooldownTicks: 72,

@@ -183,6 +183,9 @@ export class Renderer {
   /** The glass sphere of a ball on the floor (4G-H): the same one it has in flight. */
   private readonly pickupSpheres: Sprite[] = [];
   private readonly aimDots: Sprite[] = [];
+  /** The ring at the aim point of the two thumbs (4G-H). */
+  private readonly aimReticle: Sprite;
+  private reticleOn = false;
   private readonly hazardLayer = new Container();
   /** The sparks of the hazards in their own layer, so it can leave the scene when there are none. */
   private readonly sparkLayer = new Container();
@@ -339,6 +342,11 @@ export class Renderer {
       this.aimDots.push(dot);
       this.aimLayer.addChild(dot);
     }
+    this.aimReticle = new Sprite(ring);
+    this.aimReticle.anchor.set(0.5);
+    this.aimReticle.tint = 0xffd54f;
+    this.aimReticle.visible = false;
+    this.aimLayer.addChild(this.aimReticle);
     // The biome: a tint over the whole field and a few drifting particles (block 3 of 4H-B2).
     this.biomeTint = new Sprite(bar);
     this.biomeTint.width = width;
@@ -1448,6 +1456,19 @@ export class Renderer {
       dot.scale.set(0.11 - i * 0.003);
       dot.alpha = 0.75 - (i / AIM_DOTS) * 0.55;
     }
+    // The point the right thumb drags (4G-H): a ring where the aim is, since no cursor shows it.
+    const ring = this.aimReticle;
+    ring.visible = show && this.reticleOn;
+    if (ring.visible) {
+      ring.position.set(curr.aimX, curr.aimY);
+      ring.scale.set(0.42 + 0.04 * Math.sin(curr.tick / 8));
+      ring.alpha = 0.85;
+    }
+  }
+
+  /** Shows a ring at the aim point (the two-thumb scheme has no cursor, 4G-H). */
+  setReticle(on: boolean): void {
+    this.reticleOn = on;
   }
 
   private startEffect(x: number, y: number, color: number, size = 1): void {
