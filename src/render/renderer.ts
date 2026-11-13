@@ -26,7 +26,6 @@ import {
   typeCode,
   WARN_TICKS,
 } from '../domain';
-import { ballVisualScale } from './artBox';
 import { strikeLook } from './bossArt';
 import { legendArenaTexture, strikeFrames } from './bossTextures';
 import { BossDeathFx } from './deathFx';
@@ -85,6 +84,8 @@ const FOE_EDGE = '#ff5a5a';
 /** Circle of the sphere texture (24 px canvas, circle of about 23 px) and share of the diameter the picture fills. */
 const SPHERE_CIRCLE = 23.2;
 const SPHERE_CONTENT = 0.86;
+/** Dots in the trail of a ball (4G-H). */
+const TRAIL_DOTS = 4;
 /** Pixels per millisecond the three layers of the backdrop scroll at (far, middle, near). */
 const BACKDROP_SPEEDS: readonly number[] = [0.006, 0.016, 0.034];
 const AIM_DOTS = 16;
@@ -179,6 +180,8 @@ export class Renderer {
   private readonly aimLayer = new Container();
   private readonly pickupSprites: Sprite[] = [];
   private readonly pickupRings: Sprite[] = [];
+  /** The glass sphere of a ball on the floor (4G-H): the same one it has in flight. */
+  private readonly pickupSpheres: Sprite[] = [];
   private readonly aimDots: Sprite[] = [];
   private readonly hazardLayer = new Container();
   /** The sparks of the hazards in their own layer, so it can leave the scene when there are none. */
@@ -213,9 +216,7 @@ export class Renderer {
   private readonly fxLife = new Float32Array(FX_POOL);
   private readonly fxSize = new Float32Array(FX_POOL);
   private fxNext = 0;
-  /** Opaque box of each art texture, by art code (ADR-037). */
-  private readonly extents: number[];
-  /** The same textures cut to their opaque box, for the inside of a sphere (4G-G). */
+  /** The art textures cut to their opaque box, for the inside of a sphere (4G-G). */
   private readonly trimmed: (Texture | undefined)[];
   /** The moves and Ultimates (4G-E): pixel shapes, element showers, flash and shake. */
   private readonly moves: UltimateFx;
@@ -244,6 +245,10 @@ export class Renderer {
   /** The glass spheres under the pictures of the balls (4G-F), and their layer. */
   private readonly ballSpheres: Sprite[] = [];
   private readonly sphereLayer = new Container();
+  /** The trail of each ball in the colour of its type (4G-H), behind the spheres. */
+  private readonly trailLayer = new Container();
+  private readonly trailSprites: Sprite[] = [];
+  private trailsShown = 0;
   private readonly foeArt: (Texture | undefined)[] = [];
   private readonly backdropDim: Sprite;
   private backdropKey = -1;
@@ -269,7 +274,6 @@ export class Renderer {
     const measured = art.map((texture) =>
       texture === undefined ? undefined : measureArt(texture),
     );
-    this.extents = measured.map((m) => m?.extent ?? 1);
     this.trimmed = measured.map((m) => m?.trimmed);
     this.moves = new UltimateFx(bar, config.arena.width, config.arena.height);
     this.scratchBallX = new Float32Array(maxSlots);
@@ -434,6 +438,7 @@ export class Renderer {
       this.death.layer,
       this.statusLayer,
       this.pickupLayer,
+      this.trailLayer,
       this.sphereLayer,
       this.ballLayer,
       this.moves.layer,
@@ -1196,6 +1201,7 @@ export class Renderer {
   private drawBalls(prev: Snapshot, curr: Snapshot, alpha: number): void {
     interpolateBalls(prev, curr, alpha, this.scratchBallX, this.scratchBallY);
     let shown = 0;
+    let trails = 0;
     for (let slot = 0; slot < curr.slotCount; slot++) {
       if (curr.ballActive[slot] !== 1) continue;
       const sprite = this.spriteAt(this.ballSprites, this.ballLayer, shown);
@@ -1223,8 +1229,33 @@ export class Renderer {
         sprite.texture = cut;
         sprite.scale.set((2 * radius * SPHERE_CONTENT) / Math.max(1, cut.width, cut.height));
       }
+      // The Pokémon stays upright inside its glass: the picture never turns with the flight.
+      sprite.rotation = 0;
       sprite.tint = 0xffffff;
       sprite.alpha = 1;
+      // A trail in the colour of its type (4G-H, "en movimiento cuesta reconocer qué Pokémon es"):
+      // the colour says the type even when the picture is a blur. Dots that shrink and fade behind
+      // it, along the way it came (from the last tick to this one).
+      if (prev.ballActive[slot] === 1) {
+        const dx = (curr.ballX[slot] ?? 0) - (prev.ballX[slot] ?? 0);
+        const dy = (curr.ballY[slot] ?? 0) - (prev.ballY[slot] ?? 0);
+        const step = Math.hypot(dx, dy);
+        // A jump (a wrap, a new launch) is not a flight: no trail.
+        if (step > 0.5 && step < radius * 2) {
+          const tone = TYPE_COLORS[curr.ballType[slot] ?? 0] ?? 0xffffff;
+          const spacing = Math.max(radius * 0.55, step * 0.9) / step;
+          for (let k = 1; k <= TRAIL_DOTS; k++) {
+            const dot = this.spriteAt(this.trailSprites, this.trailLayer, trails);
+            dot.visible = true;
+            dot.texture = this.disc;
+            dot.tint = tone;
+            dot.position.set(sprite.x - dx * spacing * k, sprite.y - dy * spacing * k);
+            dot.scale.set((radius * (1 - k / (TRAIL_DOTS + 1)) * 0.9) / 32);
+            dot.alpha = 0.55 * (1 - k / (TRAIL_DOTS + 1));
+            trails += 1;
+          }
+        }
+      }
       shown += 1;
     }
     for (let i = shown; i < this.ballsShown; i++) {
@@ -1233,7 +1264,12 @@ export class Renderer {
       const sphere = this.ballSpheres[i];
       if (sphere) sphere.visible = false;
     }
+    for (let i = trails; i < this.trailsShown; i++) {
+      const dot = this.trailSprites[i];
+      if (dot) dot.visible = false;
+    }
     this.ballsShown = shown;
+    this.trailsShown = trails;
   }
 
   private drawEnemies(prev: Snapshot, curr: Snapshot, alpha: number): void {
@@ -1316,8 +1352,16 @@ export class Renderer {
 
   /** Balls on the floor (white ring) and captured ones falling or waiting (gold ring). */
   private drawPickups(curr: Snapshot): void {
-    const radius = this.config.ball.radius;
     for (let i = 0; i < curr.pickupCount; i++) {
+      // The same glass sphere as in flight, the same size (4G-H, 15th playtest: the ball on the
+      // floor and the capture "se ven gigantes"); a thin ring says it is waiting (gold: a capture).
+      let glass = this.pickupSpheres[i];
+      if (glass === undefined) {
+        glass = new Sprite(Texture.EMPTY);
+        glass.anchor.set(0.5);
+        this.pickupSpheres[i] = glass;
+        this.pickupLayer.addChild(glass);
+      }
       const sprite = this.spriteAt(this.pickupSprites, this.pickupLayer, i);
       let halo = this.pickupRings[i];
       if (halo === undefined) {
@@ -1326,6 +1370,7 @@ export class Renderer {
         this.pickupRings[i] = halo;
         this.pickupLayer.addChild(halo);
       }
+      const radius = curr.pickupRadius[i] || this.config.ball.radius;
       const captured = curr.pickupCaptured[i] === 1;
       const ticks = curr.pickupTicks[i] ?? 0;
       const total = captured ? this.config.pickup.captureTtlTicks : this.config.pickup.returnTicks;
@@ -1335,29 +1380,43 @@ export class Renderer {
       const y = curr.pickupY[i] ?? 0;
       sprite.visible = true;
       halo.visible = true;
+      glass.visible = true;
       sprite.position.set(x, y);
       halo.position.set(x, y);
-      const code = this.artCode(curr.pickupSpecies[i] ?? NO_SPECIES, curr.pickupLevel[i] ?? 1);
+      glass.position.set(x, y);
+      glass.texture = sphereTexture(TYPE_COLORS[curr.pickupType[i] ?? 0] ?? 0xffffff);
+      glass.scale.set((2 * radius) / SPHERE_CIRCLE);
+      // A capture carries the Pokémon at its level: its stage picks the form drawn.
+      const level = curr.pickupLevel[i] ?? 1;
+      const stage = captured
+        ? 1 + this.config.team.stageLevels.filter((from) => level >= from).length
+        : level;
+      const code = this.artCode(curr.pickupSpecies[i] ?? NO_SPECIES, stage);
       const art = this.art[code];
       if (art === undefined) {
         sprite.texture = this.disc;
-        sprite.scale.set(radius / 32);
+        sprite.scale.set((radius * 0.7) / 32);
         sprite.tint = TYPE_COLORS[curr.pickupType[i] ?? 0] ?? 0xffffff;
       } else {
-        sprite.texture = art;
-        sprite.scale.set(ballVisualScale(this.extents[code] ?? art.width, radius) * 1.1);
+        const cut = this.trimmed[code] ?? art;
+        sprite.texture = cut;
+        sprite.scale.set((2 * radius * SPHERE_CONTENT) / Math.max(1, cut.width, cut.height));
         sprite.tint = 0xffffff;
       }
       sprite.alpha = urgent ? 0.35 : 1;
+      glass.alpha = urgent ? 0.35 : 1;
       halo.tint = captured ? PICKUP_GOLD : 0xffffff;
       halo.alpha = urgent ? 0.2 : 0.4 + 0.6 * Math.min(1, ticks / Math.max(1, total));
-      halo.scale.set((radius * 2.4) / 30);
+      // Just outside the glass, so the ball itself has the size it has in flight.
+      halo.scale.set((radius * 1.3) / 30);
     }
     for (let i = curr.pickupCount; i < this.pickupsShown; i++) {
       const sprite = this.pickupSprites[i];
       const halo = this.pickupRings[i];
+      const glass = this.pickupSpheres[i];
       if (sprite) sprite.visible = false;
       if (halo) halo.visible = false;
+      if (glass) glass.visible = false;
     }
     this.pickupsShown = curr.pickupCount;
   }

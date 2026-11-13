@@ -163,6 +163,43 @@ describe('snapshot: ball stages and radii for the evolution forms', () => {
     expect(snap.pickupLevel[1]).toBe(1);
   });
 
+  it('4G-H: a ball on the floor and a capture are drawn the size they have in flight', () => {
+    const run = createRun(quietConfig, 1, 'charmander');
+    run.loadout = [
+      {
+        id: 1,
+        owner: 0,
+        stage: 2,
+        species: 'charmander',
+        type: 'fire',
+        level: 4,
+        hybrid: false,
+        effects: [],
+      },
+    ];
+    run.cooldowns = [-1];
+    const [first, second, third] =
+      quietConfig.team.stageLevels.length === 2 ? [1, 3, 6] : [1, 1, 1];
+    run.pickups = [
+      { slot: 0, species: '', type: 'fire', x: 50, y: 680, level: 1, ticks: 100 },
+      { slot: -1, species: 'psyduck', type: 'water', x: 90, y: 200, level: first, ticks: 100 },
+      { slot: -1, species: 'psyduck', type: 'water', x: 90, y: 200, level: second, ticks: 100 },
+      { slot: -1, species: 'psyduck', type: 'water', x: 90, y: 200, level: third, ticks: 100 },
+    ];
+    const snap = createSnapshot();
+    writeSnapshot(run, snap, undefined, quietConfig);
+    const [r1, r2, r3] = quietConfig.team.ballRadiusByStage;
+    // The ball of the team: the radius of its stage (2), whatever level it says.
+    expect(snap.pickupRadius[0]).toBe(r2);
+    // A capture: the radius of the stage its level gives (levels 1, 3 and 6: stages 1, 2 and 3).
+    expect(snap.pickupRadius[1]).toBe(r1);
+    expect(snap.pickupRadius[2]).toBe(r2);
+    expect(snap.pickupRadius[3]).toBe(r3);
+    // Without the rules it does not know: 0 (the render then uses the ball radius).
+    writeSnapshot(run, snap, undefined, undefined);
+    expect(snap.pickupRadius[0]).toBe(0);
+  });
+
   it('writes the radius of each ball by its stage, and 0 when it does not know the rules', () => {
     const run = createRun(quietConfig, 1, 'charmander');
     run.loadout = [1, 2, 3].map((stage, i) => ({

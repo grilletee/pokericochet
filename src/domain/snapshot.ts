@@ -1,5 +1,6 @@
 import { themeTypes } from './advice';
 import type { GameConfig } from './config';
+import { stageForLevel } from './forms';
 import type { Run } from './run';
 import { ballRadius } from './team';
 import { type Enemy, GAME_TYPES, type GameType } from './types';
@@ -126,6 +127,8 @@ export interface Snapshot {
   /** Species code of the ball the pickup carries (see `writeSnapshot`), or NO_SPECIES. */
   pickupSpecies: Uint16Array;
   pickupLevel: Uint8Array;
+  /** Radius it has in flight (4G-H): it is drawn the same size on the floor. */
+  pickupRadius: Float32Array;
   /** 1 = a captured ball, 0 = a returning ball of the team. */
   pickupCaptured: Uint8Array;
   /** Ticks left before it joins by itself. */
@@ -223,6 +226,7 @@ export function createSnapshot(maxSlots = 64, maxEnemies = 512, maxPickups = 64)
     pickupType: new Uint8Array(maxPickups),
     pickupSpecies: new Uint16Array(maxPickups),
     pickupLevel: new Uint8Array(maxPickups),
+    pickupRadius: new Float32Array(maxPickups),
     pickupCaptured: new Uint8Array(maxPickups),
     pickupTicks: new Int32Array(maxPickups),
     enemyCount: 0,
@@ -370,6 +374,15 @@ export function writeSnapshot(
     const species = ball?.species ?? p.species;
     snap.pickupSpecies[i] = speciesCodes?.get(species) ?? NO_SPECIES;
     snap.pickupLevel[i] = ball?.stage ?? p.level;
+    // The size it has in flight (4G-H, 15th playtest: "la bola caída y la de captura se ven
+    // gigantes"): a ball of the team keeps its own; a capture, the one of its stage at its level.
+    snap.pickupRadius[i] =
+      config === undefined
+        ? 0
+        : ball !== undefined
+          ? ballRadius(config, ball)
+          : (config.team.ballRadiusByStage[stageForLevel(config, p.level) - 1] ??
+            config.ball.radius);
   }
 
   const maxEnemies = snap.enemyId.length;

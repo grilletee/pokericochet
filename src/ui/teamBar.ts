@@ -5,6 +5,14 @@ import { TYPE_COLORS } from './typeColors';
 
 const FLY_MS = 700;
 
+/** The shortest time between two flashes of the same portrait for its hits (4G-H). */
+export const HIT_BLINK_GAP_MS = 180;
+
+/** Whether a portrait that last flashed at `last` (ms, or never) may flash again at `now`. Pure. */
+export function hitBlinkDue(last: number | undefined, now: number): boolean {
+  return last === undefined || now - last >= HIT_BLINK_GAP_MS;
+}
+
 function animate(
   element: Element,
   keyframes: Keyframe[],
@@ -44,6 +52,8 @@ export class TeamBar {
   private readonly arriving = new Set<number>();
   private onInspect: (member: number) => void = () => {};
   private onTap: (member: number) => void = () => {};
+  /** When the portrait of each Pokémon last flashed for a hit (ms). */
+  private readonly lastBlink = new Map<number, number>();
 
   constructor(
     host: HTMLElement,
@@ -179,6 +189,27 @@ export class TeamBar {
       tile.append(mark);
     }
     return tile;
+  }
+
+  /**
+   * A quick flash of the portrait of the Pokémon whose ball just hit (4G-H, 15th playtest: "en
+   * movimiento cuesta reconocer qué Pokémon es"): the bar says who is hitting. At most one flash per
+   * Pokémon every `HIT_BLINK_GAP_MS`, so a busy fight blinks instead of staying white.
+   */
+  hitBlink(member: number, now: number): void {
+    if (!hitBlinkDue(this.lastBlink.get(member), now)) return;
+    const portrait = this.tiles.get(member)?.firstElementChild;
+    if (!(portrait instanceof HTMLElement)) return;
+    this.lastBlink.set(member, now);
+    animate(
+      portrait,
+      [
+        { filter: 'brightness(1)' },
+        { filter: 'brightness(2.3) drop-shadow(0 0 4px #ffffff)', offset: 0.3 },
+        { filter: 'brightness(1)' },
+      ],
+      { duration: 160, easing: 'ease-out' },
+    );
   }
 
   /** Scale-and-glow pulse on the tile of a Pokémon that just evolved or was trained. */

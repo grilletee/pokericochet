@@ -878,6 +878,9 @@ export async function startGame(host: HTMLElement): Promise<void> {
             true,
           );
         }
+      } else if (event.type === 'hit') {
+        // The portrait of the Pokémon whose ball hit blinks (4G-H): who is doing what, at a glance.
+        teamBar.hitBlink(memberOfBall(event.ballId), now);
       } else if (event.type === 'bossTelegraph') {
         // The first time each attack appears in a run, its name and how to dodge it (4G-F).
         const text = namer.first(attackKey(event.kind, event.fromEnemy, event.shotType));
