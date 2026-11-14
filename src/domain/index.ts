@@ -8,6 +8,7 @@ export {
   advanceEnemyFire,
   barrierUp,
   bossDamage,
+  bossLineTicks,
   fieldMargin,
   isEnemyShot,
   liveBoss,

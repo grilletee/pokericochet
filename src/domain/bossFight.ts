@@ -24,6 +24,21 @@ export function patternFor(
   return fight.bySpecies[species] ?? fight.byType[type as GameType] ?? fight.default;
 }
 
+/**
+ * Ticks the live boss needs to reach the defence line at its speed now (4G-I, 16th playtest: "no sé
+ * qué pasa si un jefe llega al final"): a boss that reaches the line ends the run (ADR-016), so the
+ * game warns about it with this count. -1 when there is no live boss or it does not come down.
+ */
+export function bossLineTicks(run: Run, config: GameConfig): number {
+  const boss = liveBoss(run);
+  if (boss === undefined) return -1;
+  const speed = boss.speed * (boss.slowTicks > 0 ? 1 - boss.slow : 1);
+  if (speed <= 0) return -1;
+  const exact = Math.max(0, config.arena.defenseLineY - boss.y) / speed;
+  const whole = exact | 0;
+  return whole < exact ? whole + 1 : whole; // rounded up: the tick on which it gets there
+}
+
 /** The boss on the field, if it is alive. */
 export function liveBoss(run: Run): Enemy | undefined {
   if (run.boss.id === 0) return undefined;

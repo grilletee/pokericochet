@@ -2,6 +2,14 @@ export { AttackNamer, attackKey, attackLabel } from './attackNames';
 export type { SoundId } from './audio';
 export { SoundFx, SoundToggle, soundFor, Throttle } from './audio';
 export { describeBall, describeEffects } from './ballText';
+export {
+  LINE_ALARMS,
+  LineAlarm,
+  type LineUrgency,
+  lineMessage,
+  lineSeconds,
+  lineUrgency,
+} from './bossLine';
 export type { BossMomentView } from './bossMoment';
 export { BOSS_DEFEAT_MS, BOSS_ENTRY_MS, BOSS_FINAL_MS, BossMoment } from './bossMoment';
 export type { CardTextContext } from './cardText';

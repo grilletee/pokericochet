@@ -1,4 +1,5 @@
 import { themeTypes } from './advice';
+import { bossLineTicks } from './bossFight';
 import type { GameConfig } from './config';
 import type { Run } from './run';
 import { ballRadius, ballView, captureView } from './team';
@@ -183,6 +184,8 @@ export interface Snapshot {
   hazardFromX: Float32Array;
   hazardFromY: Float32Array;
   bossPhase: number;
+  /** Ticks the boss needs to reach the defence line (4G-I), -1 when it does not come down. */
+  bossLineTicks: number;
   /**
    * What is wrong with each enemy (ADR-053, "estados visibles"), as a set of `STATUS_*` bits: the
    * render shows each one with its own subtle sign.
@@ -263,6 +266,7 @@ export function createSnapshot(maxSlots = 64, maxEnemies = 512, maxPickups = 64)
     hazardFromX: new Float32Array(MAX_HAZARDS),
     hazardFromY: new Float32Array(MAX_HAZARDS),
     bossPhase: 0,
+    bossLineTicks: -1,
     bossX: 0,
     bossY: 0,
     bossRadius: 0,
@@ -302,6 +306,7 @@ export function writeSnapshot(
     run.boss.spawned && run.boss.id !== 0 && run.enemies.some((e) => e.id === run.boss.id);
   snap.bossTimeSlow = run.boss.timeSlow > 0;
   snap.bossPhase = 0;
+  snap.bossLineTicks = config === undefined ? -1 : bossLineTicks(run, config);
   if (run.boss.id !== 0) {
     for (const e of run.enemies) {
       if (e.id !== run.boss.id) continue;

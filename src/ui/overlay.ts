@@ -1,4 +1,5 @@
 import type { Card } from '../domain';
+import { lineSeconds, lineUrgency } from './bossLine';
 import { type CardTextContext, cardStep, describeCard } from './cardText';
 import { type ArtLookup, buildCardArt, STEP_COLOR } from './cardView';
 import { dock, type SidePanels } from './sideLayout';
@@ -164,23 +165,35 @@ export class Overlay {
     warning = false,
     rage = false,
     legendary = false,
+    /** Ticks the boss needs to reach the defence line, -1 when it does not come down (4G-I). */
+    lineTicks = -1,
   ): void {
     const visible = maxHp > 0 && hp > 0;
     const percent = visible ? Math.max(1, Math.ceil((100 * hp) / maxHp)) : 0;
-    const key = `${name}|${percent}|${open}|${warning}|${rage}|${legendary}`;
+    const urgency = lineUrgency(lineTicks);
+    const seconds = urgency === 'none' ? 0 : lineSeconds(lineTicks);
+    const key = `${name}|${percent}|${open}|${warning}|${rage}|${legendary}|${urgency}|${seconds}`;
     if (key === this.lastBossKey) return;
     this.lastBossKey = key;
     this.bossBar.style.display = visible ? 'block' : 'none';
     // A legendary says so on its bar, with a gold edge the whole fight (4G-H).
     const title = legendary ? `★ ${name} · LEGENDARIO` : name;
-    this.bossLabel.textContent = `${title} ${percent} %${open ? ' · carga su ataque fuerte' : warning ? ' · va a cargar…' : ''}`;
+    // The line before anything else when it is near (4G-I): it is the one thing that ends the run.
+    const line = urgency === 'none' ? '' : ` · ⚠ línea en ${seconds} s`;
+    const charge = open ? ' · carga su ataque fuerte' : warning ? ' · va a cargar…' : '';
+    this.bossLabel.textContent = `${title} ${percent} %${line}${charge}`;
     this.bossFill.style.width = `${percent}%`;
     this.bossFill.style.background = rage ? '#a3141f' : '#e8503a';
-    this.bossBar.style.borderColor = legendary
-      ? '#ffd54f'
-      : open || warning
-        ? '#ffffff88'
-        : 'transparent';
+    this.bossBar.style.borderColor =
+      urgency === 'critical' && seconds % 2 === 0
+        ? '#ffffff'
+        : urgency === 'near' || urgency === 'critical'
+          ? '#ff3b3b'
+          : legendary
+            ? '#ffd54f'
+            : open || warning
+              ? '#ffffff88'
+              : 'transparent';
   }
 
   /**

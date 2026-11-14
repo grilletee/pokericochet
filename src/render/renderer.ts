@@ -86,6 +86,13 @@ const SPHERE_CIRCLE = 23.2;
 const SPHERE_CONTENT = 0.86;
 /** Dots in the trail of a ball (4G-H). */
 const TRAIL_DOTS = 4;
+/**
+ * A boss near the defence line (4G-I): its distance shows from 40 s away, turns red at 15 s and
+ * beats fast at 5 s (the same seconds as the bar and the alarm of the interface).
+ */
+const LINE_SHOW_TICKS = 40 * 60;
+const LINE_NEAR_TICKS = 15 * 60;
+const LINE_CRITICAL_TICKS = 5 * 60;
 /** Pixels per millisecond the three layers of the backdrop scroll at (far, middle, near). */
 const BACKDROP_SPEEDS: readonly number[] = [0.006, 0.016, 0.034];
 const AIM_DOTS = 16;
@@ -170,6 +177,9 @@ export class Renderer {
   /** The boss as it was in the last frame it was alive: where its death is played. */
   private readonly lastBoss = { x: 0, y: 0, radius: 0, species: 0, type: -1, final: false };
   private speciesIds: readonly string[] = [];
+  /** The distance of a boss to the defence line, and the line beating when it is near (4G-I). */
+  private readonly lineDots: Sprite[] = [];
+  private readonly lineGlow: Sprite;
   /** The rings round a legendary (4G-H). */
   private readonly legendRings: Sprite[] = [];
   private clockMs = 0;
@@ -423,6 +433,15 @@ export class Renderer {
       this.statusSprites.push(sign);
       this.statusLayer.addChild(sign);
     }
+    for (let k = 0; k < 14; k++) {
+      const dot = new Sprite(disc);
+      dot.anchor.set(0.5);
+      dot.visible = false;
+      this.lineDots.push(dot);
+    }
+    this.lineGlow = new Sprite(Texture.WHITE);
+    this.lineGlow.tint = 0xff3b3b;
+    this.lineGlow.visible = false;
     this.shieldRing = new Sprite(ring);
     this.shieldRing.anchor.set(0.5);
     this.shieldRing.visible = false;
@@ -437,6 +456,8 @@ export class Renderer {
       background,
       this.biomeLayer,
       this.floorStrip,
+      this.lineGlow,
+      ...this.lineDots,
       this.hazardLayer,
       ...this.legendRings,
       this.aimLayer,
@@ -1019,6 +1040,31 @@ export class Renderer {
       this.shieldRing.scale.set((curr.bossRadius + (charging ? 12 : 8) + beat * 4) / 30);
       this.shieldRing.tint = charging ? (TYPE_COLORS[curr.bossType] ?? 0xff4b3a) : 0xffffff;
       this.shieldRing.alpha = charging ? 0.7 : 0.35 + 0.2 * beat;
+    }
+    // A boss coming down to the line (4G-I): a column of dots from its body to the line that shows
+    // the distance, white and calm far away, red and fast when it is near, and the line itself beats.
+    const lineTicks = alive ? curr.bossLineTicks : -1;
+    const showLine = lineTicks >= 0 && lineTicks <= LINE_SHOW_TICKS;
+    const nearLine = showLine && lineTicks <= LINE_NEAR_TICKS;
+    const top = curr.bossY + curr.bossRadius;
+    for (let k = 0; k < this.lineDots.length; k++) {
+      const dot = this.lineDots[k];
+      if (dot === undefined) continue;
+      dot.visible = showLine && top < defenseLineY;
+      if (!dot.visible) continue;
+      const f = (k + ((curr.tick / (nearLine ? 4 : 10)) % 1)) / this.lineDots.length;
+      dot.position.set(curr.bossX, top + (defenseLineY - top) * f);
+      dot.tint = nearLine ? 0xff3b3b : 0xffffff;
+      dot.alpha = nearLine ? 0.9 : 0.45;
+      dot.scale.set(nearLine ? 0.14 : 0.1);
+    }
+    this.lineGlow.visible = nearLine;
+    if (nearLine) {
+      this.lineGlow.position.set(0, defenseLineY - 4);
+      this.lineGlow.width = this.config.arena.width;
+      this.lineGlow.height = 8;
+      const fast = lineTicks <= LINE_CRITICAL_TICKS;
+      this.lineGlow.alpha = 0.35 + 0.35 * Math.sin(curr.tick / (fast ? 2 : 5));
     }
     // A legendary is never just another boss (4G-H, "que se sienta legendario"): two slow rings of
     // gold and of its colour turn round it the whole fight.

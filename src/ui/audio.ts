@@ -17,6 +17,7 @@ export type SoundId =
   | 'collect'
   | 'capture'
   | 'charge'
+  | 'alarm'
   | 'tension';
 
 /** Which sound, if any, an event makes. A ball hit is the "bounce": walls emit no event. */
@@ -78,6 +79,7 @@ const MIN_GAP_MS: Record<SoundId, number> = {
   collect: 60,
   capture: 0,
   charge: 400,
+  alarm: 800,
   tension: 0,
 };
 
@@ -154,6 +156,12 @@ const RECIPES: Record<SoundId, readonly Note[]> = {
     { from: 659, to: 659, seconds: 0.09, wave: 'square', gain: 0.07, at: 0.09 },
     { from: 784, to: 1047, seconds: 0.28, wave: 'square', gain: 0.07, at: 0.18 },
     { from: 1047, to: 1047, seconds: 0.28, wave: 'sine', gain: 0.1, at: 0.18 },
+  ],
+  // A boss near the defence line (4G-I): three falling sirens, the only real alarm of the game.
+  alarm: [
+    { from: 880, to: 520, seconds: 0.22, wave: 'square', gain: 0.09 },
+    { from: 880, to: 520, seconds: 0.22, wave: 'square', gain: 0.09, at: 0.26 },
+    { from: 880, to: 520, seconds: 0.22, wave: 'square', gain: 0.09, at: 0.52 },
   ],
   // The charge of a strong attack: a low hum that rises, a warning and not an alarm (4G-H).
   charge: [

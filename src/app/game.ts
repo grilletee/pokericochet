@@ -61,7 +61,9 @@ import {
   installPixelStyle,
   isControlScheme,
   isRealEvolution,
+  LineAlarm,
   labelPriority,
+  lineMessage,
   MemberSheet,
   MoveLabelPolicy,
   MoveLabels,
@@ -574,6 +576,8 @@ export async function startGame(host: HTMLElement): Promise<void> {
   /** The notices that happen once per run: the signature is ready / was thrown for the first time. */
   let signatureAnnounced = false;
   let chargeHinted = false;
+  /** The alarms of a boss near the defence line, once each per boss (4G-I). */
+  const lineAlarm = new LineAlarm();
   /** When the run was won (ms), while the death of the legendary plays; 0 otherwise. */
   let victoryAt = 0;
   const namer = new AttackNamer();
@@ -690,6 +694,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
     pause.reset();
     signatureAnnounced = false;
     chargeHinted = false;
+    lineAlarm.reset();
     victoryAt = 0;
     namer.reset();
     signatureWasReady = false;
@@ -1197,7 +1202,17 @@ export async function startGame(host: HTMLElement): Promise<void> {
       curr.bossCoreWarning,
       curr.bossPhase === 1,
       curr.bossFinal,
+      curr.bossLineTicks,
     );
+    // A boss coming down to the line (4G-I): an alarm and a message at 30, 15 and 5 seconds; the
+    // first one of the run says what happens if it gets there.
+    if (!bench && screen === 'playing') {
+      const alarm = lineAlarm.check(run.boss.id, curr.bossLineTicks);
+      if (alarm !== null) {
+        overlay.showToast(lineMessage(alarm.seconds, alarm.first), now);
+        sound.play('alarm', now);
+      }
+    }
     overlay.setCards(
       screen === 'playing' && curr.phase === PHASE_LEVELUP ? run.offers : null,
       cardContext,
