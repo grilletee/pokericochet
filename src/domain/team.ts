@@ -251,6 +251,33 @@ export function joinTeam(
   run.events.push({ type: 'replaceOpen', species, stage, form });
 }
 
+/**
+ * What a ball looks like, from the same rules the game uses (4G-I, 16th playtest: Togekiss dropped a
+ * ball that showed Togetic). One function for every place a ball is drawn: in flight, waiting on the
+ * floor, as a capture and on the team bar; the render never works out a form by itself.
+ */
+export function ballView(
+  config: GameConfig,
+  ball: Pick<Ball, 'species' | 'stage'>,
+): {
+  readonly form: string;
+  readonly stage: number;
+} {
+  return { form: formAt(config, ball.species, ball.stage), stage: ball.stage };
+}
+
+/** What a capture on the floor looks like: the form and stage it will have when it joins. */
+export function captureView(
+  config: GameConfig,
+  species: string,
+  stage: number,
+): { readonly form: string; readonly stage: number } {
+  return {
+    form: captureForm(config, species, stage),
+    stage: stageOf(config, captureLevel(config, stage)),
+  };
+}
+
 /** The form a capture of this stage shows once it joins (it joins at `captureLevel`, ADR-036). */
 export function captureForm(config: GameConfig, species: string, stage: number): string {
   return formAt(config, species, stageOf(config, captureLevel(config, stage)));

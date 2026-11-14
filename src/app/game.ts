@@ -438,15 +438,10 @@ export async function startGame(host: HTMLElement): Promise<void> {
 
   // The names the screens show come from the data layer once (ADR-036): Pokémon and moves in Spanish.
   setNames(POKEMON_NAMES, MOVE_NAMES);
-  // Species -> small code the render uses to pick art; the domain never sees art.
-  // The art table also holds every evolution form; `forms[code][stage - 1]` is the code to draw.
+  // Species -> small code the render uses to pick art; the domain never sees art. The art table
+  // also holds every evolution form; since 4G-I the snapshot says which form each ball shows.
   const speciesIds = [...new Set([...Object.keys(config.species), ...ART_SPECIES_IDS])];
   const speciesCodes = new Map(speciesIds.map((id, code) => [id, code]));
-  const forms = speciesIds.map((id) =>
-    [1, 2, 3].map(
-      (stage) => speciesCodes.get(formAt(config, id, stage)) ?? speciesCodes.get(id) ?? 0,
-    ),
-  );
   const urls = spriteUrls();
   const art = { spriteUrl: (form: string): string | undefined => urls.get(form) };
   let prev = createSnapshot(MAX_SLOTS, MAX_ENEMIES);
@@ -460,7 +455,6 @@ export async function startGame(host: HTMLElement): Promise<void> {
     MAX_SLOTS,
     MAX_ENEMIES,
     await loadSpeciesTextures(speciesIds),
-    forms,
   );
   renderer.setSpeciesIds(speciesIds);
   installPixelStyle(host, pixelFontUrl);

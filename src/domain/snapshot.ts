@@ -1,8 +1,7 @@
 import { themeTypes } from './advice';
 import type { GameConfig } from './config';
-import { stageForLevel } from './forms';
 import type { Run } from './run';
-import { ballRadius } from './team';
+import { ballRadius, ballView, captureView } from './team';
 import { type Enemy, GAME_TYPES, type GameType } from './types';
 
 /** Numeric codes the render uses to index its colour tables: the place of the type in `GAME_TYPES`. */
@@ -116,6 +115,8 @@ export interface Snapshot {
   ballSpecies: Uint16Array;
   /** Evolution stage of the ball (1..3): with the species it picks the form to draw (ADR-031). */
   ballLevel: Uint8Array;
+  /** Species code of the FORM each ball shows (4G-I): worked out by the domain, drawn as is. */
+  ballForm: Uint16Array;
   /** Collision radius of the ball, which grows with its stage. */
   ballRadius: Float32Array;
 
@@ -129,6 +130,8 @@ export interface Snapshot {
   pickupLevel: Uint8Array;
   /** Radius it has in flight (4G-H): it is drawn the same size on the floor. */
   pickupRadius: Float32Array;
+  /** Species code of the form a ball on the floor shows (4G-I): the one it has or will have. */
+  pickupForm: Uint16Array;
   /** 1 = a captured ball, 0 = a returning ball of the team. */
   pickupCaptured: Uint8Array;
   /** Ticks left before it joins by itself. */
@@ -219,6 +222,7 @@ export function createSnapshot(maxSlots = 64, maxEnemies = 512, maxPickups = 64)
     ballType: new Uint8Array(maxSlots),
     ballSpecies: new Uint16Array(maxSlots),
     ballLevel: new Uint8Array(maxSlots),
+    ballForm: new Uint16Array(maxSlots),
     ballRadius: new Float32Array(maxSlots),
     pickupCount: 0,
     pickupX: new Float32Array(maxPickups),
@@ -227,6 +231,7 @@ export function createSnapshot(maxSlots = 64, maxEnemies = 512, maxPickups = 64)
     pickupSpecies: new Uint16Array(maxPickups),
     pickupLevel: new Uint8Array(maxPickups),
     pickupRadius: new Float32Array(maxPickups),
+    pickupForm: new Uint16Array(maxPickups),
     pickupCaptured: new Uint8Array(maxPickups),
     pickupTicks: new Int32Array(maxPickups),
     enemyCount: 0,
@@ -355,6 +360,10 @@ export function writeSnapshot(
     snap.ballType[body.slot] = typeCode(ball.type);
     snap.ballSpecies[body.slot] = speciesCodes?.get(ball.species) ?? NO_SPECIES;
     snap.ballLevel[body.slot] = ball.stage;
+    // The form it shows, from the rules of the game (4G-I): the render draws this, nothing else.
+    const view = config === undefined ? null : ballView(config, ball);
+    snap.ballForm[body.slot] =
+      speciesCodes?.get(view?.form ?? ball.species) ?? snap.ballSpecies[body.slot] ?? NO_SPECIES;
     snap.ballRadius[body.slot] = config === undefined ? 0 : ballRadius(config, ball);
   }
 
@@ -374,15 +383,22 @@ export function writeSnapshot(
     const species = ball?.species ?? p.species;
     snap.pickupSpecies[i] = speciesCodes?.get(species) ?? NO_SPECIES;
     snap.pickupLevel[i] = ball?.stage ?? p.level;
-    // The size it has in flight (4G-H, 15th playtest: "la bola caída y la de captura se ven
-    // gigantes"): a ball of the team keeps its own; a capture, the one of its stage at its level.
-    snap.pickupRadius[i] =
-      config === undefined
-        ? 0
-        : ball !== undefined
+    // What it looks like and how big it is, from the rules of the game (4G-I): a ball of the team is
+    // the ball it is; a capture (whose `level` is the STAGE of the enemy it came from) is the form
+    // and the stage it will have when it joins. The 4G-H read that stage as a level (Togekiss showed
+    // Togetic).
+    if (config === undefined) {
+      snap.pickupForm[i] = snap.pickupSpecies[i] ?? NO_SPECIES;
+      snap.pickupRadius[i] = 0;
+    } else {
+      const view =
+        ball !== undefined ? ballView(config, ball) : captureView(config, p.species, p.level);
+      snap.pickupForm[i] = speciesCodes?.get(view.form) ?? NO_SPECIES;
+      snap.pickupRadius[i] =
+        ball !== undefined
           ? ballRadius(config, ball)
-          : (config.team.ballRadiusByStage[stageForLevel(config, p.level) - 1] ??
-            config.ball.radius);
+          : (config.team.ballRadiusByStage[view.stage - 1] ?? config.ball.radius);
+    }
   }
 
   const maxEnemies = snap.enemyId.length;

@@ -179,7 +179,6 @@ export class Renderer {
   private readonly pickupLayer = new Container();
   private readonly aimLayer = new Container();
   private readonly pickupSprites: Sprite[] = [];
-  private readonly pickupRings: Sprite[] = [];
   /** The glass sphere of a ball on the floor (4G-H): the same one it has in flight. */
   private readonly pickupSpheres: Sprite[] = [];
   private readonly aimDots: Sprite[] = [];
@@ -272,7 +271,6 @@ export class Renderer {
     maxSlots: number,
     maxEnemies: number,
     private readonly art: readonly (Texture | undefined)[],
-    private readonly forms: readonly (readonly number[])[],
   ) {
     const measured = art.map((texture) =>
       texture === undefined ? undefined : measureArt(texture),
@@ -480,7 +478,6 @@ export class Renderer {
     maxSlots: number,
     maxEnemies: number,
     art: readonly (Texture | undefined)[] = [],
-    forms: readonly (readonly number[])[] = [],
   ): Promise<Renderer> {
     const app = new Application();
     await app.init({
@@ -498,7 +495,7 @@ export class Renderer {
     const disc = dotTexture();
     const ring = ringTexture();
     const bar = app.renderer.generateTexture(new Graphics().rect(0, 0, 4, 4).fill(0xffffff));
-    return new Renderer(app, config, disc, ring, bar, maxSlots, maxEnemies, art, forms);
+    return new Renderer(app, config, disc, ring, bar, maxSlots, maxEnemies, art);
   }
 
   /** Arena-to-screen transform, shared with the input layer to convert pointer positions. */
@@ -1162,11 +1159,6 @@ export class Renderer {
     sprite.alpha = Math.max(0, alpha);
   }
 
-  /** Art code of the form a ball of `stage` shows: `forms[species code][stage - 1]`. */
-  private artCode(code: number, stage: number): number {
-    return this.forms[code]?.[stage - 1] ?? code;
-  }
-
   /** Builds the outlines that were asked for, a couple per frame (see `outlined`). */
   private buildOutlines(): void {
     for (let n = 0; n < OUTLINES_PER_FRAME && this.outlineQueue.length > 0; n++) {
@@ -1218,8 +1210,8 @@ export class Renderer {
       // The ball grows with the stage of its Pokémon (ADR-031) and the visible pixels of every
       // sprite, not the whole picture, have the size of the ball (ADR-037): the same growth for all.
       const radius = curr.ballRadius[slot] || this.config.ball.radius;
-      const stage = curr.ballLevel[slot] ?? 1;
-      const code = this.artCode(curr.ballSpecies[slot] ?? NO_SPECIES, stage);
+      // The form comes from the domain (4G-I): the render never works one out.
+      const code = curr.ballForm[slot] ?? NO_SPECIES;
       const art = this.art[code];
       // The ball IS a glass sphere (4G-F) of exactly the collision radius, with the Pokémon inside.
       const sphere = this.spriteAt(this.ballSpheres, this.sphereLayer, shown);
@@ -1358,11 +1350,13 @@ export class Renderer {
     this.enemiesShown = curr.enemyCount;
   }
 
-  /** Balls on the floor (white ring) and captured ones falling or waiting (gold ring). */
+  /**
+   * Balls on the floor and captured ones falling or waiting: the same glass sphere as in flight, the
+   * same size (4G-H) and, since 4G-I, nothing else around it (16th playtest: "doble esfera,
+   * redundante"); it blinks when it is about to join by itself. The form is the domain's.
+   */
   private drawPickups(curr: Snapshot): void {
     for (let i = 0; i < curr.pickupCount; i++) {
-      // The same glass sphere as in flight, the same size (4G-H, 15th playtest: the ball on the
-      // floor and the capture "se ven gigantes"); a thin ring says it is waiting (gold: a capture).
       let glass = this.pickupSpheres[i];
       if (glass === undefined) {
         glass = new Sprite(Texture.EMPTY);
@@ -1371,35 +1365,19 @@ export class Renderer {
         this.pickupLayer.addChild(glass);
       }
       const sprite = this.spriteAt(this.pickupSprites, this.pickupLayer, i);
-      let halo = this.pickupRings[i];
-      if (halo === undefined) {
-        halo = new Sprite(this.ring);
-        halo.anchor.set(0.5);
-        this.pickupRings[i] = halo;
-        this.pickupLayer.addChild(halo);
-      }
       const radius = curr.pickupRadius[i] || this.config.ball.radius;
-      const captured = curr.pickupCaptured[i] === 1;
       const ticks = curr.pickupTicks[i] ?? 0;
-      const total = captured ? this.config.pickup.captureTtlTicks : this.config.pickup.returnTicks;
       // Blink for the last second and a half: it is about to join on its own (or, if captured, to).
       const urgent = ticks < 90 && Math.floor(curr.tick / 6) % 2 === 0;
       const x = curr.pickupX[i] ?? 0;
       const y = curr.pickupY[i] ?? 0;
       sprite.visible = true;
-      halo.visible = true;
       glass.visible = true;
       sprite.position.set(x, y);
-      halo.position.set(x, y);
       glass.position.set(x, y);
       glass.texture = sphereTexture(TYPE_COLORS[curr.pickupType[i] ?? 0] ?? 0xffffff);
       glass.scale.set((2 * radius) / SPHERE_CIRCLE);
-      // A capture carries the Pokémon at its level: its stage picks the form drawn.
-      const level = curr.pickupLevel[i] ?? 1;
-      const stage = captured
-        ? 1 + this.config.team.stageLevels.filter((from) => level >= from).length
-        : level;
-      const code = this.artCode(curr.pickupSpecies[i] ?? NO_SPECIES, stage);
+      const code = curr.pickupForm[i] ?? NO_SPECIES;
       const art = this.art[code];
       if (art === undefined) {
         sprite.texture = this.disc;
@@ -1413,17 +1391,11 @@ export class Renderer {
       }
       sprite.alpha = urgent ? 0.35 : 1;
       glass.alpha = urgent ? 0.35 : 1;
-      halo.tint = captured ? PICKUP_GOLD : 0xffffff;
-      halo.alpha = urgent ? 0.2 : 0.4 + 0.6 * Math.min(1, ticks / Math.max(1, total));
-      // Just outside the glass, so the ball itself has the size it has in flight.
-      halo.scale.set((radius * 1.3) / 30);
     }
     for (let i = curr.pickupCount; i < this.pickupsShown; i++) {
       const sprite = this.pickupSprites[i];
-      const halo = this.pickupRings[i];
       const glass = this.pickupSpheres[i];
       if (sprite) sprite.visible = false;
-      if (halo) halo.visible = false;
       if (glass) glass.visible = false;
     }
     this.pickupsShown = curr.pickupCount;

@@ -178,20 +178,20 @@ describe('snapshot: ball stages and radii for the evolution forms', () => {
       },
     ];
     run.cooldowns = [-1];
-    const [first, second, third] =
-      quietConfig.team.stageLevels.length === 2 ? [1, 3, 6] : [1, 1, 1];
+    // The `level` of a capture is the STAGE of the enemy it came from (4G-I: the 4G-H read it as a
+    // level, and Togekiss, stage 3, showed Togetic).
     run.pickups = [
       { slot: 0, species: '', type: 'fire', x: 50, y: 680, level: 1, ticks: 100 },
-      { slot: -1, species: 'psyduck', type: 'water', x: 90, y: 200, level: first, ticks: 100 },
-      { slot: -1, species: 'psyduck', type: 'water', x: 90, y: 200, level: second, ticks: 100 },
-      { slot: -1, species: 'psyduck', type: 'water', x: 90, y: 200, level: third, ticks: 100 },
+      { slot: -1, species: 'psyduck', type: 'water', x: 90, y: 200, level: 1, ticks: 100 },
+      { slot: -1, species: 'psyduck', type: 'water', x: 90, y: 200, level: 2, ticks: 100 },
+      { slot: -1, species: 'psyduck', type: 'water', x: 90, y: 200, level: 3, ticks: 100 },
     ];
     const snap = createSnapshot();
     writeSnapshot(run, snap, undefined, quietConfig);
     const [r1, r2, r3] = quietConfig.team.ballRadiusByStage;
     // The ball of the team: the radius of its stage (2), whatever level it says.
     expect(snap.pickupRadius[0]).toBe(r2);
-    // A capture: the radius of the stage its level gives (levels 1, 3 and 6: stages 1, 2 and 3).
+    // A capture of stage 1, 2 and 3: the radius of the stage it joins with.
     expect(snap.pickupRadius[1]).toBe(r1);
     expect(snap.pickupRadius[2]).toBe(r2);
     expect(snap.pickupRadius[3]).toBe(r3);
