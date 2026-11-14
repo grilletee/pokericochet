@@ -11,6 +11,7 @@ export {
   bossLineTicks,
   fieldMargin,
   isEnemyShot,
+  LEGEND_LINK,
   legendMoveName,
   liveBoss,
   MAX_WARNINGS,

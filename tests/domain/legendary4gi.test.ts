@@ -9,6 +9,7 @@ import {
   type GameEvent,
   hashRun,
   isDodgeable,
+  LEGEND_LINK,
   legendMoveName,
   type Run,
   tick,
@@ -91,6 +92,8 @@ describe('the final legendary is another kind of fight', () => {
       const placed = run.hazards.length - before;
       if (placed === 0) continue; // waited for a fair moment
       expect(placed).toBe(legendary.moveSlots - 1);
+      // Marked so its whole (longer) announcement is shown.
+      for (const h of run.hazards.slice(before)) expect(h.link).toBe(LEGEND_LINK);
       expect(isDodgeable(run, config, [])).toBe(true);
     }
   });

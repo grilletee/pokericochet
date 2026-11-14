@@ -111,6 +111,12 @@ export function startFight(run: Run, config: GameConfig, boss: Enemy): void {
   run.boss.legendIn = 0; // the final legendary sets its own clock when it is placed (4G-I)
 }
 
+/**
+ * The `link` of the zones of a legendary move (4G-I): they are announced for longer than
+ * `WARN_TICKS`, and the whole announcement is shown (other attacks show only their last WARN_TICKS).
+ */
+export const LEGEND_LINK = 1;
+
 /** A triangle wave of period 1 between -1 and 1 (pure arithmetic: no Math.sin in the domain). */
 function triangle(t: number): number {
   const f = t - Math.floor(t);
@@ -152,7 +158,8 @@ function advanceLegendary(run: Run, config: GameConfig, boss: Enemy, phase: Boss
       kind: 'comb',
       x: (i + 0.5) * slot,
       y: 0,
-      link: 0,
+      // LEGEND_LINK: the render shows its warning from the first tick (it is longer than WARN_TICKS).
+      link: LEGEND_LINK,
       width: slot,
       telegraph: legendary.moveWarnTicks,
       active: 24,

@@ -13,6 +13,7 @@ import {
   GAME_TYPES,
   type GameConfig,
   type GameEvent,
+  LEGEND_LINK,
   NO_SPECIES,
   type Snapshot,
   STATUS_BURN,
@@ -763,7 +764,10 @@ export class Renderer {
     const mark = this.hazardFloor[i];
     const fill = this.hazardFill[i];
     if (sprite === undefined || mark === undefined || fill === undefined) return;
-    if (left > WARN_TICKS) {
+    // A legendary move (4G-I) is shown for its whole, longer announcement; the rest, the last
+    // WARN_TICKS (staggered attacks wait unseen).
+    const legend = (curr.hazardLink[i] ?? 0) === LEGEND_LINK;
+    if (left > WARN_TICKS && !legend) {
       sprite.visible = false;
       mark.visible = false;
       fill.visible = false;
@@ -771,7 +775,7 @@ export class Renderer {
     }
     const { height, defenseLineY } = this.config.arena;
     const floorHeight = height - defenseLineY;
-    const p = 1 - left / WARN_TICKS;
+    const p = 1 - Math.min(left, WARN_TICKS) / WARN_TICKS;
     const flash = left < 14 && Math.floor(curr.tick / 3) % 2 === 0;
     const hatch = fxFor(DANGER).warn;
     sprite.visible = true;

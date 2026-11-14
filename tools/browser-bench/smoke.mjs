@@ -263,11 +263,17 @@ try {
     (await creditsPage.evaluate(() => window.localStorage.getItem('autoAim.v1'))) !== null &&
       ((await aimButton.textContent()) ?? '').includes('sí'),
   );
-  // 4G-F: volumes for everything, the effects and the cries, remembered.
+  // 4G-F: volumes for everything, the effects and the cries, remembered; 4G-I: and the music.
   check(
-    'the settings screen has three volume sliders, the cries starting low',
-    (await creditsPage.locator('input[data-volume]').count()) === 3 &&
+    'the settings screen has four volume sliders (music too), the cries starting low',
+    (await creditsPage.locator('input[data-volume]').count()) === 4 &&
+      (await creditsPage.locator('input[data-volume="music"]').count()) === 1 &&
       Number(await creditsPage.locator('input[data-volume="cries"]').inputValue()) < 50,
+  );
+  check(
+    'the settings screen offers to export and import the save (4G-I)',
+    (await creditsPage.locator('button[data-save="export"]').count()) === 1 &&
+      (await creditsPage.locator('button[data-save="import"]').count()) === 1,
   );
   await creditsPage.locator('input[data-volume="effects"]').fill('35');
   check(
