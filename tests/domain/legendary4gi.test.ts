@@ -98,6 +98,33 @@ describe('the final legendary is another kind of fight', () => {
     }
   });
 
+  it('a move that finds no fair moment waits a second and tries again, it is never lost', () => {
+    const run = atFinal();
+    // A field so full that the whole move does not fit in (it goes in whole or not at all).
+    const max = config.bossFight?.maxHazards ?? 12;
+    const fill = max - (legendary.moveSlots - 1) + 1;
+    for (let i = 0; i < fill; i++) {
+      run.hazards.push({
+        kind: 'column',
+        x: 20 + i * 4,
+        y: 0,
+        link: 0,
+        width: 40,
+        telegraph: 300,
+        active: 20,
+        damage: 1,
+        speed: 0,
+        struck: false,
+      });
+    }
+    run.boss.legendIn = 1;
+    const before = run.hazards.length;
+    advanceBossFight(run, config);
+    expect(run.hazards.length).toBe(before);
+    expect(run.boss.legendIn).toBeGreaterThan(0);
+    expect(run.boss.legendIn).toBeLessThanOrEqual(60);
+  });
+
   it('its fury starts with its legendary move', () => {
     const run = atFinal();
     fight(run, 200);

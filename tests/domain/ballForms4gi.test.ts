@@ -3,6 +3,7 @@ import { gameConfig } from '../../src/data';
 import {
   addMember,
   baseOf,
+  captureView,
   createRun,
   createSnapshot,
   dropCapture,
@@ -58,6 +59,15 @@ describe('a capture on the floor shows the form you get when you collect it (all
     expect(checked).toBe(bases.length * 3);
     expect(bases.length).toBeGreaterThan(100);
   }, 60_000);
+
+  it('a stage beyond the last of the line is shown as the last one, as it joins', () => {
+    const last = 1 + config.team.stageLevels.length;
+    for (const stage of [0, last + 1, last + 5]) {
+      const view = captureView(config, 'charmander', stage);
+      expect(view.stage).toBeGreaterThanOrEqual(1);
+      expect(view.stage).toBeLessThanOrEqual(last);
+    }
+  });
 
   it('the Togekiss case: the boss drops its own form, and that is what joins', () => {
     const run = fresh();

@@ -25,6 +25,11 @@ describe('how long the boss needs to reach the defence line', () => {
     expect(bossLineTicks(run, cfg)).toBe(2400);
   });
 
+  it('rounds up: a boss 10 px away at 3 px/tick gets there on the 4th tick, not the 3rd', () => {
+    const { run } = withBoss(line - 10, 3);
+    expect(bossLineTicks(run, cfg)).toBe(4);
+  });
+
   it('is -1 without a live boss, or for a boss that does not come down', () => {
     const { run, boss } = withBoss(line - 120, 0);
     expect(bossLineTicks(run, cfg)).toBe(-1);

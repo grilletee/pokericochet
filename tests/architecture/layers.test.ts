@@ -16,12 +16,13 @@ describe('architecture rules on the real source tree', () => {
     expect(sourceFiles().length).toBeGreaterThan(0);
   });
 
+  // 30 s (4G-I): it reads the whole tree, and on a busy machine it went past the default 5 s.
   it('has no layer or determinism violations under src/', () => {
     const violations = sourceFiles().flatMap((file) =>
       findViolations(file, readFileSync(`${ROOT}${file}`, 'utf8')),
     );
     expect(violations).toEqual([]);
-  });
+  }, 30_000);
 });
 
 describe('the checker catches violations (self-test)', () => {
