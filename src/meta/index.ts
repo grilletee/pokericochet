@@ -18,3 +18,4 @@ export {
   SAVE_MARK,
   startLevelFor,
 } from './profile';
+export { canStartWith, chooseFirstStarter, starterChoices } from './starters';

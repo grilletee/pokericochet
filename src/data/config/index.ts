@@ -2,6 +2,7 @@ import {
   GAME_TYPES,
   type GameConfig,
   type GameType,
+  type MoveShapeDef,
   type MovesDef,
   type ThemeDef,
 } from '../../domain';
@@ -14,6 +15,59 @@ import { bossFight, FINAL_BOSSES } from './bosses';
  * later.
  */
 const ALL_TYPES: readonly GameType[] = GAME_TYPES;
+
+/** The family of effects of each type (ADR-047), as its stage-3 effect files it. */
+const FAMILY_OF_TYPE: Readonly<Record<GameType, UltimateFamily>> = {
+  normal: 'direct',
+  dragon: 'direct',
+  fire: 'dot',
+  poison: 'dot',
+  ghost: 'dot',
+  electric: 'chain',
+  bug: 'chain',
+  flying: 'pierce',
+  steel: 'pierce',
+  water: 'pierce',
+  fighting: 'blast',
+  ground: 'blast',
+  rock: 'blast',
+  grass: 'drain',
+  fairy: 'drain',
+  psychic: 'control',
+  ice: 'control',
+  dark: 'control',
+};
+
+type UltimateFamily = 'direct' | 'dot' | 'chain' | 'pierce' | 'blast' | 'drain' | 'control';
+
+/** One Ultimate per family, by stage (4G-I): the shapes of the classics, about 10 % weaker. */
+const FAMILY_ULTIMATE: Readonly<Record<UltimateFamily, readonly (MoveShapeDef | null)[]>> = {
+  dot: [null, { kind: 'cross', width: 36, power: 1.1 }, { kind: 'cross', width: 48, power: 1.65 }],
+  pierce: [null, { kind: 'wave', width: 56, power: 2.15 }, { kind: 'wave', width: 72, power: 3 }],
+  drain: [null, { kind: 'beam', width: 56, power: 1.5 }, { kind: 'beam', width: 72, power: 2.25 }],
+  chain: [
+    { kind: 'chain', count: 1, power: 0.9 },
+    { kind: 'chain', count: 3, power: 2.1 },
+    { kind: 'chain', count: 5, power: 3.6 },
+  ],
+  blast: [
+    null,
+    { kind: 'nova', radius: 90, power: 1.6 },
+    { kind: 'nova', radius: 120, power: 2.4 },
+  ],
+  control: [
+    null,
+    { kind: 'burst', radius: 80, power: 1.5 },
+    { kind: 'burst', radius: 100, power: 2.2 },
+  ],
+  direct: [null, { kind: 'beam', width: 48, power: 1.8 }, { kind: 'beam', width: 64, power: 2.7 }],
+};
+
+function genericUltimates(): Partial<Record<GameType, readonly (MoveShapeDef | null)[]>> {
+  const out: Partial<Record<GameType, readonly (MoveShapeDef | null)[]>> = {};
+  for (const type of GAME_TYPES) out[type] = FAMILY_ULTIMATE[FAMILY_OF_TYPE[type]];
+  return out;
+}
 
 /** One biome (ADR-049): its types, the first (the heaviest) being the main one. */
 function biome(
@@ -71,6 +125,9 @@ export const baseConfig: Omit<
       { kind: 'beam', width: 44, power: 1.2 },
       { kind: 'nova', radius: 110, power: 1.9 },
     ],
+    // 4G-I (Phase 5): the Ultimate of a starter of the collection without a signature of its own,
+    // by its type: one shape per family of effects (ADR-047), a little under the four classics.
+    genericSignatures: genericUltimates(),
     // The signatures of the four starters (ADR-039): a cross, a wave, a long beam, a long chain.
     signatures: {
       // From stage 2 every starter has one (4F-D); the player throws it, it never goes off alone.

@@ -31,6 +31,8 @@ export interface StarterOption {
   readonly type: GameType;
   /** The line that names its signature move (4F-D); empty if it has none. */
   readonly signature: string;
+  /** A line about it in the collection (4G-I): its permanent level, the level it starts at. */
+  readonly note?: string;
 }
 
 /** What the title screen can lead to (4G-I). */
@@ -176,10 +178,25 @@ export class StarterScreen {
     starters: readonly StarterOption[],
     onPick: (index: number) => void,
     onBack: () => void,
+    /** The words of the professor, the first time (4G-I); empty for the collection. */
+    intro: readonly string[] = [],
   ): void {
     this.root.replaceChildren(
       el('div', 'font-size:30px;font-weight:800;letter-spacing:0.5px;', title),
     );
+    if (intro.length > 0) {
+      const box = el(
+        'div',
+        'max-width:420px;text-align:left;padding:10px 14px;border:3px solid #e8ecf8;' +
+          'background:#10142a;font-size:15px;line-height:1.45;display:flex;flex-direction:column;gap:6px;',
+      );
+      box.dataset.professor = '';
+      for (const line of intro) box.append(el('div', '', line));
+      this.root.append(box);
+    }
+    // A collection can be long: the list scrolls.
+    this.root.style.overflowY = 'auto';
+    this.root.style.justifyContent = starters.length > 5 ? 'flex-start' : 'center';
     starters.forEach((starter, index) => {
       const button = el('button', `${BUTTON}border-color:${TYPE_COLORS[starter.type]};`);
       button.type = 'button';
@@ -196,6 +213,9 @@ export class StarterScreen {
         );
         line.dataset.signature = starter.id;
         button.append(line);
+      }
+      if (starter.note !== undefined && starter.note !== '') {
+        button.append(el('div', 'font-size:12px;opacity:0.85;margin-top:2px;', starter.note));
       }
       // Not "pointerdown": that would also reach the canvas input underneath.
       button.addEventListener('click', () => onPick(index));

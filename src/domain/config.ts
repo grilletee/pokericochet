@@ -289,6 +289,13 @@ export interface MovesDef {
   /** Per base species and stage: a hand-made shape instead of the tier's; null keeps the tier's. */
   readonly signatures: Readonly<Record<string, readonly (MoveShapeDef | null)[]>>;
   /**
+   * The Ultimate of a starter that has no signature of its own (4G-I, Phase 5: any Pokémon of the
+   * collection can start a run), by its type and stage - 1: one shape per family of effects.
+   */
+  readonly genericSignatures?: Readonly<
+    Partial<Record<GameType, readonly (MoveShapeDef | null)[]>>
+  >;
+  /**
    * What a move does besides damage, by type of the Pokémon: burn (damage per second, as the burn
    * effect) and slow (fraction of speed lost). A type without an entry adds nothing.
    */

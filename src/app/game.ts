@@ -23,9 +23,9 @@ import {
   previewHybrid,
   type Run,
   type Snapshot,
-  signatureOf,
   signatureReady,
   stageForLevel,
+  starterSignatureOf,
   statsOf,
   statsOfMember,
   summarizeRun,
@@ -38,7 +38,15 @@ import {
   waveAdvice,
   writeSnapshot,
 } from '../domain';
-import { addSeen, applyUpgrades, type Profile } from '../meta';
+import {
+  addSeen,
+  applyUpgrades,
+  canStartWith,
+  chooseFirstStarter,
+  type Profile,
+  starterChoices,
+  startLevelFor,
+} from '../meta';
 import { Renderer } from '../render';
 import {
   AttackNamer,
@@ -714,17 +722,26 @@ export async function startGame(host: HTMLElement): Promise<void> {
   // The title screen names the signature of each starter and the form it starts with (4F-D).
   const signatureText = (id: string): string => {
     for (let stage = 1; stage <= config.team.stageLevels.length + 1; stage++) {
-      const shape = signatureOf(config, id, stage);
+      const shape = starterSignatureOf(config, id, stage);
       const move = moveIdOf(config, id, stage);
       if (shape === null || move === undefined) continue;
       return signatureLine(moveName(move), shape.kind, pokemonName(formAt(config, id, stage)));
     }
     return '';
   };
-  const starters: StarterOption[] = STARTER_SPECIES.flatMap((id) => {
-    const type = config.species[id]?.type;
-    return type === undefined ? [] : [{ id, type, signature: signatureText(id) }];
-  });
+  /** The Pokémon the starter screen offers now (4G-I: the classics the first time, then the collection). */
+  const starterOptions = (ids: readonly string[]): StarterOption[] =>
+    ids.flatMap((id) => {
+      const type = config.species[id]?.type;
+      if (type === undefined) return [];
+      const owned = profileState.profile.owned[id];
+      const note =
+        owned === undefined
+          ? ''
+          : `Nivel permanente ${owned.level} · empieza en Nv ${startLevelFor(owned.level)}`;
+      return [{ id, type, signature: signatureText(id), note }];
+    });
+  let starters: StarterOption[] = starterOptions(STARTER_SPECIES);
   /** Wave announcement: the theme, its type and the types that beat it (ADR-027). */
   const themeLabel = (id: string): string | null => {
     const theme = config.themes?.[id];
@@ -784,8 +801,29 @@ export async function startGame(host: HTMLElement): Promise<void> {
   function showStarters(): void {
     screen = 'starters';
     hideMenus();
-    starterScreen.show('Elige tu inicial', starters, (index) => input.requestPick(index), showMenu);
+    const first = !profileState.profile.firstStarterChosen;
+    starters = starterOptions(starterChoices(profileState.profile, STARTER_SPECIES));
+    starterScreen.show(
+      first ? 'Tu primer Pokémon' : 'Elige tu inicial',
+      starters,
+      (index) => input.requestPick(index),
+      showMenu,
+      // The first time (4G-I): the professor of the game, an original character, gives you one.
+      first
+        ? [
+            '¡Hola! Soy la doctora Ámbar y estudio cómo rebotan los Pokémon.',
+            'Para empezar tu colección, elige uno de estos cuatro. Será tuyo para siempre.',
+            'Después podrás conseguir más en el Gacha o registrando uno de los que captures.',
+          ]
+        : [],
+    );
   }
+  /** A run starts: the first time, the chosen classic joins the collection (4G-I). */
+  const pickStarter = (id: string): void => {
+    if (!canStartWith(profileState.profile, STARTER_SPECIES, id)) return;
+    setProfile(chooseFirstStarter(profileState.profile, STARTER_SPECIES, id));
+    startRun(id);
+  };
   function showCollection(): void {
     screen = 'collection';
     hideMenus();
@@ -917,7 +955,8 @@ export async function startGame(host: HTMLElement): Promise<void> {
         move: moveIdOf(config, member.species, stats.stage),
         charge: member.charge,
         chargeNeed: chargeNeed(config, stats.stage),
-        signature: member.starter && signatureOf(config, member.species, stats.stage) !== null,
+        signature:
+          member.starter && starterSignatureOf(config, member.species, stats.stage) !== null,
       },
       art,
       () => {},
@@ -1129,7 +1168,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
     if (screen === 'starters') {
       const index = input.takePick();
       const id = index === null ? undefined : starters[index]?.id;
-      if (id !== undefined && config.species[id] !== undefined) startRun(id);
+      if (id !== undefined && config.species[id] !== undefined) pickStarter(id);
       if (input.menuRequested) showMenu();
       input.restartRequested = false;
       input.menuRequested = false;

@@ -16,10 +16,11 @@ export function moveShape(
   config: GameConfig,
   base: string,
   stage: number,
+  starter = false,
 ): MoveShapeDef & { readonly power: number } {
   const { tiers } = config.moves;
   const tier = tiers[stage - 1] ?? tiers[tiers.length - 1] ?? { kind: 'burst', power: 1 };
-  const own = signatureOf(config, base, stage);
+  const own = starter ? starterSignatureOf(config, base, stage) : signatureOf(config, base, stage);
   // A signature is a whole shape of its own: it takes nothing of the tier's size, only its
   // strength when it does not give one (a cross must not inherit the radius of a nova).
   if (own === null) return tier;
@@ -38,6 +39,24 @@ export function signatureOf(config: GameConfig, base: string, stage: number): Mo
 }
 
 /**
+ * The Ultimate of the Pokémon a run starts with (4G-I, Phase 5: any Pokémon of the collection can be
+ * the starter): its own signature (the four classics keep theirs), else the generic Ultimate of its
+ * TYPE, data of the seven families of effects. Only the starter uses this; the other Pokémon keep
+ * their tier's move.
+ */
+export function starterSignatureOf(
+  config: GameConfig,
+  base: string,
+  stage: number,
+): MoveShapeDef | null {
+  if (config.moves.signatures[base] !== undefined) return signatureOf(config, base, stage);
+  const type = config.species[base]?.type;
+  const list = type === undefined ? undefined : config.moves.genericSignatures?.[type];
+  if (list === undefined || list.length === 0) return null;
+  return (stage - 1 < list.length ? list[stage - 1] : list[list.length - 1]) ?? null;
+}
+
+/**
  * True when the Pokémon at `index` can be told to cast its signature now (4F-D): it is the
  * starter, its stage has a signature and its charge is full. The signature never goes off on its
  * own; the player throws it.
@@ -47,7 +66,7 @@ export function signatureReady(run: Run, config: GameConfig, index: number): boo
   if (member === undefined || !member.starter) return false;
   const stage = stageForLevel(config, member.level);
   return (
-    signatureOf(config, member.species, stage) !== null &&
+    starterSignatureOf(config, member.species, stage) !== null &&
     moveIdOf(config, member.species, stage) !== undefined &&
     member.charge >= chargeNeed(config, stage)
   );
@@ -156,7 +175,7 @@ export function landHit(run: Run, config: GameConfig, ball: Ball, target: Enemy)
   const need = chargeNeed(config, ball.stage);
   member.charge += 1;
   if (member.charge < need) return;
-  if (member.starter && signatureOf(config, member.species, ball.stage) !== null) {
+  if (member.starter && starterSignatureOf(config, member.species, ball.stage) !== null) {
     // The signature waits for the player (4F-D): the charge stays full, it does not pile up.
     member.charge = need;
     return;
@@ -217,7 +236,7 @@ function castMove(
 ): void {
   const member = run.team[ball.owner];
   if (member === undefined) return;
-  const shape = moveShape(config, member.species, ball.stage);
+  const shape = moveShape(config, member.species, ball.stage, member.starter);
   const power = ballPower(run, config, ball) * shape.power;
   tally.hits = 0;
   tally.damage = 0;
@@ -235,7 +254,9 @@ function castMove(
     species: member.species,
     starter: member.starter,
     manual,
-    signature: signatureOf(config, member.species, ball.stage) !== null,
+    signature: member.starter
+      ? starterSignatureOf(config, member.species, ball.stage) !== null
+      : signatureOf(config, member.species, ball.stage) !== null,
     move,
     tier: ball.stage,
     element: ball.type,

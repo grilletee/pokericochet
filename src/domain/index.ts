@@ -89,6 +89,7 @@ export {
   moveShape,
   signatureOf,
   signatureReady,
+  starterSignatureOf,
 } from './moves';
 export {
   bounceOffWalls,
