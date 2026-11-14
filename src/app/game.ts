@@ -38,6 +38,7 @@ import {
   waveAdvice,
   writeSnapshot,
 } from '../domain';
+import { addSeen, applyUpgrades, type Profile } from '../meta';
 import { Renderer } from '../render';
 import {
   AttackNamer,
@@ -106,6 +107,13 @@ import { FixedStepper } from './fixedStepper';
 import { Input, RELEASE_PICK } from './input';
 import { commandFromInput } from './inputLogic';
 import { FrameMetrics, type Stats, summarize } from './metrics';
+import {
+  downloadProfile,
+  type LoadedProfile,
+  loadProfile,
+  pickProfileFile,
+  saveProfile,
+} from './profileStore';
 import {
   loadAutoAim,
   loadMuted,
@@ -546,6 +554,17 @@ export async function startGame(host: HTMLElement): Promise<void> {
     },
   );
   const store = browserStore();
+  // The persistent profile (ADR-025, 4G-I): collection, coins, candies. The run never reads it.
+  const knownSpecies = (id: string): boolean => gameConfig.species[id] !== undefined;
+  const freshSeed = (): number => Date.now() >>> 0;
+  let profileState: LoadedProfile = loadProfile(store, knownSpecies, freshSeed());
+  let saveStatus = '';
+  const setProfile = (next: Profile): void => {
+    profileState = { profile: next, writable: profileState.writable };
+    saveProfile(store, profileState);
+  };
+  /** Species met in the run on screen, for the Pokédex (added when it ends). */
+  const seenThisRun = new Set<number>();
   const coarse = window.matchMedia?.('(pointer: coarse)').matches === true;
   const forced = params.get('controls');
   scheme = isControlScheme(forced) ? forced : loadScheme(store, coarse);
@@ -718,7 +737,9 @@ export async function startGame(host: HTMLElement): Promise<void> {
 
   const startRun = (species: string): void => {
     starter = species;
-    run = createRun(config, newSeed(), starter);
+    // "aplicarMejoras" (ADR-025): the profile only changes the config the run is created with.
+    run = createRun(applyUpgrades(config, profileState.profile, starter), newSeed(), starter);
+    seenThisRun.clear();
     writeSnapshot(run, prev, speciesCodes, config);
     writeSnapshot(run, curr, speciesCodes, config);
     stepper.reset();
@@ -807,6 +828,23 @@ export async function startGame(host: HTMLElement): Promise<void> {
         scheme = next;
         saveScheme(store, next);
       },
+      {
+        onExport: () => downloadProfile(profileState.profile),
+        onImport: () =>
+          pickProfileFile(knownSpecies, freshSeed(), (result) => {
+            if ('error' in result) {
+              saveStatus = result.error;
+            } else {
+              profileState = { profile: result.profile, writable: true };
+              saveProfile(store, profileState);
+              saveStatus = `Guardado importado: ${Object.keys(result.profile.owned).length} Pokémon, ${result.profile.coins} monedas.`;
+            }
+            showSettings();
+          }),
+        status: profileState.writable
+          ? saveStatus
+          : 'Tu guardado es de una versión más nueva del juego: no se modifica.',
+      },
     );
   }
   function showCredits(): void {
@@ -818,6 +856,9 @@ export async function startGame(host: HTMLElement): Promise<void> {
     const summary = summarizeRun(run, config);
     const saved = saveIfBest(store, summary);
     best = saved.best;
+    // The Pokédex sees every species met in the run (4G-I).
+    const met = [...seenThisRun].map((code) => speciesIds[code] ?? '').filter(knownSpecies);
+    setProfile(addSeen(profileState.profile, met));
     screen = 'results';
     resultsScreen.show(
       summary,
@@ -1190,6 +1231,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
       prev = curr;
       curr = swap;
       writeSnapshot(run, curr, speciesCodes, config);
+      for (let e = 0; e < curr.enemyCount; e++) seenThisRun.add(curr.enemySpecies[e] ?? 0);
       const t2 = performance.now();
       tickMs += t1 - t0;
       snapshotMs += t2 - t1;

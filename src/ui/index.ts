@@ -57,6 +57,7 @@ export {
   InfoScreen,
   type MenuActions,
   ResultsScreen,
+  type SaveActions,
   SettingsScreen,
   StarterScreen,
   StartScreen,

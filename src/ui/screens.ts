@@ -268,8 +268,34 @@ export class ResultsScreen {
  * Settings screen (4H-B2): for now only the assisted aim, an accessibility option that is off by
  * default and is no longer in the game screen ("I never use it": it only gets in the way there).
  */
+/** Export and import of the save (4G-I). `status` is a line to show after an import. */
+export interface SaveActions {
+  readonly onExport: () => void;
+  readonly onImport: () => void;
+  readonly status: string;
+}
+
+function saveRows(save: SaveActions): HTMLElement[] {
+  const title = el('div', 'font-size:17px;font-weight:700;margin-top:8px;', 'Tu guardado');
+  const row = el('div', 'display:flex;gap:8px;flex-wrap:wrap;justify-content:center;');
+  for (const [id, label, action] of [
+    ['export', 'Exportar guardado', save.onExport],
+    ['import', 'Importar guardado', save.onImport],
+  ] as const) {
+    const button = el('button', `${BUTTON}text-align:center;min-width:0;padding:8px 12px;`, label);
+    button.type = 'button';
+    button.dataset.save = id;
+    button.addEventListener('click', action);
+    row.append(button);
+  }
+  const status = el('div', 'font-size:13px;opacity:0.8;max-width:360px;', save.status);
+  status.dataset.saveStatus = '';
+  return [title, row, status];
+}
+
 export class SettingsScreen {
   private readonly root = el('div', PANEL);
+  private saveSection: HTMLElement[] = [];
 
   constructor(host: HTMLElement) {
     this.root.dataset.screen = 'settings';
@@ -289,7 +315,10 @@ export class SettingsScreen {
     onVolumes: (next: VolumeValues) => void,
     scheme: ControlScheme = 'classic',
     onScheme: (next: ControlScheme) => void = () => {},
+    /** The save of the collection (4G-I): export it to a file, or bring one back. */
+    save: SaveActions | null = null,
   ): void {
+    this.saveSection = save === null ? [] : saveRows(save);
     let auto = autoAim;
     let chosen = scheme;
     let current = volumes;
@@ -378,7 +407,16 @@ export class SettingsScreen {
       schemeButtons.push(button);
     }
     paint();
-    this.root.append(aim, note, schemeTitle, ...schemeButtons, hint, ...sliders, back);
+    this.root.append(
+      aim,
+      note,
+      schemeTitle,
+      ...schemeButtons,
+      hint,
+      ...sliders,
+      ...this.saveSection,
+      back,
+    );
     this.root.style.display = 'flex';
   }
 

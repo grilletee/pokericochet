@@ -336,7 +336,7 @@ export function createRun(config: GameConfig, seed: number, starterSpecies: stri
     events: [],
     grid: newGrid(config),
   };
-  addMember(run, config, starterSpecies, 1, true);
+  addMember(run, config, starterSpecies, Math.max(1, config.team.starterLevel ?? 1), true);
   return run;
 }
 

@@ -249,6 +249,12 @@ export interface TeamDef {
    * "the starter is the identity of the run", which Phase 5 turns into passives (Vision).
    */
   readonly starterBonus: number;
+  /**
+   * The level the starter begins the run at (4G-I, Phase 5): 1 without a profile. The persistent
+   * profile raises it with candies, through `applyUpgrades` (ADR-025) before the run is created; the
+   * run never reads the profile.
+   */
+  readonly starterLevel?: number;
   /** Collision radius of a ball by stage - 1; missing values use `ball.radius`. */
   readonly ballRadiusByStage: readonly number[];
   /**

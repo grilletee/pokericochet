@@ -54,6 +54,14 @@ describe('the checker catches violations (self-test)', () => {
     ['performance', domainFile, 'const t = performance.now();'],
     ['document', domainFile, 'const el = document.body;'],
     ['setTimeout', domainFile, 'setTimeout(() => {}, 1);'],
+    // The meta of ADR-025 (4G-I): profile, gacha, rewards.
+    ['meta imports ui', 'src/meta/a.ts', "import { x } from '../ui/x';"],
+    ['meta imports render', 'src/meta/a.ts', "import { x } from '../render/x';"],
+    ['meta imports app', 'src/meta/a.ts', "import { x } from '../app/x';"],
+    ['meta Math.random', 'src/meta/a.ts', 'const d = Math.random();'],
+    ['meta Date', 'src/meta/a.ts', 'const t = Date.now();'],
+    ['meta localStorage', 'src/meta/a.ts', 'localStorage.getItem("x");'],
+    ['domain imports meta', domainFile, "import { x } from '../meta/x';"],
   ];
 
   it.each(forbidden)('rejects: %s', (_name, file, code) => {
@@ -72,6 +80,12 @@ describe('the checker catches violations (self-test)', () => {
       "import { x } from '../domain/x'; import 'pixi.js';",
     ],
     ['render may use trigonometry', 'src/render/a.ts', 'const d = Math.sin(a);'],
+    [
+      'meta imports domain and data',
+      'src/meta/a.ts',
+      "import { x } from '../domain/x'; import { y } from '../data/y';",
+    ],
+    ['meta may use Math (not random)', 'src/meta/a.ts', 'const d = Math.floor(Math.sin(a));'],
     [
       'app imports every layer',
       'src/main.ts',

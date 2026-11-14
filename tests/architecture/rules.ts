@@ -1,21 +1,27 @@
 import { posix } from 'node:path';
 import { parse } from '@babel/parser';
 
-export type Layer = 'domain' | 'data' | 'render' | 'ui' | 'app';
+export type Layer = 'domain' | 'data' | 'meta' | 'render' | 'ui' | 'app';
 
-/** Which layers a layer may import from (see Arquitectura-v0 / ADR-006). */
+/**
+ * Which layers a layer may import from (see Arquitectura-v0 / ADR-006). `meta` (ADR-025, 4G-I): the
+ * persistent profile, the gacha and the rewards; it may read the domain and the data, the domain
+ * never reads it, and the app joins them.
+ */
 const ALLOWED_LAYERS: Record<Layer, readonly Layer[]> = {
   domain: ['domain'],
   data: ['data', 'domain'],
+  meta: ['meta', 'domain', 'data'],
   render: ['render', 'domain'],
   ui: ['ui', 'domain'],
-  app: ['app', 'domain', 'data', 'render', 'ui'],
+  app: ['app', 'domain', 'data', 'meta', 'render', 'ui'],
 };
 
-/** Bare package imports allowed per layer. The domain gets none. */
+/** Bare package imports allowed per layer. The domain and the meta get none. */
 const ALLOWED_PACKAGES: Record<Layer, readonly string[] | 'any'> = {
   domain: [],
   data: [],
+  meta: [],
   render: ['pixi.js'],
   ui: [],
   app: 'any',
@@ -186,6 +192,28 @@ export function findViolations(file: string, source: string): string[] {
         report(node, 'require()/import() not allowed');
     }
 
+    // The meta (ADR-025) is pure too: no clock, no host and no Math.random (the gacha has its own
+    // seeded stream in the profile); it may use the rest of Math (it is not part of a replay).
+    if (layer === 'meta') {
+      if (node.type !== 'Identifier' || typeof node.name !== 'string') return;
+      if (isPropertyNamePosition(parent, key)) return;
+      if (
+        node.name === 'Math' &&
+        parent?.type === 'MemberExpression' &&
+        isNode(parent.property) &&
+        parent.property.type === 'Identifier' &&
+        parent.property.name === 'random'
+      ) {
+        report(
+          node,
+          'Math.random is not allowed in the meta (use the seeded stream of the profile)',
+        );
+      }
+      if (DOMAIN_BANNED_GLOBALS.has(node.name)) {
+        report(node, `global "${node.name}" is not allowed in the meta`);
+      }
+      return;
+    }
     if (layer !== 'domain') return;
 
     if (
