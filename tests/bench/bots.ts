@@ -9,6 +9,7 @@ import {
   type GameConfig,
   liveBoss,
   nextInt,
+  PLAYER_WIDTH,
   type ReplaceAction,
   type Run,
   signatureReady,
@@ -389,9 +390,11 @@ function noticedSpans(run: Run, reaction: number): { lo: number; hi: number }[] 
     if (wait < 0 || run.tickCount - (seenAt.get(h) ?? 0) < wait) continue;
     // A moving column is avoided where it is going to be, not only where it is.
     const ahead = h.kind === 'sweep' ? h.speed * Math.min(40, h.telegraph + h.active) : 0;
+    // 4G-I: the bot keeps its whole body out (the body is the hitbox now), plus 6 pixels.
+    const reach = h.width / 2 + PLAYER_WIDTH / 2 + 6;
     spans.push({
-      lo: Math.min(h.x, h.x + ahead) - h.width / 2 - 8,
-      hi: Math.max(h.x, h.x + ahead) + h.width / 2 + 8,
+      lo: Math.min(h.x, h.x + ahead) - reach,
+      hi: Math.max(h.x, h.x + ahead) + reach,
     });
   }
   return spans;
@@ -747,6 +750,7 @@ export function playRun(
     lastNewBall = run.tickCount;
     if (run.team.length >= config.team.maxMembers) teamFull = true;
   };
+  let screenOpen = false;
   const decided = (): void => {
     decisions += 1;
     maxDecisionGap = Math.max(maxDecisionGap, run.tickCount - lastDecision);
@@ -809,13 +813,17 @@ export function playRun(
           break;
         case 'replaceOpen':
           replacePauses += 1;
+          screenOpen = true;
           decided();
           break;
         case 'replaced':
           replaced += 1;
+          screenOpen = false;
           break;
         case 'release':
-          released += 1;
+          // Only the answers of a replace screen: a late capture with a full team goes by itself.
+          if (screenOpen) released += 1;
+          screenOpen = false;
           break;
         case 'collect': {
           if (e.late) recalled += 1;

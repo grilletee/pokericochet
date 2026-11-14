@@ -11,6 +11,7 @@ import {
   type Hazard,
   hashRun,
   MIN_TELEGRAPH_TICKS,
+  PLAYER_WIDTH,
   patternFor,
   type Run,
   startFight,
@@ -179,15 +180,17 @@ describe('the attacks (ADR-053)', () => {
     expect(run.hazards).toHaveLength(0);
   });
 
-  it('a column covers its whole width, edges included, and the guard lowers its damage', () => {
+  it('a column hurts the whole body, edges included (4G-I), and the guard lowers its damage', () => {
     const cfg = {
       ...testConfig(),
       stats: { ...quietConfig.stats, guardMax: 0.5, guardStatMin: 0, guardStatMax: 1 },
     } as GameConfig;
+    // The column is 60 wide and the body 40: it touches the body up to 30 + 20 = 50 from its centre.
+    const reach = 30 + PLAYER_WIDTH / 2;
     for (const [offset, hurt] of [
       [30, true],
-      [25, true],
-      [31, false],
+      [reach, true],
+      [reach + 1, false],
     ] as const) {
       const { run } = withBoss(cfg);
       run.boss.attackIn = 1;

@@ -9,12 +9,22 @@ import type { Hazard, Run } from './run';
  * own speed in the time it has. Pure and deterministic: no randomness, no clock.
  */
 
-/** Width of the player's body, in arena pixels (a point is not a person). */
-export const PLAYER_WIDTH = 36;
-/** Extra free floor beside the body, so a gap is a gap and not a pixel. */
-export const SAFE_MARGIN = 16;
-/** The narrowest free gap between two zones (or a zone and the wall): body plus margin. */
-export const MIN_GAP = PLAYER_WIDTH + SAFE_MARGIN;
+/**
+ * Width of the player's body, in arena pixels (a point is not a person). Since 4G-I it is ALSO the
+ * hitbox: an attack hurts when it touches any part of the body, not only its centre (16th playtest:
+ * "si no te dan de lleno, no te dan"). It is the width the launcher is drawn (16 art pixels x 2): a
+ * graze that looks like a hit is one. 40 (4 more on each side) took the dodging bot from 22 % to 2 %.
+ * The guarantee of a way through is measured with the same width.
+ */
+export const PLAYER_WIDTH = 32;
+/**
+ * Free floor beside the body ON EACH SIDE, so a gap is a gap and not a pixel. 4G-I: with the body as
+ * hitbox, the old rule (body plus 16 in total) left windows a person could not hit; now every side
+ * keeps 12 pixels of slack.
+ */
+export const SAFE_MARGIN = 12;
+/** The narrowest free gap between two zones (or a zone and the wall): body plus margin on both sides. */
+export const MIN_GAP = PLAYER_WIDTH + 2 * SAFE_MARGIN;
 /** The step of the time sampling, in ticks. */
 const STEP = 2;
 /** Part of the speed the player is trusted to use (a person is not a robot). */

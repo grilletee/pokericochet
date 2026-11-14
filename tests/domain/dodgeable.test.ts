@@ -38,7 +38,8 @@ function branch(run: Run): Run {
   };
 }
 
-const EPOCH = 10;
+// 4G-I: 5 ticks (10 before): with the body as hitbox the safe windows are narrower than 50 pixels.
+const EPOCH = 5;
 /**
  * Is there a way to play the next ticks with no damage? A search over what a person does: every
  * EPOCH ticks go left, stand or go right at full speed. States are merged by place (24 px).
@@ -48,8 +49,9 @@ function someWayThrough(run: Run): boolean {
   const start = branch(run);
   const hp = start.player.hp;
   let frontier: Run[] = [start];
-  for (let epoch = 0; epoch < 60; epoch++) {
-    if (frontier.every((r) => r.hazards.length === 0)) return true;
+  for (let epoch = 0; epoch < 120; epoch++) {
+    // One branch alive with the field clear is a way through (no new attack comes: see `branch`).
+    if (frontier.some((r) => r.hazards.length === 0)) return true;
     const seen = new Map<number, Run>();
     for (const node of frontier) {
       for (const dir of [-1, 0, 1]) {
@@ -65,7 +67,9 @@ function someWayThrough(run: Run): boolean {
           if (next.player.hp < hp) alive = false;
         }
         if (!alive) continue;
-        const key = (next.player.x / 24) | 0;
+        // 4G-I: 8 px (24 before). With the body as hitbox the margins are tighter, and merging two
+        // places 20 px apart could keep the one that is hit and drop the one that is not.
+        const key = (next.player.x / 8) | 0;
         if (!seen.has(key)) seen.set(key, next);
       }
     }
@@ -129,15 +133,25 @@ function fightAndCheck(table: Table, seed: number, ticks: number, hpLeft: number
 }
 
 describe('there is always a way through (4G-G)', () => {
-  it('every boss table of the game, with random walks of the player: thousands of placements', () => {
-    let placements = 0;
-    for (const table of tables()) {
+  // One test per table (4G-I): the finer oracle made a single test of every table run close to its
+  // timeout on a busy machine. Together they still check well over a thousand placements.
+  let checked = 0;
+  it.each(tables().map((t) => [t.species, t] as const))(
+    'boss table %s, with random walks of the player',
+    (_name, table) => {
+      let placements = 0;
       for (const seed of [1, 7, 42, 3481362438 % 100000]) {
         placements += fightAndCheck(table, seed, 2400, 0);
       }
-    }
-    expect(placements).toBeGreaterThan(1000);
-  }, 120_000);
+      expect(placements).toBeGreaterThan(0);
+      checked += placements;
+    },
+    60_000,
+  );
+
+  it('the tables together checked thousands of placements', () => {
+    expect(checked).toBeGreaterThan(1000);
+  });
 
   it('the Blaziken of the 14th playtest (seed 3481362438, Bulbasaur, wave 3)', () => {
     const blaziken: Table = { species: 'blaziken', type: 'fire' };
@@ -179,9 +193,10 @@ describe('there is always a way through (4G-G)', () => {
     // At the same moment the column fills the gap: nowhere to go.
     expect(isDodgeable(run, cfg, [column])).toBe(false);
     // One that leaves at least the body plus the margin free beside it (here: against the left
-    // comb, 96 - 40 = 56 >= MIN_GAP) is fine.
-    expect(MIN_GAP).toBeLessThanOrEqual(56);
-    expect(isDodgeable(run, cfg, [{ ...column, x: 192 + 20, width: 40 }])).toBe(true);
+    // comb, 96 - 24 = 72 >= MIN_GAP = 64 since 4G-I) is fine; one that leaves 56 is not.
+    expect(MIN_GAP).toBeLessThanOrEqual(72);
+    expect(isDodgeable(run, cfg, [{ ...column, x: 192 + 12, width: 24 }])).toBe(true);
+    expect(isDodgeable(run, cfg, [{ ...column, x: 192 + 20, width: 40 }])).toBe(false);
     // Later, when the comb has struck and gone, the same column is fine.
     expect(isDodgeable(run, cfg, [{ ...column, telegraph: 70 + 60 }])).toBe(true);
   });

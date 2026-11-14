@@ -126,7 +126,9 @@ function phase(
 }
 
 /** The softer numbers of the intermediate bosses (the first of them met a team of level 4). */
-const SOFT: Partial<Shape> = { damageScale: 0.6, furyMult: 1.25, interval: 200 }; // 4G-F: interval 230 -> 200 (4G-E: 0.5 / 1.2 / 250)
+// 4G-I: damageScale 0.6 -> 0.45. The body of the player is its hitbox now (16th playtest: grazes
+// did not count): the same attacks land more often, so each one hurts a little less.
+const SOFT: Partial<Shape> = { damageScale: 0.45, furyMult: 1.25, interval: 200 }; // 4G-F: interval 230 -> 200 (4G-E: 0.5 / 1.2 / 250)
 
 /**
  * A table: the normal phase and the fury, each with its attacks and its strong attack. The fury is
@@ -143,7 +145,7 @@ function table(
 ): BossPatternDef {
   const base: Shape = { interval: 215, perRound: 1, coreEvery: 420, coreOpen: 170, ...shape };
   const final = shape.damageScale === undefined;
-  const scale = base.damageScale ?? 0.85; // 4G-E: 0.75 -> 0.85, the final hits harder
+  const scale = base.damageScale ?? 0.7; // 4G-I: 0.85 -> 0.7 (the body is the hitbox); 4G-E: 0.75 -> 0.85
   const interval = Math.round(base.interval * (final ? 1.3 : 1));
   const scaled = (list: readonly BossAttackDef[]): BossAttackDef[] =>
     list.map((a) => ({ ...a, damage: a.damage * scale }));

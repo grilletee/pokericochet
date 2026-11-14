@@ -1,6 +1,6 @@
 import { damagePlayer, leakDamage } from './combat';
 import type { BossAttackDef, BossPatternDef, BossPhaseDef, GameConfig } from './config';
-import { isDodgeable } from './dodge';
+import { isDodgeable, PLAYER_WIDTH } from './dodge';
 import { nextFloat, nextInt } from './rng';
 import type { Hazard, Run } from './run';
 import type { Enemy, GameType } from './types';
@@ -294,8 +294,9 @@ function spawnAttack(
 }
 
 /** Does the column cover the player now? */
+/** Does the zone touch the player's body now (4G-I: the whole body, `PLAYER_WIDTH`, not its centre)? */
 function covers(run: Run, hazard: Hazard): boolean {
-  return Math.abs(run.player.x - hazard.x) <= hazard.width / 2;
+  return Math.abs(run.player.x - hazard.x) <= hazard.width / 2 + PLAYER_WIDTH / 2;
 }
 
 function strike(run: Run, config: GameConfig, hazard: Hazard): void {

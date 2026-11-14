@@ -7,6 +7,7 @@ import {
   type GameConfig,
   type GameEvent,
   liveBoss,
+  PLAYER_WIDTH,
   type Run,
   tick,
 } from '../../src/domain';
@@ -79,7 +80,7 @@ function playBosses(seed: number, starter: string, policy: Policy, config: GameC
       if (h.kind === 'zone' || h.kind === 'gust') continue;
       if (!seen.has(h)) seen.set(h, run.tickCount);
       if (!judged.has(h) && run.tickCount - (seen.get(h) ?? 0) >= DODGE_REACTION_TICKS) {
-        judged.set(h, Math.abs(run.player.x - h.x) <= h.width / 2 + 8);
+        judged.set(h, Math.abs(run.player.x - h.x) <= h.width / 2 + PLAYER_WIDTH / 2 + 8);
         if (judged.get(h) === true && current !== null) current.threats += 1;
       }
     }
