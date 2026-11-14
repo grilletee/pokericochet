@@ -409,6 +409,17 @@ export type GameEvent =
   /** A portal carried the player from x `from` to x `to` (ADR-054). */
   | { readonly type: 'bossPortal'; readonly from: number; readonly to: number }
   /**
+   * The final legendary throws its legendary move (4G-I): its name fills the screen while the whole
+   * floor but one gap is announced for `ticks`.
+   */
+  | {
+      readonly type: 'legendMove';
+      readonly name: string;
+      readonly species: string;
+      readonly ticks: number;
+      readonly fury: boolean;
+    }
+  /**
    * The boss started to charge its strong attack (`open`; exposed: the window for the Ultimate), is
    * about to (`warning`) or has launched it and closed again (ADR-054; the name is historical).
    */

@@ -88,11 +88,31 @@ export const LEGEND_ARENAS: Readonly<Record<string, ArenaSpec>> = {
 };
 
 /** The arena of a legendary; one of the same kind for anything not in the table. */
-export function arenaOf(species: string): ArenaSpec {
-  return (
+export function arenaOf(species: string, fury = false): ArenaSpec {
+  const calm =
     LEGEND_ARENAS[species] ??
-    A('void', 0x08080c, 0x3a3a4a, 0xffffff, 'rise', [0xffffff, 0x9a9ab0], 99)
-  );
+    A('void', 0x08080c, 0x3a3a4a, 0xffffff, 'rise', [0xffffff, 0x9a9ab0], 99);
+  return fury ? furyOf(calm) : calm;
+}
+
+/**
+ * The arena transformed by the fury of its legendary (4G-I, "la arena se transforma a mitad del
+ * combate"): the same kind of floor, but the light takes over (the colour that glowed becomes the
+ * main one, the base goes darker and redder), the shapes are redrawn with another seed and the dust
+ * rises. It changes during play, with no pause.
+ */
+export function furyOf(spec: ArenaSpec): ArenaSpec {
+  const darker = (hex: number): number =>
+    ((((hex >> 16) & 255) * 0.6) << 16) | ((((hex >> 8) & 255) * 0.35) << 8) | ((hex & 255) * 0.45);
+  return {
+    floor: spec.floor,
+    base: darker(spec.base) | 0x100000,
+    main: spec.glow,
+    glow: 0xfff0d0,
+    motion: 'rise',
+    dust: [spec.glow, 0xffffff],
+    seed: spec.seed + 1000,
+  };
 }
 
 /** The size of an arena tile, in art pixels. */

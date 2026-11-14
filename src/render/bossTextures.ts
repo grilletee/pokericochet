@@ -65,15 +65,16 @@ export function strikeFrames(typeName: string, color: number): readonly Texture[
 const arenaCache = new Map<string, Texture>();
 
 /** The floor texture of the arena of a legendary, drawn once. */
-export function legendArenaTexture(species: string): Texture {
-  const hit = arenaCache.get(species);
+export function legendArenaTexture(species: string, fury = false): Texture {
+  const key = `${species}:${fury}`;
+  const hit = arenaCache.get(key);
   if (hit !== undefined) return hit;
   const { c, g } = canvas(FLOOR_W, FLOOR_H);
-  drawFloor(arenaOf(species), (x, y, w, h, color) => {
+  drawFloor(arenaOf(species, fury), (x, y, w, h, color) => {
     g.fillStyle = color;
     g.fillRect(x | 0, y | 0, w, h);
   });
   const made = toTexture(c);
-  arenaCache.set(species, made);
+  arenaCache.set(key, made);
   return made;
 }

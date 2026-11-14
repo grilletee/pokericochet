@@ -197,6 +197,28 @@ export interface BossDef {
   /** The summoned enemies are of any type, with these multipliers on their species values. */
   readonly summonSpeedScale: number;
   readonly summonHpScale: number;
+  /**
+   * The final fight as a different kind of fight (4G-I, 16th playtest: "se sigue sintiendo como otro
+   * jefe intermedio más"). The legendary does not come down to the line: it holds its arena and
+   * sways from side to side; every `moveEveryTicks` (and when its fury starts) it throws its
+   * LEGENDARY MOVE, with a name, over the whole floor but one gap of `moveSlots` (announced for
+   * `moveWarnTicks`, and placed only if it leaves a way through like every attack).
+   */
+  readonly legendary?: LegendaryDef;
+}
+
+export interface LegendaryDef {
+  /** Pixels to each side of the centre it sways, and ticks of a whole sway. */
+  readonly swayWidth: number;
+  readonly swayTicks: number;
+  readonly moveEveryTicks: number;
+  readonly moveWarnTicks: number;
+  /** The floor in this many slots, one of them left free. */
+  readonly moveSlots: number;
+  readonly moveDamage: number;
+  /** The name of the move of each legendary; the one of its type for the rest. */
+  readonly moveNames: Readonly<Record<string, string>>;
+  readonly moveNamesByType: Readonly<Partial<Record<GameType, string>>>;
 }
 
 /**

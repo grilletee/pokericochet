@@ -155,7 +155,8 @@ describe('the data of the boss fights (ADR-053)', () => {
       [...mids.map((m) => m.hpScale)].sort((a, b) => a - b),
     );
     // 4G-H: 1.7 times the third (111 s of the bot against 72 s: its team hits harder by then).
-    expect(gameConfig.boss?.hpScale ?? 0).toBeGreaterThan(1.6 * (mids[2]?.hpScale ?? 0));
+    // 4G-I: 1.48 times: the final fight has its legendary move and does not come down.
+    expect(gameConfig.boss?.hpScale ?? 0).toBeGreaterThan(1.4 * (mids[2]?.hpScale ?? 0));
     for (const m of mids) expect(m.radius).toBeGreaterThanOrEqual(44);
     expect(gameConfig.boss?.radius ?? 0).toBeGreaterThan(mids[2]?.radius ?? 0);
   });

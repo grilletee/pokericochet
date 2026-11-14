@@ -89,6 +89,7 @@ import {
   type TileGlow,
   TouchLayout,
   TunePanel,
+  TYPE_COLORS,
   typeName,
   WaveBanner,
   waveCartel,
@@ -906,6 +907,17 @@ export async function startGame(host: HTMLElement): Promise<void> {
       } else if (event.type === 'bossBarrier' && event.up) {
         const text = namer.first('barrier');
         if (text !== null) overlay.showToast(text, now);
+      } else if (event.type === 'legendMove') {
+        // The legendary move (4G-I): its name over the whole screen while it is announced.
+        const type = config.species[event.species]?.type ?? 'normal';
+        overlay.showLegendMove(
+          pokemonName(event.species),
+          event.name,
+          TYPE_COLORS[type],
+          now,
+          (event.ticks * 1000) / 60,
+        );
+        sound.play('legend', now);
       } else if (event.type === 'bossTimeSlow') {
         const text = namer.first('timeSlow');
         if (text !== null) overlay.showToast(text, now);

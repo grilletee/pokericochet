@@ -404,13 +404,61 @@ export const baseConfig: Omit<
     // the fight is set by the bench (B3). Slow and big, so it takes a long time to reach the line.
     // 4G-H (15th playtest: "más vida y que se sienta legendario"): set in SECONDS of fight of the
     // bot (bench:bosses, DPS by place: 237 health per second at the final, 64 s with 120). Fixed.
-    hpScale: 230, // 4G-H: 120 -> 230 (300 gave 151 s and too many deaths); 4G-E: 105 -> 120; 4G-D: 46 -> 105
-    speed: 0.04,
+    // 4G-I: 230 -> 200: it no longer comes down to the line and it has its legendary move; with 230
+    // the bot took 171 s to beat it.
+    hpScale: 200, // 4G-H: 120 -> 230 (300 gave 151 s and too many deaths); 4G-E: 105 -> 120; 4G-D: 46 -> 105
+    // 4G-I (16th playtest: "se sigue sintiendo como otro jefe intermedio más"): the legendary does
+    // not come down to the line (0.04 before); it holds its arena, sways and has a legendary move.
+    speed: 0,
     radius: 72,
     summonIntervalTicks: 900,
     summonCount: 0, // 4G-E: the final boss fights alone (4 before); its summon attacks still call a few
     summonSpeedScale: 1,
     summonHpScale: 0.8,
+    legendary: {
+      swayWidth: 120,
+      swayTicks: 720,
+      // Every 22 s, and when its fury starts; announced for 3 s (the free gap may be across the
+      // field: 2 s left the dodging bot at 1 %); the floor in 6 slots, one free (80 px, wider than
+      // the gap of the guarantee).
+      moveEveryTicks: 1320,
+      moveWarnTicks: 180,
+      moveSlots: 6,
+      moveDamage: 1.5,
+      // The signature moves of the iconic ones (Spanish names of the games), the rest by type.
+      moveNames: {
+        kyogre: 'Pulso Primigenio',
+        groudon: 'Filo del Abismo',
+        rayquaza: 'Ascenso Draco',
+        mewtwo: 'Onda Mental',
+        dialga: 'Distorsión',
+        palkia: 'Corte Vacío',
+        'giratina-altered': 'Golpe Umbrío',
+        arceus: 'Sentencia',
+        lugia: 'Aerochorro',
+        'ho-oh': 'Fuego Sagrado',
+      },
+      moveNamesByType: {
+        fire: 'Llamarada',
+        water: 'Hidrobomba',
+        electric: 'Trueno',
+        ice: 'Ventisca',
+        psychic: 'Psíquico',
+        ground: 'Terremoto',
+        rock: 'Avalancha',
+        steel: 'Foco Resplandor',
+        dragon: 'Cometa Draco',
+        ghost: 'Bola Sombra',
+        dark: 'Pulso Umbrío',
+        grass: 'Lluvia Hojas',
+        fairy: 'Fuerza Lunar',
+        normal: 'Hiperrayo',
+        poison: 'Bomba Lodo',
+        bug: 'Zumbido',
+        flying: 'Pájaro Osado',
+        fighting: 'A Bocajarro',
+      },
+    },
   },
   // Bosses between waves (ADR-028): the species is the one of the type of the wave that just ended.
   // The first is only a little better than a normal enemy; each one is tougher than the last.

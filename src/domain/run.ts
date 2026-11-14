@@ -77,6 +77,8 @@ export interface BossState {
   mechIn: number;
   /** Ticks before a portal can carry the player again (so they are not carried back at once). */
   portalCool: number;
+  /** Ticks until the final legendary throws its legendary move (4G-I); 0 for other bosses. */
+  legendIn: number;
   /** Base species of the bosses between waves met so far: none comes twice in a run. */
   used: string[];
 }
@@ -325,6 +327,7 @@ export function createRun(config: GameConfig, seed: number, starterSpecies: stri
       barrier: 0,
       timeSlow: 0,
       mechIn: 0,
+      legendIn: 0,
       portalCool: 0,
       used: [],
     },
@@ -568,6 +571,7 @@ export function hashRun(run: Run): string {
   h.int(run.boss.barrier);
   h.int(run.boss.timeSlow);
   h.int(run.boss.mechIn);
+  h.int(run.boss.legendIn);
   h.int(run.boss.portalCool);
   h.int(run.boss.used.length);
   for (const id of run.boss.used) h.str(id);

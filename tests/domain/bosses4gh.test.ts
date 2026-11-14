@@ -63,6 +63,6 @@ describe('4G-H: the health of the bosses, fixed and measured in seconds of fight
     expect((mids[1] ?? 0) / (mids[0] ?? 1)).toBeGreaterThan(5);
     expect((mids[2] ?? 0) / (mids[1] ?? 1)).toBeGreaterThan(2.5);
     expect(gameConfig.boss?.hpScale ?? 0).toBeGreaterThan(mids[2] ?? 0);
-    expect(gameConfig.boss?.hpScale).toBe(230);
+    expect(gameConfig.boss?.hpScale).toBe(200);
   });
 });

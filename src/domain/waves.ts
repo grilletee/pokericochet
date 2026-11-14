@@ -196,6 +196,11 @@ function placeBoss(
   run.boss.maxHp = hp;
   run.boss.tick = 0;
   startFight(run, config, boss);
+  // The final legendary keeps its first legendary move for after its calm entrance (4G-I).
+  const legendary = isFinal ? config.boss?.legendary : undefined;
+  if (legendary !== undefined) {
+    run.boss.legendIn = (config.bossFight?.calmTicks ?? 0) + legendary.moveEveryTicks;
+  }
   run.events.push({
     type: 'bossSpawn',
     enemyId: boss.id,

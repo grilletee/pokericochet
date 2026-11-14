@@ -18,6 +18,7 @@ export type SoundId =
   | 'capture'
   | 'charge'
   | 'alarm'
+  | 'legend'
   | 'tension';
 
 /** Which sound, if any, an event makes. A ball hit is the "bounce": walls emit no event. */
@@ -80,6 +81,7 @@ const MIN_GAP_MS: Record<SoundId, number> = {
   capture: 0,
   charge: 400,
   alarm: 800,
+  legend: 1000,
   tension: 0,
 };
 
@@ -156,6 +158,13 @@ const RECIPES: Record<SoundId, readonly Note[]> = {
     { from: 659, to: 659, seconds: 0.09, wave: 'square', gain: 0.07, at: 0.09 },
     { from: 784, to: 1047, seconds: 0.28, wave: 'square', gain: 0.07, at: 0.18 },
     { from: 1047, to: 1047, seconds: 0.28, wave: 'sine', gain: 0.1, at: 0.18 },
+  ],
+  // The legendary move (4G-I): a deep rising roar under a bright chord, almost two seconds.
+  legend: [
+    { from: 50, to: 120, seconds: 1.8, wave: 'sawtooth', gain: 0.14 },
+    { from: 75, to: 180, seconds: 1.8, wave: 'square', gain: 0.06 },
+    { from: 440, to: 880, seconds: 1.2, wave: 'triangle', gain: 0.05, at: 0.5 },
+    { from: 554, to: 1108, seconds: 1.2, wave: 'triangle', gain: 0.04, at: 0.5 },
   ],
   // A boss near the defence line (4G-I): three falling sirens, the only real alarm of the game.
   alarm: [

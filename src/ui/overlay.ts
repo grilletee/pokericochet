@@ -19,6 +19,9 @@ export class Overlay {
   private readonly bossLabel: HTMLDivElement;
   private lastBossKey = '';
   private toastUntil = 0;
+  /** The name of the legendary move, big in the middle of the screen (4G-I). */
+  private readonly legendBanner: HTMLDivElement;
+  private legendUntil = 0;
   private shownOffers: readonly Card[] | null = null;
   private lastHud = '';
   private lastMessage = '';
@@ -43,6 +46,12 @@ export class Overlay {
       'position:absolute;inset:0;display:none;flex-direction:column;align-items:center;' +
       'justify-content:center;gap:8px;background:rgba(5,8,16,0.8);' +
       'font-family:system-ui,sans-serif;color:#e8ecf8;';
+    this.legendBanner = document.createElement('div');
+    this.legendBanner.dataset.legendMove = '';
+    this.legendBanner.style.cssText =
+      `${base}left:0;right:0;top:36%;display:none;flex-direction:column;align-items:center;` +
+      'gap:2px;padding:10px 8px;background:linear-gradient(90deg,#0000,#000d 20%,#000d 80%,#0000);' +
+      'text-align:center;font-weight:800;z-index:6;';
     this.toast = document.createElement('div');
     this.toast.style.cssText =
       `${base}left:50%;top:30%;transform:translateX(-50%);display:none;padding:6px 14px;` +
@@ -70,7 +79,15 @@ export class Overlay {
     this.bossBar.append(notch, this.bossLabel);
     // 4G-H (15th playtest): the "¡VULNERABLE!" plate and the gold frame are gone; the boss takes the
     // same damage all the time, and its charge is only the warning of its strong attack.
-    host.append(this.hud, this.toast, this.bossBar, this.message, this.debug, this.cards);
+    host.append(
+      this.hud,
+      this.toast,
+      this.legendBanner,
+      this.bossBar,
+      this.message,
+      this.debug,
+      this.cards,
+    );
   }
 
   setHud(text: string): void {
@@ -144,11 +161,32 @@ export class Overlay {
     this.toastUntil = now + ms;
   }
 
-  /** Hides the toast once its time is up; call every frame. */
+  /**
+   * The legendary move (4G-I): its name fills the middle of the screen for as long as it is
+   * announced, in the colour of the legendary, over a black band. It never takes pointer events.
+   */
+  showLegendMove(who: string, move: string, color: string, now: number, ms: number): void {
+    this.legendBanner.replaceChildren();
+    const by = document.createElement('div');
+    by.textContent = `¡${who.toUpperCase()} USA`;
+    by.style.cssText = 'font-size:18px;letter-spacing:3px;opacity:0.9;';
+    const name = document.createElement('div');
+    name.textContent = `${move.toUpperCase()}!`;
+    name.style.cssText = `font-size:38px;font-weight:900;letter-spacing:2px;color:${color};text-shadow:0 0 14px ${color},0 3px 0 #000;`;
+    this.legendBanner.append(by, name);
+    this.legendBanner.style.display = 'flex';
+    this.legendUntil = now + ms;
+  }
+
+  /** Hides the toast and the legendary move once their time is up; call every frame. */
   updateToast(now: number): void {
     if (this.toastUntil !== 0 && now >= this.toastUntil) {
       this.toastUntil = 0;
       this.toast.style.display = 'none';
+    }
+    if (this.legendUntil !== 0 && now >= this.legendUntil) {
+      this.legendUntil = 0;
+      this.legendBanner.style.display = 'none';
     }
   }
 
@@ -183,7 +221,20 @@ export class Overlay {
     const charge = open ? ' · carga su ataque fuerte' : warning ? ' · va a cargar…' : '';
     this.bossLabel.textContent = `${title} ${percent} %${line}${charge}`;
     this.bossFill.style.width = `${percent}%`;
-    this.bossFill.style.background = rage ? '#a3141f' : '#e8503a';
+    // The bar of a legendary is its own (4G-I): taller, a gold frame and a fill that glows, purple
+    // and gold, and fire-red in its fury.
+    this.bossFill.style.background = legendary
+      ? rage
+        ? 'linear-gradient(90deg,#5a0a14,#d42a2a,#ffb347)'
+        : 'linear-gradient(90deg,#3a1a6a,#8a4ad8,#ffd54f)'
+      : rage
+        ? '#a3141f'
+        : '#e8503a';
+    this.bossBar.style.height = legendary ? '34px' : '26px';
+    this.bossBar.style.borderWidth = legendary ? '3px' : '2px';
+    this.bossBar.style.fontSize = legendary ? '15px' : '';
+    this.bossBar.style.lineHeight = legendary ? '28px' : '';
+    this.bossBar.style.boxShadow = legendary ? '0 0 16px #ffd54f88' : 'none';
     this.bossBar.style.borderColor =
       urgency === 'critical' && seconds % 2 === 0
         ? '#ffffff'

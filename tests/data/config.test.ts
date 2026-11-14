@@ -137,7 +137,8 @@ describe('stat mapping', () => {
     // is clearly above the third in between.
     // 4G-H: measured in seconds of fight of the bot (bench:bosses, DPS by place).
     // Block 2 (more enemies shoot) brought them a little down again: 52 / 150 / 260 -> 46 / 135 / 230.
-    expect(baseConfig.boss?.hpScale).toBe(230);
+    // 4G-I: 230 -> 200 (the final holds its arena and has a legendary move now).
+    expect(baseConfig.boss?.hpScale).toBe(200);
     expect((baseConfig.interludes ?? []).map((b) => b.hpScale)).toEqual([7.5, 46, 135]);
   });
 

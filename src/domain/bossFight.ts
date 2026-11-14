@@ -108,6 +108,72 @@ export function startFight(run: Run, config: GameConfig, boss: Enemy): void {
   run.boss.barrier = 0;
   run.boss.timeSlow = 0;
   run.boss.mechIn = 240;
+  run.boss.legendIn = 0; // the final legendary sets its own clock when it is placed (4G-I)
+}
+
+/** A triangle wave of period 1 between -1 and 1 (pure arithmetic: no Math.sin in the domain). */
+function triangle(t: number): number {
+  const f = t - Math.floor(t);
+  return f < 0.5 ? 4 * f - 1 : 3 - 4 * f;
+}
+
+/** The name the legendary move of a species has: its own, else the one of its type. */
+export function legendMoveName(config: GameConfig, species: string, type: string): string {
+  const legendary = config.boss?.legendary;
+  if (legendary === undefined) return '';
+  return (
+    legendary.moveNames[species] ??
+    legendary.moveNamesByType[type as GameType] ??
+    'Poder legendario'
+  );
+}
+
+/**
+ * The final legendary, one tick (4G-I): it sways from side to side over its arena (it does not come
+ * down) and throws its legendary move on its own clock. The move is the whole floor in `moveSlots`
+ * slots with one left free, announced for `moveWarnTicks`; like every attack it waits while it would
+ * close the only way through (`addHazards`).
+ */
+function advanceLegendary(run: Run, config: GameConfig, boss: Enemy, phase: BossPhaseDef): void {
+  const legendary = config.boss?.legendary;
+  if (legendary === undefined || !run.boss.spawned) return;
+  const { width } = config.arena;
+  boss.x = width / 2 + legendary.swayWidth * triangle(run.boss.tick / legendary.swayTicks);
+  run.boss.legendIn -= 1;
+  if (run.boss.legendIn > 0) return;
+  run.boss.legendIn = legendary.moveEveryTicks;
+  const slots = Math.max(2, legendary.moveSlots);
+  const slot = width / slots;
+  const safe = nextInt(run.rng.boss, slots);
+  const group: Hazard[] = [];
+  for (let i = 0; i < slots; i++) {
+    if (i === safe) continue;
+    group.push({
+      kind: 'comb',
+      x: (i + 0.5) * slot,
+      y: 0,
+      link: 0,
+      width: slot,
+      telegraph: legendary.moveWarnTicks,
+      active: 24,
+      damage: legendary.moveDamage * phase.damageMult,
+      speed: 0,
+      struck: false,
+      type: boss.type as GameType,
+    });
+  }
+  if (addHazards(run, config, group, true)) {
+    run.events.push({
+      type: 'legendMove',
+      name: legendMoveName(config, boss.species, boss.type),
+      species: boss.species,
+      ticks: group[0]?.telegraph ?? legendary.moveWarnTicks,
+      fury: run.boss.phase === 1,
+    });
+  } else {
+    // No fair moment now: it tries again a little later.
+    run.boss.legendIn = 60;
+  }
 }
 
 /**
@@ -510,6 +576,10 @@ export function advanceBossFight(run: Run, config: GameConfig): void {
     run.boss.coreOpen = 0;
     run.boss.coreIn = pattern.phases[1].coreEvery;
     run.boss.attackIn = fight.calmTicks;
+    // The legendary opens its fury with its legendary move (4G-I), as its arena changes.
+    if (run.boss.spawned && config.boss?.legendary !== undefined) {
+      run.boss.legendIn = fight.calmTicks + 30;
+    }
     run.events.push({ type: 'bossPhase', phase: 1 });
     return;
   }
@@ -534,6 +604,7 @@ export function advanceBossFight(run: Run, config: GameConfig): void {
     }
   }
   advanceMechanic(run, config, pattern);
+  advanceLegendary(run, config, boss, phase);
 
   // A round of attacks (not while it charges: it is busy).
   if (run.boss.coreOpen <= 0) run.boss.attackIn -= 1;

@@ -180,6 +180,13 @@ export class Renderer {
   /** The distance of a boss to the defence line, and the line beating when it is near (4G-I). */
   private readonly lineDots: Sprite[] = [];
   private readonly lineGlow: Sprite;
+  /**
+   * The legendary move (4G-I): the whole field takes the colour of the legendary and beats while
+   * the move is announced (its name is told by the interface).
+   */
+  private readonly legendVeil: Sprite;
+  private legendLife = 0;
+  private legendTotal = 1;
   /** The rings round a legendary (4G-H). */
   private readonly legendRings: Sprite[] = [];
   private clockMs = 0;
@@ -439,6 +446,8 @@ export class Renderer {
       dot.visible = false;
       this.lineDots.push(dot);
     }
+    this.legendVeil = new Sprite(Texture.WHITE);
+    this.legendVeil.visible = false;
     this.lineGlow = new Sprite(Texture.WHITE);
     this.lineGlow.tint = 0xff3b3b;
     this.lineGlow.visible = false;
@@ -455,6 +464,7 @@ export class Renderer {
     this.world.addChild(
       background,
       this.biomeLayer,
+      this.legendVeil,
       this.floorStrip,
       this.lineGlow,
       ...this.lineDots,
@@ -570,6 +580,7 @@ export class Renderer {
     this.clockMs += elapsedMs;
     this.hurt.update(elapsedMs, this.app.screen.width, this.app.screen.height);
     this.death.update(elapsedMs, this.app.screen.width, this.app.screen.height);
+    this.legendLife = Math.max(0, this.legendLife - elapsedMs);
     this.player.alpha = HurtFx.blink(curr.playerInvuln, this.clockMs);
     // The screen shakes for a moment when an Ultimate lands, the player is hurt or a boss dies.
     this.world.pivot.set(
@@ -600,13 +611,15 @@ export class Renderer {
     if (ownStage) {
       // A scenario of its own, nothing of the biome: since 4G-H the arena of THIS legendary (the
       // depths of the sea, a field of magma, the sky...); the temple of its type if it has none.
+      // 4G-I: its fury transforms the arena (the light takes over), with no pause.
       const legend = this.speciesIds[curr.bossSpecies] ?? '';
-      const key = 100000 + curr.bossSpecies;
+      const fury = curr.bossPhase === 1;
+      const key = 100000 + curr.bossSpecies * 2 + (fury ? 1 : 0);
       const far = sheets[0];
       if (key !== this.backdropKey && far !== undefined) {
         far.texture =
           legend in LEGEND_ARENAS
-            ? legendArenaTexture(legend)
+            ? legendArenaTexture(legend, fury)
             : arenaTexture(TYPE_COLORS[main] ?? 0xffffff);
         far.visible = true;
         for (let i = 1; i < sheets.length; i++) {
@@ -691,7 +704,9 @@ export class Renderer {
     const { width, height } = this.config.arena;
     const second = curr.biomeSecond >= 0 ? curr.biomeSecond : main;
     // The arena of a legendary has its own dust in the air (4G-H): embers, snow, motes, stars.
-    const legend = curr.bossFinal ? arenaOf(this.speciesIds[curr.bossSpecies] ?? '') : null;
+    const legend = curr.bossFinal
+      ? arenaOf(this.speciesIds[curr.bossSpecies] ?? '', curr.bossPhase === 1)
+      : null;
     const rising = legend !== null ? legend.motion === 'rise' : RISING.has(main);
     const falling = legend !== null ? legend.motion === 'fall' : FALLING.has(main);
     for (let i = 0; i < BIOME_DOTS; i++) {
@@ -1040,6 +1055,17 @@ export class Renderer {
       this.shieldRing.scale.set((curr.bossRadius + (charging ? 12 : 8) + beat * 4) / 30);
       this.shieldRing.tint = charging ? (TYPE_COLORS[curr.bossType] ?? 0xff4b3a) : 0xffffff;
       this.shieldRing.alpha = charging ? 0.7 : 0.35 + 0.2 * beat;
+    }
+    // The legendary move (4G-I): the field beats in the colour of the legendary while it is announced.
+    this.legendVeil.visible = this.legendLife > 0 && alive;
+    if (this.legendVeil.visible) {
+      const left = this.legendLife / this.legendTotal;
+      this.legendVeil.tint = TYPE_COLORS[curr.bossType] ?? 0xffffff;
+      this.legendVeil.position.set(0, 0);
+      this.legendVeil.width = this.config.arena.width;
+      this.legendVeil.height = defenseLineY;
+      this.legendVeil.alpha =
+        (0.12 + 0.12 * Math.sin(curr.tick / (left < 0.3 ? 2 : 5))) * (0.5 + left);
     }
     // A boss coming down to the line (4G-I): a column of dots from its body to the line that shows
     // the distance, white and calm far away, red and fast when it is near, and the line itself beats.
@@ -1540,7 +1566,10 @@ export class Renderer {
     for (const event of events) {
       if (event.type === 'move') this.startMove(event);
       else if (event.type === 'bossDefeated') this.startDeath();
-      else if (event.type === 'playerHurt')
+      else if (event.type === 'legendMove') {
+        this.legendTotal = (event.ticks * 1000) / 60;
+        this.legendLife = this.legendTotal;
+      } else if (event.type === 'playerHurt')
         this.hurt.hurt(this.player.x, this.config.player.y, event.damage);
       else if (event.type === 'hit') this.startEffect(event.x, event.y, 0xffffff);
       else if (event.type === 'kill') this.startEffect(event.x, event.y, 0xffd54f);
