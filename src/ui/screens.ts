@@ -1,8 +1,10 @@
 import type { GameType, RunSummary } from '../domain';
 import { CONTROL_SCHEMES, type ControlScheme } from './controlSchemes';
 import type { CreditLine } from './creditsText';
+import { MenuBackdrop } from './menuBackdrop';
 import { pokemonName } from './names';
 import { type BestRunView, describeBest, describeResults, starterBlurb } from './screenText';
+import { drawLogo } from './titleArt';
 import { TYPE_COLORS } from './typeColors';
 
 const PANEL =
@@ -31,9 +33,23 @@ export interface StarterOption {
   readonly signature: string;
 }
 
-/** Title screen: pick one of the starters (click, or keys 1-4). */
+/** What the title screen can lead to (4G-I). */
+export interface MenuActions {
+  readonly onPlay: () => void;
+  readonly onCollection: () => void;
+  readonly onGacha: () => void;
+  readonly onSettings: () => void;
+  readonly onCredits: () => void;
+}
+
+/**
+ * The title screen (4G-I, 16th playtest: "el inicio es muy feo"): the logo of the game over an
+ * animated pixel night with bouncing spheres, and the menu: Jugar, Colección, Gacha, Ajustes,
+ * Créditos. Keys: Enter plays.
+ */
 export class StartScreen {
   private readonly root = el('div', PANEL);
+  private readonly backdrop = new MenuBackdrop();
 
   constructor(host: HTMLElement) {
     this.root.dataset.screen = 'start';
@@ -43,16 +59,126 @@ export class StartScreen {
 
   show(
     title: string,
-    starters: readonly StarterOption[],
     best: BestRunView | null,
     disclaimer: string,
+    actions: MenuActions,
+    footer = '',
+  ): void {
+    const logo = drawLogo(title, "'Pixelify',monospace");
+    logo.dataset.logo = '';
+    logo.style.cssText =
+      'image-rendering:pixelated;width:min(92vw,560px,110vh);height:auto;margin-bottom:6px;' +
+      'filter:drop-shadow(0 6px 0 #05060f);';
+    // The pixel font may still be loading: draw the logo again once it is there.
+    if (typeof document !== 'undefined' && document.fonts !== undefined) {
+      void document.fonts.ready.then(() => {
+        const again = drawLogo(title, "'Pixelify',monospace");
+        const g = logo.getContext('2d');
+        g?.clearRect(0, 0, logo.width, logo.height);
+        g?.drawImage(again, 0, 0);
+      });
+    }
+    // A low screen (a phone held sideways): the entries in a row, so they all fit.
+    const low = typeof window !== 'undefined' && window.innerHeight < 520;
+    const menu = el(
+      'div',
+      low
+        ? 'display:flex;flex-direction:row;flex-wrap:wrap;gap:6px;justify-content:center;max-width:94vw;'
+        : 'display:flex;flex-direction:column;gap:8px;align-items:stretch;',
+    );
+    const entries: readonly [string, string, () => void][] = [
+      ['play', '▶ Jugar', actions.onPlay],
+      ['collection', 'Colección', actions.onCollection],
+      ['gacha', 'Gacha', actions.onGacha],
+      ['settings', 'Ajustes', actions.onSettings],
+      ['credits', 'Créditos', actions.onCredits],
+    ];
+    for (const [id, label, action] of entries) {
+      const big = id === 'play';
+      const button = el(
+        'button',
+        `${BUTTON}text-align:center;min-width:${low ? '120px' : '220px'};${big ? `font-size:${low ? 18 : 22}px;padding:${low ? '8px 14px' : '14px 18px'};border-color:#ffd54f;background:#2a3a6a;` : `font-size:${low ? 14 : 16}px;padding:${low ? '6px 10px' : '9px 16px'};`}`,
+        label,
+      );
+      button.type = 'button';
+      button.dataset.action = id;
+      // Not "pointerdown": that would also reach the canvas input underneath.
+      button.addEventListener('click', action);
+      menu.append(button);
+    }
+    this.root.replaceChildren(
+      this.backdrop.canvas,
+      logo,
+      menu,
+      el('div', 'font-size:14px;opacity:0.85;margin-top:8px;', describeBest(best)),
+      el('div', 'font-size:12px;opacity:0.75;', footer),
+      el('div', 'font-size:11px;opacity:0.6;max-width:420px;margin-top:4px;', disclaimer),
+    );
+    // Everything above the animated night (which is drawn first, under it all).
+    for (const child of Array.from(this.root.children)) {
+      if (child !== this.backdrop.canvas && child instanceof HTMLElement) {
+        child.style.position = 'relative';
+        child.style.zIndex = '1';
+      }
+    }
+    this.root.style.background = '#0b0e24';
+    this.root.style.overflow = 'hidden';
+    this.root.style.display = 'flex';
+    this.backdrop.start();
+  }
+
+  hide(): void {
+    this.root.style.display = 'none';
+    this.backdrop.stop();
+  }
+}
+
+/** A simple screen with a title, a few lines and a way back (the menus still being built). */
+export class InfoScreen {
+  private readonly root = el('div', PANEL);
+
+  constructor(host: HTMLElement, id: string) {
+    this.root.dataset.screen = id;
+    this.root.addEventListener('pointerdown', (e) => e.stopPropagation());
+    host.append(this.root);
+  }
+
+  show(title: string, lines: readonly string[], onBack: () => void): void {
+    const back = el('button', `${BUTTON}text-align:center;min-width:0;`, 'Volver (M)');
+    back.type = 'button';
+    back.dataset.action = 'back';
+    back.addEventListener('click', onBack);
+    this.root.replaceChildren(
+      el('div', 'font-size:30px;font-weight:800;', title),
+      ...lines.map((line) => el('div', 'font-size:15px;opacity:0.85;max-width:420px;', line)),
+      back,
+    );
+    this.root.style.display = 'flex';
+  }
+
+  hide(): void {
+    this.root.style.display = 'none';
+  }
+}
+
+/** Pick the Pokémon to start the run with (click, or keys 1-9). */
+export class StarterScreen {
+  private readonly root = el('div', PANEL);
+
+  constructor(host: HTMLElement) {
+    this.root.dataset.screen = 'starters';
+    this.root.addEventListener('pointerdown', (e) => e.stopPropagation());
+    host.append(this.root);
+  }
+
+  show(
+    title: string,
+    starters: readonly StarterOption[],
     onPick: (index: number) => void,
-    onCredits: () => void,
-    onSettings: () => void,
+    onBack: () => void,
   ): void {
     this.root.replaceChildren(
-      el('div', 'font-size:40px;font-weight:800;letter-spacing:0.5px;', title),
-      el('div', 'font-size:18px;opacity:0.85;margin-bottom:8px;', 'Elige tu inicial'),
+      el('div', 'font-size:30px;font-weight:800;letter-spacing:0.5px;', title),
     );
     starters.forEach((starter, index) => {
       const button = el('button', `${BUTTON}border-color:${TYPE_COLORS[starter.type]};`);
@@ -75,34 +201,21 @@ export class StartScreen {
       button.addEventListener('click', () => onPick(index));
       this.root.append(button);
     });
+    const back = el(
+      'button',
+      `${BUTTON}min-width:0;margin-top:6px;padding:6px 14px;`,
+      'Volver (M)',
+    );
+    back.type = 'button';
+    back.dataset.action = 'back';
+    back.addEventListener('click', onBack);
     this.root.append(
-      el('div', 'font-size:14px;opacity:0.8;margin-top:10px;', describeBest(best)),
       el(
         'div',
         'font-size:13px;opacity:0.65;max-width:360px;',
         'Muévete con A/D, las flechas o manteniendo pulsado. Las bolas salen solas.',
       ),
-    );
-    const credits = el(
-      'button',
-      `${BUTTON}min-width:0;margin-top:6px;padding:6px 14px;`,
-      'Créditos',
-    );
-    credits.type = 'button';
-    credits.dataset.action = 'credits';
-    credits.addEventListener('click', onCredits);
-    const settings = el(
-      'button',
-      `${BUTTON}min-width:0;margin-top:6px;padding:6px 14px;`,
-      'Ajustes',
-    );
-    settings.type = 'button';
-    settings.dataset.action = 'settings';
-    settings.addEventListener('click', onSettings);
-    this.root.append(
-      settings,
-      credits,
-      el('div', 'font-size:11px;opacity:0.6;max-width:420px;margin-top:6px;', disclaimer),
+      back,
     );
     this.root.style.display = 'flex';
   }

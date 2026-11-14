@@ -193,13 +193,20 @@ try {
   };
   const dbg = (p) => p.evaluate(() => window.__debug());
 
-  // Title screen: the game waits, there are four starters, and a key or a click starts the run.
+  // Title screen (4G-I): a menu; Jugar (or Enter) opens the starters; a key or a click starts the run.
   const title = await open('seed=5');
-  await title.waitForSelector('button[data-starter]');
+  await title.waitForSelector('[data-screen="start"] button[data-action="play"]');
+  const idleTick = (await dbg(title)).tick;
+  await title.waitForTimeout(500);
+  const idle = await dbg(title);
   check(
-    'the title screen offers 4 starters',
-    (await title.locator('button[data-starter]').count()) === 4,
+    'the game does not run on the title screen',
+    idle.tick === idleTick && idle.screen === 'menu',
   );
+  await title.screenshot({ path: outFile.replace('.png', '-title.png') });
+  await title.keyboard.press('Enter');
+  await title.waitForSelector('button[data-starter]');
+  check('Jugar offers 4 starters', (await title.locator('button[data-starter]').count()) === 4);
   // The signature of each starter is announced before choosing (4F-D).
   const signatures = await title.locator('[data-signature]').allTextContents();
   check(
@@ -209,14 +216,6 @@ try {
       signatures.some((text) => text.includes('Lanzallamas') && text.includes('cruz')),
     signatures.join(' | '),
   );
-  const idleTick = (await dbg(title)).tick;
-  await title.waitForTimeout(500);
-  const idle = await dbg(title);
-  check(
-    'the game does not run on the title screen',
-    idle.tick === idleTick && idle.screen === 'menu',
-  );
-  await title.screenshot({ path: outFile.replace('.png', '-title.png') });
   await title.keyboard.press('Digit3');
   await title.waitForFunction(() => window.__debug().screen === 'playing');
   check('key 3 starts the run with Bulbasaur', (await dbg(title)).starter === 'bulbasaur');
@@ -225,13 +224,14 @@ try {
     (await title.locator('button[data-starter]:visible').count()) === 0,
   );
   const clicked = await open('seed=6');
+  await clicked.locator('button[data-action="play"]').click();
   await clicked.locator('button[data-starter="pikachu"]').click();
   await clicked.waitForFunction(() => window.__debug().screen === 'playing');
   check('clicking Pikachu starts the run with Pikachu', (await dbg(clicked)).starter === 'pikachu');
 
   // Credits: reachable from the title screen, with the affiliation notice and both sources.
   const creditsPage = await open('seed=11');
-  await creditsPage.waitForSelector('button[data-starter]');
+  await creditsPage.waitForSelector('button[data-action="play"]');
   const footer = (await creditsPage.locator('[data-screen="start"]').textContent()) ?? '';
   check('the title screen carries the affiliation notice', footer.includes('No está afiliado'));
   await creditsPage.locator('button[data-action="credits"]').click();

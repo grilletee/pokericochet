@@ -58,6 +58,7 @@ import {
   EvolutionBanner,
   EvolutionMoment,
   GamePause,
+  InfoScreen,
   installPixelStyle,
   isControlScheme,
   isRealEvolution,
@@ -79,6 +80,7 @@ import {
   SoundToggle,
   STEP_COLOR,
   type StarterOption,
+  StarterScreen,
   StartScreen,
   schemeTip,
   setNames,
@@ -326,7 +328,21 @@ function arrow(symbol = '→'): HTMLElement {
   return node;
 }
 
-type Screen = 'menu' | 'credits' | 'settings' | 'playing' | 'results';
+/** 4G-I: the title is a menu of its own; the starter is picked on its own screen. */
+type Screen =
+  | 'menu'
+  | 'starters'
+  | 'collection'
+  | 'gacha'
+  | 'credits'
+  | 'settings'
+  | 'playing'
+  | 'results';
+
+/** Screens that are menus (no run on screen, no HUD). */
+function isMenuScreen(screen: Screen): boolean {
+  return screen !== 'playing' && screen !== 'results';
+}
 
 /** Debug aids (?debug&…): start from a prepared state to reach a scene quickly. */
 function applyDebugParams(run: Run, config: GameConfig, params: URLSearchParams): void {
@@ -497,6 +513,16 @@ export async function startGame(host: HTMLElement): Promise<void> {
     if (e.code === 'Space') skipEvolution();
   });
   const startScreen = new StartScreen(host);
+  const starterScreen = new StarterScreen(host);
+  const collectionScreen = new InfoScreen(host, 'collection');
+  const gachaScreen = new InfoScreen(host, 'gacha');
+  /** Every menu screen off (each `show*` then turns its own on). */
+  const hideMenus = (): void => {
+    startScreen.hide();
+    starterScreen.hide();
+    collectionScreen.hide();
+    gachaScreen.hide();
+  };
   const creditsScreen = new CreditsScreen(host);
   const resultsScreen = new ResultsScreen(host);
   // The control scheme (4G-G): the player's choice, else what suits the device; ?controls=smart|
@@ -685,7 +711,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
     writeSnapshot(run, curr, speciesCodes, config);
     stepper.reset();
     pending.length = 0;
-    startScreen.hide();
+    hideMenus();
     creditsScreen.hide();
     resultsScreen.hide();
     banner.hide();
@@ -712,19 +738,42 @@ export async function startGame(host: HTMLElement): Promise<void> {
     banner.hide();
     creditsScreen.hide();
     settingsScreen.hide();
-    startScreen.show(
-      GAME_TITLE,
-      starters,
-      best,
-      disclaimerShort(GAME_TITLE),
-      (index) => input.requestPick(index),
-      showCredits,
-      showSettings,
-    );
+    hideMenus();
+    startScreen.show(GAME_TITLE, best, disclaimerShort(GAME_TITLE), {
+      onPlay: showStarters,
+      onCollection: showCollection,
+      onGacha: showGacha,
+      onSettings: showSettings,
+      onCredits: showCredits,
+    });
   };
+  /** Jugar: the Pokémon to start with (4G-I: on its own screen). */
+  function showStarters(): void {
+    screen = 'starters';
+    hideMenus();
+    starterScreen.show('Elige tu inicial', starters, (index) => input.requestPick(index), showMenu);
+  }
+  function showCollection(): void {
+    screen = 'collection';
+    hideMenus();
+    collectionScreen.show(
+      'Colección',
+      ['Aquí verás los Pokémon que has visto y los que tienes, con su nivel permanente.'],
+      showMenu,
+    );
+  }
+  function showGacha(): void {
+    screen = 'gacha';
+    hideMenus();
+    gachaScreen.show(
+      'Gacha',
+      ['Gasta las monedas de tus partidas en Pokémon nuevos para tu colección.'],
+      showMenu,
+    );
+  }
   function showSettings(): void {
     screen = 'settings';
-    startScreen.hide();
+    hideMenus();
     settingsScreen.show(
       autoAim,
       (auto) => {
@@ -748,7 +797,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
   }
   function showCredits(): void {
     screen = 'credits';
-    startScreen.hide();
+    hideMenus();
     creditsScreen.show(GAME_TITLE, creditLines(GAME_TITLE), showMenu);
   }
   const finishRun = (): void => {
@@ -1022,13 +1071,20 @@ export async function startGame(host: HTMLElement): Promise<void> {
     const elapsed = now - last;
     last = now;
 
-    if (screen === 'menu') {
+    if (screen === 'starters') {
       const index = input.takePick();
-      const id = index === null ? undefined : STARTER_SPECIES[index];
+      const id = index === null ? undefined : starters[index]?.id;
       if (id !== undefined && config.species[id] !== undefined) startRun(id);
+      if (input.menuRequested) showMenu();
       input.restartRequested = false;
       input.menuRequested = false;
-    } else if (screen === 'credits' || screen === 'settings') {
+    } else if (screen === 'menu') {
+      // Enter (or R) plays: the starter screen.
+      input.takePick();
+      if (input.restartRequested) showStarters();
+      input.restartRequested = false;
+      input.menuRequested = false;
+    } else if (isMenuScreen(screen)) {
       input.takePick();
       if (input.menuRequested) showMenu();
       input.restartRequested = false;
@@ -1190,7 +1246,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
     }
 
     overlay.setHud(
-      screen === 'menu' || screen === 'credits' || screen === 'settings'
+      isMenuScreen(screen)
         ? ''
         : hudText(
             curr,
