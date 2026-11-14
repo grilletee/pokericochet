@@ -50,6 +50,7 @@ export {
 export { moveName, pokemonName, setNames } from './names';
 export { Overlay } from './overlay';
 export { installPixelStyle, PALETTE, pixelFrame } from './pixelStyle';
+export { registeredLine, registerPanel } from './registerPanel';
 export type { ReplaceMember, ReplaceView } from './replaceScreen';
 export { guardChange, percent, ReplaceScreen } from './replaceScreen';
 export type { StarterOption } from './screens';

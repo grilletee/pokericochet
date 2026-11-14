@@ -50,6 +50,8 @@ import {
   PITY,
   type Profile,
   recordRun,
+  registerable,
+  registerCapture,
   starterChoices,
   startLevelFor,
 } from '../meta';
@@ -93,6 +95,8 @@ import {
   ReplaceScreen,
   type ReplaceView,
   ResultsScreen,
+  registeredLine,
+  registerPanel,
   SettingsScreen,
   SoundFx,
   SoundToggle,
@@ -931,14 +935,36 @@ export async function startGame(host: HTMLElement): Promise<void> {
     const earned = coinsFor(summary);
     setProfile(recordRun(addSeen(profileState.profile, met), summary));
     screen = 'results';
-    resultsScreen.show(
-      summary,
-      saved.best,
-      saved.isNewBest,
-      () => input.requestRestart(),
-      () => input.requestMenu(),
-      `+${earned} monedas (tienes ${profileState.profile.coins})`,
-    );
+    // Beat a boss: keep ONE of the captures of the run for good (4G-I).
+    const offered = registerable(summary);
+    const show = (extra: HTMLElement[]): void =>
+      resultsScreen.show(
+        summary,
+        saved.best,
+        saved.isNewBest,
+        () => input.requestRestart(),
+        () => input.requestMenu(),
+        `+${earned} monedas (tienes ${profileState.profile.coins})`,
+        extra,
+      );
+    const panel =
+      offered.length === 0
+        ? []
+        : [
+            registerPanel(
+              offered,
+              art,
+              (id) => config.species[id]?.type,
+              (id) => profileState.profile.owned[id] !== undefined,
+              (species) => {
+                const result = registerCapture(profileState.profile, offered, species);
+                setProfile(result.profile);
+                sound.play('capture', performance.now());
+                show([registeredLine(species, result.isNew)]);
+              },
+            ),
+          ];
+    show(panel);
   };
 
   /** Arena point to host pixels, for the DOM effects that start on the field. */

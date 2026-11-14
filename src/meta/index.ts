@@ -27,6 +27,7 @@ export {
   SAVE_MARK,
   startLevelFor,
 } from './profile';
+export { REGISTER_MIN_BOSSES, registerable, registerCapture } from './register';
 export {
   COINS_FOR_WIN,
   COINS_PER_BOSS,
