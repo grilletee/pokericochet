@@ -43,7 +43,13 @@ import {
   applyUpgrades,
   canStartWith,
   chooseFirstStarter,
+  coinsFor,
+  drawGacha,
+  GACHA_COST,
+  gachaPool,
+  PITY,
   type Profile,
+  recordRun,
   starterChoices,
   startLevelFor,
 } from '../meta';
@@ -66,6 +72,8 @@ import {
   disclaimerShort,
   EvolutionBanner,
   EvolutionMoment,
+  type GachaReveal,
+  GachaScreen,
   GamePause,
   InfoScreen,
   installPixelStyle,
@@ -535,7 +543,8 @@ export async function startGame(host: HTMLElement): Promise<void> {
   const startScreen = new StartScreen(host);
   const starterScreen = new StarterScreen(host);
   const collectionScreen = new InfoScreen(host, 'collection');
-  const gachaScreen = new InfoScreen(host, 'gacha');
+  const gachaScreen = new GachaScreen(host, art);
+  const pool = gachaPool(gameConfig);
   /** Every menu screen off (each `show*` then turns its own on). */
   const hideMenus = (): void => {
     startScreen.hide();
@@ -792,7 +801,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
     startScreen.show(GAME_TITLE, best, disclaimerShort(GAME_TITLE), {
       onPlay: showStarters,
       onCollection: showCollection,
-      onGacha: showGacha,
+      onGacha: () => showGacha(),
       onSettings: showSettings,
       onCredits: showCredits,
     });
@@ -833,13 +842,35 @@ export async function startGame(host: HTMLElement): Promise<void> {
       showMenu,
     );
   }
-  function showGacha(): void {
+  /** The gacha (4G-I): the draw is the meta's, with the profile's own stream; saved at once. */
+  function showGacha(reveal: GachaReveal | null = null): void {
     screen = 'gacha';
     hideMenus();
+    const p = profileState.profile;
     gachaScreen.show(
-      'Gacha',
-      ['Gasta las monedas de tus partidas en Pokémon nuevos para tu colección.'],
+      {
+        coins: p.coins,
+        cost: GACHA_COST,
+        toGuarantee: Math.max(1, PITY - p.gacha.sinceNew),
+        owned: pool.filter((id) => p.owned[id] !== undefined).length,
+        poolSize: pool.length,
+      },
+      () => {
+        const result = drawGacha(profileState.profile, pool);
+        if (!result.ok) return;
+        setProfile(result.profile);
+        if (result.isNew) sound.play('capture', performance.now());
+        else sound.play('collect', performance.now());
+        showGacha({
+          species: result.species,
+          type: config.species[result.species]?.type,
+          isNew: result.isNew,
+          candies: result.candies,
+          guaranteed: result.guaranteed,
+        });
+      },
       showMenu,
+      reveal,
     );
   }
   function showSettings(): void {
@@ -896,7 +927,9 @@ export async function startGame(host: HTMLElement): Promise<void> {
     best = saved.best;
     // The Pokédex sees every species met in the run (4G-I).
     const met = [...seenThisRun].map((code) => speciesIds[code] ?? '').filter(knownSpecies);
-    setProfile(addSeen(profileState.profile, met));
+    // The coins of the run (4G-I): a pure function of its summary.
+    const earned = coinsFor(summary);
+    setProfile(recordRun(addSeen(profileState.profile, met), summary));
     screen = 'results';
     resultsScreen.show(
       summary,
@@ -904,6 +937,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
       saved.isNewBest,
       () => input.requestRestart(),
       () => input.requestMenu(),
+      `+${earned} monedas (tienes ${profileState.profile.coins})`,
     );
   };
 

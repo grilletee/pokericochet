@@ -29,6 +29,7 @@ export type { CreditLine } from './creditsText';
 export { creditLines, disclaimerShort, POKEAPI_URL, SPRITES_URL } from './creditsText';
 export type { MomentView } from './evolutionMoment';
 export { EvolutionMoment, GamePause, pauseMs, pauseSeconds } from './evolutionMoment';
+export { type GachaReveal, GachaScreen, type GachaView } from './gachaScreen';
 export type { SheetView } from './memberSheet';
 export { MemberSheet } from './memberSheet';
 export { BACKDROP_H, BACKDROP_W, backdropFrame, MenuBackdrop } from './menuBackdrop';

@@ -261,12 +261,27 @@ export class ResultsScreen {
     isNewBest: boolean,
     onAgain: () => void,
     onMenu: () => void,
+    /** What the run earned for the collection (4G-I): "+120 monedas (tienes 340)". */
+    reward = '',
+    /** Extra rows (4G-I: registering one of the captures), placed before the buttons. */
+    extra: readonly HTMLElement[] = [],
   ): void {
     const text = describeResults(summary, best, isNewBest);
     this.root.replaceChildren(
       el('div', 'font-size:36px;font-weight:800;margin-bottom:6px;', text.title),
       ...text.lines.map((line) => el('div', 'font-size:16px;max-width:420px;', line)),
     );
+    if (reward !== '') {
+      const coins = el(
+        'div',
+        'font-size:18px;font-weight:800;color:#ffd54f;margin-top:6px;',
+        reward,
+      );
+      coins.dataset.reward = '';
+      this.root.append(coins);
+    }
+    this.root.append(...extra);
+    this.root.style.overflowY = 'auto';
     const again = el('button', `${BUTTON}margin-top:12px;text-align:center;`, 'Jugar otra vez (R)');
     again.type = 'button';
     again.dataset.action = 'again';
