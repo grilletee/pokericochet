@@ -16,6 +16,7 @@ export type { CardTextContext } from './cardText';
 export { cardStep, describeCard, typeName } from './cardText';
 export type { ArtLookup } from './cardView';
 export { buildCardArt, STEP_COLOR, spriteTile } from './cardView';
+export { CollectionScreen, type DexTile } from './collectionScreen';
 export {
   CONTROL_SCHEMES,
   type ControlScheme,

@@ -44,9 +44,12 @@ import {
   canStartWith,
   chooseFirstStarter,
   coinsFor,
+  dex,
+  dexCounts,
   drawGacha,
   GACHA_COST,
   gachaPool,
+  levelUp,
   PITY,
   type Profile,
   recordRun,
@@ -67,6 +70,7 @@ import {
   bossCartel,
   bossLabel,
   type CardTextContext,
+  CollectionScreen,
   type ControlScheme,
   CreditsScreen,
   creditLines,
@@ -77,7 +81,6 @@ import {
   type GachaReveal,
   GachaScreen,
   GamePause,
-  InfoScreen,
   installPixelStyle,
   isControlScheme,
   isRealEvolution,
@@ -189,6 +192,9 @@ export interface BrowserBenchResult {
 declare global {
   interface Window {
     __benchResult?: BrowserBenchResult;
+    /** ?debug only (4G-I): end the run now, and read the profile. */
+    __lose?: () => void;
+    __profile?: () => Profile;
     /** Read-only view of the run for browser smoke tests; only present with ?debug or ?bench. */
     __debug?: () => {
       tick: number;
@@ -546,7 +552,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
   });
   const startScreen = new StartScreen(host);
   const starterScreen = new StarterScreen(host);
-  const collectionScreen = new InfoScreen(host, 'collection');
+  const collectionScreen = new CollectionScreen(host, art);
   const gachaScreen = new GachaScreen(host, art);
   const pool = gachaPool(gameConfig);
   /** Every menu screen off (each `show*` then turns its own on). */
@@ -555,6 +561,8 @@ export async function startGame(host: HTMLElement): Promise<void> {
     starterScreen.hide();
     collectionScreen.hide();
     gachaScreen.hide();
+    // Nothing of the last run stays over a menu (the sign of its wave, 4G-I).
+    cartel.hide();
   };
   const creditsScreen = new CreditsScreen(host);
   const resultsScreen = new ResultsScreen(host);
@@ -579,6 +587,14 @@ export async function startGame(host: HTMLElement): Promise<void> {
   const knownSpecies = (id: string): boolean => gameConfig.species[id] !== undefined;
   const freshSeed = (): number => Date.now() >>> 0;
   let profileState: LoadedProfile = loadProfile(store, knownSpecies, freshSeed());
+  // ?debug&coins=N adds coins to the profile (to try the gacha in the smoke and by hand).
+  const debugCoins = Number(params.get('coins'));
+  if (showDebug && debugCoins > 0) {
+    profileState = {
+      ...profileState,
+      profile: { ...profileState.profile, coins: profileState.profile.coins + debugCoins },
+    };
+  }
   let saveStatus = '';
   const setProfile = (next: Profile): void => {
     profileState = { profile: next, writable: profileState.writable };
@@ -671,6 +687,11 @@ export async function startGame(host: HTMLElement): Promise<void> {
   let emaRender = 0;
 
   if (showDebug) {
+    // Ends the run on screen at once (a defeat), for the smoke of the whole flow (4G-I).
+    window.__lose = () => {
+      run.player.hp = 0;
+    };
+    window.__profile = () => profileState.profile;
     window.__debug = () => ({
       tick: run.tickCount,
       playerX: run.player.x,
@@ -837,12 +858,28 @@ export async function startGame(host: HTMLElement): Promise<void> {
     setProfile(chooseFirstStarter(profileState.profile, STARTER_SPECIES, id));
     startRun(id);
   };
-  function showCollection(): void {
+  /** The collection (4G-I): the Pokédex of the pool, and candies for permanent levels. */
+  function showCollection(selected: string | null = null): void {
     screen = 'collection';
     hideMenus();
+    const entries = dex(profileState.profile, pool);
     collectionScreen.show(
-      'Colección',
-      ['Aquí verás los Pokémon que has visto y los que tienes, con su nivel permanente.'],
+      entries.map((entry) => ({
+        ...entry,
+        type: config.species[entry.species]?.type,
+        stats: config.species[entry.species]?.baseStats,
+      })),
+      dexCounts(entries),
+      selected,
+      (species) => showCollection(species),
+      (species) => {
+        const next = levelUp(profileState.profile, species);
+        if (next !== profileState.profile) {
+          setProfile(next);
+          sound.play('evolve', performance.now());
+        }
+        showCollection(species);
+      },
       showMenu,
     );
   }

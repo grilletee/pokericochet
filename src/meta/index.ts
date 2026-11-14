@@ -4,6 +4,14 @@
  */
 
 export {
+  type DexEntry,
+  type DexState,
+  dex,
+  dexCounts,
+  levelUp,
+  levelUpCost,
+} from './collection';
+export {
   type DrawResult,
   drawGacha,
   GACHA_COST,
