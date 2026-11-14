@@ -53,10 +53,16 @@ describe('volumes (4G-F)', () => {
     const store = memory();
     expect(loadVolumes(store)).toEqual(DEFAULT_VOLUMES);
     expect(DEFAULT_VOLUMES.cries).toBeLessThan(0.5);
-    saveVolumes(store, { master: 0.5, effects: 0.25, cries: 0.1 });
-    expect(loadVolumes(store)).toEqual({ master: 0.5, effects: 0.25, cries: 0.1 });
+    saveVolumes(store, { master: 0.5, effects: 0.25, cries: 0.1, music: 0.3 });
+    expect(loadVolumes(store)).toEqual({ master: 0.5, effects: 0.25, cries: 0.1, music: 0.3 });
     store.setItem(VOLUMES_KEY, JSON.stringify({ master: 9, effects: -3, cries: 'x' }));
-    expect(loadVolumes(store)).toEqual({ master: 1, effects: 0, cries: DEFAULT_VOLUMES.cries });
+    // A store from before 4G-I has no music: it gets the default.
+    expect(loadVolumes(store)).toEqual({
+      master: 1,
+      effects: 0,
+      cries: DEFAULT_VOLUMES.cries,
+      music: DEFAULT_VOLUMES.music,
+    });
   });
 
   it('a broken, missing or blocked store gives the defaults and never throws', () => {

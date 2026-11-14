@@ -21,5 +21,11 @@ animated night drawn by code (`src/ui/menuBackdrop.ts`). The attacks of each typ
 (`src/render/bossArt.ts`), the arenas of the legendaries (`src/render/legendArena.ts`) and the deaths
 of the bosses (`src/render/deathFx.ts`) are original pixel art drawn by code as well.
 
+**Music (4G-I).** The six pieces (menu, waves, boss, final legendary, victory, defeat) are ORIGINAL,
+written for this game as note data in `src/ui/musicScore.ts` and played by the game's own chiptune
+sequencer (`src/ui/music.ts`, WebAudio oscillators and synthesised noise, no samples). No music of the
+Pokémon games is used, quoted or arranged. They are part of the project and may be reused under the
+same terms as its code; no third-party licence applies.
+
 The SIL OFL 1.1 allows using, embedding and redistributing the font with software, as long as the
 licence and the copyright notice travel with it (they do) and the font is not sold on its own.

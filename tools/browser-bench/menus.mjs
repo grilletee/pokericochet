@@ -55,6 +55,12 @@ try {
       const back = await page.isVisible('[data-screen="start"] [data-action="play"]');
       check(`${tag}: ${id} opens and M goes back to the title`, back);
     }
+    const onMenu = await page.evaluate(() => window.__debug());
+    check(
+      `${tag}: the menu has its own music (after a gesture wakes the audio)`,
+      onMenu.music === 'menu',
+      `${onMenu.music} / ${onMenu.musicAsked}`,
+    );
     await page.click('[data-screen="start"] [data-action="play"]');
     await page.waitForSelector('[data-screen="starters"] [data-starter]', { timeout: 5000 });
     await page.screenshot({ path: join(outDir, `iniciales-${tag}.png`) });
@@ -62,6 +68,7 @@ try {
     await page.waitForTimeout(800);
     const s = await page.evaluate(() => window.__debug());
     check(`${tag}: Jugar -> pick a starter -> the run starts`, s.screen === 'playing', s.screen);
+    check(`${tag}: the waves have their music`, s.music === 'waves', String(s.music));
     check(`${tag}: no page errors`, errors.length === 0, errors.slice(0, 2).join(' | '));
     await context.close();
   }

@@ -68,6 +68,7 @@ import {
   MemberSheet,
   MoveLabelPolicy,
   MoveLabels,
+  MusicPlayer,
   moveName,
   Overlay,
   pauseMs,
@@ -92,6 +93,7 @@ import {
   TouchLayout,
   TunePanel,
   TYPE_COLORS,
+  trackFor,
   typeName,
   WaveBanner,
   waveCartel,
@@ -179,6 +181,8 @@ declare global {
       bossMaxHp: number;
       bossSpecies: string;
       dying: boolean;
+      music: string | null;
+      musicAsked: string | null;
       starter: string;
       pickups: number;
       autoAim: boolean;
@@ -547,8 +551,12 @@ export async function startGame(host: HTMLElement): Promise<void> {
   scheme = isControlScheme(forced) ? forced : loadScheme(store, coarse);
   // Sound: starts muted only if the player chose so; the audio context wakes on the first gesture.
   const sound = new SoundFx(loadMuted(store));
+  // The original music of the game (4G-I), on the same audio context as the effects.
+  const music = new MusicPlayer(() => sound.audioContext);
+  music.muted = sound.muted;
   new SoundToggle(host, sound.muted, (muted) => {
     sound.muted = muted;
+    music.muted = muted;
     saveMuted(store, muted);
   });
   for (const gesture of ['pointerdown', 'keydown'] as const) {
@@ -560,6 +568,8 @@ export async function startGame(host: HTMLElement): Promise<void> {
   let volumes = loadVolumes(store);
   sound.masterVolume = volumes.master;
   sound.effectsVolume = volumes.effects;
+  music.masterVolume = volumes.master;
+  music.musicVolume = volumes.music;
   // ?tune: live tuning panel. The knobs rebuild the config from the shipped one on every change.
   if (params.has('tune') && !bench) {
     let tuneValues: TuneValues;
@@ -640,6 +650,8 @@ export async function startGame(host: HTMLElement): Promise<void> {
       bossMaxHp: curr.bossMaxHp,
       bossSpecies: curr.bossMaxHp > 0 ? (speciesIds[curr.bossSpecies] ?? '') : '',
       dying: renderer.dying,
+      music: music.nowPlaying,
+      musicAsked: music.asked,
       starter: run.starter,
       pickups: run.pickups.length,
       autoAim: run.autoAim,
@@ -786,6 +798,8 @@ export async function startGame(host: HTMLElement): Promise<void> {
         volumes = next;
         sound.masterVolume = next.master;
         sound.effectsVolume = next.effects;
+        music.masterVolume = next.master;
+        music.musicVolume = next.music;
         saveVolumes(store, next);
       },
       scheme,
@@ -1258,6 +1272,18 @@ export async function startGame(host: HTMLElement): Promise<void> {
           ),
     );
     overlay.updateToast(now);
+    // The music follows what is on screen (4G-I): menu, waves, a boss, the legendary, the end.
+    if (!bench) {
+      music.play(
+        trackFor({
+          menu: isMenuScreen(screen),
+          bossAlive: curr.bossMaxHp > 0 && curr.bossHp > 0,
+          finalBoss: curr.bossFinal,
+          result: screen === 'results' ? (run.phase === 'won' ? 'won' : 'lost') : null,
+        }),
+      );
+      music.update();
+    }
     if (!bench && curr.bossSqueeze > 0.03) {
       const tide = namer.first('tide');
       if (tide !== null) overlay.showToast(tide, now);

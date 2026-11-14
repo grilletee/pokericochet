@@ -214,6 +214,11 @@ export class SoundFx {
     this.muted = muted;
   }
 
+  /** The audio context, once a gesture has created it (the music shares it, 4G-I). */
+  get audioContext(): AudioContext | null {
+    return this.context;
+  }
+
   /** Creates or resumes the audio context; call from a user gesture. Safe to call often. */
   unlock(): void {
     try {

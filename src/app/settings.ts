@@ -70,15 +70,16 @@ export function saveScheme(store: KeyValueStore | null, scheme: ControlScheme): 
   }
 }
 
-/** Volumes (0..1): everything, the sound effects and the cries of the Pokémon (4G-F). */
+/** Volumes (0..1): everything, the sound effects, the cries of the Pokémon (4G-F) and the music (4G-I). */
 export interface Volumes {
   readonly master: number;
   readonly effects: number;
   readonly cries: number;
+  readonly music: number;
 }
 
-/** The cries start low (13th playtest: "demasiado alto"). */
-export const DEFAULT_VOLUMES: Volumes = { master: 1, effects: 1, cries: 0.4 };
+/** The cries start low (13th playtest: "demasiado alto"); the music under the effects. */
+export const DEFAULT_VOLUMES: Volumes = { master: 1, effects: 1, cries: 0.4, music: 0.6 };
 
 /** localStorage key of the volumes. */
 export const VOLUMES_KEY = 'volumes.v1';
@@ -97,6 +98,7 @@ export function loadVolumes(store: KeyValueStore | null): Volumes {
       master: unit(v.master, DEFAULT_VOLUMES.master),
       effects: unit(v.effects, DEFAULT_VOLUMES.effects),
       cries: unit(v.cries, DEFAULT_VOLUMES.cries),
+      music: unit(v.music, DEFAULT_VOLUMES.music),
     };
   } catch {
     return DEFAULT_VOLUMES;

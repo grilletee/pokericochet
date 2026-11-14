@@ -36,7 +36,7 @@ export function creditLines(title: string): CreditLine[] {
       url: 'https://github.com/eifetx/Pixelify-Sans',
     },
     {
-      text: 'El código, los efectos de sonido, el pixel art de los fondos, los ataques y la interfaz son originales (dibujados por código y sonidos sintetizados).',
+      text: 'El código, la música, los efectos de sonido, el logo, el pixel art de los fondos, los ataques y la interfaz son originales (dibujados por código y sonidos sintetizados). La música está compuesta para este juego; no usa ni versiona música de los juegos de Pokémon.',
     },
   ];
 }

@@ -34,6 +34,18 @@ export { MemberSheet } from './memberSheet';
 export { BACKDROP_H, BACKDROP_W, backdropFrame, MenuBackdrop } from './menuBackdrop';
 export type { LabelFate, MoveLabel } from './moveLabels';
 export { labelPriority, labelText, MoveLabelPolicy, MoveLabels } from './moveLabels';
+export { MusicPlayer } from './music';
+export {
+  midiFreq,
+  type StepNote,
+  stepNotes,
+  stepSeconds,
+  TRACKS,
+  type Track,
+  type TrackId,
+  trackFor,
+  trackSteps,
+} from './musicScore';
 export { moveName, pokemonName, setNames } from './names';
 export { Overlay } from './overlay';
 export { installPixelStyle, PALETTE, pixelFrame } from './pixelStyle';

@@ -324,6 +324,7 @@ export class SettingsScreen {
       ['master', 'Volumen general'],
       ['effects', 'Efectos'],
       ['cries', 'Gritos'],
+      ['music', 'Música'],
     ] as const) {
       const row = el(
         'label',
@@ -391,6 +392,7 @@ export interface VolumeValues {
   readonly master: number;
   readonly effects: number;
   readonly cries: number;
+  readonly music: number;
 }
 
 /** Credits and affiliation notice. */
