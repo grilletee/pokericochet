@@ -62,13 +62,22 @@ try {
       `${onMenu.music} / ${onMenu.musicAsked}`,
     );
     await page.click('[data-screen="start"] [data-action="play"]');
+    // 4G-J: a fresh profile meets the professor's tutorial first.
+    await page.waitForSelector('[data-action="tutorialSkip"]', { timeout: 5000 });
+    await page.click('[data-action="tutorialSkip"]');
     await page.waitForSelector('[data-screen="starters"] [data-starter]', { timeout: 5000 });
     await page.screenshot({ path: join(outDir, `iniciales-${tag}.png`) });
     await page.click('[data-screen="starters"] [data-starter]');
+    await page.click('[data-action="choose"]');
     await page.waitForTimeout(800);
     const s = await page.evaluate(() => window.__debug());
     check(`${tag}: Jugar -> pick a starter -> the run starts`, s.screen === 'playing', s.screen);
-    check(`${tag}: the waves have their music`, s.music === 'waves', String(s.music));
+    // 4G-J: the wave piece of the biome of the wave (one of the six).
+    check(
+      `${tag}: the waves have their music`,
+      String(s.music).startsWith('waves'),
+      String(s.music),
+    );
     check(`${tag}: no page errors`, errors.length === 0, errors.slice(0, 2).join(' | '));
     await context.close();
   }

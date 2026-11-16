@@ -23,6 +23,8 @@ export class MusicPlayer {
   muted = false;
   masterVolume = 1;
   musicVolume = 0.6;
+  /** 0-2 (4G-J): the layers of the piece that play (`musicTension`). Read on every step. */
+  tension = 0;
   private current: Playing | null = null;
   private wanted: TrackId | null = null;
   private timer: ReturnType<typeof setInterval> | null = null;
@@ -91,7 +93,7 @@ export class MusicPlayer {
     while (playing.start + playing.next * step < ctx.currentTime + LOOKAHEAD_S) {
       if (!playing.track.loop && playing.next >= total) return;
       const t = playing.start + playing.next * step;
-      for (const note of stepNotes(playing.track, playing.next)) {
+      for (const note of stepNotes(playing.track, playing.next, this.tension)) {
         if (note.wave === 'drums') this.drum(ctx, playing.bus, t, note.drum ?? 'h', note.gain);
         else this.tone(ctx, playing.bus, t, note.freq, note.steps * step, note.wave, note.gain);
       }

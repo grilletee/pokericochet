@@ -56,6 +56,7 @@ export { labelPriority, labelText, MoveLabelPolicy, MoveLabels } from './moveLab
 export { MusicPlayer } from './music';
 export {
   midiFreq,
+  musicTension,
   type StepNote,
   stepNotes,
   stepSeconds,
@@ -64,6 +65,8 @@ export {
   type TrackId,
   trackFor,
   trackSteps,
+  type WaveTrackId,
+  waveTrackFor,
 } from './musicScore';
 export { moveName, pokemonName, setNames } from './names';
 export { Overlay } from './overlay';

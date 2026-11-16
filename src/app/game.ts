@@ -27,6 +27,7 @@ import {
   dropCapture,
   formAt,
   formOfMember,
+  GAME_TYPES,
   type GameConfig,
   type GameEvent,
   type GameType,
@@ -116,6 +117,7 @@ import {
   MoveLabels,
   MusicPlayer,
   moveName,
+  musicTension,
   Overlay,
   pauseMs,
   pokemonName,
@@ -776,6 +778,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
       bossSpecies: curr.bossMaxHp > 0 ? (speciesIds[curr.bossSpecies] ?? '') : '',
       dying: renderer.dying,
       music: music.nowPlaying,
+      musicTension: music.tension,
       musicAsked: music.asked,
       starter: run.starter,
       pickups: run.pickups.length,
@@ -1631,8 +1634,22 @@ export async function startGame(host: HTMLElement): Promise<void> {
           bossAlive: curr.bossMaxHp > 0 && curr.bossHp > 0,
           finalBoss: curr.bossFinal,
           result: screen === 'results' ? (run.phase === 'won' ? 'won' : 'lost') : null,
+          // 4G-J: the biome of the wave chooses the wave piece; the bosses alternate two pieces.
+          biome: GAME_TYPES[curr.biomeMain] ?? null,
+          bossIndex: run.boss.next,
         }),
       );
+      // 4G-J: the layers come in with the tension of what is on screen.
+      music.tension =
+        screen !== 'playing'
+          ? 0
+          : musicTension({
+              hpShare: run.player.hp / Math.max(1, run.player.maxHp),
+              enemies: run.enemies.length,
+              nearLine: run.enemies.some((e) => e.y >= config.arena.defenseLineY - 90),
+              fury: curr.bossPhase === 1,
+              bossNearLine: curr.bossLineTicks >= 0 && curr.bossLineTicks < 15 * 60,
+            });
       music.update();
     }
     if (!bench && curr.bossSqueeze > 0.03) {
