@@ -489,9 +489,68 @@ export class Renderer {
       this.player,
       this.hurt.numbers,
     );
+    // The surround (4G-J, phone layouts): the far layer of the backdrop goes on behind the field,
+    // across the side bands, dimmed, with a frame around the field. Off unless `setSurround(true)`.
+    this.surround = new TilingSprite({ texture: Texture.EMPTY, width: 1, height: 1 });
+    this.surroundDim = new Sprite(bar);
+    this.surroundDim.tint = 0x070914;
+    this.surroundDim.alpha = 0.74;
+    this.surroundFrame = new Graphics();
+    this.surroundLayer.addChild(this.surround, this.surroundDim, this.surroundFrame);
+    this.surroundLayer.visible = false;
+    app.stage.addChild(this.surroundLayer);
     app.stage.addChild(this.world);
     app.stage.addChild(this.hurt.flash);
     app.stage.addChild(this.death.flash);
+  }
+
+  private readonly surroundLayer = new Container();
+  private readonly surround: TilingSprite;
+  private readonly surroundDim: Sprite;
+  private readonly surroundFrame: Graphics;
+  private surroundOn = false;
+  private surroundFrameKey = '';
+
+  /** The biome behind the side bands (4G-J, block 4: the layouts A and B of a phone held sideways). */
+  setSurround(on: boolean): void {
+    this.surroundOn = on;
+    this.surroundLayer.visible = on;
+  }
+
+  /** Keeps the surround aligned with the far layer of the field, so the backdrop runs on seamlessly. */
+  private drawSurround(scale: number, x0: number, y0: number): void {
+    if (!this.surroundOn) return;
+    const far = this.backdropSheets[0];
+    const screenW = this.app.screen.width;
+    const screenH = this.app.screen.height;
+    const on = far?.visible === true && far.texture !== Texture.EMPTY;
+    this.surround.visible = on;
+    if (on && far !== undefined) {
+      this.surround.texture = far.texture;
+      this.surround.width = screenW;
+      this.surround.height = screenH;
+      this.surround.tileScale.set(far.tileScale.x * scale, far.tileScale.y * scale);
+      this.surround.tilePosition.set(
+        x0 + far.tilePosition.x * scale,
+        y0 + far.tilePosition.y * scale,
+      );
+    }
+    this.surroundDim.width = screenW;
+    this.surroundDim.height = screenH;
+    const { width, height } = this.config.arena;
+    const key = `${screenW}:${screenH}:${scale}`;
+    if (key !== this.surroundFrameKey) {
+      this.surroundFrameKey = key;
+      // A pixel frame just outside the field: the play area reads at a glance.
+      const w = width * scale;
+      const h = height * scale;
+      this.surroundFrame
+        .clear()
+        .rect(x0 - 4, y0 - 4, w + 8, h + 8)
+        .fill(0x14172b)
+        .rect(x0 - 2, y0 - 2, w + 4, h + 4)
+        .fill(0x5fb0ff);
+    }
   }
 
   /** The species id of every art code: the arena of a legendary is looked up by its id (4G-H). */
@@ -558,6 +617,7 @@ export class Renderer {
 
     this.buildOutlines();
     this.drawBiome(curr, elapsedMs);
+    this.drawSurround(scale, this.world.position.x, this.world.position.y);
     this.drawBossFight(curr);
     if (curr.bossMaxHp > 0 && curr.bossHp > 0) {
       const b = this.lastBoss;

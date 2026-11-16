@@ -422,6 +422,50 @@ export class ResultsScreen {
  * Settings screen (4H-B2): for now only the assisted aim, an accessibility option that is off by
  * default and is no longer in the game screen ("I never use it": it only gets in the way there).
  */
+/** The layout of a phone held sideways (4G-J, block 4): the one in force and how to change it. */
+export interface LayoutChoice {
+  readonly current: 'a' | 'b';
+  readonly onChange: (next: 'a' | 'b') => void;
+  /** True when `?layout=` forces it (the choice is kept for later, but the link wins now). */
+  readonly forced: boolean;
+}
+
+export const LAYOUT_TEXT: Readonly<Record<'a' | 'b', { name: string; hint: string }>> = {
+  a: {
+    name: 'Móvil A: campo de siempre, a todo el alto',
+    hint: 'El campo ocupa toda la altura y el escenario sigue por los lados; el HUD y tus Pokémon flotan encima, transparentes.',
+  },
+  b: {
+    name: 'Móvil B: campo más ancho',
+    hint: 'Como la A, con un campo un 20 % más ancho: más sitio para esquivar. Cambia un poco el juego.',
+  },
+};
+
+function layoutRows(choice: LayoutChoice): HTMLElement[] {
+  const title = el('div', 'font-size:17px;font-weight:700;margin-top:8px;', 'Pantalla del móvil');
+  const rows: HTMLElement[] = [title];
+  for (const id of ['a', 'b'] as const) {
+    const on = choice.current === id;
+    const button = el(
+      'button',
+      `${BUTTON}text-align:center;width:340px;outline:${on ? '3px solid #ffd54f' : 'none'};opacity:${on ? 1 : 0.7};`,
+      LAYOUT_TEXT[id].name,
+    );
+    button.type = 'button';
+    button.dataset.layoutChoice = id;
+    button.addEventListener('click', () => choice.onChange(id));
+    rows.push(button);
+  }
+  rows.push(
+    el(
+      'div',
+      'font-size:13px;opacity:0.8;max-width:380px;line-height:1.4;',
+      `${LAYOUT_TEXT[choice.current].hint}${choice.forced ? ' (Ahora lo fija el enlace.)' : ''}`,
+    ),
+  );
+  return rows;
+}
+
 /** Export and import of the save (4G-I). `status` is a line to show after an import. */
 export interface SaveActions {
   readonly onExport: () => void;
@@ -471,8 +515,11 @@ export class SettingsScreen {
     onScheme: (next: ControlScheme) => void = () => {},
     /** The save of the collection (4G-I): export it to a file, or bring one back. */
     save: SaveActions | null = null,
+    /** The layout of a phone held sideways (4G-J): null on a tablet or a desktop (not offered). */
+    layout: LayoutChoice | null = null,
   ): void {
     this.saveSection = save === null ? [] : saveRows(save);
+    const layoutSection = layout === null ? [] : layoutRows(layout);
     let auto = autoAim;
     let chosen = scheme;
     let current = volumes;
@@ -567,6 +614,7 @@ export class SettingsScreen {
       schemeTitle,
       ...schemeButtons,
       hint,
+      ...layoutSection,
       ...sliders,
       ...this.saveSection,
       back,

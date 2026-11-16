@@ -84,6 +84,12 @@ const STYLE = `
 [data-px-root] [data-signature-tag]{background:${P.yellow} !important;color:${P.ink} !important;${pixelFrame(P.ink, 2)}font-weight:700}
 [data-px-root] [data-stat-bars] *,[data-px-root] [data-stat]{image-rendering:pixelated}
 [data-px-root] [data-type-icon]{${pixelFrame(P.ink, 2)}}
+/* 4G-J, the phone layouts A and B: the team, the boss bar and the ULTI float see-through over the
+   biome of the side bands, with no opaque panels */
+[data-px-root][data-layout] [data-team-tile]{background:rgba(31,37,71,0.5) !important}
+[data-px-root][data-layout] [data-boss-bar]{background:rgba(20,23,43,0.55) !important}
+[data-px-root][data-layout] [data-ulti-button]{background:rgba(27,37,64,0.4) !important}
+[data-px-root][data-layout] [data-sound-toggle]{background:rgba(31,37,71,0.5) !important}
 /* the text of the HUD */
 [data-px-root] [data-hud]{text-shadow:2px 2px 0 ${P.ink}}
 `;

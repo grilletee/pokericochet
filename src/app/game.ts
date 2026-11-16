@@ -153,6 +153,15 @@ import { playCry } from './cries';
 import { FixedStepper } from './fixedStepper';
 import { Input, RELEASE_PICK } from './input';
 import { commandFromInput } from './inputLogic';
+import {
+  isPhone,
+  isPhoneLayout,
+  layoutConfig,
+  loadLayout,
+  type PhoneLayout,
+  resolveLayout,
+  saveLayout,
+} from './layout';
 import { FrameMetrics, type Stats, summarize } from './metrics';
 import {
   downloadProfile,
@@ -485,7 +494,17 @@ export async function startGame(host: HTMLElement): Promise<void> {
   const starterParam = params.get('starter');
   const skipTitle = bench || (starterParam !== null && STARTER_SPECIES.includes(starterParam));
 
-  let config: GameConfig = gameConfig;
+  // The layout of a phone held sideways (4G-J, block 4): A or B, or none on a tablet or a desktop.
+  // B plays on a wider field, so the shipped config the runs start from depends on it.
+  const phone = isPhone(
+    window.matchMedia?.('(pointer: coarse)').matches === true,
+    window.innerWidth,
+    window.innerHeight,
+  );
+  const layout = resolveLayout(params.get('layout'), loadLayout(browserStore()), phone);
+  const shipped = layoutConfig(gameConfig, layout);
+  if (layout !== null) host.dataset.layout = layout;
+  let config: GameConfig = shipped;
   const newSeed = (): number => Number(params.get('seed')) || Date.now() >>> 0;
   let starter = skipTitle && starterParam !== null ? starterParam : (STARTER_SPECIES[0] ?? '');
   let run: Run;
@@ -538,6 +557,8 @@ export async function startGame(host: HTMLElement): Promise<void> {
     await loadSpeciesTextures(speciesIds),
   );
   renderer.setSpeciesIds(speciesIds);
+  // 4G-J: on a phone layout the biome goes on behind the side bands (no empty black bars).
+  renderer.setSurround(layout !== null);
   installPixelStyle(host, pixelFontUrl);
   const overlay = new Overlay(host);
   const teamBar = new TeamBar(
@@ -677,14 +698,14 @@ export async function startGame(host: HTMLElement): Promise<void> {
     } catch {
       tuneValues = sanitizeTune(gameConfig, null);
     }
-    config = applyTune(gameConfig, tuneValues);
+    config = layoutConfig(applyTune(gameConfig, tuneValues), layout);
     new TunePanel(
       host,
       TUNE_DEFS.map((d) => ({ ...d, neutral: neutral(d, gameConfig) })),
       tuneValues,
       (values) => {
         tuneValues = values;
-        config = applyTune(gameConfig, values);
+        config = layoutConfig(applyTune(gameConfig, values), layout);
         try {
           store?.setItem(TUNE_KEY, JSON.stringify(values));
         } catch {
@@ -843,6 +864,11 @@ export async function startGame(host: HTMLElement): Promise<void> {
 
   const startRun = (species: string): void => {
     starter = species;
+    // 4G-J: on a phone layout, full screen (no address bar: the whole height is the field). The tap
+    // that chose the Pokémon is still a fresh gesture; a browser that refuses it just stays as it is.
+    if (layout !== null && navigator.webdriver !== true && document.fullscreenElement === null) {
+      void document.documentElement.requestFullscreen?.({ navigationUI: 'hide' }).catch(() => {});
+    }
     // "aplicarMejoras" (ADR-025): the profile only changes the config the run is created with.
     run = createRun(applyUpgrades(config, profileState.profile, starter), newSeed(), starter);
     seenThisRun.clear();
@@ -1079,6 +1105,18 @@ export async function startGame(host: HTMLElement): Promise<void> {
           ? saveStatus
           : 'Tu guardado es de una versión más nueva del juego: no se modifica.',
       },
+      // 4G-J: only on a phone (or with ?layout=). B changes the field, so the page starts again.
+      layout === null
+        ? null
+        : {
+            current: layout,
+            forced: isPhoneLayout(params.get('layout')),
+            onChange: (next: PhoneLayout) => {
+              saveLayout(store, next);
+              if (next !== layout && !isPhoneLayout(params.get('layout'))) window.location.reload();
+              else showSettings();
+            },
+          },
     );
   }
   function showCredits(): void {
