@@ -1,7 +1,7 @@
-// The whole flow of Phase 5 v1 (4G-I) in a real Edge, desktop and phone in landscape, with a fresh
-// profile: first time -> the professor offers the four classics -> run -> coins at the end -> gacha
-// -> collection -> a new run with another starter (the one the gacha gave).
-//   node tools/browser-bench/flow.mjs --out <dir>
+// The whole flow of the meta (4G-I, 4G-J) in a real Edge with a fresh profile: the professor's
+// tutorial -> the first Pokémon (one of each region) -> run -> coins and candies at the end -> gacha x1
+// and x10 -> collection -> a new run with another Pokémon of the collection.
+//   node tools/browser-bench/flow.mjs --out <dir> [--no-build] [--only <tag>]
 import { existsSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { chromium } from 'playwright-core';
@@ -9,7 +9,8 @@ import { build, preview } from 'vite';
 
 const args = process.argv.slice(2);
 const argOf = (name, fallback) => (args.includes(name) ? args[args.indexOf(name) + 1] : fallback);
-const outDir = argOf('--out', 'flow-4gi');
+const outDir = argOf('--out', 'flow-4gj');
+const only = argOf('--only', '');
 mkdirSync(outDir, { recursive: true });
 const executablePath = [
   process.env.BROWSER_PATH,
@@ -19,7 +20,7 @@ const executablePath = [
   .filter(Boolean)
   .find((p) => existsSync(p));
 if (!executablePath) throw new Error('No browser found. Set BROWSER_PATH.');
-await build({ logLevel: 'error' });
+if (!args.includes('--no-build')) await build({ logLevel: 'error' });
 const server = await preview({ preview: { port: 4188, strictPort: true, host: '127.0.0.1' } });
 const browser = await chromium.launch({ executablePath, headless: false });
 const failures = [];
@@ -27,11 +28,15 @@ const check = (name, ok, detail = '') => {
   console.log(`${ok ? 'PASS' : 'FAIL'}  ${name}${detail ? `  (${detail})` : ''}`);
   if (!ok) failures.push(name);
 };
+/** [tag, viewport, touch, extra query] */
+const DEVICES = [
+  ['escritorio', { width: 1280, height: 800 }, false, ''],
+  ['movil-a', { width: 844, height: 390 }, true, '&layout=a'],
+  ['movil-b', { width: 844, height: 390 }, true, '&layout=b'],
+  ['tablet', { width: 1180, height: 820 }, true, ''],
+].filter(([tag]) => only === '' || tag === only);
 try {
-  for (const [tag, viewport, touch] of [
-    ['escritorio', { width: 540, height: 820 }, false],
-    ['movil', { width: 844, height: 390 }, true],
-  ]) {
+  for (const [tag, viewport, touch, extra] of DEVICES) {
     const context = await browser.newContext({
       viewport,
       ...(touch ? { deviceScaleFactor: 2, hasTouch: true, isMobile: true } : {}),
@@ -39,68 +44,90 @@ try {
     const page = await context.newPage();
     const errors = [];
     page.on('pageerror', (e) => errors.push(e.message));
-    // A fresh profile, with coins for two draws (?debug&coins).
-    await page.goto('http://127.0.0.1:4188/?debug&seed=6&coins=200');
+    // A fresh profile, with coins for a x1 and a x10 (?debug&coins).
+    await page.goto(`http://127.0.0.1:4188/?debug&seed=6&coins=1100${extra}`);
     await page.waitForSelector('[data-screen="start"] [data-action="play"]');
     const tap = (selector) => (touch ? page.tap(selector) : page.click(selector));
-    // 1. First time: the professor and the four classics.
+    // 1. First time: the professor's tutorial, a page at a time.
     await tap('[data-screen="start"] [data-action="play"]');
     await page.waitForSelector('[data-professor]');
+    await page.screenshot({ path: join(outDir, `1-tutorial-${tag}.png`) });
+    let pages = 0;
+    while ((await page.$('[data-action="tutorialNext"]')) !== null && pages < 12) {
+      await tap('[data-action="tutorialNext"]');
+      pages += 1;
+    }
+    check(`${tag}: the tutorial has its pages`, pages >= 4, `${pages} pages`);
+    // 2. The first Pokémon: one of each region and Pikachu.
+    await page.waitForSelector('[data-screen="starters"] [data-starter]');
     const offered = await page.$$eval('[data-screen="starters"] [data-starter]', (bs) =>
       bs.map((b) => b.dataset.starter),
     );
     check(
-      `${tag}: first time, the professor offers the four classics`,
-      offered.length === 4,
-      offered.join(','),
+      `${tag}: first time, the starters of the nine regions`,
+      offered.length === 28 && offered.includes('sprigatito') && offered.includes('pikachu'),
+      `${offered.length}`,
     );
-    await page.screenshot({ path: join(outDir, `1-primera-vez-${tag}.png`) });
-    await tap('[data-screen="starters"] [data-starter="squirtle"]');
+    await tap('[data-screen="starters"] [data-starter="froakie"]');
+    await page.waitForSelector('[data-starter-detail="froakie"]');
+    await page.screenshot({ path: join(outDir, `2-primer-pokemon-${tag}.png`) });
+    await tap('[data-action="choose"]');
     await page.waitForFunction(() => window.__debug().screen === 'playing');
     check(
-      `${tag}: the run starts with the chosen classic`,
-      (await page.evaluate(() => window.__debug().starter)) === 'squirtle',
+      `${tag}: the run starts with the chosen starter`,
+      (await page.evaluate(() => window.__debug().starter)) === 'froakie',
     );
-    // 2. The run ends: the coins of the run.
-    await page.waitForTimeout(1500);
+    await page.waitForTimeout(2500);
+    await page.screenshot({ path: join(outDir, `3-partida-${tag}.png`) });
+    // 3. The run ends: coins, candies, and why there is nothing to register.
     await page.evaluate(() => window.__lose());
     await page.waitForSelector('[data-screen="results"] [data-reward]', { timeout: 15000 });
     const reward = await page.textContent('[data-reward]');
     check(`${tag}: the results say the coins earned`, /monedas/.test(reward ?? ''), reward ?? '');
-    await page.screenshot({ path: join(outDir, `2-monedas-${tag}.png`) });
-    const owned1 = await page.evaluate(() => Object.keys(window.__profile().owned));
     check(
-      `${tag}: the classic is in the collection`,
-      owned1.length === 1 && owned1[0] === 'squirtle',
-      owned1.join(','),
+      `${tag}: without a boss, the results say how to register`,
+      (await page.$('[data-register-hint]')) !== null,
     );
-    // 3. The gacha: two draws.
+    await page.screenshot({ path: join(outDir, `4-resultados-${tag}.png`) });
+    const owned1 = await page.evaluate(() => Object.keys(window.__profile().owned));
+    check(`${tag}: the starter is in the collection`, owned1.join() === 'froakie', owned1.join());
+    // 4. The gacha: a x1 and a x10.
     await page.keyboard.press('KeyM');
     await page.waitForSelector('[data-screen="start"] [data-action="gacha"]');
     await tap('[data-screen="start"] [data-action="gacha"]');
-    await page.waitForSelector('[data-screen="gacha"] [data-action="draw"]');
-    for (let i = 0; i < 2; i++) {
-      await tap('[data-screen="gacha"] [data-action="draw"]');
-      await page.waitForSelector('[data-reveal]');
-    }
-    await page.screenshot({ path: join(outDir, `3-gacha-${tag}.png`) });
-    const owned2 = await page.evaluate(() => Object.keys(window.__profile().owned));
-    check(`${tag}: the gacha adds to the collection`, owned2.length >= 2, owned2.join(','));
-    // 4. The collection.
+    await page.waitForSelector('[data-banner-art]');
+    await page.screenshot({ path: join(outDir, `5-gacha-${tag}.png`) });
+    await tap('[data-draw="1"]');
+    await page.waitForSelector('[data-reveal-card]', { timeout: 5000 });
+    await tap('[data-action="revealDone"]');
+    await tap('[data-draw="10"]');
+    await page.waitForSelector('[data-reveal-card]', { timeout: 5000 });
+    await page.waitForTimeout(1300);
+    const ten = await page.$$eval('[data-reveal-card]', (c) => c.length);
+    check(`${tag}: a x10 reveals ten`, ten === 10, String(ten));
+    await page.screenshot({ path: join(outDir, `6-gacha-x10-${tag}.png`) });
+    await tap('[data-action="revealDone"]');
+    const profile = await page.evaluate(() => window.__profile());
+    check(
+      `${tag}: eleven draws, paid and kept`,
+      profile.gacha.draws === 11 &&
+        profile.coins < 100 + 1100 &&
+        profile.gacha.history.length === 11,
+      `${profile.gacha.draws} draws, ${profile.coins} coins`,
+    );
+    const owned2 = Object.keys(profile.owned);
+    check(`${tag}: the gacha adds to the collection`, owned2.length >= 2, `${owned2.length}`);
+    // 5. The collection.
     await page.keyboard.press('KeyM');
     await tap('[data-screen="start"] [data-action="collection"]');
     await page.waitForSelector('[data-dex-counts]');
-    const counts = await page.getAttribute('[data-dex-counts]', 'data-dex-counts');
+    check(`${tag}: the collection explains candies`, (await page.$('[data-candy-help]')) !== null);
     const ownedTiles = await page.$$eval('[data-dex-state="owned"]', (t) => t.length);
-    check(
-      `${tag}: the Pokédex shows what you have`,
-      ownedTiles === owned2.length,
-      `${counts}, ${ownedTiles} owned`,
-    );
+    check(`${tag}: the Pokédex shows what you have`, ownedTiles === owned2.length, `${ownedTiles}`);
     await tap('[data-dex-state="owned"]');
     await page.waitForSelector('[data-dex-card]');
-    await page.screenshot({ path: join(outDir, `4-coleccion-${tag}.png`) });
-    // 5. A new run with another starter: only the collection is offered now.
+    await page.screenshot({ path: join(outDir, `7-coleccion-${tag}.png`) });
+    // 6. A new run with another Pokémon: only the collection is offered now.
     await page.keyboard.press('KeyM');
     await tap('[data-screen="start"] [data-action="play"]');
     await page.waitForSelector('[data-screen="starters"] [data-starter]');
@@ -110,15 +137,16 @@ try {
     check(
       `${tag}: after the first time, only the collection is offered`,
       choices.length === owned2.length && choices.every((c) => owned2.includes(c)),
-      choices.join(','),
+      `${choices.length}`,
     );
-    const other = choices.find((c) => c !== 'squirtle');
+    const other = choices.find((c) => c !== 'froakie');
     await tap(`[data-screen="starters"] [data-starter="${other}"]`);
+    await tap('[data-action="choose"]');
     await page.waitForFunction(() => window.__debug().screen === 'playing');
     const s = await page.evaluate(() => window.__debug());
-    check(`${tag}: a new run with another starter (${other})`, s.starter === other, s.starter);
-    await page.waitForTimeout(800);
-    await page.screenshot({ path: join(outDir, `5-otra-run-${tag}.png`) });
+    check(`${tag}: a new run with another Pokémon (${other})`, s.starter === other, s.starter);
+    await page.waitForTimeout(1500);
+    await page.screenshot({ path: join(outDir, `8-otra-partida-${tag}.png`) });
     check(`${tag}: no page errors`, errors.length === 0, errors.slice(0, 2).join(' | '));
     await context.close();
   }

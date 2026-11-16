@@ -1,11 +1,14 @@
 import type { GameType, RunSummary } from '../domain';
+import { type ArtLookup, spriteTile } from './cardView';
 import { CONTROL_SCHEMES, type ControlScheme } from './controlSchemes';
 import type { CreditLine } from './creditsText';
 import { MenuBackdrop } from './menuBackdrop';
 import { pokemonName } from './names';
+import { drawProfessor, PROFESSOR_NAME } from './professor';
 import { type BestRunView, describeBest, describeResults, starterBlurb } from './screenText';
 import { drawLogo } from './titleArt';
 import { TYPE_COLORS } from './typeColors';
+import { typeIcons } from './typeIcons';
 
 const PANEL =
   'position:absolute;inset:0;display:none;flex-direction:column;align-items:center;' +
@@ -33,6 +36,10 @@ export interface StarterOption {
   readonly signature: string;
   /** A line about it in the collection (4G-I): its permanent level, the level it starts at. */
   readonly note?: string;
+  /** 4G-J: both types, its region and the last form of its line, for the card. */
+  readonly types?: readonly GameType[];
+  readonly region?: string;
+  readonly final?: string;
 }
 
 /** What the title screen can lead to (4G-I). */
@@ -163,11 +170,21 @@ export class InfoScreen {
   }
 }
 
-/** Pick the Pokémon to start the run with (click, or keys 1-9). */
+/**
+ * Pick the Pokémon to start the run with (4G-J, block 3). The first time, the professor's tutorial
+ * comes first, a page at a time (what the game is, that this Pokémon is yours for good, how the
+ * collection grows); then a grid of cards with their sprite and types. Tapping a card shows it
+ * bigger with what it does, and "¡Te elijo!" starts the run. Keys 1-9 still pick at once.
+ */
 export class StarterScreen {
   private readonly root = el('div', PANEL);
+  private page = 0;
+  private chosen = 0;
 
-  constructor(host: HTMLElement) {
+  constructor(
+    host: HTMLElement,
+    private readonly art: ArtLookup,
+  ) {
     this.root.dataset.screen = 'starters';
     this.root.addEventListener('pointerdown', (e) => e.stopPropagation());
     host.append(this.root);
@@ -178,66 +195,168 @@ export class StarterScreen {
     starters: readonly StarterOption[],
     onPick: (index: number) => void,
     onBack: () => void,
-    /** The words of the professor, the first time (4G-I); empty for the collection. */
-    intro: readonly string[] = [],
+    /** The pages of the professor's tutorial, the first time (4G-J); empty for the collection. */
+    tutorial: readonly string[] = [],
+    subtitle = '',
   ): void {
-    this.root.replaceChildren(
-      el('div', 'font-size:30px;font-weight:800;letter-spacing:0.5px;', title),
-    );
-    if (intro.length > 0) {
-      const box = el(
-        'div',
-        'max-width:420px;text-align:left;padding:10px 14px;border:3px solid #e8ecf8;' +
-          'background:#10142a;font-size:15px;line-height:1.45;display:flex;flex-direction:column;gap:6px;',
-      );
-      box.dataset.professor = '';
-      for (const line of intro) box.append(el('div', '', line));
-      this.root.append(box);
-    }
-    // A collection can be long: the list scrolls.
-    this.root.style.overflowY = 'auto';
-    this.root.style.justifyContent = starters.length > 5 ? 'flex-start' : 'center';
-    starters.forEach((starter, index) => {
-      const button = el('button', `${BUTTON}border-color:${TYPE_COLORS[starter.type]};`);
-      button.type = 'button';
-      button.dataset.starter = starter.id;
-      button.append(
-        el('div', 'font-size:18px;font-weight:700;', `${index + 1}. ${pokemonName(starter.id)}`),
-        el('div', 'font-size:14px;opacity:0.8;margin-top:2px;', starterBlurb(starter.type)),
-      );
-      if (starter.signature !== '') {
-        const line = el(
-          'div',
-          `font-size:13px;font-weight:700;margin-top:3px;color:${TYPE_COLORS[starter.type]};`,
-          starter.signature,
-        );
-        line.dataset.signature = starter.id;
-        button.append(line);
-      }
-      if (starter.note !== undefined && starter.note !== '') {
-        button.append(el('div', 'font-size:12px;opacity:0.85;margin-top:2px;', starter.note));
-      }
-      // Not "pointerdown": that would also reach the canvas input underneath.
-      button.addEventListener('click', () => onPick(index));
-      this.root.append(button);
-    });
+    this.page = tutorial.length > 0 ? 0 : -1;
+    this.chosen = 0;
+    this.render(title, subtitle, starters, onPick, onBack, tutorial);
+    this.root.style.display = 'flex';
+  }
+
+  private render(
+    title: string,
+    subtitle: string,
+    starters: readonly StarterOption[],
+    onPick: (index: number) => void,
+    onBack: () => void,
+    tutorial: readonly string[],
+  ): void {
+    const again = (): void => this.render(title, subtitle, starters, onPick, onBack, tutorial);
     const back = el(
       'button',
-      `${BUTTON}min-width:0;margin-top:6px;padding:6px 14px;`,
+      `${BUTTON}min-width:0;padding:6px 14px;text-align:center;`,
       'Volver (M)',
     );
     back.type = 'button';
     back.dataset.action = 'back';
     back.addEventListener('click', onBack);
-    this.root.append(
-      el(
+    this.root.style.overflowY = 'auto';
+    if (this.page >= 0 && this.page < tutorial.length) {
+      // The tutorial: her portrait, her words, next / skip.
+      this.root.style.justifyContent = 'center';
+      const box = el(
         'div',
-        'font-size:13px;opacity:0.65;max-width:360px;',
-        'Muévete con A/D, las flechas o manteniendo pulsado. Las bolas salen solas.',
-      ),
-      back,
+        'display:flex;gap:14px;align-items:flex-end;max-width:640px;text-align:left;flex-wrap:wrap;justify-content:center;',
+      );
+      box.dataset.professor = '';
+      box.dataset.tutorialPage = String(this.page);
+      const portrait = drawProfessor(6);
+      portrait.style.filter = 'drop-shadow(4px 4px 0 #05060f)';
+      const speech = el(
+        'div',
+        'flex:1 1 280px;padding:12px 14px;border:3px solid #e8ecf8;background:#10142a;' +
+          'font-size:16px;line-height:1.5;display:flex;flex-direction:column;gap:8px;',
+      );
+      speech.append(
+        el('div', 'font-size:12px;color:#ffd75a;letter-spacing:1px;', PROFESSOR_NAME.toUpperCase()),
+        el('div', '', tutorial[this.page] ?? ''),
+        el('div', 'font-size:11px;opacity:0.6;', `${this.page + 1} / ${tutorial.length}`),
+      );
+      box.append(portrait, speech);
+      const next = el(
+        'button',
+        `${BUTTON}min-width:0;text-align:center;border-color:#ffd54f;background:#2a3a6a;`,
+        this.page === tutorial.length - 1 ? 'Elegir mi Pokémon ▶' : 'Siguiente ▶',
+      );
+      next.type = 'button';
+      next.dataset.action = 'tutorialNext';
+      next.addEventListener('click', () => {
+        this.page += 1;
+        again();
+      });
+      const skip = el(
+        'button',
+        `${BUTTON}min-width:0;text-align:center;padding:6px 12px;`,
+        'Saltar',
+      );
+      skip.type = 'button';
+      skip.dataset.action = 'tutorialSkip';
+      skip.addEventListener('click', () => {
+        this.page = tutorial.length;
+        again();
+      });
+      const row = el('div', 'display:flex;gap:8px;flex-wrap:wrap;justify-content:center;');
+      row.append(next, skip, back);
+      this.root.replaceChildren(el('div', 'font-size:26px;font-weight:800;', title), box, row);
+      return;
+    }
+    // The grid of cards, and the chosen one bigger.
+    this.root.style.justifyContent = 'flex-start';
+    const head = el('div', 'display:flex;flex-direction:column;align-items:center;gap:2px;');
+    head.append(el('div', 'font-size:26px;font-weight:800;letter-spacing:0.5px;', title));
+    if (subtitle !== '') head.append(el('div', 'font-size:14px;opacity:0.85;', subtitle));
+    const detail = this.detail(starters[this.chosen], () => onPick(this.chosen));
+    const grid = el(
+      'div',
+      'display:grid;grid-template-columns:repeat(auto-fill,minmax(86px,1fr));gap:6px;width:min(96vw,900px);',
     );
-    this.root.style.display = 'flex';
+    starters.forEach((starter, index) => {
+      const card = el(
+        'button',
+        `${BUTTON}min-width:0;padding:4px;display:flex;flex-direction:column;align-items:center;gap:2px;` +
+          `text-align:center;border-color:${index === this.chosen ? '#ffd54f' : TYPE_COLORS[starter.type]};`,
+      );
+      card.type = 'button';
+      card.dataset.starter = starter.id;
+      card.dataset.selected = index === this.chosen ? '1' : '0';
+      card.append(
+        spriteTile(this.art.spriteUrl(starter.id), starter.id, starter.type, 52, undefined, true),
+        el(
+          'div',
+          'font-size:12px;font-weight:700;',
+          `${index < 9 ? `${index + 1}. ` : ''}${pokemonName(starter.id)}`,
+        ),
+        typeIcons(starter.types ?? [starter.type], 14),
+      );
+      if (starter.region !== undefined)
+        card.append(el('div', 'font-size:10px;opacity:0.7;', starter.region));
+      card.addEventListener('click', () => {
+        this.chosen = index;
+        again();
+      });
+      grid.append(card);
+    });
+    this.root.replaceChildren(head, detail, grid, back);
+  }
+
+  /** The chosen Pokémon bigger, with what it does, and the button that starts the run. */
+  private detail(starter: StarterOption | undefined, onPick: () => void): HTMLElement {
+    const box = el(
+      'div',
+      'display:flex;gap:12px;align-items:center;padding:8px 12px;border:3px solid #ffd54f;' +
+        'background:#10142a;text-align:left;max-width:min(96vw,640px);flex-wrap:wrap;justify-content:center;',
+    );
+    if (starter === undefined) return box;
+    box.dataset.starterDetail = starter.id;
+    const info = el('div', 'display:flex;flex-direction:column;gap:3px;flex:1 1 220px;');
+    info.append(
+      el('div', 'font-size:20px;font-weight:800;', pokemonName(starter.id)),
+      el('div', 'font-size:13px;opacity:0.85;', starterBlurb(starter.type)),
+    );
+    if (starter.final !== undefined && starter.final !== starter.id) {
+      info.append(
+        el('div', 'font-size:12px;opacity:0.8;', `Evoluciona hasta ${pokemonName(starter.final)}`),
+      );
+    }
+    if (starter.signature !== '') {
+      const line = el(
+        'div',
+        `font-size:13px;font-weight:700;color:${TYPE_COLORS[starter.type]};`,
+        starter.signature,
+      );
+      line.dataset.signature = starter.id;
+      info.append(line);
+    }
+    if (starter.note !== undefined && starter.note !== '') {
+      info.append(el('div', 'font-size:12px;opacity:0.85;', starter.note));
+    }
+    const go = el(
+      'button',
+      `${BUTTON}min-width:0;text-align:center;font-size:18px;border-color:#ffd54f;background:#2a3a6a;`,
+      '¡Te elijo!',
+    );
+    go.type = 'button';
+    go.dataset.action = 'choose';
+    // Not "pointerdown": that would also reach the canvas input underneath.
+    go.addEventListener('click', onPick);
+    info.append(go);
+    box.append(
+      spriteTile(this.art.spriteUrl(starter.id), starter.id, starter.type, 96, undefined, true),
+      info,
+    );
+    return box;
   }
 
   hide(): void {

@@ -60,9 +60,12 @@ export {
   registerCapture,
 } from './register';
 export {
+  CANDIES_PER_BOSS,
+  CANDIES_PER_RUN,
   COINS_FOR_WIN,
   COINS_PER_BOSS,
   COINS_PER_WAVE,
+  candiesFor,
   coinsFor,
   KILLS_PER_COIN,
   recordRun,

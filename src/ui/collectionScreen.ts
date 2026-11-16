@@ -56,6 +56,8 @@ export class CollectionScreen {
     onSelect: (species: string) => void,
     onLevelUp: (species: string) => void,
     onBack: () => void,
+    /** How candies are earned (4G-J, block 3), one line each. */
+    candyHelp: readonly string[] = [],
   ): void {
     const back = el('button', BUTTON, 'Volver (M)');
     back.dataset.action = 'back';
@@ -67,6 +69,17 @@ export class CollectionScreen {
     );
     header.dataset.dexCounts = `${counts.seen}/${counts.owned}/${counts.total}`;
     const rows: HTMLElement[] = [el('div', 'font-size:30px;font-weight:800;', 'Colección'), header];
+    if (candyHelp.length > 0) {
+      const help = el(
+        'div',
+        'max-width:min(96vw,640px);text-align:left;font-size:12px;line-height:1.4;padding:6px 10px;' +
+          'border:2px solid #ffd54f;background:#10142a;display:flex;flex-direction:column;gap:3px;',
+      );
+      help.dataset.candyHelp = '';
+      help.append(el('div', 'font-weight:800;color:#ffd54f;', '🍬 ¿Cómo consigo caramelos?'));
+      for (const line of candyHelp) help.append(el('div', '', line));
+      rows.push(help);
+    }
     const chosen = tiles.find((t) => t.species === selected && t.state === 'owned');
     if (chosen !== undefined) rows.push(this.card(chosen, onLevelUp));
     const grid = el(

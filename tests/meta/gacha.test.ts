@@ -15,9 +15,12 @@ import {
   activeBanners,
   type Banner,
   buildCatalog,
+  CANDIES_PER_BOSS,
+  CANDIES_PER_RUN,
   COINS_FOR_WIN,
   COINS_PER_BOSS,
   COINS_PER_WAVE,
+  candiesFor,
   coinsFor,
   drawGacha,
   emptyProfile,
@@ -319,5 +322,20 @@ describe('the coins of a run (a pure function of its summary)', () => {
     );
     expect(p.coins).toBe(coinsFor(summary({ wavesCleared: 2, bossesDefeated: 1, result: 'won' })));
     expect(p.stats).toEqual({ runs: 1, wins: 1, bossesDefeated: 1 });
+  });
+
+  it('the starter earns candies by playing (4G-J): per run once a wave is cleared, and per boss', () => {
+    expect(candiesFor(summary({ wavesCleared: 0, bossesDefeated: 0 }))).toBe(0);
+    expect(candiesFor(summary({ wavesCleared: 1, bossesDefeated: 0 }))).toBe(CANDIES_PER_RUN);
+    expect(candiesFor(summary({ wavesCleared: 6, bossesDefeated: 3 }))).toBe(
+      CANDIES_PER_RUN + 3 * CANDIES_PER_BOSS,
+    );
+    const mine: Profile = { ...emptyProfile(1), owned: { charmander: { level: 1 } } };
+    const played = summary({ wavesCleared: 4, bossesDefeated: 2 });
+    const after = recordRun(mine, played, 'charmander');
+    expect(after.candies.charmander).toBe(candiesFor(played));
+    // A Pokémon that is not in the collection earns nothing (and nothing else changes).
+    expect(recordRun(mine, played, 'zubat').candies).toEqual({});
+    expect(recordRun(mine, played).candies).toEqual({});
   });
 });

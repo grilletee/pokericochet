@@ -51,10 +51,10 @@ export const GACHA_RULES: GachaRules = {
 };
 
 /**
- * ★5: the starters of every generation and the pseudo-legendaries, by the first of their line. A name
- * that is not in the roster is ignored. The legendaries are never in the gacha (only bosses).
+ * The starters of every generation and Pikachu, in Pokédex order (4G-J, block 3): the first Pokémon is
+ * one of them. They are ★5 in the gacha.
  */
-export const FIVE_STAR_LINES: readonly string[] = [
+export const STARTER_LINES: readonly string[] = [
   'bulbasaur',
   'charmander',
   'squirtle',
@@ -83,6 +83,10 @@ export const FIVE_STAR_LINES: readonly string[] = [
   'sprigatito',
   'fuecoco',
   'quaxly',
+];
+
+/** The pseudo-legendaries, by the first of their line: ★5 in the gacha. */
+export const PSEUDO_LINES: readonly string[] = [
   'dratini',
   'larvitar',
   'bagon',
@@ -94,6 +98,12 @@ export const FIVE_STAR_LINES: readonly string[] = [
   'dreepy',
   'frigibax',
 ];
+
+/**
+ * ★5: the starters of every generation and the pseudo-legendaries. A name that is not in the roster is
+ * ignored. The legendaries are never in the gacha (only bosses).
+ */
+export const FIVE_STAR_LINES: readonly string[] = [...STARTER_LINES, ...PSEUDO_LINES];
 
 /** The regions, by national Pokédex number: a region banner and the generation filter use them. */
 export interface Region {

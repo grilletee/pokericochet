@@ -10,6 +10,7 @@ import {
   POKEDEX_IDS,
   POKEMON_NAMES,
   REGIONS,
+  STARTER_LINES,
   STARTER_SPECIES,
   TYPE_BANNER_NAMES,
 } from '../data';
@@ -56,7 +57,10 @@ import {
   addSeen,
   applyUpgrades,
   buildCatalog,
+  CANDIES_PER_BOSS,
+  CANDIES_PER_RUN,
   type CatalogEntry,
+  candiesFor,
   canStartWith,
   chooseFirstStarter,
   coinsFor,
@@ -67,6 +71,7 @@ import {
   levelUp,
   type Profile,
   pityView,
+  REPEAT_CANDIES,
   rateTable,
   recordRun,
   registerable,
@@ -89,11 +94,14 @@ import {
   CollectionScreen,
   type ControlScheme,
   CreditsScreen,
+  candyLines,
   creditLines,
   describeEvent,
   disclaimerShort,
   EvolutionBanner,
   EvolutionMoment,
+  earnedCandiesLine,
+  FIRST_TIME_PAGES,
   type GachaBannerView,
   GachaScreen,
   GamePause,
@@ -567,7 +575,9 @@ export async function startGame(host: HTMLElement): Promise<void> {
     if (e.code === 'Space') skipEvolution();
   });
   const startScreen = new StartScreen(host);
-  const starterScreen = new StarterScreen(host);
+  const starterScreen = new StarterScreen(host, art);
+  // 4G-J (block 3): the first Pokémon is one of the starters of the nine regions or Pikachu.
+  const firstChoices = STARTER_LINES.filter((id) => gameConfig.species[id] !== undefined);
   const collectionScreen = new CollectionScreen(host, art);
   const gachaScreen = new GachaScreen(host, art);
   const pool = gachaPool(gameConfig);
@@ -806,7 +816,19 @@ export async function startGame(host: HTMLElement): Promise<void> {
         owned === undefined
           ? ''
           : `Nivel permanente ${owned.level} · empieza en Nv ${startLevelFor(owned.level)}`;
-      return [{ id, type, signature: signatureText(id), note }];
+      const entry = catalogOf.get(id);
+      const region = REGIONS.find((r) => r.gen === entry?.gen)?.name;
+      return [
+        {
+          id,
+          type,
+          signature: signatureText(id),
+          note,
+          types: entry?.types ?? [type],
+          ...(region === undefined ? {} : { region }),
+          final: entry?.final ?? id,
+        },
+      ];
     });
   let starters: StarterOption[] = starterOptions(STARTER_SPECIES);
   /** Wave announcement: the theme, its type and the types that beat it (ADR-027). */
@@ -869,26 +891,23 @@ export async function startGame(host: HTMLElement): Promise<void> {
     screen = 'starters';
     hideMenus();
     const first = !profileState.profile.firstStarterChosen;
-    starters = starterOptions(starterChoices(profileState.profile, STARTER_SPECIES));
+    starters = starterOptions(starterChoices(profileState.profile, firstChoices));
     starterScreen.show(
-      first ? 'Tu primer Pokémon' : 'Elige tu inicial',
+      first ? 'Tu primer Pokémon' : 'Elige con quién juegas',
       starters,
       (index) => input.requestPick(index),
       showMenu,
-      // The first time (4G-I): the professor of the game, an original character, gives you one.
+      // The first time (4G-J): the professor's tutorial, then one starter of each region.
+      first ? FIRST_TIME_PAGES : [],
       first
-        ? [
-            '¡Hola! Soy la doctora Ámbar y estudio cómo rebotan los Pokémon.',
-            'Para empezar tu colección, elige uno de estos cuatro. Será tuyo para siempre.',
-            'Después podrás conseguir más en el Gacha o registrando uno de los que captures.',
-          ]
-        : [],
+        ? 'Uno de cada región. Será tuyo para siempre.'
+        : `Tu colección: ${starters.length} Pokémon. Más en el Gacha o registrando capturas.`,
     );
   }
-  /** A run starts: the first time, the chosen classic joins the collection (4G-I). */
+  /** A run starts: the first time, the chosen starter joins the collection (4G-I, 4G-J). */
   const pickStarter = (id: string): void => {
-    if (!canStartWith(profileState.profile, STARTER_SPECIES, id)) return;
-    setProfile(chooseFirstStarter(profileState.profile, STARTER_SPECIES, id));
+    if (!canStartWith(profileState.profile, firstChoices, id)) return;
+    setProfile(chooseFirstStarter(profileState.profile, firstChoices, id));
     startRun(id);
   };
   /** The collection (4G-I): the Pokédex of the pool, and candies for permanent levels. */
@@ -914,8 +933,16 @@ export async function startGame(host: HTMLElement): Promise<void> {
         showCollection(species);
       },
       showMenu,
+      candyHelp,
     );
   }
+  /** How candies are earned (4G-J): the same numbers the meta pays. */
+  const candyHelp = candyLines({
+    perRun: CANDIES_PER_RUN,
+    perBoss: CANDIES_PER_BOSS,
+    repeat: GACHA_RULES.repeatCandies,
+    register: REPEAT_CANDIES,
+  });
   /** A Pokémon of the catalogue as the gacha screen shows it. */
   const featuredView = (entry: CatalogEntry) => ({
     species: entry.species,
@@ -1067,10 +1094,13 @@ export async function startGame(host: HTMLElement): Promise<void> {
     const met = [...seenThisRun].map((code) => speciesIds[code] ?? '').filter(knownSpecies);
     // The coins of the run (4G-I): a pure function of its summary.
     const earned = coinsFor(summary);
-    setProfile(recordRun(addSeen(profileState.profile, met), summary));
+    // 4G-J: the starter earns candies by playing (only if it is in the collection).
+    const candies = profileState.profile.owned[starter] === undefined ? 0 : candiesFor(summary);
+    setProfile(recordRun(addSeen(profileState.profile, met), summary, starter));
     screen = 'results';
     // Beat a boss: keep ONE of the captures of the run for good (4G-I).
     const offered = registerable(summary);
+    const candyText = earnedCandiesLine(starter, candies);
     const show = (extra: HTMLElement[]): void =>
       resultsScreen.show(
         summary,
@@ -1078,12 +1108,20 @@ export async function startGame(host: HTMLElement): Promise<void> {
         saved.isNewBest,
         () => input.requestRestart(),
         () => input.requestMenu(),
-        `+${earned} monedas (tienes ${profileState.profile.coins})`,
+        `+${earned} monedas (tienes ${profileState.profile.coins})${candyText === '' ? '' : ` · ${candyText}`}`,
         extra,
       );
+    // 4G-J (decision 24 of the 4G-I): without a boss defeated, say why there is nothing to register.
+    const why = document.createElement('div');
+    why.dataset.registerHint = '';
+    why.style.cssText = 'font-size:13px;opacity:0.85;max-width:420px;';
+    why.textContent =
+      summary.captured.length > 0
+        ? 'Derrota al menos a un jefe para poder registrar una de tus capturas en la colección.'
+        : 'Captura Pokémon y derrota a un jefe: al final podrás registrar uno en tu colección.';
     const panel =
       offered.length === 0
-        ? []
+        ? [why]
         : [
             registerPanel(
               offered,

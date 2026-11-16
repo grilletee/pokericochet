@@ -24,10 +24,31 @@ export function coinsFor(summary: RunSummary): number {
   );
 }
 
-/** The profile after a run: its coins, its numbers. */
-export function recordRun(profile: Profile, summary: RunSummary): Profile {
+/**
+ * Candies a run gives to the Pokémon you played with (4G-J, block 3; 17th playtest: "no entendí cómo
+ * se consiguen los caramelos"): some for playing (once you clear a wave, so quitting at once earns
+ * nothing) and more for every boss defeated. They raise its permanent level in the collection.
+ */
+export const CANDIES_PER_RUN = 2;
+export const CANDIES_PER_BOSS = 2;
+
+export function candiesFor(summary: RunSummary): number {
+  if (summary.wavesCleared < 1) return 0;
+  return CANDIES_PER_RUN + summary.bossesDefeated * CANDIES_PER_BOSS;
+}
+
+/**
+ * The profile after a run: its coins, its numbers, and the candies of the starter it was played with
+ * (only if that Pokémon is in the collection).
+ */
+export function recordRun(profile: Profile, summary: RunSummary, starter = ''): Profile {
+  const candies = profile.owned[starter] === undefined ? 0 : candiesFor(summary);
   return {
     ...profile,
+    candies:
+      candies === 0
+        ? profile.candies
+        : { ...profile.candies, [starter]: (profile.candies[starter] ?? 0) + candies },
     coins: profile.coins + coinsFor(summary),
     stats: {
       runs: profile.stats.runs + 1,

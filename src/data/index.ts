@@ -16,8 +16,10 @@ export {
   GACHA_RULES,
   type GachaRules,
   generationOf,
+  PSEUDO_LINES,
   REGIONS,
   type Region,
+  STARTER_LINES,
   TYPE_BANNER_NAMES,
 } from './config/gacha';
 export { MOVE_INFO, MOVE_NAMES, MOVE_TYPES, MOVES_BY_BASE } from './moves';

@@ -63,6 +63,7 @@ const STYLE = `
 [data-px-root] button:active{transform:translateY(3px)}
 [data-px-root] button[data-starter]{background:${P.navy} !important;text-align:left}
 [data-px-root] button[data-starter]:hover{background:${P.slate} !important;color:${P.cream} !important}
+[data-px-root] button[data-starter][data-selected="1"]{background:${P.blue} !important;${pixelFrame(P.yellow)}}
 [data-px-root] button[data-action="again"],[data-px-root] button[data-action="back"]{background:${P.green} !important}
 [data-px-root] [data-sound-toggle]{background:${P.deep} !important;font-size:13px !important}
 /* the cards of a level up and the replace slots */
