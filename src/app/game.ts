@@ -851,6 +851,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
           types: entry?.types ?? [type],
           ...(region === undefined ? {} : { region }),
           final: entry?.final ?? id,
+          ...(entry === undefined ? {} : { dex: entry.dex, stars: entry.stars }),
         },
       ];
     });
@@ -907,13 +908,33 @@ export async function startGame(host: HTMLElement): Promise<void> {
     creditsScreen.hide();
     settingsScreen.hide();
     hideMenus();
-    startScreen.show(GAME_TITLE, best, disclaimerShort(GAME_TITLE), {
-      onPlay: showStarters,
-      onCollection: showCollection,
-      onGacha: () => showGacha(),
-      onSettings: showSettings,
-      onCredits: showCredits,
-    });
+    const p = profileState.profile;
+    // 4G-J: your Pokémon walk under the menu (the last ones you got first); the starters before that.
+    const walkers = Object.keys(p.owned).length > 0 ? Object.keys(p.owned).reverse() : firstChoices;
+    startScreen.show(
+      GAME_TITLE,
+      best,
+      disclaimerShort(GAME_TITLE),
+      {
+        onPlay: showStarters,
+        onCollection: showCollection,
+        onGacha: () => showGacha(),
+        onSettings: showSettings,
+        onCredits: showCredits,
+      },
+      '',
+      {
+        coins: p.coins,
+        owned: catalog.filter((e) => p.owned[e.species] !== undefined).length,
+        total: catalog.length,
+        runs: p.stats.runs,
+        wins: p.stats.wins,
+        parade: walkers.flatMap((id) => {
+          const url = art.spriteUrl(id);
+          return url === undefined ? [] : [url];
+        }),
+      },
+    );
   };
   /** Jugar: the Pokémon to start with (4G-I: on its own screen). */
   function showStarters(): void {
@@ -945,11 +966,28 @@ export async function startGame(host: HTMLElement): Promise<void> {
     hideMenus();
     const entries = dex(profileState.profile, pool);
     collectionScreen.show(
-      entries.map((entry) => ({
-        ...entry,
-        type: config.species[entry.species]?.type,
-        stats: config.species[entry.species]?.baseStats,
-      })),
+      // 4G-J: in Pokédex order, with the number, region, types, rarity and last form of the catalogue.
+      entries
+        .map((entry) => {
+          const known = catalogOf.get(entry.species);
+          const region = REGIONS.find((r) => r.gen === known?.gen)?.name;
+          return {
+            ...entry,
+            type: config.species[entry.species]?.type,
+            stats: config.species[entry.species]?.baseStats,
+            ...(known === undefined
+              ? {}
+              : {
+                  dex: known.dex,
+                  gen: known.gen,
+                  types: known.types,
+                  stars: known.stars,
+                  final: known.final,
+                }),
+            ...(region === undefined ? {} : { region }),
+          };
+        })
+        .sort((a, b) => (a.dex ?? 0) - (b.dex ?? 0)),
       dexCounts(entries),
       selected,
       (species) => showCollection(species),
@@ -1055,6 +1093,8 @@ export async function startGame(host: HTMLElement): Promise<void> {
               species: pull.species,
               final: catalogOf.get(pull.species)?.final ?? pull.species,
               type: config.species[pull.species]?.type,
+              types: catalogOf.get(pull.species)?.types ?? [],
+              dex: catalogOf.get(pull.species)?.dex ?? 0,
               stars: pull.stars,
               isNew: pull.isNew,
               candies: pull.candies,

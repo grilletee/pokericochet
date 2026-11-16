@@ -16,7 +16,7 @@ export type { CardTextContext } from './cardText';
 export { cardStep, describeCard, typeName } from './cardText';
 export type { ArtLookup } from './cardView';
 export { buildCardArt, STEP_COLOR, spriteTile } from './cardView';
-export { CollectionScreen, type DexTile } from './collectionScreen';
+export { CollectionScreen, type DexTile, filterDex } from './collectionScreen';
 export { type CandyRules, candyLines, earnedCandiesLine } from './collectionText';
 export {
   CONTROL_SCHEMES,
@@ -71,6 +71,7 @@ export {
 export { moveName, pokemonName, setNames } from './names';
 export { Overlay } from './overlay';
 export { installPixelStyle, PALETTE, pixelFrame } from './pixelStyle';
+export { cardBackground, dexNumber, type PokeCardView, pokeCard } from './pokeCard';
 export {
   FIRST_TIME_PAGES,
   PROFESSOR_COLORS,

@@ -94,6 +94,13 @@ try {
     // 4. The gacha: a x1 and a x10.
     await page.keyboard.press('KeyM');
     await page.waitForSelector('[data-screen="start"] [data-action="gacha"]');
+    // The title with the player's card and the parade (4G-J, block 6).
+    check(
+      `${tag}: the menu shows the player's card`,
+      (await page.$('[data-trainer-card]')) !== null,
+    );
+    await page.waitForTimeout(1500);
+    await page.screenshot({ path: join(outDir, `4b-menu-${tag}.png`) });
     await tap('[data-screen="start"] [data-action="gacha"]');
     await page.waitForSelector('[data-banner-art]');
     await page.screenshot({ path: join(outDir, `5-gacha-${tag}.png`) });
@@ -121,12 +128,34 @@ try {
     await page.keyboard.press('KeyM');
     await tap('[data-screen="start"] [data-action="collection"]');
     await page.waitForSelector('[data-dex-counts]');
+    // 4G-J: the candies are one tap away (open by themselves while the collection is new).
+    await tap('[data-action="candyHelp"]');
     check(`${tag}: the collection explains candies`, (await page.$('[data-candy-help]')) !== null);
+    await tap('[data-action="candyHelp"]');
     const ownedTiles = await page.$$eval('[data-dex-state="owned"]', (t) => t.length);
     check(`${tag}: the Pokédex shows what you have`, ownedTiles === owned2.length, `${ownedTiles}`);
+    await page.screenshot({ path: join(outDir, `7-pokedex-${tag}.png`) });
+    // The filters: a type and a generation narrow the grid; "only mine" leaves only yours.
+    const all = Number(await page.getAttribute('[data-dex-grid]', 'data-dex-grid'));
+    await tap('[data-filter-type="fire"]');
+    const fire = Number(await page.getAttribute('[data-dex-grid]', 'data-dex-grid'));
+    await tap('[data-filter-gen="1"]');
+    const fireKanto = Number(await page.getAttribute('[data-dex-grid]', 'data-dex-grid'));
+    check(
+      `${tag}: the filters by type and generation narrow the Pokédex`,
+      all > fire && fire > fireKanto && fireKanto > 0,
+      `${all} > ${fire} > ${fireKanto}`,
+    );
+    await page.screenshot({ path: join(outDir, `7-pokedex-filtros-${tag}.png`) });
+    await tap('[data-filter-type="fire"]');
+    await tap('[data-filter-gen="1"]');
+    await tap('[data-filter-mine]');
+    const mine = Number(await page.getAttribute('[data-dex-grid]', 'data-dex-grid'));
+    check(`${tag}: "only mine" shows your collection`, mine === owned2.length, `${mine}`);
     await tap('[data-dex-state="owned"]');
     await page.waitForSelector('[data-dex-card]');
-    await page.screenshot({ path: join(outDir, `7-coleccion-${tag}.png`) });
+    await page.screenshot({ path: join(outDir, `7-ficha-${tag}.png`) });
+    await tap('[data-filter-mine]');
     // 6. A new run with another Pokémon: only the collection is offered now.
     await page.keyboard.press('KeyM');
     await tap('[data-screen="start"] [data-action="play"]');

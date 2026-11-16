@@ -14,6 +14,7 @@ import {
   stars,
 } from './gachaText';
 import { pokemonName } from './names';
+import { pokeCard } from './pokeCard';
 import { typeIcons } from './typeIcons';
 
 /**
@@ -80,6 +81,9 @@ export interface RevealCard {
   readonly species: string;
   readonly final: string;
   readonly type: GameType | undefined;
+  /** 4G-J, block 6: both types and the Pokédex number, for its card. */
+  readonly types?: readonly GameType[];
+  readonly dex?: number;
   readonly stars: StarCount;
   readonly isNew: boolean;
   readonly candies: number;
@@ -569,12 +573,21 @@ export class GachaScreen {
       node.className = card.stars === 5 ? 'gx-card gx-gold' : 'gx-card';
       node.dataset.revealCard = card.species;
       node.dataset.stars = String(card.stars);
-      const size = big ? 160 : 64;
-      node.append(
-        this.picture(card.species, size, ''),
-        el('div', `color:${c};font-size:${big ? 18 : 11}px;`, stars(card.stars)),
-        el('div', `font-weight:800;font-size:${big ? 22 : 12}px;`, pokemonName(card.species)),
+      // 4G-J, block 6: the card of the Pokédex (its types as colours), inside the glow of its rarity.
+      const face = pokeCard(
+        {
+          species: card.species,
+          types: card.types ?? (card.type === undefined ? [] : [card.type]),
+          dex: card.dex ?? 0,
+          state: 'owned',
+          stars: card.stars,
+        },
+        this.art,
+        big ? 150 : 60,
       );
+      face.tabIndex = -1;
+      face.style.width = '100%';
+      node.append(face);
       if (big && card.final !== card.species) {
         node.append(
           el('div', 'font-size:12px;opacity:0.8;', `Evoluciona hasta ${pokemonName(card.final)}`),

@@ -4,11 +4,11 @@ import { CONTROL_SCHEMES, type ControlScheme } from './controlSchemes';
 import type { CreditLine } from './creditsText';
 import { MenuBackdrop } from './menuBackdrop';
 import { pokemonName } from './names';
+import { pokeCard } from './pokeCard';
 import { drawProfessor, PROFESSOR_NAME } from './professor';
 import { type BestRunView, describeBest, describeResults, starterBlurb } from './screenText';
 import { drawLogo } from './titleArt';
 import { TYPE_COLORS } from './typeColors';
-import { typeIcons } from './typeIcons';
 
 const PANEL =
   'position:absolute;inset:0;display:none;flex-direction:column;align-items:center;' +
@@ -36,10 +36,12 @@ export interface StarterOption {
   readonly signature: string;
   /** A line about it in the collection (4G-I): its permanent level, the level it starts at. */
   readonly note?: string;
-  /** 4G-J: both types, its region and the last form of its line, for the card. */
+  /** 4G-J: both types, its region and the last form of its line, its number and rarity, for the card. */
   readonly types?: readonly GameType[];
   readonly region?: string;
   readonly final?: string;
+  readonly dex?: number;
+  readonly stars?: 3 | 4 | 5;
 }
 
 /** What the title screen can lead to (4G-I). */
@@ -72,7 +74,10 @@ export class StartScreen {
     disclaimer: string,
     actions: MenuActions,
     footer = '',
+    /** 4G-J, block 6: the player's card and the Pokémon that walk under the menu. */
+    trainer: TrainerView | null = null,
   ): void {
+    installMenuCss();
     const logo = drawLogo(title, "'Pixelify',monospace");
     logo.dataset.logo = '';
     logo.style.cssText =
@@ -89,43 +94,60 @@ export class StartScreen {
     }
     // A low screen (a phone held sideways): the entries in a row, so they all fit.
     const low = typeof window !== 'undefined' && window.innerHeight < 520;
+    // 4G-J, block 6: the menu in a box of the classic handheld RPGs (cream, a dark frame, a ▶ that
+    // follows the pointer), drawn with our own palette.
     const menu = el(
       'div',
       low
-        ? 'display:flex;flex-direction:row;flex-wrap:wrap;gap:6px;justify-content:center;max-width:94vw;'
-        : 'display:flex;flex-direction:column;gap:8px;align-items:stretch;',
+        ? 'display:flex;flex-direction:row;flex-wrap:wrap;gap:2px 10px;justify-content:center;max-width:94vw;padding:6px 10px;'
+        : 'display:flex;flex-direction:column;gap:2px;align-items:stretch;padding:10px 14px;min-width:230px;',
     );
-    const entries: readonly [string, string, () => void][] = [
-      ['play', '▶ Jugar', actions.onPlay],
-      ['collection', 'Colección', actions.onCollection],
-      ['gacha', 'Gacha', actions.onGacha],
-      ['settings', 'Ajustes', actions.onSettings],
-      ['credits', 'Créditos', actions.onCredits],
+    menu.dataset.menuBox = '';
+    const entries: readonly [string, string, string, () => void][] = [
+      ['play', 'Jugar', 'Una partida con tus Pokémon', actions.onPlay],
+      ['collection', 'Pokédex', 'Tu colección y sus caramelos', actions.onCollection],
+      ['gacha', 'Gacha', 'Tira con tus monedas', actions.onGacha],
+      ['settings', 'Ajustes', 'Controles, pantalla y sonido', actions.onSettings],
+      ['credits', 'Créditos', 'Quién hizo qué', actions.onCredits],
     ];
-    for (const [id, label, action] of entries) {
+    const hint = el('div', 'font-size:12px;min-height:16px;opacity:0.9;', entries[0]?.[2] ?? '');
+    for (const [id, label, tip, action] of entries) {
       const big = id === 'play';
       const button = el(
         'button',
-        `${BUTTON}text-align:center;min-width:${low ? '120px' : '220px'};${big ? `font-size:${low ? 18 : 22}px;padding:${low ? '8px 14px' : '14px 18px'};border-color:#ffd54f;background:#2a3a6a;` : `font-size:${low ? 14 : 16}px;padding:${low ? '6px 10px' : '9px 16px'};`}`,
+        `pointer-events:auto;cursor:pointer;font:inherit;text-align:left;font-size:${big ? (low ? 18 : 22) : low ? 14 : 17}px;padding:${low ? '3px 6px' : '5px 8px'};`,
         label,
       );
       button.type = 'button';
       button.dataset.action = id;
+      button.dataset.menuRow = '';
+      button.addEventListener('pointerenter', () => {
+        hint.textContent = tip;
+      });
       // Not "pointerdown": that would also reach the canvas input underneath.
       button.addEventListener('click', action);
       menu.append(button);
     }
-    this.root.replaceChildren(
-      this.backdrop.canvas,
-      logo,
-      menu,
-      el('div', 'font-size:14px;opacity:0.85;margin-top:8px;', describeBest(best)),
+    const parts: HTMLElement[] = [logo, menu, hint];
+    if (trainer !== null) parts.push(trainerCard(trainer, low));
+    parts.push(
+      el('div', 'font-size:14px;opacity:0.85;margin-top:4px;', describeBest(best)),
       el('div', 'font-size:12px;opacity:0.75;', footer),
       el('div', 'font-size:11px;opacity:0.6;max-width:420px;margin-top:4px;', disclaimer),
     );
+    const paradeRow = trainer === null ? null : parade(trainer.parade);
+    this.root.replaceChildren(
+      this.backdrop.canvas,
+      ...(paradeRow === null ? [] : [paradeRow]),
+      ...parts,
+    );
     // Everything above the animated night (which is drawn first, under it all).
     for (const child of Array.from(this.root.children)) {
-      if (child !== this.backdrop.canvas && child instanceof HTMLElement) {
+      if (
+        child !== this.backdrop.canvas &&
+        child.hasAttribute('data-parade') === false &&
+        child instanceof HTMLElement
+      ) {
         child.style.position = 'relative';
         child.style.zIndex = '1';
       }
@@ -140,6 +162,73 @@ export class StartScreen {
     this.root.style.display = 'none';
     this.backdrop.stop();
   }
+}
+
+/** The player's card on the title screen (4G-J, block 6), and the Pokémon of the parade. */
+export interface TrainerView {
+  readonly coins: number;
+  readonly owned: number;
+  readonly total: number;
+  readonly runs: number;
+  readonly wins: number;
+  /** Sprite URLs of the Pokémon that walk under the menu (the collection, or the starters). */
+  readonly parade: readonly string[];
+}
+
+const MENU_CSS = `
+[data-px-root] [data-menu-box]{background:#f6f3e8 !important;box-shadow:0 0 0 3px #14172b,0 0 0 6px #5fb0ff,0 0 0 9px #14172b,6px 9px 0 6px #05060f88}
+[data-px-root] [data-menu-box] button[data-menu-row]{background:transparent !important;color:#14172b !important;text-shadow:none !important;box-shadow:none !important;padding-left:22px !important;position:relative}
+[data-px-root] [data-menu-box] button[data-menu-row]::before{content:'▶';position:absolute;left:4px;opacity:0;color:#e04a4a}
+[data-px-root] [data-menu-box] button[data-menu-row]:hover::before,[data-px-root] [data-menu-box] button[data-menu-row]:focus-visible::before{opacity:1}
+[data-px-root] [data-menu-box] button[data-menu-row]:hover{background:#ffd75a55 !important}
+[data-px-root] [data-menu-box] button[data-action="play"]{color:#c0302a !important}
+[data-px-root] [data-trainer-card]{background:linear-gradient(90deg,#e04a4a 0 10px,#f6f3e8 10px) !important;color:#14172b;box-shadow:0 0 0 3px #14172b}
+[data-parade] img{position:absolute;bottom:4%;width:64px;height:64px;image-rendering:pixelated;animation:menu-walk linear infinite,menu-hop 0.5s ease-in-out infinite alternate}
+@keyframes menu-walk{from{left:-80px}to{left:calc(100% + 20px)}}
+@keyframes menu-hop{from{translate:0 0}to{translate:0 -4px}}
+`;
+
+let menuStyled = false;
+function installMenuCss(): void {
+  if (menuStyled || typeof document === 'undefined') return;
+  menuStyled = true;
+  const style = document.createElement('style');
+  style.dataset.menuStyle = '';
+  style.textContent = MENU_CSS;
+  document.head.append(style);
+}
+
+function trainerCard(view: TrainerView, low: boolean): HTMLElement {
+  const card = el(
+    'div',
+    `display:flex;gap:${low ? 10 : 14}px;padding:${low ? '3px 10px 3px 18px' : '6px 14px 6px 22px'};font-size:${low ? 11 : 13}px;font-weight:700;flex-wrap:wrap;justify-content:center;margin-top:6px;`,
+  );
+  card.dataset.trainerCard = '';
+  card.append(
+    el('span', '', `🪙 ${view.coins}`),
+    el('span', '', `Pokédex ${view.owned}/${view.total}`),
+    el('span', '', `Partidas ${view.runs}`),
+    el('span', '', `Victorias ${view.wins}`),
+  );
+  return card;
+}
+
+/** Up to six Pokémon walking along the hills under the menu, each at its own pace. */
+function parade(urls: readonly string[]): HTMLElement | null {
+  if (urls.length === 0) return null;
+  const row = el('div', 'position:absolute;inset:0;pointer-events:none;z-index:0;overflow:hidden;');
+  row.dataset.parade = '';
+  urls.slice(0, 6).forEach((url, i) => {
+    const img = document.createElement('img');
+    img.src = url;
+    img.alt = '';
+    img.style.animationDuration = `${16 + i * 3}s, 0.${4 + (i % 4)}s`;
+    img.style.animationDelay = `${-i * 4.5}s, 0s`;
+    // They walk to the right: the sprites face left, so they are mirrored.
+    img.style.transform = 'scaleX(-1)';
+    row.append(img);
+  });
+  return row;
 }
 
 /** A simple screen with a title, a few lines and a way back (the menus still being built). */
@@ -283,25 +372,21 @@ export class StarterScreen {
       'display:grid;grid-template-columns:repeat(auto-fill,minmax(86px,1fr));gap:6px;width:min(96vw,900px);',
     );
     starters.forEach((starter, index) => {
-      const card = el(
-        'button',
-        `${BUTTON}min-width:0;padding:4px;display:flex;flex-direction:column;align-items:center;gap:2px;` +
-          `text-align:center;border-color:${index === this.chosen ? '#ffd54f' : TYPE_COLORS[starter.type]};`,
+      // 4G-J, block 6: the same card as the Pokédex (its types as colours, its number, its rarity).
+      const card = pokeCard(
+        {
+          species: starter.id,
+          types: starter.types ?? [starter.type],
+          dex: starter.dex ?? 0,
+          state: 'owned',
+          ...(starter.stars === undefined ? {} : { stars: starter.stars }),
+          note: starter.region ?? '',
+          selected: index === this.chosen,
+        },
+        this.art,
+        56,
       );
-      card.type = 'button';
       card.dataset.starter = starter.id;
-      card.dataset.selected = index === this.chosen ? '1' : '0';
-      card.append(
-        spriteTile(this.art.spriteUrl(starter.id), starter.id, starter.type, 52, undefined, true),
-        el(
-          'div',
-          'font-size:12px;font-weight:700;',
-          `${index < 9 ? `${index + 1}. ` : ''}${pokemonName(starter.id)}`,
-        ),
-        typeIcons(starter.types ?? [starter.type], 14),
-      );
-      if (starter.region !== undefined)
-        card.append(el('div', 'font-size:10px;opacity:0.7;', starter.region));
       card.addEventListener('click', () => {
         this.chosen = index;
         again();
@@ -316,7 +401,9 @@ export class StarterScreen {
     const box = el(
       'div',
       'display:flex;gap:12px;align-items:center;padding:8px 12px;border:3px solid #ffd54f;' +
-        'background:#10142a;text-align:left;max-width:min(96vw,640px);flex-wrap:wrap;justify-content:center;',
+        'background:#10142a;text-align:left;max-width:min(96vw,640px);flex-wrap:wrap;justify-content:center;' +
+        // It stays on top while the grid scrolls under it (a phone held sideways is short).
+        'position:sticky;top:0;z-index:3;flex-shrink:0;',
     );
     if (starter === undefined) return box;
     box.dataset.starterDetail = starter.id;
@@ -352,8 +439,16 @@ export class StarterScreen {
     // Not "pointerdown": that would also reach the canvas input underneath.
     go.addEventListener('click', onPick);
     info.append(go);
+    const low = typeof window !== 'undefined' && window.innerHeight < 520;
     box.append(
-      spriteTile(this.art.spriteUrl(starter.id), starter.id, starter.type, 96, undefined, true),
+      spriteTile(
+        this.art.spriteUrl(starter.id),
+        starter.id,
+        starter.type,
+        low ? 64 : 96,
+        undefined,
+        true,
+      ),
       info,
     );
     return box;
