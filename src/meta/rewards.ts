@@ -4,13 +4,16 @@ import type { Profile } from './profile';
 /**
  * What a run is worth when it ends (4G-I, Phase 5, ADR-025 point 3): a pure function of its summary.
  * Coins for every wave cleared and every boss defeated, a prize for winning, and a little for the
- * enemies defeated. "Más por jugar mejor"; no real money, no adverts (Vision).
+ * enemies defeated. "Más por jugar mejor"; coins of the game only: no real money, no adverts (Vision).
+ *
+ * 4G-J (ADR-057): recalibrated for the new gacha (100 coins a draw) so that an average run pays for a
+ * few draws and a won run for about a x10; measured with the bots in the 4G-J report.
  */
-export const COINS_PER_WAVE = 10;
-export const COINS_PER_BOSS = 35;
-export const COINS_FOR_WIN = 80;
+export const COINS_PER_WAVE = 30;
+export const COINS_PER_BOSS = 100;
+export const COINS_FOR_WIN = 250;
 /** One coin for every this many enemies defeated. */
-export const KILLS_PER_COIN = 20;
+export const KILLS_PER_COIN = 6;
 
 export function coinsFor(summary: RunSummary): number {
   return (

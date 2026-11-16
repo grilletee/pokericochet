@@ -10,6 +10,16 @@ import {
 } from './species';
 
 export { baseConfig } from './config';
+export {
+  BANNER_ROTATION,
+  FIVE_STAR_LINES,
+  GACHA_RULES,
+  type GachaRules,
+  generationOf,
+  REGIONS,
+  type Region,
+  TYPE_BANNER_NAMES,
+} from './config/gacha';
 export { MOVE_INFO, MOVE_NAMES, MOVE_TYPES, MOVES_BY_BASE } from './moves';
 export {
   ALL_SPECIES,
@@ -20,6 +30,7 @@ export {
   EVOLUTION_FORMS,
   EVOLUTION_LINES,
   LEGENDARY_SPECIES,
+  POKEDEX_IDS,
   POKEMON_NAMES,
   STARTER_SPECIES,
 } from './species';

@@ -9,8 +9,10 @@ import {
   liveBoss,
   PLAYER_WIDTH,
   type Run,
+  summarizeRun,
   tick,
 } from '../../src/domain';
+import { coinsFor } from '../../src/meta';
 import {
   activeNoDodgePolicy,
   activePolicy,
@@ -63,6 +65,9 @@ interface RunLog {
   won: boolean;
   lost: boolean;
   bosses: BossLog[];
+  /** Coins the run pays (4G-J: the gacha's economy). */
+  coins: number;
+  minutes: number;
 }
 
 function playBosses(seed: number, starter: string, policy: Policy, config: GameConfig): RunLog {
@@ -124,7 +129,13 @@ function playBosses(seed: number, starter: string, policy: Policy, config: GameC
   }
   const last = bosses[bosses.length - 1];
   if (run.phase === 'lost' && last !== undefined && last.end === null) last.diedHere = true;
-  return { won: run.phase === 'won', lost: run.phase === 'lost', bosses };
+  return {
+    won: run.phase === 'won',
+    lost: run.phase === 'lost',
+    bosses,
+    coins: coinsFor(summarizeRun(run, config)),
+    minutes: run.tickCount / 3600,
+  };
 }
 
 const mean = (xs: readonly number[]): number =>
@@ -182,6 +193,9 @@ describe('boss fights: B1-B5 and DPS (ADR-053, 4G-H)', () => {
       `DPS by place (boss health lost per second): ${[0, 1, 2, 3].map(dps).join(' / ')}; boss health ${[0, 1, 2, 3].map(hp).join(' / ')}`,
       `B5 attacks that threatened the bot and did not hurt it: ${pct(threats - hurts, threats)} of ${threats} (50-80 %)`,
       `fury reached: ${pct(all.filter((b) => b.raged).length, all.length)} of the bosses`,
+      // 4G-J: what a run pays for the gacha (100 coins a draw).
+      `coins per run (dodging bot): mean ${mean(dodging.map((r) => r.coins)).toFixed(0)}, median ${median(dodging.map((r) => r.coins)).toFixed(0)}, won ${mean(dodging.filter((r) => r.won).map((r) => r.coins)).toFixed(0)}, lost ${mean(dodging.filter((r) => !r.won).map((r) => r.coins)).toFixed(0)}; minutes per run ${mean(dodging.map((r) => r.minutes)).toFixed(1)}`,
+      `coins per run (careless bot): mean ${mean(careless.map((r) => r.coins)).toFixed(0)}`,
     ];
     console.log(lines.join('\n'));
   }, 3_600_000);

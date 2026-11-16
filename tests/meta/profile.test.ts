@@ -7,6 +7,8 @@ import {
   emptyProfile,
   exportProfile,
   importProfile,
+  MAX_BANNER_KEYS,
+  MAX_HISTORY,
   MAX_PERMANENT_LEVEL,
   migrateProfile,
   PROFILE_VERSION,
@@ -70,7 +72,14 @@ function expectValid(p: Profile): void {
   expect(new Set(p.seen).size).toBe(p.seen.length);
   expect(p.gacha.seed).toBeGreaterThan(0);
   expect(Number.isInteger(p.gacha.draws) && p.gacha.draws >= 0).toBe(true);
-  expect(Number.isInteger(p.gacha.sinceNew) && p.gacha.sinceNew >= 0).toBe(true);
+  expect(Number.isInteger(p.gacha.pity5) && p.gacha.pity5 >= 0).toBe(true);
+  expect(Number.isInteger(p.gacha.pity4) && p.gacha.pity4 >= 0).toBe(true);
+  expect(Object.keys(p.gacha.banners).length).toBeLessThanOrEqual(MAX_BANNER_KEYS);
+  expect(p.gacha.history.length).toBeLessThanOrEqual(MAX_HISTORY);
+  for (const pull of p.gacha.history) {
+    expect(known(pull.species)).toBe(true);
+    expect([3, 4, 5]).toContain(pull.stars);
+  }
   if (Object.keys(p.owned).length > 0) expect(p.firstStarterChosen).toBe(true);
 }
 
@@ -124,6 +133,33 @@ describe('the profile and its migrations (property tests)', () => {
     expect(p?.coins).toBe(120);
     expect(p?.firstStarterChosen).toBe(true);
     expect(p?.seen).toEqual(['charmander', 'pikachu']);
+  });
+
+  it('version 1 (4G-I) migrates to version 2: the collection stays, the pity starts at 0 (4G-J)', () => {
+    const v1 = {
+      version: 1,
+      coins: 340,
+      owned: { charmander: { level: 4 }, zubat: { level: 1 } },
+      candies: { charmander: 7 },
+      seen: ['charmander', 'zubat', 'pikachu'],
+      firstStarterChosen: true,
+      gacha: { seed: 991, draws: 17, sinceNew: 6 },
+      stats: { runs: 5, wins: 1, bossesDefeated: 6 },
+    };
+    const p = migrateProfile(v1, known, 1);
+    expect(p?.version).toBe(2);
+    expect(p?.owned).toEqual(v1.owned);
+    expect(p?.candies).toEqual(v1.candies);
+    expect(p?.coins).toBe(340);
+    expect(p?.gacha).toEqual({
+      seed: 991,
+      draws: 17,
+      pity5: 0,
+      pity4: 0,
+      banners: {},
+      history: [],
+    });
+    expect(p?.stats).toEqual(v1.stats);
   });
 
   it('a newer version is refused; an empty store gives a new profile with nothing owned', () => {

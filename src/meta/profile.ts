@@ -14,7 +14,7 @@ import type { GameConfig } from '../domain';
  * is refused (`null`) so it is never overwritten by an older game.
  */
 
-export const PROFILE_VERSION = 1;
+export const PROFILE_VERSION = 2;
 
 /** The most a Pokémon of the collection can be raised with candies (its level as a starter). */
 export const MAX_PERMANENT_LEVEL = 10;
@@ -24,13 +24,40 @@ export interface OwnedPokemon {
   readonly level: number;
 }
 
+/** One draw of the history (4G-J), newest first in `GachaState.history`. */
+export interface PullRecord {
+  readonly species: string;
+  readonly stars: 3 | 4 | 5;
+  /** The name of the banner it came from. */
+  readonly banner: string;
+  /** A featured Pokémon of a limited banner. */
+  readonly featured: boolean;
+  /** Its number among all the draws of the profile (1 = the first one ever). */
+  readonly n: number;
+}
+
+/** What a limited banner remembers (4G-J): its draws, for the guaranteed featured ★5. */
+export interface BannerProgress {
+  readonly draws: number;
+  /** Its featured ★5 has come (the guarantee is spent). */
+  readonly won: boolean;
+}
+
 export interface GachaState {
   /** The seed of the gacha's own stream and how many draws it has made (its position). */
   readonly seed: number;
   readonly draws: number;
-  /** Draws in a row with nothing new: the guarantee counts them. */
-  readonly sinceNew: number;
+  /** Draws since the last ★5 and since the last ★4 or better: the pity, shared by every banner. */
+  readonly pity5: number;
+  readonly pity4: number;
+  /** Progress of each limited banner, by its key (banner and period). */
+  readonly banners: Readonly<Record<string, BannerProgress>>;
+  readonly history: readonly PullRecord[];
 }
+
+/** The most banners and history entries a profile keeps (the oldest go first). */
+export const MAX_BANNER_KEYS = 24;
+export const MAX_HISTORY = 200;
 
 export interface ProfileStats {
   readonly runs: number;
@@ -62,7 +89,7 @@ export function emptyProfile(gachaSeed: number): Profile {
     owned: {},
     seen: [],
     firstStarterChosen: false,
-    gacha: { seed: gachaSeed >>> 0 || 1, draws: 0, sinceNew: 0 },
+    gacha: { seed: gachaSeed >>> 0 || 1, draws: 0, pity5: 0, pity4: 0, banners: {}, history: [] },
     stats: { runs: 0, wins: 0, bossesDefeated: 0 },
   };
 }
@@ -81,7 +108,8 @@ const isRecord = (value: unknown): value is Record<string, unknown> =>
  * gacha stream when the stored one has none. Returns null for a profile of a NEWER version.
  *
  * Migrations: version 0 (no `version`: an unversioned draft, e.g. written by hand, with a
- * `collection` list of species) is read into version 1; version 1 is validated field by field.
+ * `collection` list of species) is read into version 1; version 1 into version 2 (4G-J: the gacha's
+ * pity, banners and history start empty); version 2 is validated field by field.
  */
 export function migrateProfile(
   raw: unknown,
@@ -127,10 +155,15 @@ export function migrateProfile(
     seen: [...new Set([...seen, ...Object.keys(owned)])].sort(),
     // Someone who has a collection has chosen a first starter, whatever the flag says.
     firstStarterChosen: raw.firstStarterChosen === true || Object.keys(owned).length > 0,
+    // v1 -> v2 (4G-J): the old "novelty" counter (`sinceNew`) has no meaning in the new rules, so
+    // the pity starts at 0; the seed and the position of the stream are kept.
     gacha: {
       seed: int(gachaRaw.seed, 1, 0xffffffff, base.gacha.seed),
       draws: int(gachaRaw.draws, 0, Number.MAX_SAFE_INTEGER, 0),
-      sinceNew: int(gachaRaw.sinceNew, 0, 1_000_000, 0),
+      pity5: version < 2 ? 0 : int(gachaRaw.pity5, 0, 1_000_000, 0),
+      pity4: version < 2 ? 0 : int(gachaRaw.pity4, 0, 1_000_000, 0),
+      banners: version < 2 ? {} : readBanners(gachaRaw.banners),
+      history: version < 2 ? [] : readHistory(gachaRaw.history, known),
     },
     stats: {
       runs: int(statsRaw.runs, 0, Number.MAX_SAFE_INTEGER, 0),
@@ -138,6 +171,33 @@ export function migrateProfile(
       bossesDefeated: int(statsRaw.bossesDefeated, 0, Number.MAX_SAFE_INTEGER, 0),
     },
   };
+}
+
+function readBanners(raw: unknown): Record<string, BannerProgress> {
+  const out: Record<string, BannerProgress> = {};
+  if (!isRecord(raw)) return out;
+  for (const [key, value] of Object.entries(raw).slice(-MAX_BANNER_KEYS)) {
+    if (!isRecord(value)) continue;
+    out[key] = { draws: int(value.draws, 0, 1_000_000, 0), won: value.won === true };
+  }
+  return out;
+}
+
+function readHistory(raw: unknown, known: (species: string) => boolean): PullRecord[] {
+  if (!Array.isArray(raw)) return [];
+  const out: PullRecord[] = [];
+  for (const entry of raw.slice(0, MAX_HISTORY)) {
+    if (!isRecord(entry) || typeof entry.species !== 'string' || !known(entry.species)) continue;
+    const stars = int(entry.stars, 3, 5, 3) as 3 | 4 | 5;
+    out.push({
+      species: entry.species,
+      stars,
+      banner: typeof entry.banner === 'string' ? entry.banner.slice(0, 60) : '',
+      featured: entry.featured === true,
+      n: int(entry.n, 1, Number.MAX_SAFE_INTEGER, 1),
+    });
+  }
+  return out;
 }
 
 /** The mark an exported save carries, to recognise it (the name of the game lives in one place only). */

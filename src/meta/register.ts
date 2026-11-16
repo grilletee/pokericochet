@@ -1,6 +1,8 @@
 import type { RunSummary } from '../domain';
-import { REPEAT_CANDIES } from './gacha';
 import type { Profile } from './profile';
+
+/** Candies a registered Pokémon you already have gives instead (as a repeated ★3 of the gacha). */
+export const REPEAT_CANDIES = 3;
 
 /**
  * Registering a capture (4G-I, Phase 5, Vision: "registrar en la colección uno de los Pokémon

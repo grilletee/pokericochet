@@ -51,6 +51,11 @@ export const POKEMON_NAMES: Readonly<Record<string, string>> = Object.fromEntrie
   file.species.map((s) => [s.id, s.name]),
 );
 
+/** The national Pokédex number of every species (4G-J: the region banners and the Pokédex filters). */
+export const POKEDEX_IDS: Readonly<Record<string, number>> = Object.fromEntries(
+  file.species.map((s) => [s.id, s.pokedexId]),
+);
+
 /** The legendaries, one per type: the final boss is one of them and nothing else drops them. */
 export const LEGENDARY_SPECIES: readonly string[] = file.roster.legendaries;
 

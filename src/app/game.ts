@@ -1,5 +1,18 @@
 import pixelFontUrl from '../assets/fonts/PixelifySans.ttf?url';
-import { ART_SPECIES_IDS, gameConfig, MOVE_NAMES, POKEMON_NAMES, STARTER_SPECIES } from '../data';
+import {
+  ART_SPECIES_IDS,
+  BANNER_ROTATION,
+  FIVE_STAR_LINES,
+  GACHA_RULES,
+  gameConfig,
+  generationOf,
+  MOVE_NAMES,
+  POKEDEX_IDS,
+  POKEMON_NAMES,
+  REGIONS,
+  STARTER_SPECIES,
+  TYPE_BANNER_NAMES,
+} from '../data';
 import {
   addMember,
   attackTypeOf,
@@ -39,19 +52,22 @@ import {
   writeSnapshot,
 } from '../domain';
 import {
+  activeBanners,
   addSeen,
   applyUpgrades,
+  buildCatalog,
+  type CatalogEntry,
   canStartWith,
   chooseFirstStarter,
   coinsFor,
   dex,
   dexCounts,
   drawGacha,
-  GACHA_COST,
   gachaPool,
   levelUp,
-  PITY,
   type Profile,
+  pityView,
+  rateTable,
   recordRun,
   registerable,
   registerCapture,
@@ -78,7 +94,7 @@ import {
   disclaimerShort,
   EvolutionBanner,
   EvolutionMoment,
-  type GachaReveal,
+  type GachaBannerView,
   GachaScreen,
   GamePause,
   installPixelStyle,
@@ -555,6 +571,23 @@ export async function startGame(host: HTMLElement): Promise<void> {
   const collectionScreen = new CollectionScreen(host, art);
   const gachaScreen = new GachaScreen(host, art);
   const pool = gachaPool(gameConfig);
+  // The gacha (4G-J, ADR-057): its catalogue, the banners of the day and the rate table, all from data.
+  const catalog = buildCatalog(gameConfig, {
+    rules: GACHA_RULES,
+    fiveStar: FIVE_STAR_LINES,
+    dexOf: (id) => POKEDEX_IDS[id] ?? 0,
+    genOf: generationOf,
+  });
+  const catalogOf = new Map(catalog.map((entry) => [entry.species, entry]));
+  const bannerInput = { regions: REGIONS, typeNames: TYPE_BANNER_NAMES, rotation: BANNER_ROTATION };
+  // ?debug&day=N shows the banners of another day (days since 1970-01-01), to try the rotation.
+  const debugDay = Number(params.get('day'));
+  const today = (): number =>
+    showDebug && Number.isFinite(debugDay) && debugDay > 0
+      ? Math.floor(debugDay)
+      : Math.floor(Date.now() / 86_400_000);
+  const rates = rateTable(GACHA_RULES);
+  let gachaSelected = 0;
   /** Every menu screen off (each `show*` then turns its own on). */
   const hideMenus = (): void => {
     startScreen.hide();
@@ -883,35 +916,99 @@ export async function startGame(host: HTMLElement): Promise<void> {
       showMenu,
     );
   }
-  /** The gacha (4G-I): the draw is the meta's, with the profile's own stream; saved at once. */
-  function showGacha(reveal: GachaReveal | null = null): void {
+  /** A Pokémon of the catalogue as the gacha screen shows it. */
+  const featuredView = (entry: CatalogEntry) => ({
+    species: entry.species,
+    final: entry.final,
+    types: entry.types,
+    stars: entry.stars,
+    owned: profileState.profile.owned[entry.species] !== undefined,
+  });
+  const featuredOf = (ids: readonly string[]) =>
+    ids.flatMap((id) => {
+      const entry = catalogOf.get(id);
+      return entry === undefined ? [] : [featuredView(entry)];
+    });
+  /**
+   * The gacha (4G-J, ADR-057): the banners of the day, the pity of the profile, x1 and x10. Every
+   * draw is the meta's, on the profile's own stream, and is saved at once.
+   */
+  function showGacha(): void {
     screen = 'gacha';
     hideMenus();
     const p = profileState.profile;
+    const banners = activeBanners(catalog, bannerInput, today());
+    gachaSelected = Math.min(gachaSelected, banners.length - 1);
+    const views: GachaBannerView[] = banners.map((b) => ({
+      key: b.key,
+      kind: b.kind,
+      name: b.name,
+      theme:
+        b.kind === 'region'
+          ? `Región · ${b.gen}.ª generación`
+          : b.kind === 'type' && b.type !== undefined
+            ? `Tipo ${typeName(b.type)}`
+            : 'Todo el catálogo',
+      ...(b.gen === undefined ? {} : { gen: b.gen }),
+      ...(b.type === undefined ? {} : { type: b.type }),
+      endsInDays: b.endsInDays,
+      featured5: featuredOf(b.featured5),
+      featured4: featuredOf(b.featured4),
+      // The standard banner shows three ★5 of the catalogue, a different trio every day.
+      showcase:
+        b.featured5.length > 0
+          ? []
+          : featuredOf(
+              [0, 1, 2].map(
+                (k) => b.pool[5][(today() * 3 + k) % Math.max(1, b.pool[5].length)] ?? '',
+              ),
+            ),
+      pity: pityView(p, b, GACHA_RULES),
+    }));
     gachaScreen.show(
       {
         coins: p.coins,
-        cost: GACHA_COST,
-        toGuarantee: Math.max(1, PITY - p.gacha.sinceNew),
-        owned: pool.filter((id) => p.owned[id] !== undefined).length,
-        poolSize: pool.length,
+        cost: GACHA_RULES.cost,
+        multi: GACHA_RULES.multi,
+        banners: views,
+        selected: gachaSelected,
+        rules: GACHA_RULES,
+        rates,
+        repeatCandies: GACHA_RULES.repeatCandies,
+        history: p.gacha.history,
+        owned: catalog.filter((e) => p.owned[e.species] !== undefined).length,
+        total: catalog.length,
       },
-      () => {
-        const result = drawGacha(profileState.profile, pool);
-        if (!result.ok) return;
-        setProfile(result.profile);
-        if (result.isNew) sound.play('capture', performance.now());
-        else sound.play('collect', performance.now());
-        showGacha({
-          species: result.species,
-          type: config.species[result.species]?.type,
-          isNew: result.isNew,
-          candies: result.candies,
-          guaranteed: result.guaranteed,
-        });
+      {
+        onSelect: (index) => {
+          gachaSelected = index;
+          showGacha();
+        },
+        onDraw: (count) => {
+          const banner = banners[gachaSelected];
+          if (banner === undefined) return;
+          const result = drawGacha(profileState.profile, banner, GACHA_RULES, count);
+          if (!result.ok) return;
+          setProfile(result.profile);
+          const best = Math.max(...result.pulls.map((pull) => pull.stars));
+          sound.play(best >= 5 ? 'evolve' : best >= 4 ? 'capture' : 'collect', performance.now());
+          // The banner behind updates first (coins, pity); the reveal goes over it.
+          showGacha();
+          gachaScreen.showReveal(
+            result.pulls.map((pull) => ({
+              species: pull.species,
+              final: catalogOf.get(pull.species)?.final ?? pull.species,
+              type: config.species[pull.species]?.type,
+              stars: pull.stars,
+              isNew: pull.isNew,
+              candies: pull.candies,
+              featured: pull.featured,
+            })),
+            showGacha,
+          );
+        },
+        onBack: showMenu,
       },
-      showMenu,
-      reveal,
     );
   }
   function showSettings(): void {
