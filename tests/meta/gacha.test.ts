@@ -215,6 +215,29 @@ describe('the guarantees (property tests, thousands of sequences)', () => {
     expect(table.drawsPerFive).toBeLessThan(rules.hardAt);
   });
 
+  it('a ★5 also resets the ★4 counter (it is "a ★4 or better"); a ★3 adds to both', () => {
+    let fives = 0;
+    for (let seed = 1; seed <= 20; seed++) {
+      let p = rich(seed * 2203);
+      for (let i = 0; i < 150; i++) {
+        const before = p.gacha;
+        const out = drawGacha(p, standard, rules);
+        if (!out.ok) throw new Error(out.reason);
+        const stars = out.pulls[0]?.stars;
+        p = out.profile;
+        if (stars === 5) {
+          fives += 1;
+          expect(p.gacha.pity4).toBe(0);
+          expect(p.gacha.pity5).toBe(0);
+        } else if (stars === 3) {
+          expect(p.gacha.pity4).toBe(before.pity4 + 1);
+          expect(p.gacha.pity5).toBe(before.pity5 + 1);
+        }
+      }
+    }
+    expect(fives).toBeGreaterThan(20);
+  });
+
   it('the soft pity raises the chance step by step up to certain', () => {
     expect(fiveChance(rules, 1)).toBe(rules.rate5);
     expect(fiveChance(rules, rules.softFrom - 1)).toBe(rules.rate5);
