@@ -8,7 +8,7 @@ pnpm fetch-data                 species + moves + sprites
 pnpm fetch-data -- --no-sprites
 pnpm fetch-data -- --delay 1000 milliseconds between the requests of each worker (default 500)
 pnpm fetch-data -- --concurrency 2 requests at once (default 4; with 500 ms that is about 6 a second)
-pnpm fetch-data -- --roster     builds the roster of generations 1-4 by rule (roster.json, roster.generated.json) and stops
+pnpm fetch-data -- --roster     builds the roster of generations 1-9 by rule (roster.json, roster.generated.json) and stops
 ```
 
 ## What it reads (all cached, never asked twice)
@@ -18,25 +18,31 @@ pnpm fetch-data -- --roster     builds the roster of generations 1-4 by rule (ro
 | `/pokemon-species/{pokedexId}` | the name in Spanish (ADR-036); English if Spanish is missing, with a warning |
 | `/move/{id}` | name in Spanish, type, power of every candidate move (ADR-039) |
 | `/type/{name}` | the 18x18 type chart, raw values (ADR-047) |
-| `--roster` only: `/pokemon-species/{id}` (1-493), `/evolution-chain/{id}`, `/pokemon/{name}` | the roster rule (ADR-048) |
+| `--roster` only: `/pokemon-species/{id}` (1-1025), `/evolution-chain/{id}`, `/pokemon/{name}` | the roster rule (ADR-048) |
 
 Raw responses go to `tools/fetch-data/.cache/` (git-ignored): `{id}.json`, `species-{id}.json`,
 `move-{id}.json`, `type-{name}.json`, the roster pass's `rs-{n}.json` and `chain-{n}.json`, and the
 sprite `{id}.png`. A cached file is never requested again.
 
-**Measured cold download of the whole roster (4H-B2), 4 workers and 500 ms:** the roster rule needs
-773 requests (112 s) and the species, moves, types and sprites of the 214 lines (424 forms) plus the
-14 legendary bosses another 1,266 (187 s): about 2,040 requests in 5 minutes, 6.8 a second, and 160 MB
-of cache. One request at a time it would be about 30 minutes. A warm run makes none (2 s). The CI keeps
-the cache between runs, saves it even when the step fails so the next run resumes, and keys it by
-`roster.json`, `roster.rules.json`, `moves-overrides.json` and `typechart.ts` (see
-`.github/workflows/ci.yml`).
+**Measured cold download of the whole roster, 4 workers and 500 ms.** 4H-B2 (generations 1-4): the
+roster rule needed 773 requests (112 s) and the species, moves, types and sprites of the 214 lines
+another 1,266 (187 s), about 2,040 requests in 5 minutes and 160 MB of cache. 4G-J (generations 1-9,
+measured on top of that cache): the roster rule of the 532 new species and their chains needs 835 more
+requests (123 s), and the species, names, moves, sprites and cries of the new lines 1,943 more
+(336 s). So a cold cache of the nine generations is about **4,800 requests in 13 minutes** (6 a
+second) and **236 MB**. That fits in the 20-minute step of the CI; if a run is cut short, the partial
+cache is saved and the next run goes on from there. A cache of generations 1-4 (any older key) is
+restored by `restore-keys`, so going from 4 to 9 generations only downloads the new ones (~7.5 min).
+A warm run makes no request (5 s). The CI keys the cache by `roster.json`, `roster.rules.json`,
+`moves-overrides.json` and `typechart.ts` (see `.github/workflows/ci.yml`).
 
 ## What it writes
 - `src/data/generated/typeChart.json`: the 18x18 chart with the raw values of the games (0, 0.5, 1, 2).
   The game softens the immunity when it reads it: x0 counts as x0.25 (ADR-047).
-- `tools/fetch-data/roster.json` (only with `--roster`): the 214 lines of generations 1-4 by the rule
-  of `roster.rules.json` (no legendaries or babies, one branch per split), each one both a ball and a
+- `tools/fetch-data/roster.json` (only with `--roster`): the 425 lines of generations 1-9 by the rule
+  of `roster.rules.json` (no legendaries or babies, one branch per split, and without the curated
+  `exclude` list: Ultra Beasts, Paradox Pokémon and the forms that only evolve from a regional form,
+  4G-J), each one both a ball and a
   wild species; plus the starters, the legendary bosses and the fallback boss, which `roster.rules.json`
   curates by hand.
 - `tools/fetch-data/roster.generated.json` (only with `--roster`): the same lines with the rules, the

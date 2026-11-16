@@ -98,7 +98,9 @@ const BIOMES: readonly ThemeDef[] = [
   biome('coast', 'Costa', ['water', 'ice', 'flying']),
   biome('swamp', 'Pantano', ['water', 'poison', 'bug']),
   biome('storm', 'Tormenta', ['electric', 'dragon', 'ice']),
-  biome('cave', 'Cueva', ['rock', 'ground', 'poison']),
+  // 4G-J: fighting instead of poison as its third type (the miners of the cave). With the roster of
+  // the nine generations Rock was held back in only one biome (T3 asks for two).
+  biome('cave', 'Cueva', ['rock', 'ground', 'fighting']),
   biome('frozen-peak', 'Cumbre helada', ['ice', 'water', 'fighting']),
   biome('dojo', 'Dojo', ['fighting', 'normal', 'dark']),
   biome('ruins', 'Ruinas', ['psychic', 'ground', 'steel']),

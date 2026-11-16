@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { gameConfig } from '../../src/data';
+import { gameConfig, POKEDEX_IDS } from '../../src/data';
 import {
   advanceBoss,
   baseOf,
@@ -20,6 +20,27 @@ const STARTERS = ['charmander', 'squirtle', 'bulbasaur', 'pikachu'] as const;
 const SEEDS = Array.from({ length: 200 }, (_, i) => 1000 + i * 7919);
 
 describe('the pool of a run (ADR-048)', () => {
+  it('draws from the nine generations (4G-J): the new lines come in by type, as many as their share', () => {
+    let lines = 0;
+    let newer = 0;
+    const seen = new Set<string>();
+    for (const seed of SEEDS.slice(0, 100)) {
+      for (const id of createRun(gameConfig, seed, 'charmander').pool) {
+        lines += 1;
+        if ((POKEDEX_IDS[id] ?? 0) > 493) newer += 1;
+        seen.add(id);
+      }
+    }
+    const share =
+      gameConfig.enemySpecies.filter((id) => (POKEDEX_IDS[id] ?? 0) > 493).length /
+      gameConfig.enemySpecies.length;
+    // About half of the roster is of generations 5-9; the pools draw them in about that share.
+    expect(share).toBeGreaterThan(0.45);
+    expect(newer / lines).toBeGreaterThan(share * 0.8);
+    // A hundred runs meet most of the roster.
+    expect(seen.size).toBeGreaterThan(gameConfig.enemySpecies.length * 0.7);
+  });
+
   it('is drawn with its own stream and is the same for the same seed', () => {
     const a = createRun(gameConfig, 42, 'charmander');
     const b = createRun(gameConfig, 42, 'squirtle');

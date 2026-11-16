@@ -17,6 +17,12 @@ export interface RosterRules {
   readonly legendaries?: readonly string[];
   /** Curated: the fallback boss species (a legendary of its own, not one of `legendaries`). */
   readonly boss?: string;
+  /**
+   * Curated (4G-J): species left out with everything after them, by species name. The Ultra Beasts
+   * and the Paradox Pokémon (not flagged legendary by PokéAPI, but of that kind) and the forms that
+   * only evolve from a regional form (regional forms are out for now).
+   */
+  readonly exclude?: readonly string[];
 }
 
 /** What one `/pokemon-species/{id}` response says that the rule needs. */
@@ -53,6 +59,8 @@ export interface BuiltRoster {
     readonly legendary: number;
     readonly babies: number;
     readonly outOfRange: number;
+    /** Species of the `exclude` list met in the chains (the first excluded form of each). */
+    readonly excluded: number;
   };
 }
 
@@ -139,11 +147,14 @@ export function buildRoster(
   let legendary = 0;
   let babies = 0;
   let outOfRange = 0;
+  let excluded = 0;
+  const excludedNames = new Set(rules.exclude ?? []);
 
   const inRange = (name: string): boolean => {
     const info = species.get(name);
     return info !== undefined && info.id <= rules.maxPokedexId;
   };
+  const isExcluded = (name: string): boolean => excludedNames.has(name);
   const isBaby = (name: string): boolean => rules.excludeBabies && species.get(name)?.baby === true;
   const isLegend = (name: string): boolean => {
     const info = species.get(name);
@@ -160,8 +171,10 @@ export function buildRoster(
     const path = [start.name];
     let node = start;
     while (path.length < 3 && node.children.length > 0) {
-      const options = node.children.filter((c) => inRange(c.name));
-      outOfRange += node.children.length - options.length;
+      const reachable = node.children.filter((c) => inRange(c.name));
+      outOfRange += node.children.length - reachable.length;
+      const options = reachable.filter((c) => !isExcluded(c.name));
+      excluded += reachable.length - options.length;
       if (options.length === 0) break;
       const best = options.reduce((a, b) => {
         const ta = statTotal(a.name);
@@ -184,6 +197,10 @@ export function buildRoster(
   /** Starts a line at `node`, or at its children when it is a baby form (each becomes a line). */
   const start = (node: ChainNode): void => {
     if (!inRange(node.name)) return;
+    if (isExcluded(node.name)) {
+      excluded += 1;
+      return;
+    }
     if (isLegend(node.name)) {
       legendary += 1;
       return;
@@ -213,6 +230,7 @@ export function buildRoster(
       legendary,
       babies,
       outOfRange,
+      excluded,
     },
   };
 }

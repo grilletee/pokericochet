@@ -40,8 +40,12 @@ try {
     const page = await context.newPage();
     const errors = [];
     page.on('pageerror', (e) => errors.push(e.message));
+    const t0 = Date.now();
     await page.goto('http://127.0.0.1:4189/?debug&seed=6&coins=20000');
     await page.waitForSelector('[data-screen="start"] [data-action="gacha"]');
+    // 4G-J: the roster of nine generations loads ~900 sprites before the title.
+    const bootMs = Date.now() - t0;
+    check(`${tag}: the title is up in under 8 s`, bootMs < 8000, `${bootMs} ms`);
     const tap = (selector) => (touch ? page.tap(selector) : page.click(selector));
     await tap('[data-screen="start"] [data-action="gacha"]');
     await page.waitForSelector('[data-banner-art]');

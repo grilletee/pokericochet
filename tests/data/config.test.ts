@@ -281,9 +281,9 @@ describe('wave table (GDD-v0)', () => {
     }
   });
 
-  it('the species lists are consistent: 214 lines by rule, every form maps back to its line', () => {
-    expect(gameConfig.enemySpecies).toHaveLength(214);
-    expect(gameConfig.ballSpecies).toHaveLength(214);
+  it('the species lists are consistent: 425 lines by rule (generations 1-9), every form maps back to its line', () => {
+    expect(gameConfig.enemySpecies).toHaveLength(425);
+    expect(gameConfig.ballSpecies).toHaveLength(425);
     for (const [form, info] of Object.entries(gameConfig.forms ?? {})) {
       expect(gameConfig.lines?.[info.base]?.[info.level - 2]).toBe(form);
     }

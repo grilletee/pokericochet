@@ -94,6 +94,37 @@ describe('the roster rule (ADR-048)', () => {
     expect(built.counts.legendary).toBe(2);
   });
 
+  it('leaves out the curated exclusions with what comes after them (4G-J: Ultra Beasts, regional-only forms)', () => {
+    const species = world(
+      info({ name: 'poipole', id: 803 }),
+      info({ name: 'naganadel', id: 804 }),
+      info({ name: 'meowth', id: 52 }),
+      info({ name: 'persian', id: 53 }),
+      info({ name: 'perrserker', id: 863 }),
+      info({ name: 'farfetchd', id: 83 }),
+      info({ name: 'sirfetchd', id: 865 }),
+    );
+    const rules: RosterRules = {
+      ...RULES,
+      maxPokedexId: 1025,
+      exclude: ['poipole', 'perrserker', 'sirfetchd'],
+    };
+    const built = buildRoster(
+      rules,
+      [
+        node('poipole', node('naganadel')),
+        node('meowth', node('persian'), node('perrserker')),
+        node('farfetchd', node('sirfetchd')),
+      ],
+      species,
+      () => 400,
+    );
+    expect(built.lines).toEqual({ meowth: ['persian'], farfetchd: [] });
+    // Excluded children are not a split: nothing is listed as a dropped branch.
+    expect(built.discardedBranches).toEqual([]);
+    expect(built.counts.excluded).toBe(3);
+  });
+
   it('starts a line after a baby form (Pichu is not a base; Pikachu is)', () => {
     const species = world(
       info({ name: 'pichu', id: 172, baby: true }),

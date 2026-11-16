@@ -184,7 +184,9 @@ describe('moves (ADR-039)', () => {
         strictlyStronger += 1;
       }
     }
-    expect(strictlyStronger).toBeGreaterThan(bases.length - 6);
+    // 4G-J: with the nine generations (425 lines) the few lines without a stronger move of their
+    // types are counted as a share, not as a fixed number: at least 96 % grow at every stage.
+    expect(strictlyStronger).toBeGreaterThan(bases.length * 0.96);
   });
 
   it('attack types: every type attacks as the first move of at least two lines (ADR-047)', () => {
