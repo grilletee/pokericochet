@@ -205,27 +205,36 @@ try {
   );
   await title.screenshot({ path: outFile.replace('.png', '-title.png') });
   await title.keyboard.press('Enter');
+  // 4G-J: the first time, the professor's tutorial comes first; then the 28 starters of the regions.
+  await title.locator('[data-action="tutorialSkip"]').click();
   await title.waitForSelector('button[data-starter]');
-  check('Jugar offers 4 starters', (await title.locator('button[data-starter]').count()) === 4);
-  // The signature of each starter is announced before choosing (4F-D).
-  const signatures = await title.locator('[data-signature]').allTextContents();
   check(
-    'every starter shows its signature move with its shape and the form it starts with',
-    signatures.length === 4 &&
-      signatures.every((text) => text.startsWith('Ultimate: ') && text.includes('la lanzas tú')) &&
-      signatures.some((text) => text.includes('Lanzallamas') && text.includes('cruz')),
-    signatures.join(' | '),
+    'Jugar offers the starters of the nine regions',
+    (await title.locator('button[data-starter]').count()) === 28,
+  );
+  // The signature of the chosen starter is announced before choosing (4F-D; 4G-J: on its card).
+  await title.locator('button[data-starter="charmander"]').click();
+  const signature = (await title.locator('[data-signature]').textContent()) ?? '';
+  check(
+    'the chosen starter shows its signature move with its shape and the form it starts with',
+    signature.startsWith('Ultimate: ') &&
+      signature.includes('la lanzas tú') &&
+      signature.includes('Lanzallamas') &&
+      signature.includes('cruz'),
+    signature,
   );
   await title.keyboard.press('Digit3');
   await title.waitForFunction(() => window.__debug().screen === 'playing');
-  check('key 3 starts the run with Bulbasaur', (await dbg(title)).starter === 'bulbasaur');
+  check('key 3 starts the run with Squirtle', (await dbg(title)).starter === 'squirtle');
   check(
     'the title screen is gone once playing',
     (await title.locator('button[data-starter]:visible').count()) === 0,
   );
   const clicked = await open('seed=6');
   await clicked.locator('button[data-action="play"]').click();
+  await clicked.locator('[data-action="tutorialSkip"]').click();
   await clicked.locator('button[data-starter="pikachu"]').click();
+  await clicked.locator('[data-action="choose"]').click();
   await clicked.waitForFunction(() => window.__debug().screen === 'playing');
   check('clicking Pikachu starts the run with Pikachu', (await dbg(clicked)).starter === 'pikachu');
 
