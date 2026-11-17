@@ -806,6 +806,19 @@ export async function startGame(host: HTMLElement): Promise<void> {
       bossPhase: run.boss.phase,
       bossCoreOpen: run.boss.coreOpen,
       hazardKinds: run.hazards.map((h) => h.kind),
+      strikesSeen: renderer.strikesSeen,
+      wavesAlive: renderer.wavesAlive,
+      /** Ticks to the next column-like strike of a boss, -1 if none is announced (4V captures). */
+      nextStrike: run.hazards.reduce(
+        (best, h) =>
+          h.link >= 0 &&
+          h.telegraph > 0 &&
+          (h.kind === 'column' || h.kind === 'comb' || h.kind === 'sweep' || h.kind === 'rain') &&
+          (best < 0 || h.telegraph < best)
+            ? h.telegraph
+            : best,
+        -1,
+      ),
       moveCasts,
       labelsShown: labelPolicy.shown,
       labelsDropped: labelPolicy.dropped,

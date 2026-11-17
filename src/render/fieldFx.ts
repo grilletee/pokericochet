@@ -30,6 +30,9 @@ import { TYPE_SHAPES } from './shapes';
 const PARTS = 280;
 const PUFFS = 12;
 const DIGITS = 4;
+const WAVES = 20;
+const WAVE_BEAM = 0;
+const WAVE_RING = 1;
 /** Where a particle that is not in use waits: far off the field. */
 const OFF = -9999;
 
@@ -57,7 +60,7 @@ export class FieldFx {
   readonly numbers = new ParticleContainer({ dynamicProperties: DYNAMIC });
   private readonly atlas = fxAtlas();
   private readonly sparks = new ParticleContainer({ dynamicProperties: DYNAMIC });
-  private readonly lights = new ParticleContainer({ dynamicProperties: DYNAMIC });
+  private readonly lights = new Container();
   private readonly parts: Particle[] = [];
   /** The glyphs of all the numbers, in the order of their slots. */
   private readonly glyphPool: Particle[] = [];
@@ -74,26 +77,83 @@ export class FieldFx {
   private readonly puffScale = new Float32Array(PUFFS);
   private puffNext = 0;
   private glowNext = 0;
-  private readonly glows: Particle[] = [];
+  private readonly glows: Sprite[] = [];
   private readonly glowLife = new Float32Array(PUFFS);
   private readonly glowSize = new Float32Array(PUFFS);
   private readonly slots: NumberSlot[] = [];
   private alive = 0;
   private busy = false;
   private seed = 1;
+  /** The beams of a strike and the shockwaves (additive): one pool, a kind each. */
+  private readonly waves = new Container();
+  private readonly wavePool: Sprite[] = [];
+  private readonly waveKind = new Uint8Array(WAVES);
+  private readonly waveLife = new Float32Array(WAVES);
+  private readonly waveMs = new Float32Array(WAVES);
+  private readonly waveW = new Float32Array(WAVES);
+  private readonly waveH = new Float32Array(WAVES);
+  private waveNext = 0;
+
+  private wave(
+    kind: number,
+    x: number,
+    y: number,
+    w: number,
+    h: number,
+    color: number,
+    ms: number,
+  ): void {
+    const i = this.waveNext;
+    this.waveNext = (this.waveNext + 1) % WAVES;
+    const p = this.wavePool[i];
+    if (p === undefined) return;
+    const { atlas } = this;
+    p.texture = kind === WAVE_RING ? atlas.ring : Texture.WHITE;
+    p.anchor.set(0.5, kind === WAVE_RING ? 0.5 : 0);
+    p.position.set(x, y);
+    p.tint = color;
+    this.waveKind[i] = kind;
+    this.waveLife[i] = 1;
+    this.waveMs[i] = ms;
+    this.waveW[i] = w;
+    this.waveH[i] = h;
+    this.busy = true;
+  }
+
+  /**
+   * The impact frame of a column of a boss (art bible §6): a beam of light of its type from the
+   * top of the field to the line, as wide as the band it strikes, with a white core; both narrow
+   * and go out in a quarter of a second. It covers exactly the band that hurts.
+   */
+  beam(x: number, width: number, bottom: number, color: number): void {
+    this.wave(WAVE_BEAM, x, 0, width * 1.1, bottom, color, 320);
+    this.wave(WAVE_BEAM, x, 0, width * 0.38, bottom, 0xffffff, 220);
+  }
+
+  /** How many beams and rings are alive now (for the browser checks). */
+  get wavesAlive(): number {
+    let n = 0;
+    for (let i = 0; i < WAVES; i++) if ((this.waveLife[i] ?? 0) > 0) n += 1;
+    return n;
+  }
+
+  /** A ring of light that opens from (x, y) to `radius`: a thrown Ultimate, the fall of a boss. */
+  shockwave(x: number, y: number, radius: number, color: number): void {
+    this.wave(WAVE_RING, x, y, radius, radius, color, 380);
+    this.wave(WAVE_RING, x, y, radius * 0.6, radius * 0.6, 0xffffff, 260);
+  }
 
   constructor() {
     const { atlas } = this;
-    this.lights.blendMode = 'add';
+    // The lights are few (a dozen) and additive: plain sprites of the same sheet, parked off the
+    // field when not in use.
     for (let i = 0; i < PUFFS; i++) {
-      const glow = new Particle({
-        texture: atlas.glow,
-        x: OFF,
-        y: OFF,
-        anchorX: 0.5,
-        anchorY: 0.5,
-      });
+      const glow = new Sprite(atlas.glow);
+      glow.anchor.set(0.5);
+      glow.blendMode = 'add';
+      glow.position.set(OFF, OFF);
       this.glows.push(glow);
+      this.lights.addChild(glow);
     }
     for (let i = 0; i < PUFFS; i++) {
       const puff = new Sprite(Texture.EMPTY);
@@ -136,7 +196,14 @@ export class FieldFx {
         count: 0,
       });
     }
-    this.layer.addChild(this.lights, this.sparks);
+    for (let i = 0; i < WAVES; i++) {
+      const wave = new Sprite(atlas.solid);
+      wave.blendMode = 'add';
+      wave.position.set(OFF, OFF);
+      this.wavePool.push(wave);
+      this.waves.addChild(wave);
+    }
+    this.layer.addChild(this.lights, this.waves, this.sparks);
   }
 
   /** A cheap sequence for the spread of the sparks (decoration: the render has no say in the game). */
@@ -179,8 +246,7 @@ export class FieldFx {
     this.glowNext = (this.glowNext + 1) % PUFFS;
     const glow = this.glows[i];
     if (glow === undefined) return;
-    glow.x = x;
-    glow.y = y;
+    glow.position.set(x, y);
     glow.tint = color;
     this.glowLife[i] = 1;
     this.glowSize[i] = size;
@@ -448,13 +514,11 @@ export class FieldFx {
       if (lit > 0 && glow !== undefined) {
         const next = lit - ms / 260;
         this.glowLife[i] = Math.max(0, next);
-        if (next <= 0) glow.x = OFF;
+        if (next <= 0) glow.position.set(OFF, OFF);
         else {
           any = true;
           glowsLive = i + 1;
-          const size = ((this.glowSize[i] ?? 40) / 24) * (0.7 + (1 - next) * 0.5);
-          glow.scaleX = size;
-          glow.scaleY = size;
+          glow.scale.set(((this.glowSize[i] ?? 40) / 24) * (0.7 + (1 - next) * 0.5));
           glow.alpha = Math.ceil(next * 4) / 4;
         }
       }
@@ -489,8 +553,34 @@ export class FieldFx {
         glyph.alpha = alpha;
       }
     }
+    let wavesLive = 0;
+    for (let i = 0; i < WAVES; i++) {
+      const life = this.waveLife[i] ?? 0;
+      const p = this.wavePool[i];
+      if (life <= 0 || p === undefined) continue;
+      const next = life - ms / (this.waveMs[i] ?? 260);
+      this.waveLife[i] = Math.max(0, next);
+      if (next <= 0) {
+        p.position.set(OFF, OFF);
+        continue;
+      }
+      any = true;
+      wavesLive = i + 1;
+      const t = 1 - next;
+      if (this.waveKind[i] === WAVE_RING) {
+        // Opens fast, then slows; 16 art pixels of ring scaled to the radius.
+        const r = (this.waveW[i] ?? 60) * (0.15 + 0.85 * (1 - (1 - t) * (1 - t)));
+        p.scale.set((r * 2) / 16);
+      } else {
+        // The beam narrows to a thread and fades in steps (sized in arena units, whatever the
+        // size of its texture).
+        p.width = Math.max(FIELD_PIXEL, (this.waveW[i] ?? 20) * (1 - t * 0.75));
+        p.height = this.waveH[i] ?? 100;
+      }
+      p.alpha = Math.ceil(next * 4) / 4;
+    }
+    if (wavesLive === 0) this.waveNext = 0;
     liveParticles(this.sparks, this.parts, partsLive);
-    liveParticles(this.lights, this.glows, glowsLive);
     liveParticles(this.numbers, this.glyphPool, slotsLive * DIGITS);
     // With nothing alive the pool starts again from its beginning, so a quiet fight keeps the
     // containers short.

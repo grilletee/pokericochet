@@ -1612,6 +1612,10 @@ export class Renderer {
     );
     // A bigger ring marks the move of a late stage, so it reads at a glance.
     if (event.tier >= 3) this.startEffect(event.x, event.y, color, 3.2);
+    // 4V: a thrown Ultimate opens a shockwave of its type where it lands.
+    if (event.manual && this.feelOn) {
+      this.feel.shockwave(event.x, event.y, Math.max(90, event.size * 1.6), color);
+    }
   }
 
   /** The boss that was alive in the last frame has died: play its death where it was (4G-H). */
@@ -1620,6 +1624,8 @@ export class Renderer {
     if (b.radius <= 0) return;
     const art = this.art[b.species];
     const color = TYPE_COLORS[b.type] ?? 0xffffff;
+    // 4V: the fall of a boss opens a ring of light of its colour across the field.
+    if (this.feelOn) this.feel.shockwave(b.x, b.y, b.radius * (b.final ? 7 : 5), color);
     if (art === undefined) {
       this.death.start(b.x, b.y, b.radius, this.disc, b.radius / 32, color, b.final);
     } else {
@@ -1631,6 +1637,13 @@ export class Renderer {
   }
 
   private feelOn = true;
+  /** How many strikes of attacks the renderer has drawn (for the browser checks, 4V). */
+  strikesSeen = 0;
+
+  /** Beams and shockwaves alive now (for the browser checks, 4V). */
+  get wavesAlive(): number {
+    return this.feel.wavesAlive;
+  }
   private gatherTick = -1;
 
   /** Turns the sparks, numbers and deaths of the hits off (a measuring aid: `?debug&nofeel`). */
@@ -1696,6 +1709,33 @@ export class Renderer {
     );
   }
 
+  /**
+   * An attack struck (4V; art bible §6, the impact and the residue): it is looked up in the last
+   * frame to know what it was and whose. A column, comb, sweep or rain flashes as a beam of light
+   * over exactly its band; anything that lands throws the matter of its type up from the floor.
+   */
+  private onStrike(
+    event: Extract<GameEvent, { type: 'bossStrike' }>,
+    prev: Snapshot,
+    curr: Snapshot,
+  ): void {
+    let kind = KIND_COMB;
+    let type = curr.bossType;
+    for (let i = 0; i < prev.hazardCount; i++) {
+      if (Math.abs((prev.hazardX[i] ?? -1) - event.x) > 0.5) continue;
+      if (Math.abs((prev.hazardWidth[i] ?? -1) - event.width) > 0.5) continue;
+      kind = prev.hazardKind[i] ?? kind;
+      const own = prev.hazardType[i] ?? 255;
+      if (own !== 255) type = own;
+      break;
+    }
+    const color = type >= 0 ? (TYPE_COLORS[type] ?? DANGER) : DANGER;
+    const { defenseLineY } = this.config.arena;
+    this.strikesSeen += 1;
+    if (kind !== KIND_SHOT) this.feel.beam(event.x, event.width, defenseLineY, color);
+    this.feel.strike(event.x, event.width, defenseLineY, Math.max(0, type), color);
+  }
+
   /** An enemy died: it is looked up in the last frame it was alive and breaks into pixels there. */
   private onKill(event: Extract<GameEvent, { type: 'kill' }>, prev: Snapshot): void {
     if (!this.feelOn) return;
@@ -1738,17 +1778,8 @@ export class Renderer {
         this.legendLife = this.legendTotal;
       } else if (event.type === 'playerHurt')
         this.hurt.hurt(this.player.x, this.config.player.y, event.damage);
-      else if (event.type === 'bossStrike' && this.feelOn) {
-        // What struck leaves its matter on the floor strip, in the type of who threw it.
-        const type = Math.max(0, curr.bossType);
-        this.feel.strike(
-          event.x,
-          event.width,
-          this.config.arena.defenseLineY,
-          type,
-          curr.bossType >= 0 ? (TYPE_COLORS[type] ?? DANGER) : DANGER,
-        );
-      } else if (event.type === 'hit') this.onHit(event, curr);
+      else if (event.type === 'bossStrike' && this.feelOn) this.onStrike(event, prev, curr);
+      else if (event.type === 'hit') this.onHit(event, curr);
       else if (event.type === 'kill') this.onKill(event, prev);
       else if (event.type === 'chain') {
         this.startEffect(event.toX, event.toY, 0xfff176);

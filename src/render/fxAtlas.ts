@@ -36,6 +36,8 @@ export interface FxAtlas {
   /** A round pixel dot of `DISC` pixels across and a pixel ring of `RING` across. */
   readonly disc: Texture;
   readonly ring: Texture;
+  /** A solid white square (the beams of light, stretched). */
+  readonly solid: Texture;
 }
 
 export const DISC = 8;
@@ -114,6 +116,9 @@ export function fxAtlas(): FxAtlas {
   const ringX = discX + DISC + 2;
   writer.stamp(DISC_ROWS, discX, glowY, { e: white });
   writer.stamp(RING_ROWS, ringX, glowY, { e: white });
+  // A 4 x 4 solid cell; only its inner 2 x 2 is used, so stretching it never bleeds a neighbour.
+  const solidX = ringX + RING + 2;
+  writer.stamp(['xxxx', 'xxxx', 'xxxx', 'xxxx'], solidX, glowY, { x: white });
   const sheet = textureOf(writer.done());
   const cut = (frame: Rectangle): Texture => new Texture({ source: sheet.source, frame });
   const shapes = Object.fromEntries(
@@ -127,6 +132,7 @@ export function fxAtlas(): FxAtlas {
     glow: cut(new Rectangle(0, glowY, GLOW, GLOW)),
     disc: cut(new Rectangle(discX, glowY, DISC, DISC)),
     ring: cut(new Rectangle(ringX, glowY, RING, RING)),
+    solid: cut(new Rectangle(solidX + 1, glowY + 1, 2, 2)),
   };
   return atlas;
 }

@@ -100,6 +100,14 @@ SETS.fx = [
     wait: 7000,
     frames: [0, 700, 1400, 2100, 2800, 3500],
   },
+  // The instant a column of the boss strikes, and right after it (the beam and the residue).
+  {
+    name: 'jefe-golpe',
+    query: `starter=pikachu&seed=6&wave=2&bossNo=1&team=${TEAM}&ballLevel=3`,
+    wait: 12000,
+    waitFor: '() => { const n = window.__debug().nextStrike; return n > 0 && n <= 2; }',
+    frames: [0, 1, 2, 3, 4, 300],
+  },
 ];
 
 const DEVICES = {
@@ -126,6 +134,10 @@ try {
       timeout: 60000,
     });
     await page.waitForTimeout(shot.wait);
+    // `waitFor`: a condition on window.__debug() that starts the frames (e.g. the moment a strike lands).
+    if (shot.waitFor) {
+      await page.waitForFunction(shot.waitFor, undefined, { timeout: 30000, polling: 'raf' });
+    }
     if (shot.press) await page.keyboard.press(shot.press);
     // `frames`: several captures, each so many milliseconds after the wait (an effect over time).
     let at = 0;
