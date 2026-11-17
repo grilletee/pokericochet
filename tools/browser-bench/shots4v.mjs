@@ -110,6 +110,50 @@ SETS.fx = [
   },
 ];
 
+// The key moments (block 2): a boss enters, the legendary appears, an evolution, the end of a run.
+const momentOpen = '() => document.querySelector("[data-boss-moment]")?.style.display === "flex"';
+const resultsOpen =
+  '() => document.querySelector(\'[data-screen="results"]\')?.style.display === "flex"';
+SETS.moments = [
+  {
+    name: 'momento-jefe',
+    query: `starter=pikachu&seed=6&wave=2&bossNo=1&team=${TEAM}&ballLevel=3`,
+    wait: 0,
+    waitFor: momentOpen,
+    frames: [150, 600, 1200],
+  },
+  {
+    name: 'momento-legendario',
+    query: `starter=pikachu&seed=6&wave=7&team=${TEAM}&ballLevel=3`,
+    wait: 0,
+    waitFor: momentOpen,
+    frames: [300, 1500, 2500, 3500, 4600],
+  },
+  {
+    name: 'momento-evolucion',
+    query: 'starter=charmander&ballLevel=2&offers=growth&seed=9',
+    wait: 0,
+    waitFor: '() => window.__debug().phase === "levelup"',
+    click: 'button[data-card="0"]',
+    after: '() => document.querySelector("[data-evolution-moment]")?.style.display === "flex"',
+    frames: [300, 950, 1350],
+  },
+  {
+    name: 'momento-derrota',
+    query: 'starter=pikachu&seed=6&wave=3&hp=1',
+    wait: 0,
+    waitFor: resultsOpen,
+    frames: [80, 700, 1600],
+  },
+  {
+    name: 'momento-victoria',
+    query: `starter=pikachu&seed=6&wave=7&team=${TEAM}&ballLevel=3&bossHp=0.004`,
+    wait: 0,
+    waitFor: resultsOpen,
+    frames: [80, 700, 1600],
+  },
+];
+
 const DEVICES = {
   desktop: { viewport: { width: 1280, height: 800 } },
   phone: {
@@ -136,9 +180,21 @@ try {
     await page.waitForTimeout(shot.wait);
     // `waitFor`: a condition on window.__debug() that starts the frames (e.g. the moment a strike lands).
     if (shot.waitFor) {
-      await page.waitForFunction(shot.waitFor, undefined, { timeout: 30000, polling: 'raf' });
+      // A string is evaluated as an expression: the arrow function has to be called, not returned.
+      await page.waitForFunction(`(${shot.waitFor})()`, undefined, {
+        timeout: 90000,
+        polling: 'raf',
+      });
     }
     if (shot.press) await page.keyboard.press(shot.press);
+    if (shot.click) await page.locator(shot.click).first().click();
+    // `after`: a second condition after the click (e.g. the moment opened by it).
+    if (shot.after) {
+      await page.waitForFunction(`(${shot.after})()`, undefined, {
+        timeout: 30000,
+        polling: 'raf',
+      });
+    }
     // `frames`: several captures, each so many milliseconds after the wait (an effect over time).
     let at = 0;
     for (const t of shot.frames ?? []) {

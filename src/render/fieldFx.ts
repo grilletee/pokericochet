@@ -577,7 +577,8 @@ export class FieldFx {
         p.width = Math.max(FIELD_PIXEL, (this.waveW[i] ?? 20) * (1 - t * 0.75));
         p.height = this.waveH[i] ?? 100;
       }
-      p.alpha = Math.ceil(next * 4) / 4;
+      // A wide beam must not wash the field out: the light of a beam stays under 60 %.
+      p.alpha = (Math.ceil(next * 4) / 4) * (this.waveKind[i] === WAVE_RING ? 1 : 0.55);
     }
     if (wavesLive === 0) this.waveNext = 0;
     liveParticles(this.sparks, this.parts, partsLive);

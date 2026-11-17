@@ -1,5 +1,6 @@
 import type { GameType, StageKind } from '../domain';
 import { STEP_COLOR } from './cardView';
+import { installCinema, motes, rays, shadeHex, flash as whiteFlash } from './cinema';
 import { pokemonName } from './names';
 import { TYPE_COLORS } from './typeColors';
 
@@ -116,12 +117,13 @@ export class EvolutionMoment {
 
   constructor(host: HTMLElement) {
     this.root = box(
-      'position:absolute;inset:0;display:none;background:rgba(5,8,16,0.72);' +
+      'position:absolute;inset:0;display:none;background:rgba(5,8,16,0.8);overflow:hidden;' +
         'flex-direction:column;align-items:center;justify-content:center;gap:14px;' +
         'pointer-events:none;z-index:7;font-family:system-ui,sans-serif;color:#fff;text-align:center;',
     );
     this.root.dataset.evolutionMoment = '';
     host.append(this.root);
+    installCinema();
   }
 
   get visible(): boolean {
@@ -161,11 +163,14 @@ export class EvolutionMoment {
       `position:absolute;inset:-30px;border-radius:50%;background:radial-gradient(#fff,${color}00 70%);opacity:0;`,
     );
     stage.append(before, after, flash);
+    // 4V (block 2): a cartridge title in two bands of the colour of its type.
     const title = box(
-      `font-size:${view.stage >= 3 ? 40 : 34}px;font-weight:900;letter-spacing:0.5px;` +
-        `text-shadow:0 2px 0 #000,0 0 14px ${color};`,
+      `font-size:${view.stage >= 3 ? 44 : 38}px;position:relative;z-index:1;max-width:90%;` +
+        `--mx-hi:${shadeHex(color, 1.6)};--mx-lo:${shadeHex(color, 1.15)};`,
       this.headline(view, false),
     );
+    title.dataset.mxTitle = '';
+    stage.style.zIndex = '1';
     // A visible button for the phone; the keyboard uses Space. Nothing else skips (9th playtest:
     // "I hit A by accident and skipped one I did not want to").
     const skip = document.createElement('button');
@@ -176,10 +181,21 @@ export class EvolutionMoment {
       'margin-top:10px;min-height:44px;padding:0 18px;border-radius:22px;border:1px solid #ffffff88;' +
       'background:#0b0e16cc;color:#e8ecf8;font:700 14px system-ui;cursor:pointer;pointer-events:auto;';
     skip.addEventListener('click', () => this.onSkip());
-    this.root.replaceChildren(stage, title, skip);
+    skip.style.position = 'relative';
+    skip.style.zIndex = '1';
+    const half = ms * 0.45;
+    // Behind: rays of its colour that turn and motes that rise; over everything, the white flash of
+    // the change.
+    this.root.replaceChildren(
+      rays(color, 0.3),
+      ...motes([color, shadeHex(color, 1.6), '#ffffff'], 14),
+      stage,
+      title,
+      skip,
+      whiteFlash(half - 60, 480),
+    );
     this.root.style.display = 'flex';
 
-    const half = ms * 0.45;
     animate(
       this.root,
       [{ opacity: 0 }, { opacity: 1, offset: 0.12 }, { opacity: 1, offset: 0.85 }, { opacity: 0 }],

@@ -1,4 +1,5 @@
 import type { GameType } from '../domain';
+import { band, flash, installCinema, kicker, motes, rays, shadeHex, title } from './cinema';
 import { TYPE_COLORS } from './typeColors';
 
 /** Real milliseconds the game stops for each moment of a boss (ADR-046): short, so it does not drag. */
@@ -30,19 +31,26 @@ function animate(element: Element, keyframes: Keyframe[], options: KeyframeAnima
 }
 
 /**
- * The full-screen moment of a boss (4G-B, ADR-046): its entry with the name big and the type, the
- * change of phase and its defeat with a burst of colour and what it leaves behind. The app stops
- * the game for the time of each (`GamePause`); this only draws and takes no pointer events.
+ * The full-screen moment of a boss (4G-B, ADR-046; a cut scene since 4V, block 2). The app stops the
+ * game for the time of each (`GamePause`); this only draws and takes no pointer events.
+ *
+ * - **Entry:** a band of the colour of its type sweeps in diagonally with speed lines, the boss
+ *   slides in from the side onto it and lands with a flash, its name drops in letter by letter.
+ * - **The legendary:** black; its silhouette, rimmed in the colour of its type, rumbles while motes
+ *   rise; a white flash reveals it in colour over turning rays, and its name comes in huge.
+ * - **Defeat:** it blinks and folds into the floor, a burst of pixels and rays of gold.
  */
 export class BossMoment {
   private readonly root: HTMLDivElement;
   private timer = 0;
 
   constructor(host: HTMLElement) {
+    installCinema();
     this.root = box(
-      'position:absolute;inset:0;display:none;background:rgba(5,8,16,0.6);' +
-        'flex-direction:column;align-items:center;justify-content:center;gap:8px;' +
-        'pointer-events:none;z-index:6;font-family:system-ui,sans-serif;color:#fff;text-align:center;',
+      'position:absolute;inset:0;display:none;background:rgba(5,8,16,0.6);overflow:hidden;' +
+        'flex-direction:column;align-items:center;justify-content:center;gap:10px;' +
+        // Over the sign of the wave (the cartel), which used to cover its top.
+        'pointer-events:none;z-index:9;font-family:system-ui,sans-serif;color:#fff;text-align:center;',
     );
     this.root.dataset.bossMoment = '';
     host.append(this.root);
@@ -55,18 +63,122 @@ export class BossMoment {
   show(view: BossMomentView, ms: number): void {
     window.clearTimeout(this.timer);
     const color = view.type === undefined ? '#ffd54f' : TYPE_COLORS[view.type];
-    const children: HTMLElement[] = [];
-    /** Things drawn over everything else (the burst of the defeat, the bars of the entry). */
-    const extras: HTMLElement[] = [];
-    if (view.spriteUrl !== undefined) {
-      const img = document.createElement('img');
+    const back: HTMLElement[] = [];
+    const front: HTMLElement[] = [];
+    const over: HTMLElement[] = [];
+    const big = view.style === 'final' ? 300 : view.style === 'phase' ? 140 : 240;
+    const img = view.spriteUrl === undefined ? null : document.createElement('img');
+    if (img !== null && view.spriteUrl !== undefined) {
       img.src = view.spriteUrl;
       img.alt = view.title;
       img.draggable = false;
-      img.style.cssText = `width:${view.style === 'phase' ? 120 : 170}px;height:${view.style === 'phase' ? 120 : 170}px;image-rendering:pixelated;filter:drop-shadow(0 0 14px ${color});`;
-      children.push(img);
-      img.style.transformOrigin = '50% 100%';
-      if (view.style === 'defeat') {
+      // At most 40 % of the height of the screen (a phone held sideways).
+      img.style.cssText = `width:min(${big}px,40vh);height:min(${big}px,40vh);image-rendering:pixelated;position:relative;transform-origin:50% 100%;`;
+    }
+
+    if (view.style === 'entry') {
+      back.push(band(color));
+      if (img !== null) {
+        img.style.filter = `drop-shadow(0 0 0 ${color}) drop-shadow(6px 6px 0 rgba(11,13,26,0.6))`;
+        // Slides in from the right onto the band, lands with a flash, then breathes.
+        animate(
+          img,
+          [
+            { transform: 'translateX(70vw)', filter: 'brightness(1)' },
+            { transform: 'translateX(0)', filter: 'brightness(1)', offset: 0.32 },
+            { transform: 'translateX(0)', filter: 'brightness(5)', offset: 0.36 },
+            { transform: 'translateX(0) translateY(-6px)', filter: 'brightness(1)', offset: 0.44 },
+            { transform: 'translateX(0)', filter: 'brightness(1)' },
+          ],
+          { duration: ms, easing: 'steps(18)', fill: 'forwards' },
+        );
+        front.push(img);
+      }
+      front.push(kicker(view.kicker, shadeHex(color, 1.5)), title(view.title, color, 64, ms * 0.3));
+      // The landing shakes the screen.
+      animate(
+        this.root,
+        [
+          { transform: 'translate(0,0)' },
+          { transform: 'translate(0,0)', offset: 0.33 },
+          { transform: 'translate(-8px,4px)', offset: 0.36 },
+          { transform: 'translate(6px,-4px)', offset: 0.42 },
+          { transform: 'translate(-3px,2px)', offset: 0.48 },
+          { transform: 'translate(0,0)', offset: 0.54 },
+        ],
+        { duration: ms, easing: 'steps(1)' },
+      );
+    } else if (view.style === 'final') {
+      // Black, motes of its colour rising, rays that come in at the reveal.
+      const reveal = 0.55;
+      back.push(...motes([color, shadeHex(color, 1.6), '#ffffff'], 18));
+      const light = rays(color, 0.55);
+      light.style.opacity = '0';
+      animate(
+        light,
+        [
+          { opacity: 0 },
+          { opacity: 0, offset: reveal },
+          { opacity: 0.6, offset: reveal + 0.04 },
+          { opacity: 0.45 },
+        ],
+        { duration: ms, easing: 'steps(12)', fill: 'forwards' },
+      );
+      back.unshift(light);
+      if (img !== null) {
+        // A silhouette rimmed in its colour (so it reads on black), that grows as it rumbles; the
+        // flash reveals it in colour.
+        const rim = `drop-shadow(2px 0 0 ${color}) drop-shadow(-2px 0 0 ${color}) drop-shadow(0 2px 0 ${color}) drop-shadow(0 -2px 0 ${color})`;
+        animate(
+          img,
+          [
+            { filter: `brightness(0) ${rim}`, transform: 'scale(0.7)', opacity: 0, offset: 0 },
+            { filter: `brightness(0) ${rim}`, transform: 'scale(0.82)', opacity: 1, offset: 0.2 },
+            {
+              filter: `brightness(0) ${rim}`,
+              transform: 'scale(0.95)',
+              opacity: 1,
+              offset: reveal,
+            },
+            {
+              filter: 'brightness(6)',
+              transform: 'scale(1.12)',
+              opacity: 1,
+              offset: reveal + 0.03,
+            },
+            {
+              filter: `brightness(1) drop-shadow(0 0 18px ${color})`,
+              transform: 'scale(1)',
+              opacity: 1,
+              offset: reveal + 0.12,
+            },
+            {
+              filter: `brightness(1) drop-shadow(0 0 18px ${color})`,
+              transform: 'scale(1)',
+              opacity: 1,
+            },
+          ],
+          { duration: ms, easing: 'steps(36)', fill: 'forwards' },
+        );
+        front.push(img);
+      }
+      over.push(flash(ms * reveal, 520));
+      front.push(
+        kicker(view.kicker, shadeHex(color, 1.5)),
+        title(view.title, color, 84, ms * (reveal + 0.05), 70),
+      );
+      const quake: Keyframe[] = [];
+      for (let k = 0; k <= 24; k++) {
+        const power = k < 13 ? 2 + k * 0.3 : k < 16 ? 10 : 3;
+        quake.push({
+          transform: `translate(${k % 2 === 0 ? -power : power}px,${k % 3 === 0 ? power / 2 : -power / 2}px)`,
+          offset: k / 24,
+        });
+      }
+      animate(this.root, quake, { duration: ms * 0.75, easing: 'steps(1)' });
+    } else if (view.style === 'defeat') {
+      back.push(rays('#ffd75a', 0.35));
+      if (img !== null) {
         // It faints the way the old games did: blinks, then folds into the floor in coarse steps.
         animate(
           img,
@@ -81,86 +193,33 @@ export class BossMoment {
           ],
           { duration: ms, easing: 'steps(14)', fill: 'forwards' },
         );
-        // A burst of square pixels in the colour of the type.
-        for (let k = 0; k < 28; k++) {
-          const angle = (k / 28) * Math.PI * 2;
-          const reach = 90 + (k % 4) * 34;
-          const dot = box(
-            `position:absolute;width:8px;height:8px;background:${k % 3 === 0 ? '#fff7e0' : color};` +
-              'image-rendering:pixelated;left:50%;top:44%;',
-          );
-          extras.push(dot);
-          animate(
-            dot,
-            [
-              { transform: 'translate(0,0)', opacity: 1 },
-              {
-                transform: `translate(${Math.cos(angle) * reach}px,${Math.sin(angle) * reach}px)`,
-                opacity: 0,
-              },
-            ],
-            { duration: ms * 0.85, delay: ms * 0.3, easing: 'steps(8)', fill: 'both' },
-          );
-        }
-      } else if (view.style === 'entry') {
-        // It drops in with a heavy landing: coarse steps down, then the screen shakes.
-        animate(
-          img,
-          [
-            { transform: 'translateY(-220px)', opacity: 0 },
-            { transform: 'translateY(0)', opacity: 1, offset: 0.55 },
-            { transform: 'translateY(0)', opacity: 1 },
-          ],
-          { duration: ms, easing: 'steps(9)', fill: 'forwards' },
+        front.push(img);
+      }
+      // A burst of square pixels in the colour of the type, and gold.
+      for (let k = 0; k < 32; k++) {
+        const angle = (k / 32) * Math.PI * 2;
+        const reach = 110 + (k % 4) * 46;
+        const dot = box(
+          `position:absolute;width:${k % 5 === 0 ? 12 : 8}px;height:${k % 5 === 0 ? 12 : 8}px;` +
+            `background:${k % 3 === 0 ? '#fff7e0' : k % 3 === 1 ? '#ffd75a' : color};left:50%;top:42%;`,
         );
+        over.push(dot);
         animate(
-          this.root,
+          dot,
           [
-            { transform: 'translate(0,0)' },
-            { transform: 'translate(-6px,4px)', offset: 0.58 },
-            { transform: 'translate(6px,-4px)', offset: 0.66 },
-            { transform: 'translate(-3px,2px)', offset: 0.74 },
-            { transform: 'translate(0,0)', offset: 0.82 },
-          ],
-          { duration: ms, easing: 'steps(1)' },
-        );
-      } else if (view.style === 'final') {
-        // The legendary: it is a black silhouette that rumbles for two seconds, then lights up in
-        // the colour of its type with a flash, while the whole screen shakes harder.
-        img.style.width = '250px';
-        img.style.height = '250px';
-        animate(
-          img,
-          [
-            { filter: 'brightness(0)', transform: 'scale(0.7)', opacity: 0, offset: 0 },
-            { filter: 'brightness(0)', transform: 'scale(0.85)', opacity: 1, offset: 0.25 },
-            { filter: 'brightness(0)', transform: 'scale(0.95)', opacity: 1, offset: 0.55 },
-            { filter: 'brightness(6)', transform: 'scale(1.1)', opacity: 1, offset: 0.6 },
+            { transform: 'translate(0,0)', opacity: 1 },
             {
-              filter: `brightness(1) drop-shadow(0 0 22px ${color})`,
-              transform: 'scale(1)',
-              opacity: 1,
-              offset: 0.7,
-            },
-            {
-              filter: `brightness(1) drop-shadow(0 0 22px ${color})`,
-              transform: 'scale(1)',
-              opacity: 1,
+              transform: `translate(${Math.cos(angle) * reach}px,${Math.sin(angle) * reach}px)`,
+              opacity: 0,
             },
           ],
-          { duration: ms, easing: 'steps(30)', fill: 'forwards' },
+          { duration: ms * 0.8, delay: ms * 0.45, easing: 'steps(8)', fill: 'both' },
         );
-        const quake: Keyframe[] = [];
-        for (let k = 0; k <= 20; k++) {
-          const power = k < 12 ? 3 : 8;
-          quake.push({
-            transform: `translate(${k % 2 === 0 ? -power : power}px,${k % 3 === 0 ? power / 2 : -power / 2}px)`,
-            offset: k / 20,
-          });
-        }
-        animate(this.root, quake, { duration: ms * 0.8, easing: 'steps(1)' });
-      } else {
-        // The fury: a flash and a shudder.
+      }
+      front.push(kicker(view.kicker, '#ffd75a'), title(view.title, color, 52, ms * 0.2));
+    } else {
+      // The fury: a flash and a shudder.
+      if (img !== null) {
         animate(
           img,
           [
@@ -170,48 +229,47 @@ export class BossMoment {
           ],
           { duration: ms, easing: 'steps(6)', fill: 'forwards' },
         );
+        front.push(img);
       }
+      front.push(kicker(view.kicker, '#ff6a5a'), title(view.title, '#ff4a3a', 44));
     }
+    if (view.note !== undefined) front.push(box('font-size:15px;opacity:0.9;', view.note));
     // Black bars slide in from the top and the bottom, like a cut scene.
     if (view.style === 'entry' || view.style === 'final') {
       for (const edge of ['top', 'bottom']) {
         const bar = box(
-          `position:absolute;left:0;right:0;${edge}:0;height:13%;background:#0a0c18;border-${edge === 'top' ? 'bottom' : 'top'}:4px solid ${color};`,
+          `position:absolute;left:0;right:0;${edge}:0;height:12%;background:#0b0d1a;z-index:2;` +
+            `box-shadow:0 ${edge === 'top' ? 4 : -4}px 0 0 ${color};`,
         );
-        extras.push(bar);
+        over.push(bar);
         animate(
           bar,
           [
             { transform: `translateY(${edge === 'top' ? '-100%' : '100%'})` },
             { transform: 'none' },
           ],
-          { duration: ms * 0.25, easing: 'steps(5)', fill: 'both' },
+          { duration: ms * 0.18, easing: 'steps(5)', fill: 'both' },
         );
       }
     }
-    children.push(
-      box(`font-size:15px;font-weight:800;letter-spacing:2px;color:${color};`, view.kicker),
-      box(
-        `font-size:${view.style === 'final' ? 56 : 38}px;font-weight:900;text-shadow:0 2px 0 #000,0 0 14px ${color};`,
-        view.title,
-      ),
+    // What is in front stands over the band and the rays.
+    const stage = box(
+      'position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;gap:10px;',
     );
-    if (view.note !== undefined) children.push(box('font-size:15px;opacity:0.9;', view.note));
-    this.root.replaceChildren(...children, ...extras);
+    stage.append(...front);
+    this.root.replaceChildren(...back, stage, ...over);
     this.root.style.display = 'flex';
     this.root.dataset.style = view.style;
     this.root.style.background =
       view.style === 'defeat'
-        ? `radial-gradient(${color}cc, rgba(5,8,16,0.7) 70%)`
+        ? `radial-gradient(${shadeHex(color, 0.6)}cc, rgba(5,8,16,0.82) 70%)`
         : view.style === 'final'
-          ? 'rgba(0,0,4,0.94)'
-          : 'rgba(5,8,16,0.6)';
+          ? 'rgba(0,0,4,0.96)'
+          : 'rgba(5,8,16,0.72)';
     animate(
       this.root,
-      [{ opacity: 0 }, { opacity: 1, offset: 0.15 }, { opacity: 1, offset: 0.8 }, { opacity: 0 }],
-      {
-        duration: ms,
-      },
+      [{ opacity: 0 }, { opacity: 1, offset: 0.08 }, { opacity: 1, offset: 0.86 }, { opacity: 0 }],
+      { duration: ms, easing: 'steps(10)' },
     );
     this.timer = window.setTimeout(() => this.hide(), ms);
   }

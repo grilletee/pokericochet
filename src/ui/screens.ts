@@ -1,5 +1,6 @@
 import type { GameType, RunSummary } from '../domain';
 import { type ArtLookup, spriteTile } from './cardView';
+import { title as cinemaTitle, confetti, installCinema, rays } from './cinema';
 import { CONTROL_SCHEMES, type ControlScheme } from './controlSchemes';
 import type { CreditLine } from './creditsText';
 import { MenuBackdrop } from './menuBackdrop';
@@ -12,7 +13,8 @@ import { TYPE_COLORS } from './typeColors';
 
 const PANEL =
   'position:absolute;inset:0;display:none;flex-direction:column;align-items:center;' +
-  'justify-content:center;gap:10px;background:rgba(5,8,16,0.82);text-align:center;' +
+  // `safe`: when the content is taller than the screen it starts at the top instead of being cut.
+  'justify-content:safe center;gap:10px;background:rgba(5,8,16,0.82);text-align:center;' +
   'font-family:system-ui,sans-serif;color:#e8ecf8;padding:16px;box-sizing:border-box;';
 const BUTTON =
   'pointer-events:auto;min-width:240px;padding:12px 16px;border:2px solid #5b6aa8;' +
@@ -481,10 +483,32 @@ export class ResultsScreen {
     extra: readonly HTMLElement[] = [],
   ): void {
     const text = describeResults(summary, best, isNewBest);
-    this.root.replaceChildren(
-      el('div', 'font-size:36px;font-weight:800;margin-bottom:6px;', text.title),
-      ...text.lines.map((line) => el('div', 'font-size:16px;max-width:420px;', line)),
+    installCinema();
+    // 4V (block 2): the end of a run is a moment. A victory: gold letters that drop in, gold rays
+    // and confetti of pixels. A defeat: slate letters that come slowly and ash that falls.
+    const won = summary.result === 'won';
+    const heading = cinemaTitle(text.title, won ? '#ffd75a' : '#8a96b4', 64, 120, won ? 70 : 140);
+    heading.style.cssText += 'position:relative;z-index:1;margin-bottom:10px;';
+    heading.dataset.resultsTitle = won ? 'won' : 'lost';
+    const lines = text.lines.map((line) =>
+      el('div', 'font-size:16px;max-width:420px;position:relative;z-index:1;', line),
     );
+    // The decoration lives in its own clipped layer behind the content (the panel scrolls; the rays
+    // must not make it scroll), above the background of the panel thanks to `isolation`.
+    const decor = el(
+      'div',
+      'position:absolute;inset:0;overflow:hidden;pointer-events:none;z-index:-1;',
+    );
+    decor.append(
+      ...(won
+        ? [
+            rays('#ffd75a', 0.22),
+            ...confetti(['#ffd75a', '#ff7fb0', '#5fb0ff', '#9fe86a', '#f6f3e8'], 28),
+          ]
+        : confetti(['#4a5578', '#2b3a73', '#9aa6c0'], 16)),
+    );
+    this.root.style.isolation = 'isolate';
+    this.root.replaceChildren(decor, heading, ...lines);
     if (reward !== '') {
       const coins = el(
         'div',
