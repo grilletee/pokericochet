@@ -99,5 +99,7 @@ describe('property: form always follows level, and stage events chain without ga
       }
     }
     expect(checkedSteps).toBeGreaterThan(50);
-  });
+    // 30 s (4V): with the 425 lines of 4G-J it takes ~3 s alone and ~6 s beside the other test
+    // files, over the default 5 s; it failed now and then for that reason only.
+  }, 30_000);
 });
