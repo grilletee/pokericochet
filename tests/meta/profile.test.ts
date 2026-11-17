@@ -162,6 +162,27 @@ describe('the profile and its migrations (property tests)', () => {
     expect(p?.stats).toEqual(v1.stats);
   });
 
+  it('a lost 50/50 survives a save and a load; an older save owes nothing (4V)', () => {
+    const p = emptyProfile(3);
+    const saved: Profile = {
+      ...p,
+      gacha: {
+        ...p.gacha,
+        banners: {
+          'type:fire:3': { draws: 12, won: false, owed: true },
+          'gen:1:3': { draws: 4, won: true },
+        },
+      },
+    };
+    const back = migrateProfile(JSON.parse(JSON.stringify(saved)), known, 1);
+    expect(back?.gacha.banners['type:fire:3']).toEqual({ draws: 12, won: false, owed: true });
+    expect(back?.gacha.banners['gen:1:3']).toEqual({ draws: 4, won: true });
+    // Garbage in the flag is not a debt.
+    const odd = JSON.parse(JSON.stringify(saved));
+    odd.gacha.banners['type:fire:3'].owed = 'yes';
+    expect(migrateProfile(odd, known, 1)?.gacha.banners['type:fire:3']?.owed).toBeUndefined();
+  });
+
   it('a newer version is refused; an empty store gives a new profile with nothing owned', () => {
     expect(migrateProfile({ version: PROFILE_VERSION + 1, coins: 5 }, known, 1)).toBeNull();
     const fresh = emptyProfile(0);

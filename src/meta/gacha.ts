@@ -308,6 +308,9 @@ function drawOne(
   const progress: BannerProgress = g.banners[banner.key] ?? { draws: 0, won: false };
   const bannerDraw = progress.draws + 1;
   const forceFeatured = limited && !progress.won && bannerDraw >= rules.featuredAt;
+  // 4V: a lost 50/50 is paid back. The ★5 after one that was not the featured one, on the same
+  // banner, is the featured one for sure.
+  const owed = limited && rules.lostHalfPaysBack && progress.owed === true;
   // Always three numbers, in this order: the ★5 roll, the ★4 roll, the featured roll.
   const roll5 = nextInt(rng, BP);
   const roll4 = nextInt(rng, BP);
@@ -318,7 +321,7 @@ function drawOne(
   let from: readonly string[];
   if (forceFeatured || roll5 < fiveChance(rules, n5)) {
     stars = 5;
-    featured = limited && (forceFeatured || rollShare < rules.featuredShare);
+    featured = limited && (forceFeatured || owed || rollShare < rules.featuredShare);
     from = featured ? banner.featured5 : banner.pool[5];
     if (forceFeatured) reason = 'featured';
     else if (n5 >= rules.hardAt) reason = 'hard';
@@ -340,7 +343,13 @@ function drawOne(
   const banners: Record<string, BannerProgress> = { ...g.banners };
   if (limited) {
     delete banners[banner.key];
-    banners[banner.key] = { draws: bannerDraw, won: progress.won || (stars === 5 && featured) };
+    // A ★5 settles the debt either way: the featured one pays it, another one opens it.
+    const owes = stars === 5 ? !featured : progress.owed === true;
+    banners[banner.key] = {
+      draws: bannerDraw,
+      won: progress.won || (stars === 5 && featured),
+      ...(owes ? { owed: true } : {}),
+    };
     const keys = Object.keys(banners);
     for (const old of keys.slice(0, Math.max(0, keys.length - MAX_BANNER_KEYS)))
       delete banners[old];
@@ -404,6 +413,8 @@ export interface PityView {
   readonly nextFiveChance: number;
   /** Draws left on this banner to its guaranteed featured ★5; null when spent or not a limited one. */
   readonly toFeatured: number | null;
+  /** The 50/50 was lost on this banner: its next ★5 is the featured one for sure (4V). */
+  readonly featuredOwed: boolean;
 }
 
 export function pityView(profile: Profile, banner: Banner, rules: GachaRules): PityView {
@@ -421,6 +432,7 @@ export function pityView(profile: Profile, banner: Banner, rules: GachaRules): P
       !limited || progress?.won === true
         ? null
         : Math.max(1, rules.featuredAt - (progress?.draws ?? 0)),
+    featuredOwed: limited && rules.lostHalfPaysBack && progress?.owed === true,
   };
 }
 

@@ -41,6 +41,11 @@ export interface BannerProgress {
   readonly draws: number;
   /** Its featured ★5 has come (the guarantee is spent). */
   readonly won: boolean;
+  /**
+   * The last ★5 on this banner was not the featured one (the 50/50 was lost), so the next ★5 on it
+   * is the featured one for sure (4V). Absent in older saves: nothing owed.
+   */
+  readonly owed?: boolean;
 }
 
 export interface GachaState {
@@ -178,7 +183,11 @@ function readBanners(raw: unknown): Record<string, BannerProgress> {
   if (!isRecord(raw)) return out;
   for (const [key, value] of Object.entries(raw).slice(-MAX_BANNER_KEYS)) {
     if (!isRecord(value)) continue;
-    out[key] = { draws: int(value.draws, 0, 1_000_000, 0), won: value.won === true };
+    out[key] = {
+      draws: int(value.draws, 0, 1_000_000, 0),
+      won: value.won === true,
+      ...(value.owed === true ? { owed: true } : {}),
+    };
   }
   return out;
 }

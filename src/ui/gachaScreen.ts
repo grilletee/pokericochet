@@ -276,7 +276,9 @@ export class GachaScreen {
       [1 - banner.pity.toFive / view.rules.hardAt, RARITY_COLORS[5]],
       [1 - banner.pity.toFour / view.rules.fourEvery, RARITY_COLORS[4]],
       [
-        banner.pity.toFeatured === null ? 1 : 1 - banner.pity.toFeatured / view.rules.featuredAt,
+        banner.pity.toFeatured === null || banner.pity.featuredOwed === true
+          ? 1
+          : 1 - banner.pity.toFeatured / view.rules.featuredAt,
         '#ff7fb0',
       ],
     ];

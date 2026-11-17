@@ -56,6 +56,28 @@ describe('the words of the gacha', () => {
     expect(text).toContain('caramelos');
     expect(text).toContain('Sin dinero real');
     expect(rulesText(GACHA_RULES, false).join(' ')).not.toContain('destacado;');
+    // 4V: the payback of a lost 50/50 is told on a limited banner, and only there.
+    expect(text).toContain('Si pierdes el 50/50');
+    expect(rulesText(GACHA_RULES, false).join(' ')).not.toContain('50/50');
+    expect(rulesText({ ...GACHA_RULES, lostHalfPaysBack: false }, true).join(' ')).not.toContain(
+      'Si pierdes el 50/50',
+    );
+  });
+
+  it('a lost 50/50 shows on the counter of its banner (4V)', () => {
+    const owed = pityLines(
+      {
+        toFive: 70,
+        toFour: 8,
+        soft: false,
+        nextFiveChance: 80,
+        toFeatured: 40,
+        sinceFive: 10,
+        featuredOwed: true,
+      },
+      true,
+    );
+    expect(owed[2]).toBe('Perdiste el 50/50: tu próximo ★5 aquí es el destacado');
   });
 
   it('rarity colours, stars, the end of a banner and the note of a reveal', () => {

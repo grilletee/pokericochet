@@ -23,6 +23,11 @@ export interface GachaRules {
   readonly featuredShare: number;
   /** On a limited banner, this draw on it gives its featured ★5 if it has not come yet. */
   readonly featuredAt: number;
+  /**
+   * 4V (author's request): a lost 50/50 is paid back. After a ★5 on a limited banner that was not
+   * its featured one, the next ★5 on that banner is the featured one for sure.
+   */
+  readonly lostHalfPaysBack: boolean;
   /** Share of the ★4 that are a featured ★4 of a limited banner. */
   readonly featured4Share: number;
   /** Candies a repeat gives, by its stars. */
@@ -44,6 +49,7 @@ export const GACHA_RULES: GachaRules = {
   hardAt: 80,
   featuredShare: 5000,
   featuredAt: 120,
+  lostHalfPaysBack: true,
   featured4Share: 5000,
   repeatCandies: { 3: 3, 4: 8, 5: 20 },
   fourStarFinalTotal: 500,

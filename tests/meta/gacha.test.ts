@@ -191,8 +191,99 @@ describe('the guarantees (property tests, thousands of sequences)', () => {
       });
     }
     expect(fives).toBeGreaterThan(100);
+    // 4V: a lost 50/50 is paid back, so in the long run two ★5 of three are the featured one
+    // (a chain lost / won / won-or-lost: 1/3 owed, 2/3 at 50 %).
+    expect(featured / fives).toBeGreaterThan(0.58);
+    expect(featured / fives).toBeLessThan(0.76);
+  });
+
+  it('without the payback (a rule of the data) the 50/50 is half and half again', () => {
+    const plain: GachaRules = { ...rules, lostHalfPaysBack: false };
+    let fives = 0;
+    let featured = 0;
+    for (let seed = 1; seed <= 40; seed++) {
+      drawMany(
+        rich(seed * 31),
+        limited[0] as Banner,
+        200,
+        (pull) => {
+          if (pull.stars !== 5) return;
+          fives += 1;
+          if (pull.featured) featured += 1;
+        },
+        plain,
+      );
+    }
     expect(featured / fives).toBeGreaterThan(0.4);
-    expect(featured / fives).toBeLessThan(0.7); // a bit over half: the 120 guarantee adds some
+    expect(featured / fives).toBeLessThan(0.62);
+  });
+
+  it('after a lost 50/50, the next ★5 on that banner is ALWAYS the featured one (property)', () => {
+    let losses = 0;
+    for (let seed = 1; seed <= 300; seed++) {
+      const banner = limited[seed % limited.length] as Banner;
+      let owed = false;
+      drawMany(rich(seed * 7727), banner, 260, (pull) => {
+        if (pull.stars !== 5) return;
+        if (owed) expect(pull.featured).toBe(true);
+        owed = !pull.featured;
+        if (owed) losses += 1;
+      });
+    }
+    // The property was really put to the test: hundreds of lost 50/50.
+    expect(losses).toBeGreaterThan(200);
+  });
+
+  it('the debt is of its banner: a ★5 on another banner does not pay it nor open it there', () => {
+    const [a, b] = limited as [Banner, Banner];
+    // Find a seed that loses the 50/50 on `a` at its first ★5.
+    for (let seed = 1; seed <= 400; seed++) {
+      let p = rich(seed * 53);
+      let lost = false;
+      for (let i = 0; i < 90 && !lost; i++) {
+        const out = drawGacha(p, a, rules);
+        if (!out.ok) throw new Error(out.reason);
+        p = out.profile;
+        const pull = out.pulls[0];
+        if (pull?.stars === 5) {
+          if (pull.featured) break;
+          lost = true;
+        }
+      }
+      if (!lost) continue;
+      expect(pityView(p, a, rules).featuredOwed).toBe(true);
+      expect(pityView(p, b, rules).featuredOwed).toBe(false);
+      // Draw on `b` until its ★5: `a` still owes it.
+      for (let i = 0; i < 90; i++) {
+        const out = drawGacha(p, b, rules);
+        if (!out.ok) throw new Error(out.reason);
+        p = out.profile;
+        if (out.pulls[0]?.stars === 5) break;
+      }
+      expect(pityView(p, a, rules).featuredOwed).toBe(true);
+      // And on `a` the next ★5 is its featured one, which settles the debt.
+      for (let i = 0; i < 90; i++) {
+        const out = drawGacha(p, a, rules);
+        if (!out.ok) throw new Error(out.reason);
+        p = out.profile;
+        const pull = out.pulls[0];
+        if (pull?.stars === 5) {
+          expect(pull.featured).toBe(true);
+          expect(a.featured5).toContain(pull.species);
+          break;
+        }
+      }
+      expect(pityView(p, a, rules).featuredOwed).toBe(false);
+      return;
+    }
+    throw new Error('no seed lost the 50/50');
+  });
+
+  it('the standard banner never owes anything', () => {
+    let p = rich(99);
+    p = drawMany(p, standard, 300, () => {});
+    expect(pityView(p, standard, rules).featuredOwed).toBe(false);
+    expect(p.gacha.banners[standard.key]).toBeUndefined();
   });
 
   it('the long-run rates match the table the screen shows', () => {

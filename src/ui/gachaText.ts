@@ -64,6 +64,8 @@ export interface PityNumbers {
   readonly nextFiveChance: number;
   readonly toFeatured: number | null;
   readonly sinceFive: number;
+  /** The 50/50 was lost on this banner: its next ★5 is the featured one (4V). */
+  readonly featuredOwed?: boolean;
 }
 
 export interface PityRules {
@@ -73,6 +75,7 @@ export interface PityRules {
   readonly featuredAt: number;
   readonly featuredShare: number;
   readonly rate5: number;
+  readonly lostHalfPaysBack?: boolean;
 }
 
 const draws = (n: number): string => `${n} ${n === 1 ? 'tirada' : 'tiradas'}`;
@@ -86,9 +89,11 @@ export function pityLines(pity: PityNumbers, limited: boolean): string[] {
   ];
   if (limited) {
     lines.push(
-      pity.toFeatured === null
-        ? 'Destacado ★5 de este banner: ya conseguido'
-        : `Destacado ★5 seguro en ${draws(pity.toFeatured)} en este banner`,
+      pity.featuredOwed === true
+        ? 'Perdiste el 50/50: tu próximo ★5 aquí es el destacado'
+        : pity.toFeatured === null
+          ? 'Destacado ★5 de este banner: ya conseguido'
+          : `Destacado ★5 seguro en ${draws(pity.toFeatured)} en este banner`,
     );
   }
   return lines;
@@ -106,6 +111,11 @@ export function rulesText(rules: PityRules, limited: boolean): string[] {
     lines.push(
       `En un banner limitado, cada ★5 tiene un ${percentBp(rules.featuredShare)} de ser el destacado; si en ${rules.featuredAt} tiradas en ese banner no ha salido, esa tirada te lo da.`,
     );
+    if (rules.lostHalfPaysBack === true) {
+      lines.push(
+        'Si pierdes el 50/50 (te sale otro ★5), el siguiente ★5 en ese banner es seguro el destacado.',
+      );
+    }
   }
   lines.push(
     'Si te sale uno que ya tienes, ganas caramelos de ese Pokémon (más cuanto más raro). Los caramelos suben su nivel permanente en la Colección.',
