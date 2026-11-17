@@ -37,7 +37,6 @@ import {
   PHASE_LEVELUP,
   previewHybrid,
   type Run,
-  type Snapshot,
   signatureReady,
   stageForLevel,
   starterSignatureOf,
@@ -106,6 +105,7 @@ import {
   type GachaBannerView,
   GachaScreen,
   GamePause,
+  hudView,
   installPixelStyle,
   isControlScheme,
   isRealEvolution,
@@ -145,6 +145,7 @@ import {
   TYPE_COLORS,
   trackFor,
   typeName,
+  uiSoundFor,
   WaveBanner,
   waveCartel,
 } from '../ui';
@@ -375,23 +376,6 @@ function nextCommand(
 function firstReadySignature(run: Run, config: GameConfig): number | null {
   for (let i = 0; i < run.team.length; i++) if (signatureReady(run, config, i)) return i;
   return null;
-}
-
-/** `boss` is "Jefe 2/3" or "Jefe final" while a boss lives; it replaces the wave in the HUD (4F-E). */
-function hudText(snap: Snapshot, waveCount: number, seed: number, boss: string | null): string {
-  const wave =
-    boss ??
-    (waveCount > 0 && snap.waveIndex >= waveCount
-      ? 'Jefe final'
-      : `Oleada ${Math.min(snap.waveIndex + 1, Math.max(1, waveCount))}/${waveCount}`);
-  const first = [
-    `PV ${Math.max(0, Math.round(snap.playerHp))}/${snap.playerMaxHp}`,
-    `Nv ${snap.playerLevel} (${Math.floor(snap.playerXp)}/${snap.playerXpNext} XP)`,
-    waveCount > 0 ? wave : '',
-  ]
-    .filter((part) => part !== '')
-    .join('   ');
-  return `${first}\nSemilla ${seed}`;
 }
 
 /** The arrow (or plus sign) between the pictures of the evolution banner. */
@@ -691,6 +675,22 @@ export async function startGame(host: HTMLElement): Promise<void> {
   for (const gesture of ['pointerdown', 'keydown'] as const) {
     window.addEventListener(gesture, () => sound.unlock());
   }
+  // 4V (block 4): the buttons of the interface sound: a tick under the pointer, a blip to accept,
+  // the same blip falling to go back. One delegated listener on the host, nothing per button.
+  const buttonOf = (target: EventTarget | null): HTMLButtonElement | null =>
+    target instanceof Element ? target.closest('button') : null;
+  host.addEventListener('pointerover', (e) => {
+    const b = buttonOf(e.target);
+    if (b !== null && !b.disabled && buttonOf(e.relatedTarget) !== b) {
+      sound.play('uiMove', performance.now());
+    }
+  });
+  host.addEventListener('click', (e) => {
+    const b = buttonOf(e.target);
+    if (b === null || b.disabled || b.dataset.soundToggle !== undefined) return;
+    const id = uiSoundFor(b.dataset.action, b.dataset.draw !== undefined);
+    if (id !== null) sound.play(id, performance.now());
+  });
   // The assisted aim is an accessibility option of the settings screen, off by default (4H-B2).
   let autoAim = loadAutoAim(store);
   const settingsScreen = new SettingsScreen(host);
@@ -1676,17 +1676,24 @@ export async function startGame(host: HTMLElement): Promise<void> {
       window.__benchResult = finishBench(metrics, benchLoad);
     }
 
-    overlay.setHud(
+    // 4V (block 4): the framed HUD (health in segments, level and experience, the waves as pips).
+    overlay.setHudView(
       isMenuScreen(screen)
-        ? ''
-        : hudText(
-            curr,
-            config.waves.length,
-            run.seed,
-            curr.bossHp > 0
-              ? bossLabel(run.boss.next, (config.interludes ?? []).length, run.boss.spawned)
-              : null,
-          ),
+        ? null
+        : hudView({
+            hp: curr.playerHp,
+            maxHp: curr.playerMaxHp,
+            level: curr.playerLevel,
+            xp: curr.playerXp,
+            xpNext: curr.playerXpNext,
+            waveIndex: curr.waveIndex,
+            waveCount: config.waves.length,
+            boss:
+              curr.bossHp > 0
+                ? bossLabel(run.boss.next, (config.interludes ?? []).length, run.boss.spawned)
+                : null,
+            seed: run.seed,
+          }),
     );
     overlay.updateToast(now);
     // The music follows what is on screen (4G-I): menu, waves, a boss, the legendary, the end.

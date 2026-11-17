@@ -55,19 +55,32 @@ const STYLE = `
     linear-gradient(180deg,rgba(20,23,43,0) 55%,rgba(20,23,43,0.95)),
     repeating-linear-gradient(90deg,rgba(63,102,208,0.1) 0 8px,transparent 8px 16px),
     linear-gradient(180deg,${P.navy},${P.deep} 60%,${P.ink}) !important}
-/* buttons */
+/* 4V (block 4): every screen comes in with a short stepped rise; nothing slides smoothly. */
+@keyframes px-screen{0%{opacity:0;transform:translateY(12px)}100%{opacity:1;transform:none}}
+@keyframes px-focus{50%{outline-color:${P.cream}}}
+[data-px-root] [data-screen]{animation:px-screen 200ms steps(4) both}
+@media (prefers-reduced-motion:reduce){[data-px-root] [data-screen]{animation-duration:1ms}}
+/* buttons: a frame with light above and shade below, a lift with the pointer over, a press down */
 [data-px-root] button{background:${P.blue} !important;color:${P.cream} !important;border:0 !important;
   ${pixelFrame()}text-shadow:2px 2px 0 ${P.ink};cursor:pointer;font-weight:600;
-  transition:none}
-[data-px-root] button:hover{background:${P.sky} !important;color:${P.ink} !important;text-shadow:none}
-[data-px-root] button:active{transform:translateY(3px)}
+  transition:transform 60ms steps(2),filter 60ms steps(2)}
+[data-px-root] button:hover{background:${P.sky} !important;color:${P.ink} !important;text-shadow:none;transform:translateY(-2px)}
+[data-px-root] button:active{transform:translateY(3px);filter:brightness(0.9)}
+[data-px-root] button:focus-visible{outline:3px solid ${P.cyan};outline-offset:3px;animation:px-focus 0.8s steps(2) infinite}
+[data-px-root] button:disabled{filter:grayscale(0.8) brightness(0.7);cursor:not-allowed;transform:none}
 [data-px-root] button[data-starter]{background:${P.navy} !important;text-align:left}
 [data-px-root] button[data-starter]:hover{background:${P.slate} !important;color:${P.cream} !important}[data-px-root] button[data-action="again"],[data-px-root] button[data-action="back"]{background:${P.green} !important}
 [data-px-root] [data-sound-toggle]{background:${P.deep} !important;font-size:13px !important}
 /* the cards of a level up and the replace slots */
 [data-px-root] button[data-card],[data-px-root] button[data-replace-slot],[data-px-root] button[data-replace-release]{
   background:${P.navy} !important;${pixelFrame(P.cream)}text-align:left}
-[data-px-root] button[data-card]:hover,[data-px-root] button[data-replace-slot]:hover{background:${P.blue} !important;color:${P.cream} !important}
+[data-px-root] button[data-card]:hover,[data-px-root] button[data-replace-slot]:hover{background:${P.blue} !important;color:${P.cream} !important;
+  ${pixelFrame(P.yellow)}transform:translateY(-4px)}
+/* the level-up cards come in one after another */
+@keyframes px-deal{0%{opacity:0;transform:translateY(-24px)}100%{opacity:1;transform:none}}
+[data-px-root] button[data-card]{animation:px-deal 220ms steps(4) both}
+[data-px-root] button[data-card="1"]{animation-delay:70ms}
+[data-px-root] button[data-card="2"]{animation-delay:140ms}
 /* the sheet, the sign of a wave, the banners and the moment of a boss */
 [data-px-root] [data-sheet]>div{background:${P.navy} !important;${pixelFrame(P.cream)}padding:18px !important;color:${P.cream}}
 [data-px-root] [data-cartel]{background:${P.ink} !important;${pixelFrame(P.sky)}color:${P.cream} !important}

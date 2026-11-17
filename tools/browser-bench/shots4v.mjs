@@ -202,6 +202,42 @@ SETS.gacha = [
   }),
 ];
 
+// The interface (block 4): the menu, the Pokédex, the settings, the credits and the HUD in a run.
+const menuShot = (name, action) => ({
+  name,
+  query: 'seed=6&coins=5000',
+  wait: 0,
+  script: async (page, snap) => {
+    await page.waitForSelector('[data-screen="start"] [data-action="gacha"]', { timeout: 60000 });
+    await page.waitForTimeout(600);
+    if (action === '') {
+      await page.hover('[data-screen="start"] [data-action="gacha"]');
+      await page.waitForTimeout(200);
+      await snap('');
+      return;
+    }
+    await page.click(`[data-screen="start"] [data-action="${action}"]`);
+    await page.waitForTimeout(700);
+    await snap('');
+  },
+});
+SETS.ui = [
+  menuShot('menu', ''),
+  menuShot('pokedex', 'collection'),
+  menuShot('ajustes', 'settings'),
+  menuShot('creditos', 'credits'),
+  {
+    name: 'hud',
+    query: `starter=pikachu&seed=1&wave=3&team=${TEAM}&ballLevel=3`,
+    wait: 6000,
+  },
+  {
+    name: 'cartas',
+    query: 'starter=charmander&ballLevel=2&offers=growth&seed=9',
+    wait: 1500,
+  },
+];
+
 const DEVICES = {
   desktop: { viewport: { width: 1280, height: 800 } },
   phone: {

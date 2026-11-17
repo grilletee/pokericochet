@@ -19,7 +19,22 @@ export type SoundId =
   | 'charge'
   | 'alarm'
   | 'legend'
-  | 'tension';
+  | 'tension'
+  /** 4V (block 4): the interface: the pointer moves onto a button, a button is pressed, back. */
+  | 'uiMove'
+  | 'uiOk'
+  | 'uiBack';
+
+/**
+ * The sound a press on a button of the menus makes (4V, block 4): back for the buttons that go back
+ * (their `data-action`), nothing for the draw buttons of the gacha (the reveal has its own sounds)
+ * and the sound toggle, accept for the rest.
+ */
+export function uiSoundFor(action: string | undefined, isDraw: boolean): SoundId | null {
+  if (isDraw) return null;
+  if (action === 'back' || action === 'menu') return 'uiBack';
+  return 'uiOk';
+}
 
 /** Which sound, if any, an event makes. A ball hit is the "bounce": walls emit no event. */
 export function soundFor(event: GameEvent): SoundId | null {
@@ -83,6 +98,9 @@ const MIN_GAP_MS: Record<SoundId, number> = {
   alarm: 800,
   legend: 1000,
   tension: 0,
+  uiMove: 70,
+  uiOk: 60,
+  uiBack: 60,
 };
 
 /** Decides whether a sound may play now, per kind. Pure: time is given, never read. */
@@ -194,6 +212,17 @@ const RECIPES: Record<SoundId, readonly Note[]> = {
     { from: 330, to: 262, seconds: 0.25, wave: 'sawtooth', gain: 0.1 },
     { from: 262, to: 196, seconds: 0.25, wave: 'sawtooth', gain: 0.1, at: 0.25 },
     { from: 196, to: 98, seconds: 0.5, wave: 'sawtooth', gain: 0.1, at: 0.5 },
+  ],
+  // The interface (4V): a soft tick under the pointer, a bright two-step blip to accept, and the
+  // same blip falling to go back. Quiet: they are heard, never noticed.
+  uiMove: [{ from: 1320, to: 1320, seconds: 0.025, wave: 'square', gain: 0.025 }],
+  uiOk: [
+    { from: 880, to: 880, seconds: 0.04, wave: 'square', gain: 0.045 },
+    { from: 1320, to: 1320, seconds: 0.06, wave: 'square', gain: 0.045, at: 0.04 },
+  ],
+  uiBack: [
+    { from: 880, to: 880, seconds: 0.04, wave: 'square', gain: 0.04 },
+    { from: 587, to: 587, seconds: 0.06, wave: 'square', gain: 0.04, at: 0.04 },
   ],
 };
 

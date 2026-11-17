@@ -2,6 +2,7 @@ import type { Card } from '../domain';
 import { lineSeconds, lineUrgency } from './bossLine';
 import { type CardTextContext, cardStep, describeCard } from './cardText';
 import { type ArtLookup, buildCardArt, STEP_COLOR } from './cardView';
+import { HudPanel, type HudView } from './hud';
 import { dock, type SidePanels } from './sideLayout';
 
 /**
@@ -93,7 +94,24 @@ export class Overlay {
   setHud(text: string): void {
     if (text === this.lastHud) return;
     this.lastHud = text;
+    this.panel = null;
+    delete this.hud.dataset.hudPanel;
     this.hud.textContent = text;
+  }
+
+  private panel: HudPanel | null = null;
+
+  /** The framed HUD of a run (4V): health, level, waves; null clears it (the menus). */
+  setHudView(view: HudView | null): void {
+    if (view === null) {
+      this.setHud('');
+      return;
+    }
+    if (this.panel === null) {
+      this.lastHud = '\u0000panel';
+      this.panel = new HudPanel(this.hud);
+    }
+    this.panel.update(view);
   }
 
   /** Shows a centred message, or hides it with null. */

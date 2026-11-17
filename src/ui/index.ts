@@ -1,6 +1,6 @@
 export { AttackNamer, attackKey, attackLabel } from './attackNames';
 export type { SoundId } from './audio';
-export { SoundFx, SoundToggle, soundFor, Throttle } from './audio';
+export { SoundFx, SoundToggle, soundFor, Throttle, uiSoundFor } from './audio';
 export { describeBall, describeEffects } from './ballText';
 export {
   LINE_ALARMS,
@@ -51,6 +51,7 @@ export {
   rulesText,
   stars,
 } from './gachaText';
+export { type HudView, healthSegments, hudLine, hudView } from './hud';
 export type { SheetView } from './memberSheet';
 export { MemberSheet } from './memberSheet';
 export { BACKDROP_H, BACKDROP_W, backdropFrame, MenuBackdrop } from './menuBackdrop';

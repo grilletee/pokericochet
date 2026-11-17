@@ -186,6 +186,12 @@ const MENU_CSS = `
 [data-px-root] [data-menu-box] button[data-action="play"]{color:#c0302a !important}
 [data-px-root] [data-trainer-card]{background:linear-gradient(90deg,#e04a4a 0 10px,#f6f3e8 10px) !important;color:#14172b;box-shadow:0 0 0 3px #14172b}
 [data-parade] img{position:absolute;bottom:4%;width:64px;height:64px;image-rendering:pixelated;animation:menu-walk linear infinite,menu-hop 0.5s ease-in-out infinite alternate}
+/* 4V (block 4): the logo floats in steps and a shine runs across it now and then; the play row beats. */
+[data-px-root] [data-logo]{animation:menu-float 3.6s steps(12) infinite,menu-shine 5s steps(1) infinite}
+[data-px-root] [data-menu-box] button[data-action="play"]::after{content:'';position:absolute;right:8px;top:50%;width:6px;height:6px;margin-top:-3px;background:#c0302a;animation:menu-beat 0.8s steps(2) infinite}
+@keyframes menu-float{0%,100%{translate:0 0}50%{translate:0 -6px}}
+@keyframes menu-shine{0%,92%{filter:drop-shadow(0 4px 0 #05060f)}93%,95%{filter:brightness(1.6) drop-shadow(0 4px 0 #05060f)}96%,100%{filter:drop-shadow(0 4px 0 #05060f)}}
+@keyframes menu-beat{50%{opacity:0}}
 @keyframes menu-walk{from{left:-80px}to{left:calc(100% + 20px)}}
 @keyframes menu-hop{from{translate:0 0}to{translate:0 -4px}}
 `;
