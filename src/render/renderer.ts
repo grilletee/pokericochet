@@ -2,6 +2,8 @@ import {
   Application,
   Container,
   Graphics,
+  Particle,
+  ParticleContainer,
   Rectangle,
   Sprite,
   Texture,
@@ -27,16 +29,22 @@ import {
   typeCode,
   WARN_TICKS,
 } from '../domain';
+import { Backdrop } from './backdrop';
 import { strikeLook } from './bossArt';
 import { legendArenaTexture, strikeFrames } from './bossTextures';
 import { BossDeathFx } from './deathFx';
+import { FLASH_MS, mayFlash } from './feelRules';
+import { DECK_LINE_ROWS, deckTexture } from './fieldArt';
+import { FieldFx } from './fieldFx';
+import { DISC, fxAtlas, RING } from './fxAtlas';
 import { HurtFx } from './hurtFx';
 import { interpolateBalls, interpolateEnemies } from './interpolate';
 import { arenaOf, LEGEND_ARENAS } from './legendArena';
+import { FIELD_PIXEL, glowTexture } from './paint';
+import { liveParticles, PARTICLE_DYNAMIC, placeParticle } from './particles';
 import {
   ART_PIXEL,
   arenaTexture,
-  backdropFor,
   dotTexture,
   FX_FRAMES,
   fxFor,
@@ -44,7 +52,9 @@ import {
   outlinedTexture,
   ringTexture,
   sphereTexture,
+  whiteOf,
 } from './pixelArt';
+import { type AmbientDef, sceneFor } from './sceneIds';
 import { chargeLook, shotFrames } from './shotArt';
 import { UltimateFx } from './ultimateFx';
 
@@ -94,16 +104,15 @@ const TRAIL_DOTS = 4;
 const LINE_SHOW_TICKS = 40 * 60;
 const LINE_NEAR_TICKS = 15 * 60;
 const LINE_CRITICAL_TICKS = 5 * 60;
-/** Pixels per millisecond the three layers of the backdrop scroll at (far, middle, near). */
-const BACKDROP_SPEEDS: readonly number[] = [0.006, 0.016, 0.034];
 const AIM_DOTS = 16;
-/** Particles of the biome of the wave in progress (4H-B2, block 3): few and cheap on purpose. */
-const BIOME_DOTS = 22;
 /** How fast the tint of the field moves to the colour of a new biome, in milliseconds. */
 const BIOME_FADE_MS = 900;
-/** Type codes whose biome particles rise (embers, fumes), fall (rain, snow, petals) or drift. */
-const RISING = new Set([9, 3, 7, 15, 16, 13]); // fire, poison, ghost, dragon, dark, psychic
-const FALLING = new Set([10, 14, 11, 17, 6, 0]); // water, ice, grass, fairy, bug, normal
+/** The halo under a ball of a rare Pokémon (4V; art bible §3.3): none, ★4 violet, ★5 gold. */
+const RARITY_GLOW: readonly number[] = [0, 0, 0, 0, 0xb58cff, 0xffd75a];
+/** Where a pooled sprite that is not in use waits: far off the field (never `visible = false`). */
+const OFF = -9999;
+/** Enemy ids are folded into this many slots for the white flash of a hit. */
+const FLASH_SLOTS = 1024;
 /** Length of the aim guide and the gap between its dots, in arena pixels. */
 const AIM_LENGTH = 300;
 const PICKUP_GOLD = 0xffd54f;
@@ -215,14 +224,29 @@ export class Renderer {
   private readonly tideRight: TilingSprite;
   private readonly barrierSprite: TilingSprite;
   private readonly slowVeil: Sprite;
-  private readonly statusLayer = new Container();
-  private readonly statusSprites: Sprite[] = [];
+  // The small things that move every frame by the hundred (the signs of the states, the trails
+  // and the shadows of the balls) are particles of PixiJS on the one sheet of the effects (4V,
+  // performance): no scene-graph node each, one draw call per layer.
+  private readonly statusLayer = new ParticleContainer({ dynamicProperties: PARTICLE_DYNAMIC });
+  private readonly statusSprites: Particle[] = [];
+  private readonly shadowLayer = new ParticleContainer({ dynamicProperties: PARTICLE_DYNAMIC });
+  private readonly atlas = fxAtlas();
   private statusUsed = 0;
   /** The aura of the boss while it announces and charges its strong attack. */
   private readonly shieldRing: Sprite;
-  private readonly biomeLayer = new Container();
-  private readonly biomeTint: Sprite;
-  private readonly biomeDots: Sprite[] = [];
+  /** The scene behind the game: ground, props, air and light (4V, block 1). */
+  private readonly scenery: Backdrop;
+  /** The feel of the hits: sparks by type, damage numbers, deaths in pixels (4V). */
+  private readonly feel = new FieldFx();
+  /** When each enemy (its id folded into a slot) last started to flash white, in ms of the clock. */
+  private readonly flashStart = new Float64Array(FLASH_SLOTS).fill(-1e9);
+  /** The stars of the Pokémon of each art code (0 = none): the halo of a rare ball. */
+  private rarity: Uint8Array = new Uint8Array(0);
+  private readonly ballShadows: Particle[] = [];
+  private readonly ballGlows: Sprite[] = [];
+  private readonly glowLayer = new Container();
+  private glowsShown = 0;
+  private readonly launcherGlow: Sprite;
   /** The colour the field is tinted with now (0 = no biome) and the clock of the particles. */
   private tintRgb = [0, 0, 0];
   private tintAlpha = 0;
@@ -244,10 +268,7 @@ export class Renderer {
   private enemiesShown = 0;
   private ballsShown = 0;
   private readonly player: Sprite;
-  private readonly floorStrip: Graphics;
-  private readonly backdrop: Partial<Record<'far' | 'mid' | 'near', TilingSprite>> = {};
-  private readonly backdropFade: Sprite;
-  /** The biome the backdrop was built for (main:second), and how much of the fade-through is left. */
+  private readonly floorStrip: Container;
   private readonly outlineQueue: {
     cache: (Texture | undefined)[];
     code: number;
@@ -266,15 +287,9 @@ export class Renderer {
   private readonly ballSpheres: Sprite[] = [];
   private readonly sphereLayer = new Container();
   /** The trail of each ball in the colour of its type (4G-H), behind the spheres. */
-  private readonly trailLayer = new Container();
-  private readonly trailSprites: Sprite[] = [];
-  private trailsShown = 0;
+  private readonly trailLayer = new ParticleContainer({ dynamicProperties: PARTICLE_DYNAMIC });
+  private readonly trailSprites: Particle[] = [];
   private readonly foeArt: (Texture | undefined)[] = [];
-  private readonly backdropDim: Sprite;
-  private backdropKey = -1;
-  private backdropSheets: (TilingSprite | undefined)[] = [];
-  private fade = 0;
-  private scroll = 0;
   private readonly scratchBallX: Float32Array;
   private readonly scratchBallY: Float32Array;
   private readonly scratchEnemyX: Float32Array;
@@ -284,7 +299,7 @@ export class Renderer {
     private readonly app: Application,
     private readonly config: GameConfig,
     private readonly disc: Texture,
-    private readonly ring: Texture,
+    ring: Texture,
     bar: Texture,
     maxSlots: number,
     maxEnemies: number,
@@ -301,48 +316,38 @@ export class Renderer {
     this.scratchEnemyY = new Float32Array(maxEnemies);
 
     const { width, height, defenseLineY } = config.arena;
-    const background = new Graphics().rect(0, 0, width, height).fill(0x14172b);
-    // The three layers of the backdrop (far, middle, near) scroll at different speeds: the parallax.
-    for (const name of ['far', 'mid', 'near'] as const) {
-      const sheet = new TilingSprite({ texture: Texture.EMPTY, width, height });
-      sheet.tileScale.set(ART_PIXEL);
-      sheet.visible = false;
-      this.backdrop[name] = sheet;
-      this.backdropSheets.push(sheet);
-      this.biomeLayer.addChild(sheet);
-    }
-    this.backdropFade = new Sprite(bar);
-    this.backdropFade.width = width;
-    this.backdropFade.height = height;
-    this.backdropFade.tint = 0x14172b;
-    this.backdropFade.alpha = 0;
-    this.biomeLayer.addChild(this.backdropFade);
-    // A dark, desaturating film over the whole backdrop: the playing field is quieter than what
-    // moves on it (4G-E).
-    this.backdropDim = new Sprite(bar);
-    this.backdropDim.width = width;
-    this.backdropDim.height = height;
-    this.backdropDim.tint = 0x070914;
-    this.backdropDim.alpha = 0.5;
-    this.biomeLayer.addChild(this.backdropDim);
-    // The floor strip and the line of defence, in pixels: a dark band with a dashed red line.
-    const floor = new Graphics()
-      .rect(0, defenseLineY, width, height - defenseLineY)
-      .fill({ color: 0x14172b, alpha: 0.8 })
-      .rect(0, defenseLineY, width, 4)
-      .fill(0x2b3a73);
-    for (let x = 0; x < width; x += 16) floor.rect(x, defenseLineY - 4, 12, 4).fill(0xe04a4a);
-    for (let x = 0; x < width; x += 8) floor.rect(x, height - 4, 4, 4).fill(0x4a5578);
-    this.floorStrip = floor;
+    const background = new Graphics().rect(0, 0, width, height).fill(0x0b0d1a);
+    // The scene of the biome (4V): painted ground and props with parallax, air and light.
+    this.scenery = new Backdrop(width, height);
+    // The deck under the line of defence: plates of metal with a rail, and the line as red dashes.
+    const deckRows = Math.ceil((height - defenseLineY) / FIELD_PIXEL);
+    const deck = new Sprite(
+      deckTexture(
+        Math.ceil(width / FIELD_PIXEL),
+        deckRows,
+        Math.round((config.player.y - defenseLineY) / FIELD_PIXEL) + 5,
+      ),
+    );
+    deck.scale.set(FIELD_PIXEL);
+    deck.y = defenseLineY - DECK_LINE_ROWS * FIELD_PIXEL;
+    this.floorStrip = new Container();
+    this.floorStrip.addChild(deck);
     this.player = new Sprite(launcherTexture());
     this.player.anchor.set(0.5);
     this.player.scale.set(2);
     this.player.y = config.player.y;
+    // A soft light under the launcher: it is the one thing on the deck that is yours.
+    this.launcherGlow = new Sprite(glowTexture(32));
+    this.launcherGlow.anchor.set(0.5);
+    this.launcherGlow.blendMode = 'add';
+    this.launcherGlow.tint = 0x5fb0ff;
+    this.launcherGlow.scale.set(FIELD_PIXEL * 1.2);
+    this.launcherGlow.y = config.player.y + 4;
 
     for (let i = 0; i < FX_POOL; i++) {
       const sprite = new Sprite(ring);
       sprite.anchor.set(0.5);
-      sprite.visible = false;
+      sprite.position.set(OFF, OFF);
       this.fxSprites.push(sprite);
       this.fxLayer.addChild(sprite);
     }
@@ -363,19 +368,6 @@ export class Renderer {
     this.aimReticle.tint = 0xffd54f;
     this.aimReticle.visible = false;
     this.aimLayer.addChild(this.aimReticle);
-    // The biome: a tint over the whole field and a few drifting particles (block 3 of 4H-B2).
-    this.biomeTint = new Sprite(bar);
-    this.biomeTint.width = width;
-    this.biomeTint.height = height;
-    this.biomeTint.alpha = 0;
-    this.biomeLayer.addChild(this.biomeTint);
-    for (let i = 0; i < BIOME_DOTS; i++) {
-      const dot = new Sprite(disc);
-      dot.anchor.set(0.5);
-      dot.visible = false;
-      this.biomeDots.push(dot);
-      this.biomeLayer.addChild(dot);
-    }
     // The columns of a boss's attacks, under everything that moves; the ring of its shield and the
     // weak point over its body (4G-B, ADR-046).
     for (let i = 0; i < HAZARD_POOL; i++) {
@@ -434,12 +426,21 @@ export class Renderer {
       this.hazardSparks.push(spark);
       this.sparkLayer.addChild(spark);
     }
+    const spare = (): Particle =>
+      new Particle({ texture: this.atlas.disc, x: OFF, y: OFF, anchorX: 0.5, anchorY: 0.5 });
     for (let i = 0; i < STATUS_POOL; i++) {
-      const sign = new Sprite(disc);
-      sign.anchor.set(0.5);
-      sign.visible = false;
+      const sign = spare();
       this.statusSprites.push(sign);
-      this.statusLayer.addChild(sign);
+    }
+    for (let i = 0; i < maxSlots; i++) {
+      const shadow = spare();
+      shadow.tint = 0x0b0d1a;
+      shadow.alpha = 0.34;
+      this.ballShadows.push(shadow);
+    }
+    for (let i = 0; i < maxSlots * TRAIL_DOTS; i++) {
+      const dot = spare();
+      this.trailSprites.push(dot);
     }
     for (let k = 0; k < 14; k++) {
       const dot = new Sprite(disc);
@@ -464,7 +465,7 @@ export class Renderer {
     }
     this.world.addChild(
       background,
-      this.biomeLayer,
+      this.scenery.under,
       this.legendVeil,
       this.floorStrip,
       this.lineGlow,
@@ -473,9 +474,13 @@ export class Renderer {
       ...this.legendRings,
       this.aimLayer,
       this.enemyLayer,
+      this.feel.puffLayer,
       this.death.layer,
       this.statusLayer,
+      this.feel.layer,
       this.pickupLayer,
+      this.shadowLayer,
+      this.glowLayer,
       this.trailLayer,
       this.sphereLayer,
       this.ballLayer,
@@ -486,7 +491,10 @@ export class Renderer {
       this.slowVeil,
       this.shieldRing,
       this.reachRing,
+      this.launcherGlow,
       this.player,
+      this.scenery.over,
+      this.feel.numbers,
       this.hurt.numbers,
     );
     // The surround (4G-J, phone layouts): the far layer of the backdrop goes on behind the field,
@@ -520,12 +528,12 @@ export class Renderer {
   /** Keeps the surround aligned with the far layer of the field, so the backdrop runs on seamlessly. */
   private drawSurround(scale: number, x0: number, y0: number): void {
     if (!this.surroundOn) return;
-    const far = this.backdropSheets[0];
+    const far = this.scenery.groundSheet;
     const screenW = this.app.screen.width;
     const screenH = this.app.screen.height;
-    const on = far?.visible === true && far.texture !== Texture.EMPTY;
+    const on = this.scenery.ready && far.texture !== Texture.EMPTY;
     this.surround.visible = on;
-    if (on && far !== undefined) {
+    if (on) {
       this.surround.texture = far.texture;
       this.surround.width = screenW;
       this.surround.height = screenH;
@@ -619,6 +627,25 @@ export class Renderer {
     this.drawBiome(curr, elapsedMs);
     this.drawSurround(scale, this.world.position.x, this.world.position.y);
     this.drawBossFight(curr);
+    // The anticipation on the body of the boss (4V; art bible §6): while it announces an attack or
+    // charges the strong one, matter of its type is drawn in to it, one mote every few ticks.
+    if (
+      this.feelOn &&
+      curr.tick !== this.gatherTick &&
+      curr.tick % 3 === 0 &&
+      curr.bossMaxHp > 0 &&
+      curr.bossHp > 0 &&
+      (this.bossWarn || curr.bossCoreOpen > 0 || curr.bossCoreWarning)
+    ) {
+      this.gatherTick = curr.tick;
+      this.feel.gather(
+        curr.bossX,
+        curr.bossY,
+        curr.bossRadius,
+        Math.max(0, curr.bossType),
+        TYPE_COLORS[curr.bossType] ?? 0xffffff,
+      );
+    }
     if (curr.bossMaxHp > 0 && curr.bossHp > 0) {
       const b = this.lastBoss;
       b.x = curr.bossX;
@@ -636,7 +663,9 @@ export class Renderer {
     this.drawPickups(curr);
     this.drawAim(curr);
     this.launcherX = this.player.x;
-    this.drawEffects(events, elapsedMs);
+    this.launcherGlow.x = this.player.x;
+    this.launcherGlow.alpha = 0.35 + 0.1 * Math.sin(this.clockMs / 420);
+    this.drawEffects(events, elapsedMs, prev, curr);
     // The hit on the player: veil, shake, number, and the launcher blinks while it is invulnerable.
     this.clockMs += elapsedMs;
     this.hurt.update(elapsedMs, this.app.screen.width, this.app.screen.height);
@@ -645,15 +674,15 @@ export class Renderer {
     this.player.alpha = HurtFx.blink(curr.playerInvuln, this.clockMs);
     // The screen shakes for a moment when an Ultimate lands, the player is hurt or a boss dies.
     this.world.pivot.set(
-      this.moves.shakeX + this.hurt.shakeX + this.death.shakeX,
-      this.moves.shakeY + this.hurt.shakeY + this.death.shakeY,
+      this.moves.shakeX + this.hurt.shakeX + this.death.shakeX + this.feel.shakeX,
+      this.moves.shakeY + this.hurt.shakeY + this.death.shakeY + this.feel.shakeY,
     );
 
-    // A layer with nothing to show leaves the scene: the renderer does not walk its pool of sprites
-    // (hundreds of invisible ones) every frame (4G-G, performance).
+    // The layers of the attacks leave the scene while there are none. The pools of small sprites
+    // (states, rings, trails, balls) never change their visibility: what is not in use waits off
+    // the field, because every change of visibility makes PixiJS rebuild its draw list (4V).
     this.hazardLayer.visible = curr.hazardCount > 0;
     this.sparkLayer.visible = curr.hazardCount > 0;
-    this.statusLayer.visible = this.statusUsed > 0;
 
     this.app.render();
   }
@@ -664,73 +693,48 @@ export class Renderer {
    * colour of the floor, so it never pops.
    */
   private drawBackdrop(curr: Snapshot, elapsedMs: number): void {
-    // The final boss has a stage of its own: the backdrop of its type, darker (4G-E).
-    const ownStage = curr.bossFinal && curr.bossType >= 0;
-    const main = ownStage ? curr.bossType : curr.biomeMain;
-    const sheets = this.backdropSheets;
-    this.backdropDim.alpha = ownStage ? 0.25 : 0.5;
-    if (ownStage) {
-      // A scenario of its own, nothing of the biome: since 4G-H the arena of THIS legendary (the
-      // depths of the sea, a field of magma, the sky...); the temple of its type if it has none.
-      // 4G-I: its fury transforms the arena (the light takes over), with no pause.
+    // The final boss has a stage of its own, nothing of the biome: the arena of THIS legendary (the
+    // depths of the sea, a field of magma, the sky...; 4G-H) or the temple of its type if it has
+    // none. Its fury transforms the arena (4G-I). The scenery cross-fades to it.
+    if (curr.bossFinal && curr.bossType >= 0) {
       const legend = this.speciesIds[curr.bossSpecies] ?? '';
       const fury = curr.bossPhase === 1;
-      const key = 100000 + curr.bossSpecies * 2 + (fury ? 1 : 0);
-      const far = sheets[0];
-      if (key !== this.backdropKey && far !== undefined) {
-        far.texture =
+      const key = `arena:${curr.bossSpecies}:${fury ? 1 : 0}`;
+      if (key !== this.arenaKey) {
+        this.arenaKey = key;
+        const look = arenaOf(legend, fury);
+        const air: AmbientDef = {
+          shape: look.motion === 'fall' ? 'flake' : look.motion === 'rise' ? 'ember' : 'mote',
+          motion: look.motion === 'fall' ? 'fall' : look.motion === 'rise' ? 'rise' : 'drift',
+          count: 24,
+          colors: [look.dust[0] ?? 0xffffff, look.dust[1] ?? 0xffffff],
+          glow: true,
+          blink: true,
+          mist: { color: look.dust[0] ?? 0xffffff, alpha: fury ? 0.1 : 0.06, speed: 0.012 },
+          flash: false,
+          shafts: fury ? (look.dust[1] ?? 0) : 0,
+          vignette: 0.62,
+        };
+        this.scenery.showArena(
+          key,
           legend in LEGEND_ARENAS
             ? legendArenaTexture(legend, fury)
-            : arenaTexture(TYPE_COLORS[main] ?? 0xffffff);
-        far.visible = true;
-        for (let i = 1; i < sheets.length; i++) {
-          const rest = sheets[i];
-          if (rest !== undefined) rest.visible = false;
-        }
-        this.backdropKey = key;
-        this.fade = 1;
+            : arenaTexture(TYPE_COLORS[curr.bossType] ?? 0xffffff),
+          ART_PIXEL,
+          air,
+        );
       }
-      this.fade = Math.max(0, this.fade - elapsedMs / 900);
-      this.backdropFade.alpha = this.fade;
-      this.scroll += elapsedMs;
-      if (far !== undefined) {
-        far.tilePosition.y = Math.floor((this.scroll * 0.012) / ART_PIXEL) * ART_PIXEL;
-      }
-      return;
-    }
-    if (main < 0) {
-      for (const sheet of sheets) if (sheet !== undefined) sheet.visible = false;
-      this.backdropKey = -1;
-      return;
-    }
-    const second = ownStage ? main : curr.biomeSecond >= 0 ? curr.biomeSecond : main;
-    const key = main * 64 + second;
-    if (key !== this.backdropKey) {
-      const made = backdropFor(
-        main,
-        second,
-        (code) => `#${(TYPE_COLORS[code] ?? 0xffffff).toString(16).padStart(6, '0')}`,
+    } else {
+      this.arenaKey = '';
+      const main = curr.biomeMain;
+      this.scenery.showScene(
+        main < 0 ? null : sceneFor(main, curr.biomeSecond >= 0 ? curr.biomeSecond : main),
       );
-      const layers = [made.far, made.mid, made.near];
-      sheets.forEach((sheet, i) => {
-        if (sheet === undefined) return;
-        sheet.texture = layers[i] ?? Texture.EMPTY;
-        sheet.visible = true;
-      });
-      this.backdropKey = key;
-      this.fade = 1;
     }
-    this.fade = Math.max(0, this.fade - elapsedMs / 500);
-    this.backdropFade.alpha = this.fade;
-    this.scroll += elapsedMs;
-    for (let i = 0; i < sheets.length; i++) {
-      const sheet = sheets[i];
-      if (sheet === undefined) continue;
-      // Whole art pixels only, so the scrolling never smears the pixels.
-      sheet.tilePosition.y =
-        Math.floor((this.scroll * (BACKDROP_SPEEDS[i] ?? 0)) / ART_PIXEL) * ART_PIXEL;
-    }
+    this.scenery.update(elapsedMs);
   }
+
+  private arenaKey = '';
 
   /** The colour (0xRRGGBB) the field is tinted with now, or -1 when there is no biome: for tests. */
   get biomeColor(): number {
@@ -758,50 +762,9 @@ export class Renderer {
       this.tintRgb[c] = (this.tintRgb[c] ?? 0) + ((goal[c] ?? 0) - (this.tintRgb[c] ?? 0)) * step;
     }
     this.tintAlpha += ((has ? 0.16 : 0) - this.tintAlpha) * step;
-    // The backdrop carries the colour now; the old flat tint only keeps `biomeColor` for the tests.
-    this.biomeTint.alpha = 0;
-
+    // The painted scene carries the colour and the air now (4V); this number only says, for the
+    // tests, which biome is on screen.
     this.biomeClock += elapsedMs;
-    const { width, height } = this.config.arena;
-    const second = curr.biomeSecond >= 0 ? curr.biomeSecond : main;
-    // The arena of a legendary has its own dust in the air (4G-H): embers, snow, motes, stars.
-    const legend = curr.bossFinal
-      ? arenaOf(this.speciesIds[curr.bossSpecies] ?? '', curr.bossPhase === 1)
-      : null;
-    const rising = legend !== null ? legend.motion === 'rise' : RISING.has(main);
-    const falling = legend !== null ? legend.motion === 'fall' : FALLING.has(main);
-    for (let i = 0; i < BIOME_DOTS; i++) {
-      const dot = this.biomeDots[i];
-      if (dot === undefined) continue;
-      dot.visible = has || legend !== null;
-      if (!dot.visible) continue;
-      const phase = (i * 0.61803398875) % 1; // a spread of the dots that never lines them up
-      const speed = 0.012 + (i % 5) * 0.004; // pixels per millisecond
-      const travel = (this.biomeClock * speed + phase * height) % height;
-      let x = phase * width;
-      let y = height - travel;
-      if (falling) y = travel;
-      else if (!rising) {
-        // Drifting sideways, wrapping around, at the height of the dot.
-        x = (this.biomeClock * speed + phase * width) % width;
-        y = ((i * 97) % height) + Math.sin(this.biomeClock / 700 + i) * 14;
-      }
-      if (rising || falling) x += Math.sin(this.biomeClock / 900 + i) * 10;
-      dot.x = x;
-      dot.y = y;
-      const size = 2.2 + (i % 4) * 0.9;
-      dot.scale.set(size / 32);
-      if (legend !== null) {
-        dot.tint = legend.dust[i % 2] ?? 0xffffff;
-        dot.alpha = 0.35 + 0.35 * Math.sin(this.biomeClock / 400 + i * 1.7);
-        continue;
-      }
-      dot.tint = TYPE_COLORS[i % 2 === 0 ? main : second] ?? 0xffffff;
-      // Electric and Fairy blink; the rest stay steady.
-      const blink =
-        main === 12 || main === 17 ? 0.5 + 0.5 * Math.sin(this.biomeClock / 160 + i * 2) : 1;
-      dot.alpha = 0.42 * blink * this.tintAlpha * 6;
-    }
   }
 
   /**
@@ -846,7 +809,9 @@ export class Renderer {
     sprite.alpha = 0.34;
     // Translucent: the balls and the Pokémon stay visible through the fill.
     fill.alpha = flash ? 0.75 : 0.22 + 0.22 * p;
-    mark.visible = false;
+    // Set once per frame: a change of visibility, even there and back, makes PixiJS rebuild its
+    // whole draw list (4V, performance).
+    mark.visible = !(kind === KIND_ZONE || kind === KIND_CRACK || kind === KIND_GUST);
     if (kind === KIND_SHOT) {
       // The landing spot on the floor fills from the bottom; a thin line shows where it comes from.
       const w = Math.max(width, 8 * ART_PIXEL);
@@ -955,7 +920,11 @@ export class Renderer {
       }
       fill.visible = false;
       sprite.visible = true;
-      mark.visible = false;
+      // Set once per frame (see `drawDanger`): which kinds leave a mark on the floor strip.
+      mark.visible =
+        kind === KIND_PORTAL
+          ? (curr.hazardLink[i] ?? 0) > 0
+          : !(kind === KIND_ZONE || kind === KIND_CRACK || kind === KIND_GUST);
       sprite.tint = 0xffffff;
       mark.tint = 0xffffff;
       sprite.tilePosition.set(0, 0);
@@ -1275,24 +1244,18 @@ export class Renderer {
     const sprite = this.statusSprites[this.statusUsed];
     if (sprite === undefined) return;
     this.statusUsed += 1;
-    sprite.texture = this.disc;
-    sprite.visible = true;
-    sprite.position.set(x, y);
-    sprite.scale.set(size / 32);
-    sprite.tint = color;
-    sprite.alpha = Math.max(0, alpha);
+    sprite.texture = this.atlas.disc;
+    placeParticle(sprite, x, y, (size * 2) / DISC, (size * 2) / DISC, color, Math.max(0, alpha));
   }
 
   private statusRing(x: number, y: number, color: number, size: number, alpha: number): void {
     const sprite = this.statusSprites[this.statusUsed];
     if (sprite === undefined) return;
     this.statusUsed += 1;
-    sprite.texture = this.ring;
-    sprite.visible = true;
-    sprite.position.set(x, y);
-    sprite.scale.set(size / 30);
-    sprite.tint = color;
-    sprite.alpha = Math.max(0, alpha);
+    sprite.texture = this.atlas.ring;
+    // The ring was drawn on a 64-pixel picture at `size / 30`: the same size on the screen.
+    const scale = ((size / 30) * 64) / RING;
+    placeParticle(sprite, x, y, scale, scale, color, Math.max(0, alpha));
   }
 
   /** Builds the outlines that were asked for, a couple per frame (see `outlined`). */
@@ -1338,6 +1301,7 @@ export class Renderer {
     interpolateBalls(prev, curr, alpha, this.scratchBallX, this.scratchBallY);
     let shown = 0;
     let trails = 0;
+    let glows = 0;
     for (let slot = 0; slot < curr.slotCount; slot++) {
       if (curr.ballActive[slot] !== 1) continue;
       const sprite = this.spriteAt(this.ballSprites, this.ballLayer, shown);
@@ -1355,6 +1319,34 @@ export class Renderer {
       sphere.position.set(sprite.x, sprite.y);
       sphere.texture = sphereTexture(TYPE_COLORS[curr.ballType[slot] ?? 0] ?? 0xffffff);
       sphere.scale.set((2 * radius) / SPHERE_CIRCLE);
+      // A contact shadow down and to the right (the light comes from the top left): the ball
+      // floats over the ground instead of lying on it (4V; art bible §5).
+      const shadow = this.ballShadows[shown];
+      if (shadow !== undefined) {
+        shadow.x = sprite.x + radius * 0.35;
+        shadow.y = sprite.y + radius * 0.75;
+        shadow.scaleX = (radius * 2.1) / DISC;
+        shadow.scaleY = (radius * 1.2) / DISC;
+      }
+      // The halo of a rare Pokémon: violet for a ★4, gold that beats for a ★5.
+      const tone = RARITY_GLOW[this.rarity[curr.ballSpecies[slot] ?? NO_SPECIES] ?? 0] ?? 0;
+      if (tone !== 0) {
+        let halo = this.ballGlows[glows];
+        if (halo === undefined) {
+          halo = new Sprite(glowTexture(32));
+          halo.anchor.set(0.5);
+          halo.blendMode = 'add';
+          this.ballGlows[glows] = halo;
+          this.glowLayer.addChild(halo);
+        }
+        if (halo.tint !== tone) halo.tint = tone;
+        halo.position.set(sprite.x, sprite.y);
+        const gold = tone === 0xffd75a;
+        const beat = gold ? 0.5 + 0.5 * Math.sin(this.clockMs / 260 + slot) : 0.5;
+        halo.scale.set((radius * (gold ? 3.6 : 3.1)) / 32);
+        halo.alpha = gold ? 0.55 + 0.25 * beat : 0.45;
+        glows += 1;
+      }
       if (art === undefined) {
         sprite.texture = this.disc;
         sprite.scale.set((radius * 0.7) / 32);
@@ -1366,9 +1358,6 @@ export class Renderer {
         sprite.scale.set((2 * radius * SPHERE_CONTENT) / Math.max(1, cut.width, cut.height));
       }
       // The Pokémon stays upright inside its glass: the picture never turns with the flight.
-      sprite.rotation = 0;
-      sprite.tint = 0xffffff;
-      sprite.alpha = 1;
       // A trail in the colour of its type (4G-H, "en movimiento cuesta reconocer qué Pokémon es"):
       // the colour says the type even when the picture is a blur. Dots that shrink and fade behind
       // it, along the way it came (from the last tick to this one).
@@ -1381,13 +1370,18 @@ export class Renderer {
           const tone = TYPE_COLORS[curr.ballType[slot] ?? 0] ?? 0xffffff;
           const spacing = Math.max(radius * 0.55, step * 0.9) / step;
           for (let k = 1; k <= TRAIL_DOTS; k++) {
-            const dot = this.spriteAt(this.trailSprites, this.trailLayer, trails);
-            dot.visible = true;
-            dot.texture = this.disc;
-            dot.tint = tone;
-            dot.position.set(sprite.x - dx * spacing * k, sprite.y - dy * spacing * k);
-            dot.scale.set((radius * (1 - k / (TRAIL_DOTS + 1)) * 0.9) / 32);
-            dot.alpha = 0.55 * (1 - k / (TRAIL_DOTS + 1));
+            const dot = this.trailSprites[trails];
+            if (dot === undefined) break;
+            const size = (radius * (1 - k / (TRAIL_DOTS + 1)) * 1.8) / DISC;
+            placeParticle(
+              dot,
+              sprite.x - dx * spacing * k,
+              sprite.y - dy * spacing * k,
+              size,
+              size,
+              tone,
+              0.55 * (1 - k / (TRAIL_DOTS + 1)),
+            );
             trails += 1;
           }
         }
@@ -1395,26 +1389,19 @@ export class Renderer {
       shown += 1;
     }
     for (let i = shown; i < this.ballsShown; i++) {
-      const sprite = this.ballSprites[i];
-      if (sprite) sprite.visible = false;
-      const sphere = this.ballSpheres[i];
-      if (sphere) sphere.visible = false;
+      this.ballSprites[i]?.position.set(OFF, OFF);
+      this.ballSpheres[i]?.position.set(OFF, OFF);
     }
-    for (let i = trails; i < this.trailsShown; i++) {
-      const dot = this.trailSprites[i];
-      if (dot) dot.visible = false;
-    }
+    for (let i = glows; i < this.glowsShown; i++) this.ballGlows[i]?.position.set(OFF, OFF);
+    this.glowsShown = glows;
     this.ballsShown = shown;
-    this.trailsShown = trails;
+    liveParticles(this.shadowLayer, this.ballShadows, shown);
+    liveParticles(this.trailLayer, this.trailSprites, trails);
   }
 
   private drawEnemies(prev: Snapshot, curr: Snapshot, alpha: number): void {
     interpolateEnemies(prev, curr, alpha, this.scratchEnemyX, this.scratchEnemyY);
     // The signs of the states of the enemies use a pool of dots that is refilled every frame.
-    for (let k = 0; k < this.statusUsed; k++) {
-      const used = this.statusSprites[k];
-      if (used !== undefined) used.visible = false;
-    }
     this.statusUsed = 0;
     this.statusLod = curr.enemyCount > STATUS_LOD_ENEMIES;
     for (let i = 0; i < curr.enemyCount; i++) {
@@ -1422,8 +1409,19 @@ export class Renderer {
       sprite.visible = true;
       const ex = this.scratchEnemyX[i] ?? 0;
       const ey = this.scratchEnemyY[i] ?? 0;
-      sprite.position.set(ex, ey);
       const radius = curr.enemyRadius[i] ?? 16;
+      const foeId = curr.enemyId[i] ?? 0;
+      // Everything alive breathes (4V; art bible §6): a bob of a pixel or two with its own phase,
+      // slower and wider for a boss. Only the picture moves; the body the balls hit does not.
+      const big = radius >= 30;
+      const bob =
+        Math.round(Math.sin(this.clockMs / (big ? 620 : 360) + foeId * 1.7) * (big ? 1.5 : 1)) *
+        FIELD_PIXEL;
+      // A hit: the silhouette goes white for an instant and the picture jumps a little bigger.
+      const since = this.clockMs - (this.flashStart[foeId & (FLASH_SLOTS - 1)] ?? -1e9);
+      const flashing = since < FLASH_MS;
+      const punch = flashing ? 1 + 0.1 * (1 - since / FLASH_MS) : 1;
+      sprite.position.set(ex, ey + bob);
       const art = this.art[curr.enemySpecies[i] ?? NO_SPECIES];
       const worn = this.drawStatus(curr.enemyStatus[i] ?? 0, ex, ey, radius, curr.enemyId[i] ?? 0);
       // A boss in its fury is red.
@@ -1477,13 +1475,22 @@ export class Renderer {
           sprite.tint = raging ? 0xff8a8a : worn;
         }
         sprite.alpha = 1;
+        if (flashing) {
+          // The white silhouette lives in the same texture as the outlined picture.
+          const white = whiteOf(sprite.texture);
+          if (white !== undefined) {
+            sprite.texture = white;
+            sprite.tint = 0xffffff;
+          }
+          sprite.scale.set(sprite.scale.x * punch);
+        }
       }
     }
     for (let i = curr.enemyCount; i < this.enemiesShown; i++) {
-      const sprite = this.enemySprites[i];
-      if (sprite) sprite.visible = false;
+      this.enemySprites[i]?.position.set(OFF, OFF);
     }
     this.enemiesShown = curr.enemyCount;
+    liveParticles(this.statusLayer, this.statusSprites, this.statusUsed);
   }
 
   /**
@@ -1529,10 +1536,8 @@ export class Renderer {
       glass.alpha = urgent ? 0.35 : 1;
     }
     for (let i = curr.pickupCount; i < this.pickupsShown; i++) {
-      const sprite = this.pickupSprites[i];
-      const glass = this.pickupSpheres[i];
-      if (sprite) sprite.visible = false;
-      if (glass) glass.visible = false;
+      this.pickupSprites[i]?.position.set(OFF, OFF);
+      this.pickupSpheres[i]?.position.set(OFF, OFF);
     }
     this.pickupsShown = curr.pickupCount;
   }
@@ -1586,7 +1591,6 @@ export class Renderer {
     if (sprite === undefined) return;
     sprite.position.set(x, y);
     sprite.tint = color;
-    sprite.visible = true;
     this.fxLife[index] = 1;
     this.fxSize[index] = size;
   }
@@ -1626,7 +1630,106 @@ export class Renderer {
     b.radius = 0;
   }
 
-  private drawEffects(events: readonly GameEvent[], elapsedMs: number): void {
+  private feelOn = true;
+  private gatherTick = -1;
+
+  /** Turns the sparks, numbers and deaths of the hits off (a measuring aid: `?debug&nofeel`). */
+  setFeel(on: boolean): void {
+    this.feelOn = on;
+  }
+
+  /** The stars of the Pokémon of each art code, for the halo of the rare balls (4V). */
+  setRarity(stars: Uint8Array): void {
+    this.rarity = stars;
+  }
+
+  /**
+   * A ball hit an enemy (4V; art bible §6): it flashes white (not more often than `mayFlash`
+   * allows, so a boss under fire is not a white blob), sparks of the type of the ball fly back the
+   * way it came and the damage shows as a number.
+   */
+  private onHit(event: Extract<GameEvent, { type: 'hit' }>, curr: Snapshot): void {
+    if (!this.feelOn) return;
+    const slot = event.enemyId & (FLASH_SLOTS - 1);
+    if (mayFlash(this.clockMs, this.flashStart[slot] ?? -1e9)) this.flashStart[slot] = this.clockMs;
+    let radius = 16;
+    for (let i = 0; i < curr.enemyCount; i++) {
+      if (curr.enemyId[i] === event.enemyId) {
+        radius = curr.enemyRadius[i] ?? 16;
+        break;
+      }
+    }
+    // The ball that did it is the nearest one: its type colours the sparks and its place says
+    // which way they fly.
+    let best = -1;
+    let bestD = 1e12;
+    for (let b = 0; b < curr.slotCount; b++) {
+      if (curr.ballActive[b] !== 1) continue;
+      const dx = (curr.ballX[b] ?? 0) - event.x;
+      const dy = (curr.ballY[b] ?? 0) - event.y;
+      const d = dx * dx + dy * dy;
+      if (d < bestD) {
+        bestD = d;
+        best = b;
+      }
+    }
+    let dx = 0;
+    let dy = -1;
+    let type = 0;
+    if (best >= 0) {
+      const len = Math.sqrt(bestD) || 1;
+      dx = (event.x - (curr.ballX[best] ?? 0)) / len;
+      dy = (event.y - (curr.ballY[best] ?? 0)) / len;
+      type = curr.ballType[best] ?? 0;
+    }
+    this.feel.hit(
+      event.enemyId,
+      event.x,
+      event.y,
+      dx,
+      dy,
+      radius,
+      type,
+      TYPE_COLORS[type] ?? 0xffffff,
+      event.damage,
+      event.effectiveness,
+    );
+  }
+
+  /** An enemy died: it is looked up in the last frame it was alive and breaks into pixels there. */
+  private onKill(event: Extract<GameEvent, { type: 'kill' }>, prev: Snapshot): void {
+    if (!this.feelOn) return;
+    let radius = 16;
+    let type = 0;
+    let species = NO_SPECIES;
+    for (let i = 0; i < prev.enemyCount; i++) {
+      if (prev.enemyId[i] === event.enemyId) {
+        radius = prev.enemyRadius[i] ?? 16;
+        type = prev.enemyType[i] ?? 0;
+        species = prev.enemySpecies[i] ?? NO_SPECIES;
+        break;
+      }
+    }
+    const art = this.art[species];
+    const outlined = this.foeArt[species];
+    const white = outlined === undefined ? undefined : whiteOf(outlined);
+    this.feel.kill(
+      event.x,
+      event.y,
+      radius,
+      type,
+      TYPE_COLORS[type] ?? 0xffffff,
+      white ?? null,
+      art === undefined ? 1 : (radius * ENEMY_ART_SCALE) / (art.width / 2),
+    );
+  }
+
+  private drawEffects(
+    events: readonly GameEvent[],
+    elapsedMs: number,
+    prev: Snapshot,
+    curr: Snapshot,
+  ): void {
     for (const event of events) {
       if (event.type === 'move') this.startMove(event);
       else if (event.type === 'bossDefeated') this.startDeath();
@@ -1635,24 +1738,36 @@ export class Renderer {
         this.legendLife = this.legendTotal;
       } else if (event.type === 'playerHurt')
         this.hurt.hurt(this.player.x, this.config.player.y, event.damage);
-      else if (event.type === 'hit') this.startEffect(event.x, event.y, 0xffffff);
-      else if (event.type === 'kill') this.startEffect(event.x, event.y, 0xffd54f);
+      else if (event.type === 'bossStrike' && this.feelOn) {
+        // What struck leaves its matter on the floor strip, in the type of who threw it.
+        const type = Math.max(0, curr.bossType);
+        this.feel.strike(
+          event.x,
+          event.width,
+          this.config.arena.defenseLineY,
+          type,
+          curr.bossType >= 0 ? (TYPE_COLORS[type] ?? DANGER) : DANGER,
+        );
+      } else if (event.type === 'hit') this.onHit(event, curr);
+      else if (event.type === 'kill') this.onKill(event, prev);
       else if (event.type === 'chain') {
         this.startEffect(event.toX, event.toY, 0xfff176);
         this.moves.bolt(event.fromX, event.fromY, event.toX, event.toY);
       } else if (event.type === 'collect')
         this.startEffect(event.x, this.config.player.y, 0x81d4fa);
-      else if (event.type === 'capture')
+      else if (event.type === 'capture') {
         this.startEffect(event.x, this.config.player.y, PICKUP_GOLD, 2.2);
-      else if (event.type === 'captureDrop') {
+        this.feel.burst(event.x, this.config.player.y, 'star', PICKUP_GOLD, 10, 3.2);
+      } else if (event.type === 'captureDrop') {
         // Two staggered rings, big and gold: a drop must be seen from across the field.
         this.startEffect(event.x, event.y, PICKUP_GOLD, 2.6);
         this.startEffect(event.x, event.y, 0xffffff, 1.6);
+        this.feel.burst(event.x, event.y, 'star', PICKUP_GOLD, 8, 2.4);
       }
     }
+    this.feel.update(elapsedMs);
     this.moves.update(elapsedMs);
     const decay = elapsedMs / FX_DURATION_MS;
-    let anyFx = false;
     for (let i = 0; i < FX_POOL; i++) {
       const life = this.fxLife[i] ?? 0;
       const sprite = this.fxSprites[i];
@@ -1660,15 +1775,13 @@ export class Renderer {
       const next = life - decay;
       if (next <= 0) {
         this.fxLife[i] = 0;
-        sprite.visible = false;
+        sprite.position.set(OFF, OFF);
       } else {
         this.fxLife[i] = next;
-        anyFx = true;
         sprite.alpha = next;
         sprite.scale.set((this.fxSize[i] ?? 1) * (0.35 + (1 - next) * 0.6));
       }
     }
-    this.fxLayer.visible = anyFx;
   }
 
   destroy(): void {

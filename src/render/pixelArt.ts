@@ -1,4 +1,4 @@
-import { Texture } from 'pixi.js';
+import { Rectangle, Texture } from 'pixi.js';
 
 /**
  * Pixel art drawn by code (4G-D, direction A): the backdrops of the biomes, the effects of the boss
@@ -610,7 +610,11 @@ export function outlinedTexture(source: Texture, edge: string): Texture {
     const w = source.width;
     const h = source.height;
     const resource = source.source.resource as CanvasImageSource;
-    const { c, g } = canvas(w + OUTLINE_PAD * 2, h + OUTLINE_PAD * 2);
+    // Twice as wide: the outlined picture on the left and, on the right, its silhouette in flat
+    // white (4V: the flash of a hit). Both in ONE texture source, so an enemy can change from one
+    // to the other without PixiJS rebuilding its draw list.
+    const half = w + OUTLINE_PAD * 2;
+    const { c, g } = canvas(half * 2, h + OUTLINE_PAD * 2);
     // A silhouette of the picture in one flat colour.
     const mask = (color: string): HTMLCanvasElement => {
       const m = canvas(w, h);
@@ -626,7 +630,7 @@ export function outlinedTexture(source: Texture, edge: string): Texture {
     g.fillStyle = 'rgba(5,8,16,0.45)';
     g.beginPath();
     g.ellipse(
-      c.width / 2,
+      half / 2,
       c.height - OUTLINE_PAD - 1,
       w * 0.36,
       OUTLINE_PAD * 0.75,
@@ -644,12 +648,29 @@ export function outlinedTexture(source: Texture, edge: string): Texture {
     ring(dark, OUTLINE_PAD * 0.9);
     ring(light, OUTLINE_PAD * 0.5);
     g.drawImage(resource, OUTLINE_PAD, OUTLINE_PAD);
-    made = toTexture(c);
+    g.drawImage(mask('#ffffff'), half + OUTLINE_PAD, OUTLINE_PAD);
+    const sheet = toTexture(c);
+    made = new Texture({ source: sheet.source, frame: new Rectangle(0, 0, half, c.height) });
+    whiteOfOutlined.set(
+      made,
+      new Texture({ source: sheet.source, frame: new Rectangle(half, 0, half, c.height) }),
+    );
   } catch {
     made = source;
   }
   byColor.set(edge, made);
   return made;
+}
+
+const whiteOfOutlined = new WeakMap<Texture, Texture>();
+
+/**
+ * The flat white silhouette that goes with an outlined picture (same size, same texture source):
+ * the flash of an enemy that is hit, and what swells and fades when it dies (4V; art bible §6).
+ * Undefined for a picture that is not an outlined one.
+ */
+export function whiteOf(outlined: Texture): Texture | undefined {
+  return whiteOfOutlined.get(outlined);
 }
 
 // ---------------------------------------------------------------------------------------------

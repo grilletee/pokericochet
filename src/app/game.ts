@@ -153,6 +153,7 @@ import { type BestRun, browserStore, loadBestRun, saveIfBest } from './bestRun';
 import { GAME_TITLE } from './config';
 import { playCry } from './cries';
 import { FixedStepper } from './fixedStepper';
+import { HitStop, hitStopOf } from './hitStop';
 import { Input, RELEASE_PICK } from './input';
 import { commandFromInput } from './inputLogic';
 import {
@@ -585,6 +586,8 @@ export async function startGame(host: HTMLElement): Promise<void> {
   const moment = new EvolutionMoment(host);
   const bossMoment = new BossMoment(host);
   const pause = new GamePause();
+  // 4V: the hits that matter freeze the game for a few hundredths of a second (presentation only).
+  const hitStop = new HitStop();
   // Only Space or the visible button skip the evolution pause (4H-B2: a stray key or tap used to
   // skip it); the grace time lives in `GamePause.skip`.
   const skipEvolution = (): void => {
@@ -612,6 +615,10 @@ export async function startGame(host: HTMLElement): Promise<void> {
     genOf: generationOf,
   });
   const catalogOf = new Map(catalog.map((entry) => [entry.species, entry]));
+  // 4V: the balls of the rare Pokémon wear a halo on the field (violet for a ★4, gold for a ★5).
+  renderer.setRarity(Uint8Array.from(speciesIds, (id) => catalogOf.get(id)?.stars ?? 0));
+  // ?nofeel: no sparks, numbers or deaths of the hits (to measure what they cost).
+  if (params.has('nofeel')) renderer.setFeel(false);
   const bannerInput = { regions: REGIONS, typeNames: TYPE_BANNER_NAMES, rotation: BANNER_ROTATION };
   // ?debug&day=N shows the banners of another day (days since 1970-01-01), to try the rotation.
   const debugDay = Number(params.get('day'));
@@ -888,6 +895,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
     bossMoment.hide();
     cartel.hide();
     pause.reset();
+    hitStop.reset();
     signatureAnnounced = false;
     chargeHinted = false;
     lineAlarm.reset();
@@ -1533,6 +1541,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
       screen === 'playing' &&
       !sheet.open &&
       !pause.active(now) &&
+      !hitStop.active(now) &&
       victoryAt === 0 &&
       !touchFrame.wait
         ? stepper.advance(elapsed)
@@ -1567,6 +1576,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
           overlay.showToast(text, now);
         }
         sound.playEvent(event, now);
+        if (!bench && hitStop.request(now, hitStopOf(event))) stopped = true;
         if (event.type === 'stage' && isRealEvolution(event.kind, event.from, event.to)) {
           pause.add(now, pauseMs(event.stage));
           stopped = true;

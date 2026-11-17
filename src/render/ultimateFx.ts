@@ -1,6 +1,9 @@
 import { Container, Sprite, type Texture, TilingSprite } from 'pixi.js';
 import type { GameType, MoveShapeKind } from '../domain';
+import { fxAtlas } from './fxAtlas';
+import { FIELD_PIXEL } from './paint';
 import { ART_PIXEL, FX_FRAMES, fxFor } from './pixelArt';
+import type { ParticleShape } from './sceneIds';
 
 /**
  * The presentation of the moves and the Ultimates (4G-E), in the pixel style of the boss attacks:
@@ -12,6 +15,16 @@ import { ART_PIXEL, FX_FRAMES, fxFor } from './pixelArt';
  */
 
 const BIG = 8;
+const OFF = -9999;
+const FLARES = 6;
+/** The shape of the particles of each flourish (4V; art bible §6: a type is known by its shape). */
+const FLOURISH_SHAPE = {
+  fire: 'ember',
+  water: 'drop',
+  grass: 'leaf',
+  spark: 'bolt',
+  radial: 'star',
+} as const;
 const PARTS = 320;
 /** How long a beam or a row stays, in milliseconds. */
 const BIG_MS = 520;
@@ -59,6 +72,13 @@ export class UltimateFx {
   private readonly bigFull = new Float32Array(BIG);
   private readonly bigElem = new Uint8Array(BIG);
   private partNext = 0;
+  private readonly atlas = fxAtlas();
+  /** The shape the particles being born now have (the element of the move; a pixel otherwise). */
+  private shape: ParticleShape = 'pixel';
+  private readonly flares: Sprite[] = [];
+  private readonly flareLife = new Float32Array(FLARES);
+  private readonly flareSize = new Float32Array(FLARES);
+  private flareNext = 0;
   /** True while anything of this layer may be alive; false lets `update` skip everything. */
   private busy = false;
   private readonly flash: Sprite;
@@ -85,10 +105,22 @@ export class UltimateFx {
       this.big.push(sheet);
       this.layer.addChild(sheet);
     }
+    // 4V: flares of additive light under the particles (the launch, the impact).
+    for (let i = 0; i < FLARES; i++) {
+      const flare = new Sprite(this.atlas.glow);
+      flare.anchor.set(0.5);
+      flare.blendMode = 'add';
+      flare.position.set(OFF, OFF);
+      this.flares.push(flare);
+      this.layer.addChild(flare);
+    }
     for (let i = 0; i < PARTS; i++) {
-      const dot = new Sprite(fxFor(0xffffff).particle);
+      // 4V: the particles are the shapes of the sheet of effects (an ember, a drop, a leaf...).
+      const dot = new Sprite(this.atlas.shapes.pixel);
       dot.anchor.set(0.5);
-      dot.visible = false;
+      // Never hidden: a particle that is not alive waits off the field (4V: a change of
+      // visibility makes PixiJS rebuild its draw list).
+      dot.position.set(OFF, OFF);
       this.parts.push(dot);
       this.layer.addChild(dot);
     }
@@ -123,8 +155,24 @@ export class UltimateFx {
     this.plife[i] = 1;
     this.busy = true;
     dot.tint = color;
-    dot.scale.set(size);
-    dot.visible = true;
+    // A plain pixel keeps the size it always had (it was a 2 x 2 picture); a shape is drawn at
+    // the pixel size of the field, a step bigger for the big particles.
+    const shape = this.shape;
+    dot.texture = this.atlas.shapes[shape];
+    dot.scale.set(shape === 'pixel' ? size * 2 : size > ART_PIXEL * 1.2 ? 3 : FIELD_PIXEL);
+  }
+
+  /** A flare of additive light at (x, y), `size` arena units across, that is gone in a moment. */
+  private flare(x: number, y: number, color: number, size: number): void {
+    const i = this.flareNext;
+    this.flareNext = (this.flareNext + 1) % FLARES;
+    const flare = this.flares[i];
+    if (flare === undefined) return;
+    flare.position.set(x, y);
+    flare.tint = color;
+    this.flareLife[i] = 1;
+    this.flareSize[i] = size;
+    this.busy = true;
   }
 
   private bigAt(
@@ -301,6 +349,17 @@ export class UltimateFx {
         break;
     }
     void fx;
+    // The impact (4V; art bible §6): a flare of light of the colour of the type and, for a thrown
+    // Ultimate, a white one inside it and another at the launcher. The shower that follows is made
+    // of the shape of the element.
+    const reach =
+      shape === 'beam' || shape === 'wave' || shape === 'cross' ? size * 2.2 : size * 2.6;
+    this.flare(x, y, color, Math.max(70, reach * boost));
+    if (manual) {
+      this.flare(x, y, 0xffffff, Math.max(50, reach * 0.6));
+      this.flare(launcherX, launcherY, color, 130);
+    }
+    this.shape = FLOURISH_SHAPE[kind];
     this.flourish(kind, x, y, 8 + tier * 4 * strong, color);
     if (manual) {
       // The launch: a column of charge sparks up from the launcher, a flash and a shake.
@@ -320,6 +379,7 @@ export class UltimateFx {
       this.shakeLife = 1;
       this.busy = true;
     }
+    this.shape = 'pixel';
   }
 
   /**
@@ -425,6 +485,7 @@ export class UltimateFx {
         const cx = sheet.x + sheet.width / 2;
         const y = sheet.y + ((this.clock * 0.9 + i * 53) % Math.max(40, sheet.height));
         const spin = Math.sin(this.clock / 90 + i) * sheet.width * 0.8;
+        this.shape = elem === 3 ? 'leaf' : elem === 1 ? 'ember' : elem === 2 ? 'drop' : 'pixel';
         if (elem === 3) {
           this.particle(
             cx + spin,
@@ -452,7 +513,23 @@ export class UltimateFx {
         } else if (elem === 2) {
           this.particle(cx + spin, y, spin * 0.05, -2.5, 0.2, 0xdff4ff, ART_PIXEL * 0.8, 600);
         }
+        this.shape = 'pixel';
       }
+    }
+    for (let i = 0; i < FLARES; i++) {
+      const life = this.flareLife[i] ?? 0;
+      const flare = this.flares[i];
+      if (life <= 0 || flare === undefined) continue;
+      const next = life - ms / 340;
+      this.flareLife[i] = Math.max(0, next);
+      if (next <= 0) {
+        flare.position.set(OFF, OFF);
+        continue;
+      }
+      alive = true;
+      // It opens fast and fades in steps: an impact, not a glow that lingers.
+      flare.scale.set(((this.flareSize[i] ?? 80) / 24) * (0.55 + (1 - next) * 0.6));
+      flare.alpha = Math.ceil(next * 5) / 5;
     }
     for (let i = 0; i < PARTS; i++) {
       const life = this.plife[i] ?? 0;
@@ -461,7 +538,7 @@ export class UltimateFx {
       const next = life - ms / (this.plifeMs[i] ?? 700);
       if (next <= 0) {
         this.plife[i] = 0;
-        dot.visible = false;
+        dot.position.set(OFF, OFF);
         continue;
       }
       this.plife[i] = next;

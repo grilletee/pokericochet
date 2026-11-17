@@ -21,6 +21,14 @@ animated night drawn by code (`src/ui/menuBackdrop.ts`). The attacks of each typ
 (`src/render/bossArt.ts`), the arenas of the legendaries (`src/render/legendArena.ts`) and the deaths
 of the bosses (`src/render/deathFx.ts`) are original pixel art drawn by code as well.
 
+**Art direction 4V (2026-11-16).** The fourteen painted scenes of the biomes
+(`src/render/scenes.ts`), their air and light (`src/render/backdrop.ts`), the shapes of the particles
+and the digits of the damage numbers (`src/render/shapes.ts`, `src/render/fxAtlas.ts`) and the deck
+under the line of defence (`src/render/fieldArt.ts`) are original pixel art drawn by code with the
+painter's kit of `src/render/paint.ts`. No external asset was added in this sprint, so there is no
+new licence to list. The style references named in the art bible of the project (other pixel-art
+games, none of them Pokémon) are references of craft only: nothing of them is copied.
+
 **Music (4G-I, 4G-J).** The twelve pieces (menu, six wave pieces by family of biomes, two bosses,
 final legendary, victory, defeat) and their tension layers are ORIGINAL,
 written for this game as note data in `src/ui/musicScore.ts` and played by the game's own chiptune
