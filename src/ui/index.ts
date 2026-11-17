@@ -16,6 +16,7 @@ export type { CardTextContext } from './cardText';
 export { cardStep, describeCard, typeName } from './cardText';
 export type { ArtLookup } from './cardView';
 export { buildCardArt, STEP_COLOR, spriteTile } from './cardView';
+export { shadeHex } from './cinema';
 export { CollectionScreen, type DexTile, filterDex } from './collectionScreen';
 export { type CandyRules, candyLines, earnedCandiesLine } from './collectionText';
 export {
@@ -43,8 +44,10 @@ export {
   endsText,
   percentBp,
   pityLines,
+  pityMeters,
   RARITY_COLORS,
   revealNote,
+  revealTiming,
   rulesText,
   stars,
 } from './gachaText';

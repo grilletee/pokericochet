@@ -134,3 +134,93 @@ export function endsText(days: number | null): string {
 export function revealNote(isNew: boolean, candies: number): string {
   return isNew ? '¡NUEVO!' : `+${candies} caramelos`;
 }
+
+/** One counter of the pity panel (4V, block 3): what it promises, how far, how full its bar is. */
+export interface PityMeter {
+  readonly id: 'five' | 'four' | 'featured';
+  readonly label: string;
+  /** The big number: draws left ("12"), or a word when there is none ("¡Ya!", "Seguro"). */
+  readonly value: string;
+  /** Share of the bar that is full, 0..1, and in how many segments it is drawn. */
+  readonly fill: number;
+  readonly segments: number;
+  readonly color: string;
+  /** Something special is on: the soft pity, or a lost 50/50 that is paid next. */
+  readonly hot: boolean;
+  readonly note: string;
+}
+
+/** The counters of the pity panel, from the same numbers as the lines (`pityLines`). */
+export function pityMeters(pity: PityNumbers, rules: PityRules, limited: boolean): PityMeter[] {
+  const clamp = (v: number): number => Math.max(0, Math.min(1, v));
+  const meters: PityMeter[] = [
+    {
+      id: 'five',
+      label: '★5 seguro en',
+      value: String(pity.toFive),
+      fill: clamp(1 - pity.toFive / rules.hardAt),
+      segments: 16,
+      color: RARITY_COLORS[5],
+      hot: pity.soft,
+      note: pity.soft ? `¡Pity suave! ${percentBp(pity.nextFiveChance)} ahora` : 'tiradas',
+    },
+    {
+      id: 'four',
+      label: '★4 o más en',
+      value: String(pity.toFour),
+      fill: clamp(1 - pity.toFour / rules.fourEvery),
+      segments: rules.fourEvery,
+      color: RARITY_COLORS[4],
+      hot: pity.toFour === 1,
+      note: 'tiradas',
+    },
+  ];
+  if (limited) {
+    const owed = pity.featuredOwed === true;
+    const got = pity.toFeatured === null && !owed;
+    meters.push({
+      id: 'featured',
+      label: 'Destacado ★5',
+      value: owed ? 'Seguro' : got ? '¡Ya!' : String(pity.toFeatured ?? 0),
+      fill: owed || got ? 1 : clamp(1 - (pity.toFeatured ?? 0) / rules.featuredAt),
+      segments: 12,
+      color: '#ff7fb0',
+      hot: owed,
+      note: owed ? 'tu próximo ★5 aquí' : got ? 'ya conseguido' : `tiradas en este banner`,
+    });
+  }
+  return meters;
+}
+
+/** When the reveal turns each card, in milliseconds after the cards are dealt. */
+export interface RevealTiming {
+  /** The moment each card turns face up, in the order of the cards. */
+  readonly flips: readonly number[];
+  /** Each ★4 or better glows through its back this long before it turns (the hint). */
+  readonly hintMs: number;
+  /** When the last card is up and the button to go on shows. */
+  readonly doneMs: number;
+}
+
+/**
+ * The rhythm of a reveal (4V, block 3; the suspense of the gacha games): the cards are dealt face
+ * down and turn one after another, the commonest first and the rarest last (in the order they were
+ * drawn within a rarity); a ★4 or ★5 glows through its back before it turns, and every ★5 waits a
+ * beat longer, so the best comes as a moment of its own.
+ */
+export function revealTiming(stars: readonly StarCount[]): RevealTiming {
+  const STEP = 140;
+  const FIVE_BEAT = 420;
+  const first = 380;
+  const order = stars.map((s, i) => ({ s, i })).sort((a, b) => a.s - b.s || a.i - b.i);
+  const flips: number[] = new Array(stars.length).fill(first);
+  let at = first;
+  let last = first;
+  for (const { s, i } of order) {
+    if (s === 5) at += FIVE_BEAT;
+    flips[i] = at;
+    last = at;
+    at += STEP;
+  }
+  return { flips, hintMs: 300, doneMs: last + 260 };
+}

@@ -154,6 +154,54 @@ SETS.moments = [
   },
 ];
 
+// The gacha (block 3): a limited banner, the probabilities, and a x10 turning card by card.
+const gachaShot = (name, steps) => ({ name, query: 'seed=6&coins=200000', wait: 0, script: steps });
+const openGacha = async (page) => {
+  await page.waitForSelector('[data-screen="start"] [data-action="gacha"]', { timeout: 60000 });
+  await page.click('[data-screen="start"] [data-action="gacha"]');
+  await page.waitForSelector('[data-banner-art]');
+  const tabs = await page.$$eval('[data-gacha-tab]', (bs) => bs.map((b) => b.dataset.gachaTab));
+  await page.click(`[data-gacha-tab="${tabs[1]}"]`);
+  await page.waitForTimeout(500);
+};
+SETS.gacha = [
+  gachaShot('gacha-banner', async (page, snap) => {
+    await openGacha(page);
+    await snap('');
+    await page.click('[data-panel="rates"]');
+    await page.waitForTimeout(200);
+    await snap('probabilidades');
+  }),
+  gachaShot('gacha-x10', async (page, snap) => {
+    await openGacha(page);
+    // Draw x10 until a ★5 comes (the pity makes it sure within a few), shooting the last one.
+    for (let k = 0; k < 12; k++) {
+      await page.click('[data-draw="10"]');
+      await page.waitForSelector('[data-reveal-card]', { timeout: 8000 });
+      const five = (await page.$$('[data-reveal-card][data-stars="5"]')).length > 0;
+      if (five || k === 11) {
+        for (const t of [250, 700, 1300, 2300]) {
+          await page.waitForTimeout(
+            t === 250 ? 250 : t - (t === 700 ? 250 : t === 1300 ? 700 : 1300),
+          );
+          await snap(String(t));
+        }
+        break;
+      }
+      await page.click('[data-action="revealDone"]');
+    }
+  }),
+  gachaShot('gacha-x1', async (page, snap) => {
+    await openGacha(page);
+    await page.click('[data-draw="1"]');
+    await page.waitForTimeout(500);
+    await snap('esfera');
+    await page.waitForSelector('[data-reveal-card]', { timeout: 8000 });
+    await page.waitForTimeout(900);
+    await snap('carta');
+  }),
+];
+
 const DEVICES = {
   desktop: { viewport: { width: 1280, height: 800 } },
   phone: {
@@ -165,7 +213,9 @@ const DEVICES = {
   field: { viewport: { width: 560, height: 800 } },
 };
 
-const browser = await chromium.launch({ executablePath, headless: true });
+// --headed: a visible browser. Headless Edge does not always advance long CSS animations between
+// screenshots (the stepped reveal of the gacha), so those captures are taken headed.
+const browser = await chromium.launch({ executablePath, headless: !args.includes('--headed') });
 try {
   const shots = (SETS[set] ?? []).filter((s) => only === '' || only.split(',').includes(s.name));
   for (const shot of shots) {
@@ -177,6 +227,17 @@ try {
     await page.waitForFunction(() => typeof window.__debug === 'function', undefined, {
       timeout: 60000,
     });
+    // `script`: a sequence of its own, with `snap(suffix)` to take each capture.
+    if (shot.script) {
+      await shot.script(page, (suffix) =>
+        page.screenshot({
+          path: join(outDir, `${prefix}-${shot.name}${suffix ? `-${suffix}` : ''}-${device}.png`),
+        }),
+      );
+      console.log(`${shot.name}${errors.length > 0 ? ` ERRORS: ${errors.join(' | ')}` : ''}`);
+      await context.close();
+      continue;
+    }
     await page.waitForTimeout(shot.wait);
     // `waitFor`: a condition on window.__debug() that starts the frames (e.g. the moment a strike lands).
     if (shot.waitFor) {
