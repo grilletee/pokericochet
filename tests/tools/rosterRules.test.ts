@@ -5,6 +5,7 @@ import {
   namesNeedingStats,
   parseChain,
   parseSpeciesInfo,
+  parseVia,
   type RosterRules,
   type SpeciesInfo,
 } from '../../tools/fetch-data/rosterRules';
@@ -243,6 +244,81 @@ describe('the roster rule (ADR-048)', () => {
     expect(chain.root).toEqual({ name: 'burmy', children: [{ name: 'wormadam', children: [] }] });
     expect(() => parseSpeciesInfo({ id: 1 })).toThrow(/no id or name/);
     expect(() => parseChain({ id: 1, chain: {} })).toThrow(/without a species/);
+  });
+
+  it('reads how each form is reached: its level, a stone, a trade, friendship (4W)', () => {
+    const detail = (extra: Record<string, unknown>) => ({
+      trigger: { name: 'level-up' },
+      min_level: null,
+      ...extra,
+    });
+    const chain = parseChain({
+      id: 9,
+      chain: {
+        species: { name: 'zubat' },
+        evolution_details: [],
+        evolves_to: [
+          {
+            species: { name: 'golbat' },
+            // Several version groups: the one that names a level wins.
+            evolution_details: [detail({ min_level: null }), detail({ min_level: 22 })],
+            evolves_to: [
+              {
+                species: { name: 'crobat' },
+                evolution_details: [detail({ min_happiness: 160 })],
+                evolves_to: [],
+              },
+            ],
+          },
+        ],
+      },
+    });
+    const golbat = chain.root.children[0];
+    expect(chain.root.via).toBeUndefined();
+    expect(golbat?.via).toEqual({ level: 22, trigger: 'level-up' });
+    expect(golbat?.children[0]?.via).toEqual({ level: null, trigger: 'friendship' });
+    expect(
+      parseVia({ evolution_details: [{ trigger: { name: 'use-item' }, min_level: null }] }),
+    ).toEqual({ level: null, trigger: 'use-item' });
+    expect(parseVia({ evolution_details: [{ min_level: 30 }] })).toEqual({
+      level: 30,
+      trigger: 'other',
+    });
+  });
+
+  it('the roster keeps how each form of a line is reached, in the order of the line (4W)', () => {
+    const lvl = (n: number) => ({ level: n, trigger: 'level-up' });
+    const tree: ChainNode = {
+      name: 'bagon',
+      children: [
+        {
+          name: 'shelgon',
+          via: lvl(30),
+          children: [{ name: 'salamence', via: lvl(50), children: [] }],
+        },
+      ],
+    };
+    const info = (id: number, name: string) => ({
+      id,
+      name,
+      pokemon: name,
+      legendary: false,
+      mythical: false,
+      baby: false,
+      chainId: 1,
+    });
+    const species = new Map(
+      [info(371, 'bagon'), info(372, 'shelgon'), info(373, 'salamence')].map((s) => [s.name, s]),
+    );
+    const rules: RosterRules = {
+      maxPokedexId: 1025,
+      excludeLegendary: true,
+      excludeMythical: true,
+      excludeBabies: true,
+    };
+    const built = buildRoster(rules, [tree], species, () => 0);
+    expect(built.lines.bagon).toEqual(['shelgon', 'salamence']);
+    expect(built.evolution.bagon).toEqual([lvl(30), lvl(50)]);
   });
 });
 

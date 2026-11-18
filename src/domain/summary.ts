@@ -58,7 +58,7 @@ export function summarizeRun(run: Run, config: GameConfig): RunSummary {
       species: m.species,
       form: formOfMember(config, m),
       level: m.level,
-      stage: stageOf(config, m.level),
+      stage: stageOf(config, m.level, m.species),
     })),
     bossesDefeated: run.boss.defeated,
     bossesTotal: (config.interludes ?? []).length + (config.boss === undefined ? 0 : 1),

@@ -25,7 +25,7 @@ export interface MemberStats {
 
 /** Stats of a Pokémon of `species` at `level`. Pure: used by the replace screen and the sheet. */
 export function statsOf(config: GameConfig, species: string, level: number): MemberStats {
-  const stage = stageForLevel(config, level);
+  const stage = stageForLevel(config, level, species);
   const form = formAt(config, species, stage);
   const def = getSpecies(config, form);
   const base = getSpecies(config, species);
@@ -66,7 +66,7 @@ export function guardAfterReplace(
   const joined: Member = {
     species: capture.species,
     type: def.type,
-    level: captureLevel(config, capture.stage),
+    level: captureLevel(config, capture.stage, capture.species),
     starter: false,
     damageUps: 0,
     cadenceUps: 0,

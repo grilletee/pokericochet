@@ -1,6 +1,13 @@
 import { abilitiesFor } from './abilities';
 import type { GameConfig } from './config';
-import { attackTypeOf, formAt, formOfMember, stageForLevel, stageKind } from './forms';
+import {
+  attackTypeOf,
+  formAt,
+  formOfMember,
+  stageForLevel,
+  stageKind,
+  stageLevelsOf,
+} from './forms';
 import type { Run } from './run';
 import type { Ball, Member, ReplaceAction, SpeciesDef } from './types';
 
@@ -10,17 +17,18 @@ function speciesOf(config: GameConfig, id: string): SpeciesDef {
   return species;
 }
 
-/** Evolution stage (1..3) of a Pokémon of this level: one more for each threshold reached. */
+/** Evolution stage (1..3) of a Pokémon of the line of `base` at this level. */
 export const stageOf = stageForLevel;
 
 /**
  * Level a captured Pokémon joins with, by the stage of the enemy it came from: the FIRST level of
  * that stage, so what falls to the floor is what joins (4F-E). It used to be a separate table
  * (`[1, 3, 4]`) whose third entry was below the start of stage 3 (level 6): a Kingdra boss dropped
- * a Kingdra and joined as a Seadra. Derived from `stageLevels`, the two can no longer drift apart.
+ * a Kingdra and joined as a Seadra. Derived from the stage levels of its line (4W), the two can no
+ * longer drift apart.
  */
-export function captureLevel(config: GameConfig, stage: number): number {
-  const levels = config.team.stageLevels;
+export function captureLevel(config: GameConfig, stage: number, base: string): number {
+  const levels = stageLevelsOf(config, base);
   if (stage <= 1) return 1;
   return levels[Math.min(stage - 2, levels.length - 1)] ?? 1;
 }
@@ -101,7 +109,7 @@ function removeSlots(run: Run, gone: readonly number[]): void {
 export function syncMember(run: Run, config: GameConfig, index: number): void {
   const member = run.team[index];
   if (member === undefined) return;
-  const stage = stageOf(config, member.level);
+  const stage = stageOf(config, member.level, member.species);
   // The balls attack with the type of the move shown at this stage (ADR-047).
   const type = attackTypeOf(config, member.species, stage, member.type);
   const effects = abilitiesFor(config, member.species, type, stage);
@@ -170,10 +178,10 @@ export function trainMember(
 ): boolean {
   const member = run.team[index];
   if (member === undefined || member.level >= config.team.maxLevel) return false;
-  const before = stageOf(config, member.level);
+  const before = stageOf(config, member.level, member.species);
   member.level = Math.min(config.team.maxLevel, Math.max(member.level + 1, floor));
   syncMember(run, config, index);
-  const after = stageOf(config, member.level);
+  const after = stageOf(config, member.level, member.species);
   run.events.push({
     type: 'train',
     member: index,
@@ -217,12 +225,12 @@ export function joinTeam(
   const owned = memberIndexOf(run, species);
   if (owned >= 0) {
     run.captured.push({ species, level: stage });
-    trainMember(run, config, owned, 'capture', captureLevel(config, stage));
+    trainMember(run, config, owned, 'capture', captureLevel(config, stage, species));
     return;
   }
   if (!teamIsFull(run, config)) {
     run.captured.push({ species, level: stage });
-    const index = addMember(run, config, species, captureLevel(config, stage));
+    const index = addMember(run, config, species, captureLevel(config, stage, species));
     // A capture that came on its own after waiting too long starts with an extra reload.
     if (late) {
       run.loadout.forEach((ball, slot) => {
@@ -234,7 +242,7 @@ export function joinTeam(
       ballId: firstBallId(run, index),
       species,
       // The form it shows is the one of the level it joins with, whatever the enemy was.
-      level: stageOf(config, captureLevel(config, stage)),
+      level: stageOf(config, captureLevel(config, stage, species), species),
       form: captureForm(config, species, stage),
       x,
       late,
@@ -274,13 +282,13 @@ export function captureView(
 ): { readonly form: string; readonly stage: number } {
   return {
     form: captureForm(config, species, stage),
-    stage: stageOf(config, captureLevel(config, stage)),
+    stage: stageOf(config, captureLevel(config, stage, species), species),
   };
 }
 
 /** The form a capture of this stage shows once it joins (it joins at `captureLevel`, ADR-036). */
 export function captureForm(config: GameConfig, species: string, stage: number): string {
-  return formAt(config, species, stageOf(config, captureLevel(config, stage)));
+  return formAt(config, species, stageOf(config, captureLevel(config, stage, species), species));
 }
 
 /** Answers the replace screen (ADR-030): swap a Pokémon for the capture, or let the capture go. */
@@ -305,7 +313,7 @@ export function resolveReplace(run: Run, config: GameConfig, action: ReplaceActi
     run.team[action.slot] = {
       species: def.id,
       type: def.type,
-      level: captureLevel(config, pending.stage),
+      level: captureLevel(config, pending.stage, def.id),
       starter: false,
       damageUps: 0,
       cadenceUps: 0,

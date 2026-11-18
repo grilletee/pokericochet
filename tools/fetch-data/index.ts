@@ -140,6 +140,7 @@ async function buildRosterCandidate(): Promise<void> {
     legendaries: rules.legendaries ?? [],
     starters: rules.starters ?? [],
     lines: built.lines,
+    evolution: built.evolution,
   };
   validateRoster(generated);
   deps.write(resolve(here, 'roster.json'), new TextEncoder().encode(serialize(generated)));

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { gameConfig } from '../../src/data';
+import { stageForLevel, stageLevelsOf } from '../../src/domain';
 import { ultimateValue } from '../bench/ultimateValue';
 
 /**
@@ -11,11 +12,12 @@ import { ultimateValue } from '../bench/ultimateValue';
 const STARTERS = ['charmander', 'squirtle', 'bulbasaur', 'pikachu'];
 
 describe('U1 the Ultimates are worth the same', () => {
-  for (const [stage, level] of [
-    [2, 3],
-    [3, 6],
-  ] as const) {
+  for (const stage of [2, 3] as const) {
     it(`at stage ${stage} every starter is within 20 % of the mean`, () => {
+      // 4W: each line has its own pace (Pikachu evolves a level later). They are compared at the
+      // same level, the first at which all four are at this stage, so only the Ultimate differs.
+      const level = Math.max(...STARTERS.map((s) => stageLevelsOf(gameConfig, s)[stage - 2] ?? 1));
+      for (const s of STARTERS) expect(stageForLevel(gameConfig, level, s), s).toBe(stage);
       const values = STARTERS.map((s) => ultimateValue(gameConfig, s, level));
       const mean = values.reduce((a, v) => a + v, 0) / values.length;
       expect(mean).toBeGreaterThan(0);

@@ -1266,6 +1266,2450 @@
       "sinistcha"
     ]
   },
+  "evolution": {
+    "bulbasaur": [
+      {
+        "level": 16,
+        "trigger": "level-up"
+      },
+      {
+        "level": 32,
+        "trigger": "level-up"
+      }
+    ],
+    "charmander": [
+      {
+        "level": 16,
+        "trigger": "level-up"
+      },
+      {
+        "level": 36,
+        "trigger": "level-up"
+      }
+    ],
+    "squirtle": [
+      {
+        "level": 16,
+        "trigger": "level-up"
+      },
+      {
+        "level": 36,
+        "trigger": "level-up"
+      }
+    ],
+    "caterpie": [
+      {
+        "level": 7,
+        "trigger": "level-up"
+      },
+      {
+        "level": 10,
+        "trigger": "level-up"
+      }
+    ],
+    "weedle": [
+      {
+        "level": 7,
+        "trigger": "level-up"
+      },
+      {
+        "level": 10,
+        "trigger": "level-up"
+      }
+    ],
+    "pidgey": [
+      {
+        "level": 18,
+        "trigger": "level-up"
+      },
+      {
+        "level": 36,
+        "trigger": "level-up"
+      }
+    ],
+    "rattata": [
+      {
+        "level": 20,
+        "trigger": "level-up"
+      }
+    ],
+    "spearow": [
+      {
+        "level": 20,
+        "trigger": "level-up"
+      }
+    ],
+    "ekans": [
+      {
+        "level": 22,
+        "trigger": "level-up"
+      }
+    ],
+    "pikachu": [
+      {
+        "level": null,
+        "trigger": "use-item"
+      }
+    ],
+    "sandshrew": [
+      {
+        "level": 22,
+        "trigger": "level-up"
+      }
+    ],
+    "nidoran-f": [
+      {
+        "level": 16,
+        "trigger": "level-up"
+      },
+      {
+        "level": null,
+        "trigger": "use-item"
+      }
+    ],
+    "nidoran-m": [
+      {
+        "level": 16,
+        "trigger": "level-up"
+      },
+      {
+        "level": null,
+        "trigger": "use-item"
+      }
+    ],
+    "clefairy": [
+      {
+        "level": null,
+        "trigger": "use-item"
+      }
+    ],
+    "vulpix": [
+      {
+        "level": null,
+        "trigger": "use-item"
+      }
+    ],
+    "jigglypuff": [
+      {
+        "level": null,
+        "trigger": "use-item"
+      }
+    ],
+    "zubat": [
+      {
+        "level": 22,
+        "trigger": "level-up"
+      },
+      {
+        "level": null,
+        "trigger": "friendship"
+      }
+    ],
+    "oddish": [
+      {
+        "level": 21,
+        "trigger": "level-up"
+      },
+      {
+        "level": null,
+        "trigger": "use-item"
+      }
+    ],
+    "paras": [
+      {
+        "level": 24,
+        "trigger": "level-up"
+      }
+    ],
+    "venonat": [
+      {
+        "level": 31,
+        "trigger": "level-up"
+      }
+    ],
+    "diglett": [
+      {
+        "level": 26,
+        "trigger": "level-up"
+      }
+    ],
+    "meowth": [
+      {
+        "level": 28,
+        "trigger": "level-up"
+      }
+    ],
+    "psyduck": [
+      {
+        "level": 33,
+        "trigger": "level-up"
+      }
+    ],
+    "mankey": [
+      {
+        "level": 28,
+        "trigger": "level-up"
+      },
+      {
+        "level": null,
+        "trigger": "use-move"
+      }
+    ],
+    "growlithe": [
+      {
+        "level": null,
+        "trigger": "use-item"
+      }
+    ],
+    "poliwag": [
+      {
+        "level": 25,
+        "trigger": "level-up"
+      },
+      {
+        "level": null,
+        "trigger": "use-item"
+      }
+    ],
+    "abra": [
+      {
+        "level": 16,
+        "trigger": "level-up"
+      },
+      {
+        "level": null,
+        "trigger": "trade"
+      }
+    ],
+    "machop": [
+      {
+        "level": 28,
+        "trigger": "level-up"
+      },
+      {
+        "level": null,
+        "trigger": "trade"
+      }
+    ],
+    "bellsprout": [
+      {
+        "level": 21,
+        "trigger": "level-up"
+      },
+      {
+        "level": null,
+        "trigger": "use-item"
+      }
+    ],
+    "tentacool": [
+      {
+        "level": 30,
+        "trigger": "level-up"
+      }
+    ],
+    "geodude": [
+      {
+        "level": 25,
+        "trigger": "level-up"
+      },
+      {
+        "level": null,
+        "trigger": "trade"
+      }
+    ],
+    "ponyta": [
+      {
+        "level": 40,
+        "trigger": "level-up"
+      }
+    ],
+    "slowpoke": [
+      {
+        "level": 37,
+        "trigger": "level-up"
+      }
+    ],
+    "magnemite": [
+      {
+        "level": 30,
+        "trigger": "level-up"
+      },
+      {
+        "level": null,
+        "trigger": "level-up"
+      }
+    ],
+    "farfetchd": [],
+    "doduo": [
+      {
+        "level": 31,
+        "trigger": "level-up"
+      }
+    ],
+    "seel": [
+      {
+        "level": 34,
+        "trigger": "level-up"
+      }
+    ],
+    "grimer": [
+      {
+        "level": 38,
+        "trigger": "level-up"
+      }
+    ],
+    "shellder": [
+      {
+        "level": null,
+        "trigger": "use-item"
+      }
+    ],
+    "gastly": [
+      {
+        "level": 25,
+        "trigger": "level-up"
+      },
+      {
+        "level": null,
+        "trigger": "trade"
+      }
+    ],
+    "onix": [
+      {
+        "level": null,
+        "trigger": "trade"
+      }
+    ],
+    "drowzee": [
+      {
+        "level": 26,
+        "trigger": "level-up"
+      }
+    ],
+    "krabby": [
+      {
+        "level": 28,
+        "trigger": "level-up"
+      }
+    ],
+    "voltorb": [
+      {
+        "level": 30,
+        "trigger": "level-up"
+      }
+    ],
+    "exeggcute": [
+      {
+        "level": null,
+        "trigger": "use-item"
+      }
+    ],
+    "cubone": [
+      {
+        "level": 28,
+        "trigger": "level-up"
+      }
+    ],
+    "hitmonlee": [],
+    "hitmonchan": [],
+    "lickitung": [
+      {
+        "level": null,
+        "trigger": "level-up"
+      }
+    ],
+    "koffing": [
+      {
+        "level": 35,
+        "trigger": "level-up"
+      }
+    ],
+    "rhyhorn": [
+      {
+        "level": 42,
+        "trigger": "level-up"
+      },
+      {
+        "level": null,
+        "trigger": "trade"
+      }
+    ],
+    "chansey": [
+      {
+        "level": null,
+        "trigger": "friendship"
+      }
+    ],
+    "tangela": [
+      {
+        "level": null,
+        "trigger": "level-up"
+      }
+    ],
+    "kangaskhan": [],
+    "horsea": [
+      {
+        "level": 32,
+        "trigger": "level-up"
+      },
+      {
+        "level": null,
+        "trigger": "trade"
+      }
+    ],
+    "goldeen": [
+      {
+        "level": 33,
+        "trigger": "level-up"
+      }
+    ],
+    "staryu": [
+      {
+        "level": null,
+        "trigger": "use-item"
+      }
+    ],
+    "mr-mime": [],
+    "scyther": [
+      {
+        "level": null,
+        "trigger": "trade"
+      }
+    ],
+    "jynx": [],
+    "electabuzz": [
+      {
+        "level": null,
+        "trigger": "trade"
+      }
+    ],
+    "magmar": [
+      {
+        "level": null,
+        "trigger": "trade"
+      }
+    ],
+    "pinsir": [],
+    "tauros": [],
+    "magikarp": [
+      {
+        "level": 20,
+        "trigger": "level-up"
+      }
+    ],
+    "lapras": [],
+    "ditto": [],
+    "eevee": [
+      {
+        "level": null,
+        "trigger": "use-item"
+      }
+    ],
+    "porygon": [
+      {
+        "level": null,
+        "trigger": "trade"
+      },
+      {
+        "level": null,
+        "trigger": "trade"
+      }
+    ],
+    "omanyte": [
+      {
+        "level": 40,
+        "trigger": "level-up"
+      }
+    ],
+    "kabuto": [
+      {
+        "level": 40,
+        "trigger": "level-up"
+      }
+    ],
+    "aerodactyl": [],
+    "snorlax": [],
+    "dratini": [
+      {
+        "level": 30,
+        "trigger": "level-up"
+      },
+      {
+        "level": 55,
+        "trigger": "level-up"
+      }
+    ],
+    "chikorita": [
+      {
+        "level": 16,
+        "trigger": "level-up"
+      },
+      {
+        "level": 32,
+        "trigger": "level-up"
+      }
+    ],
+    "cyndaquil": [
+      {
+        "level": 14,
+        "trigger": "level-up"
+      },
+      {
+        "level": 36,
+        "trigger": "level-up"
+      }
+    ],
+    "totodile": [
+      {
+        "level": 18,
+        "trigger": "level-up"
+      },
+      {
+        "level": 30,
+        "trigger": "level-up"
+      }
+    ],
+    "sentret": [
+      {
+        "level": 15,
+        "trigger": "level-up"
+      }
+    ],
+    "hoothoot": [
+      {
+        "level": 20,
+        "trigger": "level-up"
+      }
+    ],
+    "ledyba": [
+      {
+        "level": 18,
+        "trigger": "level-up"
+      }
+    ],
+    "spinarak": [
+      {
+        "level": 22,
+        "trigger": "level-up"
+      }
+    ],
+    "chinchou": [
+      {
+        "level": 27,
+        "trigger": "level-up"
+      }
+    ],
+    "togetic": [
+      {
+        "level": null,
+        "trigger": "use-item"
+      }
+    ],
+    "natu": [
+      {
+        "level": 25,
+        "trigger": "level-up"
+      }
+    ],
+    "mareep": [
+      {
+        "level": 15,
+        "trigger": "level-up"
+      },
+      {
+        "level": 30,
+        "trigger": "level-up"
+      }
+    ],
+    "marill": [
+      {
+        "level": 18,
+        "trigger": "level-up"
+      }
+    ],
+    "sudowoodo": [],
+    "hoppip": [
+      {
+        "level": 18,
+        "trigger": "level-up"
+      },
+      {
+        "level": 27,
+        "trigger": "level-up"
+      }
+    ],
+    "aipom": [
+      {
+        "level": null,
+        "trigger": "level-up"
+      }
+    ],
+    "sunkern": [
+      {
+        "level": null,
+        "trigger": "use-item"
+      }
+    ],
+    "yanma": [
+      {
+        "level": null,
+        "trigger": "level-up"
+      }
+    ],
+    "wooper": [
+      {
+        "level": 20,
+        "trigger": "level-up"
+      }
+    ],
+    "murkrow": [
+      {
+        "level": null,
+        "trigger": "use-item"
+      }
+    ],
+    "misdreavus": [
+      {
+        "level": null,
+        "trigger": "use-item"
+      }
+    ],
+    "unown": [],
+    "wobbuffet": [],
+    "girafarig": [
+      {
+        "level": null,
+        "trigger": "level-up"
+      }
+    ],
+    "pineco": [
+      {
+        "level": 31,
+        "trigger": "level-up"
+      }
+    ],
+    "dunsparce": [
+      {
+        "level": null,
+        "trigger": "level-up"
+      }
+    ],
+    "gligar": [
+      {
+        "level": null,
+        "trigger": "level-up"
+      }
+    ],
+    "snubbull": [
+      {
+        "level": 23,
+        "trigger": "level-up"
+      }
+    ],
+    "qwilfish": [],
+    "shuckle": [],
+    "heracross": [],
+    "sneasel": [
+      {
+        "level": null,
+        "trigger": "level-up"
+      }
+    ],
+    "teddiursa": [
+      {
+        "level": 30,
+        "trigger": "level-up"
+      },
+      {
+        "level": null,
+        "trigger": "use-item"
+      }
+    ],
+    "slugma": [
+      {
+        "level": 38,
+        "trigger": "level-up"
+      }
+    ],
+    "swinub": [
+      {
+        "level": 33,
+        "trigger": "level-up"
+      },
+      {
+        "level": null,
+        "trigger": "level-up"
+      }
+    ],
+    "corsola": [],
+    "remoraid": [
+      {
+        "level": 25,
+        "trigger": "level-up"
+      }
+    ],
+    "delibird": [],
+    "mantine": [],
+    "skarmory": [],
+    "houndour": [
+      {
+        "level": 24,
+        "trigger": "level-up"
+      }
+    ],
+    "phanpy": [
+      {
+        "level": 25,
+        "trigger": "level-up"
+      }
+    ],
+    "stantler": [
+      {
+        "level": null,
+        "trigger": "agile-style-move"
+      }
+    ],
+    "smeargle": [],
+    "hitmontop": [],
+    "miltank": [],
+    "larvitar": [
+      {
+        "level": 30,
+        "trigger": "level-up"
+      },
+      {
+        "level": 55,
+        "trigger": "level-up"
+      }
+    ],
+    "treecko": [
+      {
+        "level": 16,
+        "trigger": "level-up"
+      },
+      {
+        "level": 36,
+        "trigger": "level-up"
+      }
+    ],
+    "torchic": [
+      {
+        "level": 16,
+        "trigger": "level-up"
+      },
+      {
+        "level": 36,
+        "trigger": "level-up"
+      }
+    ],
+    "mudkip": [
+      {
+        "level": 16,
+        "trigger": "level-up"
+      },
+      {
+        "level": 36,
+        "trigger": "level-up"
+      }
+    ],
+    "poochyena": [
+      {
+        "level": 18,
+        "trigger": "level-up"
+      }
+    ],
+    "zigzagoon": [
+      {
+        "level": 20,
+        "trigger": "level-up"
+      }
+    ],
+    "wurmple": [
+      {
+        "level": 7,
+        "trigger": "level-up"
+      },
+      {
+        "level": 10,
+        "trigger": "level-up"
+      }
+    ],
+    "lotad": [
+      {
+        "level": 14,
+        "trigger": "level-up"
+      },
+      {
+        "level": null,
+        "trigger": "use-item"
+      }
+    ],
+    "seedot": [
+      {
+        "level": 14,
+        "trigger": "level-up"
+      },
+      {
+        "level": null,
+        "trigger": "use-item"
+      }
+    ],
+    "taillow": [
+      {
+        "level": 22,
+        "trigger": "level-up"
+      }
+    ],
+    "wingull": [
+      {
+        "level": 25,
+        "trigger": "level-up"
+      }
+    ],
+    "ralts": [
+      {
+        "level": 20,
+        "trigger": "level-up"
+      },
+      {
+        "level": 30,
+        "trigger": "level-up"
+      }
+    ],
+    "surskit": [
+      {
+        "level": 22,
+        "trigger": "level-up"
+      }
+    ],
+    "shroomish": [
+      {
+        "level": 23,
+        "trigger": "level-up"
+      }
+    ],
+    "slakoth": [
+      {
+        "level": 18,
+        "trigger": "level-up"
+      },
+      {
+        "level": 36,
+        "trigger": "level-up"
+      }
+    ],
+    "nincada": [
+      {
+        "level": 20,
+        "trigger": "level-up"
+      }
+    ],
+    "whismur": [
+      {
+        "level": 20,
+        "trigger": "level-up"
+      },
+      {
+        "level": 40,
+        "trigger": "level-up"
+      }
+    ],
+    "makuhita": [
+      {
+        "level": 24,
+        "trigger": "level-up"
+      }
+    ],
+    "nosepass": [
+      {
+        "level": null,
+        "trigger": "level-up"
+      }
+    ],
+    "skitty": [
+      {
+        "level": null,
+        "trigger": "use-item"
+      }
+    ],
+    "sableye": [],
+    "mawile": [],
+    "aron": [
+      {
+        "level": 32,
+        "trigger": "level-up"
+      },
+      {
+        "level": 42,
+        "trigger": "level-up"
+      }
+    ],
+    "meditite": [
+      {
+        "level": 37,
+        "trigger": "level-up"
+      }
+    ],
+    "electrike": [
+      {
+        "level": 26,
+        "trigger": "level-up"
+      }
+    ],
+    "plusle": [],
+    "minun": [],
+    "volbeat": [],
+    "illumise": [],
+    "roselia": [
+      {
+        "level": null,
+        "trigger": "use-item"
+      }
+    ],
+    "gulpin": [
+      {
+        "level": 26,
+        "trigger": "level-up"
+      }
+    ],
+    "carvanha": [
+      {
+        "level": 30,
+        "trigger": "level-up"
+      }
+    ],
+    "wailmer": [
+      {
+        "level": 40,
+        "trigger": "level-up"
+      }
+    ],
+    "numel": [
+      {
+        "level": 33,
+        "trigger": "level-up"
+      }
+    ],
+    "torkoal": [],
+    "spoink": [
+      {
+        "level": 32,
+        "trigger": "level-up"
+      }
+    ],
+    "spinda": [],
+    "trapinch": [
+      {
+        "level": 35,
+        "trigger": "level-up"
+      },
+      {
+        "level": 45,
+        "trigger": "level-up"
+      }
+    ],
+    "cacnea": [
+      {
+        "level": 32,
+        "trigger": "level-up"
+      }
+    ],
+    "swablu": [
+      {
+        "level": 35,
+        "trigger": "level-up"
+      }
+    ],
+    "zangoose": [],
+    "seviper": [],
+    "lunatone": [],
+    "solrock": [],
+    "barboach": [
+      {
+        "level": 30,
+        "trigger": "level-up"
+      }
+    ],
+    "corphish": [
+      {
+        "level": 30,
+        "trigger": "level-up"
+      }
+    ],
+    "baltoy": [
+      {
+        "level": 36,
+        "trigger": "level-up"
+      }
+    ],
+    "lileep": [
+      {
+        "level": 40,
+        "trigger": "level-up"
+      }
+    ],
+    "anorith": [
+      {
+        "level": 40,
+        "trigger": "level-up"
+      }
+    ],
+    "feebas": [
+      {
+        "level": null,
+        "trigger": "level-up"
+      }
+    ],
+    "castform": [],
+    "kecleon": [],
+    "shuppet": [
+      {
+        "level": 37,
+        "trigger": "level-up"
+      }
+    ],
+    "duskull": [
+      {
+        "level": 37,
+        "trigger": "level-up"
+      },
+      {
+        "level": null,
+        "trigger": "trade"
+      }
+    ],
+    "tropius": [],
+    "chimecho": [],
+    "absol": [],
+    "snorunt": [
+      {
+        "level": 42,
+        "trigger": "level-up"
+      }
+    ],
+    "spheal": [
+      {
+        "level": 32,
+        "trigger": "level-up"
+      },
+      {
+        "level": 44,
+        "trigger": "level-up"
+      }
+    ],
+    "clamperl": [
+      {
+        "level": null,
+        "trigger": "trade"
+      }
+    ],
+    "relicanth": [],
+    "luvdisc": [],
+    "bagon": [
+      {
+        "level": 30,
+        "trigger": "level-up"
+      },
+      {
+        "level": 50,
+        "trigger": "level-up"
+      }
+    ],
+    "beldum": [
+      {
+        "level": 20,
+        "trigger": "level-up"
+      },
+      {
+        "level": 45,
+        "trigger": "level-up"
+      }
+    ],
+    "turtwig": [
+      {
+        "level": 18,
+        "trigger": "level-up"
+      },
+      {
+        "level": 32,
+        "trigger": "level-up"
+      }
+    ],
+    "chimchar": [
+      {
+        "level": 14,
+        "trigger": "level-up"
+      },
+      {
+        "level": 36,
+        "trigger": "level-up"
+      }
+    ],
+    "piplup": [
+      {
+        "level": 16,
+        "trigger": "level-up"
+      },
+      {
+        "level": 36,
+        "trigger": "level-up"
+      }
+    ],
+    "starly": [
+      {
+        "level": 14,
+        "trigger": "level-up"
+      },
+      {
+        "level": 34,
+        "trigger": "level-up"
+      }
+    ],
+    "bidoof": [
+      {
+        "level": 15,
+        "trigger": "level-up"
+      }
+    ],
+    "kricketot": [
+      {
+        "level": 10,
+        "trigger": "level-up"
+      }
+    ],
+    "shinx": [
+      {
+        "level": 15,
+        "trigger": "level-up"
+      },
+      {
+        "level": 30,
+        "trigger": "level-up"
+      }
+    ],
+    "cranidos": [
+      {
+        "level": 30,
+        "trigger": "level-up"
+      }
+    ],
+    "shieldon": [
+      {
+        "level": 30,
+        "trigger": "level-up"
+      }
+    ],
+    "burmy": [
+      {
+        "level": 20,
+        "trigger": "level-up"
+      }
+    ],
+    "combee": [
+      {
+        "level": 21,
+        "trigger": "level-up"
+      }
+    ],
+    "pachirisu": [],
+    "buizel": [
+      {
+        "level": 26,
+        "trigger": "level-up"
+      }
+    ],
+    "cherubi": [
+      {
+        "level": 25,
+        "trigger": "level-up"
+      }
+    ],
+    "shellos": [
+      {
+        "level": 30,
+        "trigger": "level-up"
+      }
+    ],
+    "drifloon": [
+      {
+        "level": 28,
+        "trigger": "level-up"
+      }
+    ],
+    "buneary": [
+      {
+        "level": null,
+        "trigger": "friendship"
+      }
+    ],
+    "glameow": [
+      {
+        "level": 38,
+        "trigger": "level-up"
+      }
+    ],
+    "stunky": [
+      {
+        "level": 34,
+        "trigger": "level-up"
+      }
+    ],
+    "bronzor": [
+      {
+        "level": 33,
+        "trigger": "level-up"
+      }
+    ],
+    "chatot": [],
+    "spiritomb": [],
+    "gible": [
+      {
+        "level": 24,
+        "trigger": "level-up"
+      },
+      {
+        "level": 48,
+        "trigger": "level-up"
+      }
+    ],
+    "lucario": [],
+    "hippopotas": [
+      {
+        "level": 34,
+        "trigger": "level-up"
+      }
+    ],
+    "skorupi": [
+      {
+        "level": 40,
+        "trigger": "level-up"
+      }
+    ],
+    "croagunk": [
+      {
+        "level": 37,
+        "trigger": "level-up"
+      }
+    ],
+    "carnivine": [],
+    "finneon": [
+      {
+        "level": 31,
+        "trigger": "level-up"
+      }
+    ],
+    "snover": [
+      {
+        "level": 40,
+        "trigger": "level-up"
+      }
+    ],
+    "rotom": [],
+    "snivy": [
+      {
+        "level": 17,
+        "trigger": "level-up"
+      },
+      {
+        "level": 36,
+        "trigger": "level-up"
+      }
+    ],
+    "tepig": [
+      {
+        "level": 17,
+        "trigger": "level-up"
+      },
+      {
+        "level": 36,
+        "trigger": "level-up"
+      }
+    ],
+    "oshawott": [
+      {
+        "level": 17,
+        "trigger": "level-up"
+      },
+      {
+        "level": 36,
+        "trigger": "level-up"
+      }
+    ],
+    "patrat": [
+      {
+        "level": 20,
+        "trigger": "level-up"
+      }
+    ],
+    "lillipup": [
+      {
+        "level": 16,
+        "trigger": "level-up"
+      },
+      {
+        "level": 32,
+        "trigger": "level-up"
+      }
+    ],
+    "purrloin": [
+      {
+        "level": 20,
+        "trigger": "level-up"
+      }
+    ],
+    "pansage": [
+      {
+        "level": null,
+        "trigger": "use-item"
+      }
+    ],
+    "pansear": [
+      {
+        "level": null,
+        "trigger": "use-item"
+      }
+    ],
+    "panpour": [
+      {
+        "level": null,
+        "trigger": "use-item"
+      }
+    ],
+    "munna": [
+      {
+        "level": null,
+        "trigger": "use-item"
+      }
+    ],
+    "pidove": [
+      {
+        "level": 21,
+        "trigger": "level-up"
+      },
+      {
+        "level": 32,
+        "trigger": "level-up"
+      }
+    ],
+    "blitzle": [
+      {
+        "level": 27,
+        "trigger": "level-up"
+      }
+    ],
+    "roggenrola": [
+      {
+        "level": 25,
+        "trigger": "level-up"
+      },
+      {
+        "level": null,
+        "trigger": "trade"
+      }
+    ],
+    "woobat": [
+      {
+        "level": null,
+        "trigger": "friendship"
+      }
+    ],
+    "drilbur": [
+      {
+        "level": 31,
+        "trigger": "level-up"
+      }
+    ],
+    "audino": [],
+    "timburr": [
+      {
+        "level": 25,
+        "trigger": "level-up"
+      },
+      {
+        "level": null,
+        "trigger": "trade"
+      }
+    ],
+    "tympole": [
+      {
+        "level": 25,
+        "trigger": "level-up"
+      },
+      {
+        "level": 36,
+        "trigger": "level-up"
+      }
+    ],
+    "throh": [],
+    "sawk": [],
+    "sewaddle": [
+      {
+        "level": 20,
+        "trigger": "level-up"
+      },
+      {
+        "level": null,
+        "trigger": "friendship"
+      }
+    ],
+    "venipede": [
+      {
+        "level": 22,
+        "trigger": "level-up"
+      },
+      {
+        "level": 30,
+        "trigger": "level-up"
+      }
+    ],
+    "cottonee": [
+      {
+        "level": null,
+        "trigger": "use-item"
+      }
+    ],
+    "petilil": [
+      {
+        "level": null,
+        "trigger": "use-item"
+      }
+    ],
+    "basculin-red-striped": [],
+    "sandile": [
+      {
+        "level": 29,
+        "trigger": "level-up"
+      },
+      {
+        "level": 40,
+        "trigger": "level-up"
+      }
+    ],
+    "darumaka": [
+      {
+        "level": 35,
+        "trigger": "level-up"
+      }
+    ],
+    "maractus": [],
+    "dwebble": [
+      {
+        "level": 34,
+        "trigger": "level-up"
+      }
+    ],
+    "scraggy": [
+      {
+        "level": 39,
+        "trigger": "level-up"
+      }
+    ],
+    "sigilyph": [],
+    "yamask": [
+      {
+        "level": 34,
+        "trigger": "level-up"
+      }
+    ],
+    "tirtouga": [
+      {
+        "level": 37,
+        "trigger": "level-up"
+      }
+    ],
+    "archen": [
+      {
+        "level": 37,
+        "trigger": "level-up"
+      }
+    ],
+    "trubbish": [
+      {
+        "level": 36,
+        "trigger": "level-up"
+      }
+    ],
+    "zorua": [
+      {
+        "level": 30,
+        "trigger": "level-up"
+      }
+    ],
+    "minccino": [
+      {
+        "level": null,
+        "trigger": "use-item"
+      }
+    ],
+    "gothita": [
+      {
+        "level": 32,
+        "trigger": "level-up"
+      },
+      {
+        "level": 41,
+        "trigger": "level-up"
+      }
+    ],
+    "solosis": [
+      {
+        "level": 32,
+        "trigger": "level-up"
+      },
+      {
+        "level": 41,
+        "trigger": "level-up"
+      }
+    ],
+    "ducklett": [
+      {
+        "level": 35,
+        "trigger": "level-up"
+      }
+    ],
+    "vanillite": [
+      {
+        "level": 35,
+        "trigger": "level-up"
+      },
+      {
+        "level": 47,
+        "trigger": "level-up"
+      }
+    ],
+    "deerling": [
+      {
+        "level": 34,
+        "trigger": "level-up"
+      }
+    ],
+    "emolga": [],
+    "karrablast": [
+      {
+        "level": null,
+        "trigger": "trade"
+      }
+    ],
+    "foongus": [
+      {
+        "level": 39,
+        "trigger": "level-up"
+      }
+    ],
+    "frillish-male": [
+      {
+        "level": 40,
+        "trigger": "level-up"
+      }
+    ],
+    "alomomola": [],
+    "joltik": [
+      {
+        "level": 36,
+        "trigger": "level-up"
+      }
+    ],
+    "ferroseed": [
+      {
+        "level": 40,
+        "trigger": "level-up"
+      }
+    ],
+    "klink": [
+      {
+        "level": 38,
+        "trigger": "level-up"
+      },
+      {
+        "level": 49,
+        "trigger": "level-up"
+      }
+    ],
+    "tynamo": [
+      {
+        "level": 39,
+        "trigger": "level-up"
+      },
+      {
+        "level": null,
+        "trigger": "use-item"
+      }
+    ],
+    "elgyem": [
+      {
+        "level": 42,
+        "trigger": "level-up"
+      }
+    ],
+    "litwick": [
+      {
+        "level": 41,
+        "trigger": "level-up"
+      },
+      {
+        "level": null,
+        "trigger": "use-item"
+      }
+    ],
+    "axew": [
+      {
+        "level": 38,
+        "trigger": "level-up"
+      },
+      {
+        "level": 48,
+        "trigger": "level-up"
+      }
+    ],
+    "cubchoo": [
+      {
+        "level": 37,
+        "trigger": "level-up"
+      }
+    ],
+    "cryogonal": [],
+    "shelmet": [
+      {
+        "level": null,
+        "trigger": "trade"
+      }
+    ],
+    "stunfisk": [],
+    "mienfoo": [
+      {
+        "level": 50,
+        "trigger": "level-up"
+      }
+    ],
+    "druddigon": [],
+    "golett": [
+      {
+        "level": 43,
+        "trigger": "level-up"
+      }
+    ],
+    "pawniard": [
+      {
+        "level": 52,
+        "trigger": "level-up"
+      },
+      {
+        "level": null,
+        "trigger": "three-defeated-bisharp"
+      }
+    ],
+    "bouffalant": [],
+    "rufflet": [
+      {
+        "level": 54,
+        "trigger": "level-up"
+      }
+    ],
+    "vullaby": [
+      {
+        "level": 54,
+        "trigger": "level-up"
+      }
+    ],
+    "heatmor": [],
+    "durant": [],
+    "deino": [
+      {
+        "level": 50,
+        "trigger": "level-up"
+      },
+      {
+        "level": 64,
+        "trigger": "level-up"
+      }
+    ],
+    "larvesta": [
+      {
+        "level": 59,
+        "trigger": "level-up"
+      }
+    ],
+    "chespin": [
+      {
+        "level": 16,
+        "trigger": "level-up"
+      },
+      {
+        "level": 36,
+        "trigger": "level-up"
+      }
+    ],
+    "fennekin": [
+      {
+        "level": 16,
+        "trigger": "level-up"
+      },
+      {
+        "level": 36,
+        "trigger": "level-up"
+      }
+    ],
+    "froakie": [
+      {
+        "level": 16,
+        "trigger": "level-up"
+      },
+      {
+        "level": 36,
+        "trigger": "level-up"
+      }
+    ],
+    "bunnelby": [
+      {
+        "level": 20,
+        "trigger": "level-up"
+      }
+    ],
+    "fletchling": [
+      {
+        "level": 17,
+        "trigger": "level-up"
+      },
+      {
+        "level": 35,
+        "trigger": "level-up"
+      }
+    ],
+    "scatterbug": [
+      {
+        "level": 9,
+        "trigger": "level-up"
+      },
+      {
+        "level": 12,
+        "trigger": "level-up"
+      }
+    ],
+    "litleo": [
+      {
+        "level": 35,
+        "trigger": "level-up"
+      }
+    ],
+    "flabebe": [
+      {
+        "level": 19,
+        "trigger": "level-up"
+      },
+      {
+        "level": null,
+        "trigger": "use-item"
+      }
+    ],
+    "skiddo": [
+      {
+        "level": 32,
+        "trigger": "level-up"
+      }
+    ],
+    "pancham": [
+      {
+        "level": 32,
+        "trigger": "level-up"
+      }
+    ],
+    "furfrou": [],
+    "espurr": [
+      {
+        "level": 25,
+        "trigger": "level-up"
+      }
+    ],
+    "honedge": [
+      {
+        "level": 35,
+        "trigger": "level-up"
+      },
+      {
+        "level": null,
+        "trigger": "use-item"
+      }
+    ],
+    "spritzee": [
+      {
+        "level": null,
+        "trigger": "trade"
+      }
+    ],
+    "swirlix": [
+      {
+        "level": null,
+        "trigger": "trade"
+      }
+    ],
+    "inkay": [
+      {
+        "level": 30,
+        "trigger": "level-up"
+      }
+    ],
+    "binacle": [
+      {
+        "level": 39,
+        "trigger": "level-up"
+      }
+    ],
+    "skrelp": [
+      {
+        "level": 48,
+        "trigger": "level-up"
+      }
+    ],
+    "clauncher": [
+      {
+        "level": 37,
+        "trigger": "level-up"
+      }
+    ],
+    "helioptile": [
+      {
+        "level": null,
+        "trigger": "use-item"
+      }
+    ],
+    "tyrunt": [
+      {
+        "level": 39,
+        "trigger": "level-up"
+      }
+    ],
+    "amaura": [
+      {
+        "level": 39,
+        "trigger": "level-up"
+      }
+    ],
+    "hawlucha": [],
+    "dedenne": [],
+    "carbink": [],
+    "goomy": [
+      {
+        "level": 40,
+        "trigger": "level-up"
+      },
+      {
+        "level": 50,
+        "trigger": "level-up"
+      }
+    ],
+    "klefki": [],
+    "phantump": [
+      {
+        "level": null,
+        "trigger": "trade"
+      }
+    ],
+    "pumpkaboo-average": [
+      {
+        "level": null,
+        "trigger": "trade"
+      }
+    ],
+    "bergmite": [
+      {
+        "level": 37,
+        "trigger": "level-up"
+      }
+    ],
+    "noibat": [
+      {
+        "level": 48,
+        "trigger": "level-up"
+      }
+    ],
+    "rowlet": [
+      {
+        "level": 17,
+        "trigger": "level-up"
+      },
+      {
+        "level": 34,
+        "trigger": "level-up"
+      }
+    ],
+    "litten": [
+      {
+        "level": 17,
+        "trigger": "level-up"
+      },
+      {
+        "level": 34,
+        "trigger": "level-up"
+      }
+    ],
+    "popplio": [
+      {
+        "level": 17,
+        "trigger": "level-up"
+      },
+      {
+        "level": 34,
+        "trigger": "level-up"
+      }
+    ],
+    "pikipek": [
+      {
+        "level": 14,
+        "trigger": "level-up"
+      },
+      {
+        "level": 28,
+        "trigger": "level-up"
+      }
+    ],
+    "yungoos": [
+      {
+        "level": 20,
+        "trigger": "level-up"
+      }
+    ],
+    "grubbin": [
+      {
+        "level": 20,
+        "trigger": "level-up"
+      },
+      {
+        "level": null,
+        "trigger": "level-up"
+      }
+    ],
+    "crabrawler": [
+      {
+        "level": null,
+        "trigger": "level-up"
+      }
+    ],
+    "oricorio-baile": [],
+    "cutiefly": [
+      {
+        "level": 25,
+        "trigger": "level-up"
+      }
+    ],
+    "rockruff": [
+      {
+        "level": 25,
+        "trigger": "level-up"
+      }
+    ],
+    "wishiwashi-solo": [],
+    "mareanie": [
+      {
+        "level": 38,
+        "trigger": "level-up"
+      }
+    ],
+    "mudbray": [
+      {
+        "level": 30,
+        "trigger": "level-up"
+      }
+    ],
+    "dewpider": [
+      {
+        "level": 22,
+        "trigger": "level-up"
+      }
+    ],
+    "fomantis": [
+      {
+        "level": 34,
+        "trigger": "level-up"
+      }
+    ],
+    "morelull": [
+      {
+        "level": 24,
+        "trigger": "level-up"
+      }
+    ],
+    "salandit": [
+      {
+        "level": 33,
+        "trigger": "level-up"
+      }
+    ],
+    "stufful": [
+      {
+        "level": 27,
+        "trigger": "level-up"
+      }
+    ],
+    "bounsweet": [
+      {
+        "level": 18,
+        "trigger": "level-up"
+      },
+      {
+        "level": null,
+        "trigger": "level-up"
+      }
+    ],
+    "comfey": [],
+    "oranguru": [],
+    "passimian": [],
+    "wimpod": [
+      {
+        "level": 30,
+        "trigger": "level-up"
+      }
+    ],
+    "sandygast": [
+      {
+        "level": 42,
+        "trigger": "level-up"
+      }
+    ],
+    "pyukumuku": [],
+    "minior-red-meteor": [],
+    "komala": [],
+    "turtonator": [],
+    "togedemaru": [],
+    "mimikyu-disguised": [],
+    "bruxish": [],
+    "drampa": [],
+    "dhelmise": [],
+    "jangmo-o": [
+      {
+        "level": 35,
+        "trigger": "level-up"
+      },
+      {
+        "level": 45,
+        "trigger": "level-up"
+      }
+    ],
+    "grookey": [
+      {
+        "level": 16,
+        "trigger": "level-up"
+      },
+      {
+        "level": 35,
+        "trigger": "level-up"
+      }
+    ],
+    "scorbunny": [
+      {
+        "level": 16,
+        "trigger": "level-up"
+      },
+      {
+        "level": 35,
+        "trigger": "level-up"
+      }
+    ],
+    "sobble": [
+      {
+        "level": 16,
+        "trigger": "level-up"
+      },
+      {
+        "level": 35,
+        "trigger": "level-up"
+      }
+    ],
+    "skwovet": [
+      {
+        "level": 24,
+        "trigger": "level-up"
+      }
+    ],
+    "rookidee": [
+      {
+        "level": 18,
+        "trigger": "level-up"
+      },
+      {
+        "level": 38,
+        "trigger": "level-up"
+      }
+    ],
+    "blipbug": [
+      {
+        "level": 10,
+        "trigger": "level-up"
+      },
+      {
+        "level": 30,
+        "trigger": "level-up"
+      }
+    ],
+    "nickit": [
+      {
+        "level": 18,
+        "trigger": "level-up"
+      }
+    ],
+    "gossifleur": [
+      {
+        "level": 20,
+        "trigger": "level-up"
+      }
+    ],
+    "wooloo": [
+      {
+        "level": 24,
+        "trigger": "level-up"
+      }
+    ],
+    "chewtle": [
+      {
+        "level": 22,
+        "trigger": "level-up"
+      }
+    ],
+    "yamper": [
+      {
+        "level": 25,
+        "trigger": "level-up"
+      }
+    ],
+    "rolycoly": [
+      {
+        "level": 18,
+        "trigger": "level-up"
+      },
+      {
+        "level": 34,
+        "trigger": "level-up"
+      }
+    ],
+    "applin": [
+      {
+        "level": null,
+        "trigger": "use-item"
+      }
+    ],
+    "silicobra": [
+      {
+        "level": 36,
+        "trigger": "level-up"
+      }
+    ],
+    "cramorant": [],
+    "arrokuda": [
+      {
+        "level": 26,
+        "trigger": "level-up"
+      }
+    ],
+    "toxtricity-amped": [],
+    "sizzlipede": [
+      {
+        "level": 28,
+        "trigger": "level-up"
+      }
+    ],
+    "clobbopus": [
+      {
+        "level": null,
+        "trigger": "level-up"
+      }
+    ],
+    "sinistea": [
+      {
+        "level": null,
+        "trigger": "use-item"
+      }
+    ],
+    "hatenna": [
+      {
+        "level": 32,
+        "trigger": "level-up"
+      },
+      {
+        "level": 42,
+        "trigger": "level-up"
+      }
+    ],
+    "impidimp": [
+      {
+        "level": 32,
+        "trigger": "level-up"
+      },
+      {
+        "level": 42,
+        "trigger": "level-up"
+      }
+    ],
+    "milcery": [
+      {
+        "level": null,
+        "trigger": "spin"
+      }
+    ],
+    "falinks": [],
+    "pincurchin": [],
+    "snom": [
+      {
+        "level": null,
+        "trigger": "friendship"
+      }
+    ],
+    "stonjourner": [],
+    "eiscue-ice": [],
+    "indeedee-male": [],
+    "morpeko-full-belly": [],
+    "cufant": [
+      {
+        "level": 34,
+        "trigger": "level-up"
+      }
+    ],
+    "dracozolt": [],
+    "arctozolt": [],
+    "dracovish": [],
+    "arctovish": [],
+    "duraludon": [
+      {
+        "level": null,
+        "trigger": "use-item"
+      }
+    ],
+    "dreepy": [
+      {
+        "level": 50,
+        "trigger": "level-up"
+      },
+      {
+        "level": 60,
+        "trigger": "level-up"
+      }
+    ],
+    "sprigatito": [
+      {
+        "level": 16,
+        "trigger": "level-up"
+      },
+      {
+        "level": 36,
+        "trigger": "level-up"
+      }
+    ],
+    "fuecoco": [
+      {
+        "level": 16,
+        "trigger": "level-up"
+      },
+      {
+        "level": 36,
+        "trigger": "level-up"
+      }
+    ],
+    "quaxly": [
+      {
+        "level": 16,
+        "trigger": "level-up"
+      },
+      {
+        "level": 36,
+        "trigger": "level-up"
+      }
+    ],
+    "lechonk": [
+      {
+        "level": 18,
+        "trigger": "level-up"
+      }
+    ],
+    "tarountula": [
+      {
+        "level": 15,
+        "trigger": "level-up"
+      }
+    ],
+    "nymble": [
+      {
+        "level": 24,
+        "trigger": "level-up"
+      }
+    ],
+    "pawmi": [
+      {
+        "level": 18,
+        "trigger": "level-up"
+      },
+      {
+        "level": null,
+        "trigger": "level-up"
+      }
+    ],
+    "tandemaus": [
+      {
+        "level": 25,
+        "trigger": "in-battle-level-up"
+      }
+    ],
+    "fidough": [
+      {
+        "level": 26,
+        "trigger": "level-up"
+      }
+    ],
+    "smoliv": [
+      {
+        "level": 25,
+        "trigger": "level-up"
+      },
+      {
+        "level": 35,
+        "trigger": "level-up"
+      }
+    ],
+    "squawkabilly-green-plumage": [],
+    "nacli": [
+      {
+        "level": 24,
+        "trigger": "level-up"
+      },
+      {
+        "level": 38,
+        "trigger": "level-up"
+      }
+    ],
+    "charcadet": [
+      {
+        "level": null,
+        "trigger": "use-item"
+      }
+    ],
+    "tadbulb": [
+      {
+        "level": null,
+        "trigger": "use-item"
+      }
+    ],
+    "wattrel": [
+      {
+        "level": 25,
+        "trigger": "level-up"
+      }
+    ],
+    "maschiff": [
+      {
+        "level": 30,
+        "trigger": "level-up"
+      }
+    ],
+    "shroodle": [
+      {
+        "level": 28,
+        "trigger": "level-up"
+      }
+    ],
+    "bramblin": [
+      {
+        "level": null,
+        "trigger": "level-up"
+      }
+    ],
+    "toedscool": [
+      {
+        "level": 30,
+        "trigger": "level-up"
+      }
+    ],
+    "klawf": [],
+    "capsakid": [
+      {
+        "level": null,
+        "trigger": "use-item"
+      }
+    ],
+    "rellor": [
+      {
+        "level": null,
+        "trigger": "level-up"
+      }
+    ],
+    "flittle": [
+      {
+        "level": 35,
+        "trigger": "level-up"
+      }
+    ],
+    "tinkatink": [
+      {
+        "level": 24,
+        "trigger": "level-up"
+      },
+      {
+        "level": 38,
+        "trigger": "level-up"
+      }
+    ],
+    "wiglett": [
+      {
+        "level": 26,
+        "trigger": "level-up"
+      }
+    ],
+    "bombirdier": [],
+    "finizen": [
+      {
+        "level": 38,
+        "trigger": "level-up"
+      }
+    ],
+    "varoom": [
+      {
+        "level": 40,
+        "trigger": "level-up"
+      }
+    ],
+    "cyclizar": [],
+    "orthworm": [],
+    "glimmet": [
+      {
+        "level": 35,
+        "trigger": "level-up"
+      }
+    ],
+    "greavard": [
+      {
+        "level": 30,
+        "trigger": "level-up"
+      }
+    ],
+    "flamigo": [],
+    "cetoddle": [
+      {
+        "level": null,
+        "trigger": "use-item"
+      }
+    ],
+    "veluza": [],
+    "dondozo": [],
+    "tatsugiri-curly": [],
+    "frigibax": [
+      {
+        "level": 35,
+        "trigger": "level-up"
+      },
+      {
+        "level": 54,
+        "trigger": "level-up"
+      }
+    ],
+    "gimmighoul": [
+      {
+        "level": null,
+        "trigger": "gimmighoul-coins"
+      }
+    ],
+    "poltchageist": [
+      {
+        "level": null,
+        "trigger": "use-item"
+      }
+    ]
+  },
   "discardedBranches": [
     {
       "from": "applin",

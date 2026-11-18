@@ -19,6 +19,13 @@ export interface Roster {
    * (ADR-024, ADR-037). A species may have none, one or two forms; see `stageForms`.
    */
   readonly lines: Readonly<Record<string, readonly string[]>>;
+  /**
+   * 4W: how each form of `lines` is reached in the games (minimum level and trigger), in the same
+   * order; the game derives the pace of each line from it.
+   */
+  readonly evolution?: Readonly<
+    Record<string, readonly { readonly level: number | null; readonly trigger: string }[]>
+  >;
 }
 
 export interface BaseStats {

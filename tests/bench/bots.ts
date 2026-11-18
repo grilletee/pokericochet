@@ -101,7 +101,7 @@ export function chooseReplace(run: Run, config: GameConfig): ReplaceAction {
     }
   }
   const out = run.team[weakest];
-  const incoming = captureLevel(config, pending.stage) * 10;
+  const incoming = captureLevel(config, pending.stage, pending.species) * 10;
   return out !== undefined && incoming > memberWorth(out)
     ? { type: 'replace', slot: weakest }
     : { type: 'release' };
@@ -523,7 +523,11 @@ export function chooseReplaceByStats(run: Run, config: GameConfig): ReplaceActio
       weakest = i;
     }
   });
-  const incoming = statsWorth(config, pending.species, captureLevel(config, pending.stage));
+  const incoming = statsWorth(
+    config,
+    pending.species,
+    captureLevel(config, pending.stage, pending.species),
+  );
   return incoming > weakestWorth ? { type: 'replace', slot: weakest } : { type: 'release' };
 }
 

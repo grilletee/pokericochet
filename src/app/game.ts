@@ -77,7 +77,7 @@ import {
   registerable,
   registerCapture,
   starterChoices,
-  startLevelFor,
+  startLevelOf,
 } from '../meta';
 import { Renderer } from '../render';
 import {
@@ -555,7 +555,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
     (member) => formOfMember(config, member),
     (member, index): TileGlow => {
       if (signatureReady(run, config, index)) return 'ready';
-      const need = chargeNeed(config, stageForLevel(config, member.level));
+      const need = chargeNeed(config, stageForLevel(config, member.level, member.species));
       return member.charge >= need * NEAR_CHARGE ? 'near' : 'idle';
     },
   );
@@ -859,7 +859,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
       const note =
         owned === undefined
           ? ''
-          : `Nivel permanente ${owned.level} · empieza en Nv ${startLevelFor(owned.level)}`;
+          : `Nivel permanente ${owned.level} · empieza en Nv ${startLevelOf(gameConfig, id, owned.level)}`;
       const entry = catalogOf.get(id);
       const region = REGIONS.find((r) => r.gen === entry?.gen)?.name;
       return [
@@ -985,7 +985,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
   function showCollection(selected: string | null = null): void {
     screen = 'collection';
     hideMenus();
-    const entries = dex(profileState.profile, pool);
+    const entries = dex(profileState.profile, pool, gameConfig);
     collectionScreen.show(
       // 4G-J: in Pokédex order, with the number, region, types, rarity and last form of the catalogue.
       entries
@@ -1255,8 +1255,8 @@ export async function startGame(host: HTMLElement): Promise<void> {
     capture: {
       form: captureForm(config, pending.species, pending.stage),
       type: config.species[pending.species]?.type,
-      level: captureLevel(config, pending.stage),
-      stats: statsOf(config, pending.species, captureLevel(config, pending.stage)),
+      level: captureLevel(config, pending.stage, pending.species),
+      stats: statsOf(config, pending.species, captureLevel(config, pending.stage, pending.species)),
     },
     team: run.team.map((member, slot) => ({
       form: formOfMember(config, member),

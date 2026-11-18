@@ -57,8 +57,8 @@ export function nextStep(
   config: GameConfig,
   member: Pick<Member, 'species' | 'level'>,
 ): { readonly kind: StageKind; readonly to: string } | null {
-  const now = stageForLevel(config, member.level);
-  const next = stageForLevel(config, member.level + 1);
+  const now = stageForLevel(config, member.level, member.species);
+  const next = stageForLevel(config, member.level + 1, member.species);
   if (next <= now) return null;
   const kind = stageKind(config, member.species, next);
   return kind === null ? null : { kind, to: formAt(config, member.species, next) };
@@ -69,12 +69,21 @@ export function formOfMember(
   config: GameConfig,
   member: Pick<Member, 'species' | 'level'>,
 ): string {
-  return formAt(config, member.species, stageForLevel(config, member.level));
+  return formAt(config, member.species, stageForLevel(config, member.level, member.species));
 }
 
-/** Evolution stage (1..3) of a level: one more for each threshold reached. */
-export function stageForLevel(config: GameConfig, level: number): number {
+/**
+ * The levels at which the line of `base` reaches stage 2 and stage 3 (4W, block 1): its own pace,
+ * derived from the real evolution levels of PokéAPI (`team.lineStageLevels`), or the common
+ * thresholds (`team.stageLevels`) for a line the data does not name.
+ */
+export function stageLevelsOf(config: GameConfig, base: string): readonly number[] {
+  return config.team.lineStageLevels?.[base] ?? config.team.stageLevels;
+}
+
+/** Evolution stage (1..3) of a Pokémon of the line of `base` at `level`: one more per threshold. */
+export function stageForLevel(config: GameConfig, level: number, base: string): number {
   let stage = 1;
-  for (const from of config.team.stageLevels) if (level >= from) stage += 1;
+  for (const from of stageLevelsOf(config, base)) if (level >= from) stage += 1;
   return stage;
 }

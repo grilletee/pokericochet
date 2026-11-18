@@ -43,11 +43,17 @@ const member = (run: Run, i: number): Member => run.team[i] as Member;
 
 describe('the rules of the team (ADR-030, ADR-031)', () => {
   it('stageOf: one more stage for each threshold reached', () => {
-    expect([1, 2, 3, 4, 5, 6, 7, 8].map((l) => stageOf(quietConfig, l))).toEqual([
+    expect([1, 2, 3, 4, 5, 6, 7, 8].map((l) => stageOf(quietConfig, l, 'vulpix'))).toEqual([
       1, 1, 2, 2, 2, 3, 3, 3,
     ]);
     const late = withConfig({ team: { ...t, stageLevels: [5] } });
-    expect([4, 5, 8].map((l) => stageOf(late, l))).toEqual([1, 2, 2]); // a two-stage line
+    expect([4, 5, 8].map((l) => stageOf(late, l, 'vulpix'))).toEqual([1, 2, 2]); // a two-stage line
+    // 4W: a line with a pace of its own uses it; the others keep the common thresholds.
+    const paced = withConfig({ team: { ...t, lineStageLevels: { vulpix: [5, 8] } } });
+    expect([4, 5, 7, 8].map((l) => stageOf(paced, l, 'vulpix'))).toEqual([1, 2, 2, 3]);
+    expect([2, 3, 6].map((l) => stageOf(paced, l, 'psyduck'))).toEqual([1, 2, 3]);
+    expect(captureLevel(paced, 3, 'vulpix')).toBe(8);
+    expect(captureLevel(paced, 3, 'psyduck')).toBe(6);
   });
 
   it('ballsFor reads the table by level and repeats the last value', () => {
@@ -57,14 +63,15 @@ describe('the rules of the team (ADR-030, ADR-031)', () => {
   });
 
   it('captureLevel is the FIRST level of the stage of the enemy it came from (4F-E)', () => {
-    expect([1, 2, 3].map((s) => captureLevel(quietConfig, s))).toEqual([1, ...t.stageLevels]);
-    expect([1, 2, 3].map((s) => stageOf(quietConfig, captureLevel(quietConfig, s)))).toEqual([
+    const cap = (cfg: typeof quietConfig, s: number): number => captureLevel(cfg, s, 'vulpix');
+    expect([1, 2, 3].map((s) => cap(quietConfig, s))).toEqual([1, ...t.stageLevels]);
+    expect([1, 2, 3].map((s) => stageOf(quietConfig, cap(quietConfig, s), 'vulpix'))).toEqual([
       1, 2, 3,
     ]);
     // Past the last stage it stays at the last one; stage 0 or less is the base.
-    expect(captureLevel(quietConfig, 9)).toBe(t.stageLevels[1]);
-    expect(captureLevel(quietConfig, 0)).toBe(1);
-    expect(captureLevel(withConfig({ team: { ...t, stageLevels: [] } }), 3)).toBe(1);
+    expect(cap(quietConfig, 9)).toBe(t.stageLevels[1]);
+    expect(cap(quietConfig, 0)).toBe(1);
+    expect(cap(withConfig({ team: { ...t, stageLevels: [] } }), 3)).toBe(1);
   });
 
   it('ballRadius grows with the stage and falls back to the base radius', () => {
@@ -277,7 +284,7 @@ describe('a capture reaches the team (joinTeam)', () => {
     const added = member(run, 1);
     expect(added).toMatchObject({
       species: 'psyduck',
-      level: captureLevel(quietConfig, 2),
+      level: captureLevel(quietConfig, 2, 'psyduck'),
       starter: false,
     });
     expect(run.captured).toEqual([{ species: 'psyduck', level: 2 }]);
@@ -285,7 +292,7 @@ describe('a capture reaches the team (joinTeam)', () => {
       type: 'capture',
       ballId: run.loadout.find((b) => b.owner === 1)?.id,
       species: 'psyduck',
-      level: stageOf(quietConfig, captureLevel(quietConfig, 2)),
+      level: stageOf(quietConfig, captureLevel(quietConfig, 2, 'psyduck'), 'psyduck'),
       form: 'psyduck',
       x: 240,
       late: false,
@@ -295,8 +302,8 @@ describe('a capture reaches the team (joinTeam)', () => {
   it('the capture of a stage 3 enemy joins at stage 3: what falls is what joins (4F-E)', () => {
     const run = teamRun();
     joinTeam(run, quietConfig, 'psyduck', 3, 240, false);
-    const level = captureLevel(quietConfig, 3);
-    expect(stageOf(quietConfig, level)).toBe(3);
+    const level = captureLevel(quietConfig, 3, 'psyduck');
+    expect(stageOf(quietConfig, level, 'psyduck')).toBe(3);
     expect(member(run, 1).level).toBe(level);
     expect(run.events).toContainEqual(expect.objectContaining({ type: 'capture', level: 3 }));
   });
@@ -305,7 +312,7 @@ describe('a capture reaches the team (joinTeam)', () => {
     const run = teamRun();
     joinTeam(run, quietConfig, 'psyduck', 3, 100, true);
     const mine = run.loadout.flatMap((b, slot) => (b.owner === 1 ? [slot] : []));
-    expect(mine.length).toBe(ballsFor(quietConfig, captureLevel(quietConfig, 3)));
+    expect(mine.length).toBe(ballsFor(quietConfig, captureLevel(quietConfig, 3, 'psyduck')));
     for (const slot of mine)
       expect(run.cooldowns[slot]).toBe(quietConfig.pickup.returnPenaltyTicks);
     expect(run.cooldowns[0]).toBe(0); // the others are untouched
@@ -327,13 +334,16 @@ describe('a capture reaches the team (joinTeam)', () => {
     // The Rapidash a boss drops is stage 2: a Ponyta of level 1 must not just become level 2.
     const run = teamRun(quietConfig, 'squirtle', 'bulbasaur', 'pikachu', 'vulpix', 'psyduck');
     joinTeam(run, quietConfig, 'vulpix', 2, 10, false);
-    expect(member(run, 4).level).toBe(captureLevel(quietConfig, 2));
-    expect(captureLevel(quietConfig, 2)).toBeGreaterThan(2);
+    expect(member(run, 4).level).toBe(captureLevel(quietConfig, 2, 'psyduck'));
+    expect(captureLevel(quietConfig, 2, 'psyduck'), 'psyduck').toBeGreaterThan(2);
     const events = run.events.filter((e) => e.type === 'train' || e.type === 'stage');
-    expect(events[0]).toMatchObject({ type: 'train', level: captureLevel(quietConfig, 2) });
+    expect(events[0]).toMatchObject({
+      type: 'train',
+      level: captureLevel(quietConfig, 2, 'psyduck'),
+    });
     // A stage 3 enemy is worth its own level too.
     joinTeam(run, quietConfig, 'vulpix', 3, 10, false);
-    expect(member(run, 4).level).toBe(captureLevel(quietConfig, 3));
+    expect(member(run, 4).level).toBe(captureLevel(quietConfig, 3, 'psyduck'));
   });
 
   it('a duplicate never lowers a Pokémon, never skips the +1 and stops at the maximum level', () => {
@@ -357,7 +367,7 @@ describe('a capture reaches the team (joinTeam)', () => {
     const run = teamRun(quietConfig, 'squirtle', 'bulbasaur', 'pikachu', 'vulpix', 'psyduck');
     joinTeam(run, quietConfig, 'vulpix', 3, 10, false); // level 1 -> captureLevel(3)
     expect(run.events.some((e) => e.type === 'stage' && e.member === 4)).toBe(
-      stageOf(quietConfig, captureLevel(quietConfig, 3)) > 1,
+      stageOf(quietConfig, captureLevel(quietConfig, 3, 'psyduck'), 'psyduck') > 1,
     );
   });
 
@@ -412,7 +422,7 @@ describe('the replace screen (ADR-030)', () => {
     expect(member(run, 2)).toEqual({
       species: 'gyarados',
       type: 'water',
-      level: captureLevel(quietConfig, 3),
+      level: captureLevel(quietConfig, 3, 'psyduck'),
       starter: false,
       damageUps: 0,
       cadenceUps: 0,

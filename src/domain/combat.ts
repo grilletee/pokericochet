@@ -169,7 +169,7 @@ export function createBall(
   level = 1,
 ): Ball {
   const species = getSpecies(config, speciesId);
-  const stage = stageOf(config, level);
+  const stage = stageOf(config, level, species.id);
   const type = attackTypeOf(config, species.id, stage, species.type);
   return {
     id,

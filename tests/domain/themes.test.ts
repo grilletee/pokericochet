@@ -222,7 +222,7 @@ describe('capture of an evolved enemy (ADR-027)', () => {
     run.player.x = run.pickups[0]?.x ?? 0;
     for (let i = 0; i < 400 && run.pickups.length > 0; i++) tick(run, { moveX: 0 }, greedy);
     // A stage 2 enemy joins at the level the rules give it, firing that level's balls.
-    const level = captureLevel(greedy, 2);
+    const level = captureLevel(greedy, 2, 'growlithe');
     expect(run.team.at(-1)).toMatchObject({ species: 'growlithe', level });
     expect(run.loadout.filter((b) => b.owner === run.team.length - 1)).toHaveLength(
       greedy.team.ballsByLevel[level - 1] ?? 1,

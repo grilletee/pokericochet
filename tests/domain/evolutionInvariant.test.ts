@@ -88,7 +88,7 @@ describe('property: form always follows level, and stage events chain without ga
           checkedSteps += 1;
         }
         for (const [i, m] of run.team.entries()) {
-          const stageNow = stageForLevel(cfg, m.level);
+          const stageNow = stageForLevel(cfg, m.level, m.species);
           expect(formOfMember(cfg, m), `${m.species} Nv${m.level}`).toBe(
             formAt(cfg, m.species, stageNow),
           );

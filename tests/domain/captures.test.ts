@@ -9,6 +9,7 @@ import {
   onBossDefeated,
   type Run,
   resolveReplace,
+  stageLevelsOf,
   stageOf,
 } from '../../src/domain';
 import { makeEnemy } from './fixtures';
@@ -42,9 +43,9 @@ function defeat(species: string): Run {
   return run;
 }
 
-/** The lowest level of a stage: the level at which that stage starts. */
-function firstLevelOf(stage: number): number {
-  return stage <= 1 ? 1 : (gameConfig.team.stageLevels[stage - 2] ?? 1);
+/** The lowest level of a stage of the line of `base`: the level at which that stage starts (4W). */
+function firstLevelOf(stage: number, base: string): number {
+  return stage <= 1 ? 1 : (stageLevelsOf(gameConfig, base)[stage - 2] ?? 1);
 }
 
 describe('capturing what you beat, for every species of the roster (4F-E)', () => {
@@ -78,8 +79,8 @@ describe('capturing what you beat, for every species of the roster (4F-E)', () =
       expect(joined, 'it joined the team').toBeDefined();
       if (joined === undefined) return;
       expect(formOfMember(gameConfig, joined)).toBe(species);
-      expect(joined.level).toBe(firstLevelOf(stage));
-      expect(stageOf(gameConfig, joined.level)).toBe(stage);
+      expect(joined.level).toBe(firstLevelOf(stage, base));
+      expect(stageOf(gameConfig, joined.level, base)).toBe(stage);
 
       // 3. A duplicate of a lower level of the same line: it is lifted to that form.
       const dup = defeat(species);
@@ -88,8 +89,13 @@ describe('capturing what you beat, for every species of the roster (4F-E)', () =
       const lifted = dup.team[own];
       expect(lifted).toBeDefined();
       if (lifted === undefined) return;
-      expect(formOfMember(gameConfig, lifted)).toBe(species);
-      expect(lifted.level).toBeGreaterThanOrEqual(firstLevelOf(stage));
+      // At least that form: a duplicate is always worth one more level too, so a line of a quick
+      // pace (Caterpie: stage 2 at level 2) may go one form further (4W).
+      expect(lifted.level).toBeGreaterThanOrEqual(firstLevelOf(stage, base));
+      expect(stageOf(gameConfig, lifted.level, base)).toBeGreaterThanOrEqual(stage);
+      if (lifted.level === firstLevelOf(stage, base)) {
+        expect(formOfMember(gameConfig, lifted)).toBe(species);
+      }
 
       // 4. With the team full: the replace screen offers that form and replacing brings it in.
       const full = defeat(species);
@@ -109,7 +115,7 @@ describe('capturing what you beat, for every species of the roster (4F-E)', () =
       expect(swapped?.species).toBe(base);
       if (swapped === undefined) return;
       expect(formOfMember(gameConfig, swapped)).toBe(species);
-      expect(swapped.level).toBe(firstLevelOf(stage));
+      expect(swapped.level).toBe(firstLevelOf(stage, base));
     },
   );
 });

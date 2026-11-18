@@ -52,6 +52,7 @@ export {
   type PullRecord,
   SAVE_MARK,
   startLevelFor,
+  startLevelOf,
 } from './profile';
 export {
   REGISTER_MIN_BOSSES,

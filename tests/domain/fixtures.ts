@@ -72,6 +72,9 @@ const { boss: _boss, ...configWithoutBoss } = config;
 
 export const quietConfig: GameConfig = {
   ...configWithoutBoss,
+  // 4W: the unit tests of the team use the common thresholds (stage 2 at 3, stage 3 at 6); the pace
+  // of each line (`lineStageLevels`) has tests of its own (tests/domain/evolutionPace4w.test.ts).
+  team: { ...configWithoutBoss.team, lineStageLevels: {} },
   ball: { ...config.ball, aimJitter: 0, manualAimJitter: 0 },
   // No drops: the unit tests that kill enemies are about something else (captures have their own).
   capture: { ...config.capture, chance: 0 },

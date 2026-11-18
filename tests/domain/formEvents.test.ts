@@ -9,6 +9,7 @@ import {
   joinTeam,
   type Run,
   resolveReplace,
+  stageLevelsOf,
   trainMember,
 } from '../../src/domain';
 
@@ -43,7 +44,9 @@ describe('events carry the form the Pokémon shows (ADR-036), with the real line
 
   it('a line of one evolution is announced as an evolution and then as its maximum power', () => {
     const r = run('pikachu');
-    for (let i = 0; i < 5; i++) trainMember(r, gameConfig, 0, 'card'); // level 6
+    // 4W: up to the level of stage 3 of its own line (Pikachu evolves by a stone: 4 and 7).
+    const last = stageLevelsOf(gameConfig, 'pikachu')[1] ?? 6;
+    for (let i = 1; i < last; i++) trainMember(r, gameConfig, 0, 'card');
     const stages = r.events.filter((e) => e.type === 'stage');
     expect(stages.map((e) => (e.type === 'stage' ? [e.kind, e.from, e.to] : []))).toEqual([
       ['evolve', 'pikachu', 'raichu'],
@@ -53,7 +56,9 @@ describe('events carry the form the Pokémon shows (ADR-036), with the real line
 
   it('a capture joins as the form of the level it joins with, not of the enemy it came from', () => {
     // A stage 3 Charmander arrives at the first level of stage 3 (6): Charizard, what was beaten.
-    expect(captureLevel(gameConfig, 3)).toBe(gameConfig.team.stageLevels[1]);
+    // 4W: the first level of stage 3 of the line it comes from (Charmander: 6, Bagon: 8).
+    expect(captureLevel(gameConfig, 3, 'charmander')).toBe(6);
+    expect(captureLevel(gameConfig, 3, 'bagon')).toBe(8);
     expect(captureForm(gameConfig, 'charmander', 3)).toBe('charizard');
     expect(captureForm(gameConfig, 'charmander', 1)).toBe('charmander');
     const r = run('squirtle');

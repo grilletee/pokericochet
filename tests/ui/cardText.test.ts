@@ -1,7 +1,14 @@
 import { beforeAll, describe, expect, it } from 'vitest';
 import { gameConfig, MOVE_NAMES, POKEMON_NAMES } from '../../src/data';
 import type { Ball, Card, Member } from '../../src/domain';
-import { ballsFor, formOfMember, fuse, nextStep, stageForLevel } from '../../src/domain';
+import {
+  ballsFor,
+  formOfMember,
+  fuse,
+  nextStep,
+  stageForLevel,
+  stageLevelsOf,
+} from '../../src/domain';
 import { cardStep, describeCard, pokemonName, setNames, typeName } from '../../src/ui';
 
 beforeAll(() => setNames(POKEMON_NAMES, MOVE_NAMES));
@@ -102,15 +109,17 @@ describe('card text', () => {
   });
 
   it('calls the step of a line that does not change form by what it is (ADR-037)', () => {
-    // Exeggcute evolves at Nv3 and only reaches its maximum power at Nv6: no "Exeggutor into Exeggutor".
+    // Exeggcute evolves (by a stone: Nv4 since 4W) and only reaches its maximum power later: no
+    // "Exeggutor into Exeggutor".
+    const [two, three] = stageLevelsOf(gameConfig, 'exeggcute');
     const egg = (level: number) => ({
       ...context,
       memberAt: () => member('exeggcute', 'grass', level),
     });
-    expect(describeCard({ kind: 'train', member: 0 }, egg(2)).title).toBe(
+    expect(describeCard({ kind: 'train', member: 0 }, egg((two ?? 3) - 1)).title).toBe(
       '¡Exeggcute evolucionará a Exeggutor!',
     );
-    const peak = describeCard({ kind: 'train', member: 0 }, egg(5));
+    const peak = describeCard({ kind: 'train', member: 0 }, egg((three ?? 6) - 1));
     expect(peak.title).toBe('¡Exeggutor alcanzará su máximo poder!');
     expect(peak.title).not.toContain('evolucion');
   });
@@ -155,7 +164,8 @@ describe('card text', () => {
     for (const base of Object.keys(gameConfig.lines ?? {})) {
       const type = gameConfig.species[base]?.type;
       if (type === undefined) continue;
-      for (const level of [1, 3, 6]) {
+      // 4W: every level, so every line is seen at each of its own stages.
+      for (const level of [1, 2, 3, 4, 5, 6, 7, 8]) {
         const m = member(base, type, level);
         const form = formOfMember(gameConfig, m);
         const name = pokemonName(form);
@@ -172,7 +182,7 @@ describe('card text', () => {
             expect(title).not.toMatch(whole);
           }
         }
-        expect(stageForLevel(gameConfig, level)).toBeGreaterThan(0);
+        expect(stageForLevel(gameConfig, level, base)).toBeGreaterThan(0);
       }
     }
   });

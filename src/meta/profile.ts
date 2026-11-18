@@ -1,4 +1,4 @@
-import type { GameConfig } from '../domain';
+import { type GameConfig, stageLevelsOf } from '../domain';
 
 /**
  * The persistent profile (Phase 5, ADR-025; 4G-I): what a player keeps between runs. It lives apart
@@ -257,8 +257,20 @@ export function applyUpgrades(config: GameConfig, profile: Profile, starter: str
   if (owned === undefined) return config;
   return {
     ...config,
-    team: { ...config.team, starterLevel: startLevelFor(owned.level) },
+    team: { ...config.team, starterLevel: startLevelOf(config, starter, owned.level) },
   };
+}
+
+/**
+ * Level a starter of the line of `species` begins a run at (4W, block 1): `startLevelFor`, but never
+ * in its final form. Candies may let it start evolved once (a Charmeleon), never as a Charizard, and
+ * a pseudo-legendary, whose pace is slow, keeps its wait (a Bagon starts as a Bagon or a Shelgon).
+ */
+export function startLevelOf(config: GameConfig, species: string, permanentLevel: number): number {
+  const levels = stageLevelsOf(config, species);
+  const last = levels[levels.length - 1];
+  const cap = last === undefined ? Number.POSITIVE_INFINITY : Math.max(1, last - 1);
+  return Math.min(startLevelFor(permanentLevel), cap);
 }
 
 /** Adds the species met in a run to the Pokédex. */

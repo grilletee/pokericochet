@@ -8,6 +8,7 @@ import {
   moveShape,
   signatureOf,
   signatureReady,
+  stageLevelsOf,
   starterSignatureOf,
 } from '../../src/domain';
 import { canStartWith, chooseFirstStarter, emptyProfile, starterChoices } from '../../src/meta';
@@ -61,7 +62,8 @@ describe('every Pokémon of the collection has an Ultimate as starter (data, by 
     const run = createRun(gameConfig, 3, 'zubat');
     const starter = run.team[0];
     if (starter === undefined) throw new Error('no starter');
-    starter.level = gameConfig.team.stageLevels[0] ?? 3;
+    // 4W: the first level of stage 2 of its own line.
+    starter.level = stageLevelsOf(gameConfig, 'zubat')[0] ?? 3;
     starter.charge = 999;
     expect(signatureReady(run, gameConfig, 0)).toBe(true);
     // As starter the shape is the Ultimate of its type; as an ordinary member, the tier's.

@@ -245,6 +245,12 @@ export interface TeamDef {
   /** Level from which each evolution stage starts: [stage 2, stage 3]. */
   readonly stageLevels: readonly number[];
   /**
+   * 4W (block 1): the pace of each line, by its base species: the levels of stage 2 and stage 3,
+   * derived from the real evolution levels (Bagon 30/50 evolves much later than Charmander 16/36).
+   * A line not named here uses `stageLevels`.
+   */
+  readonly lineStageLevels?: Readonly<Record<string, readonly number[]>>;
+  /**
    * Extra damage of the Pokémon the run began with, as a fraction (0.4 = +40 %): the first step of
    * "the starter is the identity of the run", which Phase 5 turns into passives (Vision).
    */

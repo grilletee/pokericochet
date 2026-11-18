@@ -42,11 +42,43 @@ export interface SpeciesInfo {
 export interface ChainNode {
   readonly name: string;
   readonly children: readonly ChainNode[];
+  /** How this form is reached from the one before it (4W): absent for the first of a chain. */
+  readonly via?: EvolutionVia;
+}
+
+/**
+ * How one form of a line is reached (4W, block 1): the minimum level of the games if it evolves by
+ * level, and the trigger (`level-up`, `use-item`, `trade`, `friendship`...). `level` is null when
+ * the evolution needs no level (a stone, a trade, friendship...).
+ */
+export interface EvolutionVia {
+  readonly level: number | null;
+  readonly trigger: string;
+}
+
+/** The evolution steps of a chain link: the first detail that names a level, else the first one. */
+export function parseVia(raw: unknown): EvolutionVia | undefined {
+  const details =
+    isRecord(raw) && Array.isArray(raw.evolution_details) ? raw.evolution_details : [];
+  const all = details.filter(isRecord);
+  if (all.length === 0) return undefined;
+  const withLevel = all.find((d) => typeof d.min_level === 'number');
+  const pick = withLevel ?? all[0];
+  const trigger =
+    isRecord(pick?.trigger) && typeof pick.trigger.name === 'string' ? pick.trigger.name : 'other';
+  // Friendship is not a trigger of its own in PokéAPI: it is a level-up with `min_happiness`.
+  const friendship = withLevel === undefined && typeof pick?.min_happiness === 'number';
+  return {
+    level: typeof withLevel?.min_level === 'number' ? withLevel.min_level : null,
+    trigger: friendship ? 'friendship' : trigger,
+  };
 }
 
 export interface BuiltRoster {
   /** Line of each base: the forms after the base, in order (as `roster.json` writes them). */
   readonly lines: Readonly<Record<string, readonly string[]>>;
+  /** 4W: how each form of `lines` is reached, in the same order (one entry per form after the base). */
+  readonly evolution: Readonly<Record<string, readonly EvolutionVia[]>>;
   /** Branches that were not taken: where the evolution split, what was kept and what was left. */
   readonly discardedBranches: readonly {
     readonly from: string;
@@ -113,7 +145,12 @@ function readNode(raw: unknown): ChainNode {
     return fail('an evolution chain', 'a link without a species');
   }
   const next = Array.isArray(raw.evolves_to) ? raw.evolves_to : [];
-  return { name: raw.species.name, children: next.map(readNode) };
+  const via = parseVia(raw);
+  return {
+    name: raw.species.name,
+    children: next.map(readNode),
+    ...(via === undefined ? {} : { via }),
+  };
 }
 
 export function parseChain(raw: unknown): { readonly id: number; readonly root: ChainNode } {
@@ -167,8 +204,8 @@ export function buildRoster(
   const dexOf = (name: string): number => species.get(name)?.id ?? Number.POSITIVE_INFINITY;
 
   /** The linear path from a node: at a split the child with the higher total (then the lower number). */
-  const pathFrom = (start: ChainNode): string[] => {
-    const path = [start.name];
+  const pathFrom = (start: ChainNode): ChainNode[] => {
+    const path = [start];
     let node = start;
     while (path.length < 3 && node.children.length > 0) {
       const reachable = node.children.filter((c) => inRange(c.name));
@@ -188,11 +225,12 @@ export function buildRoster(
           dropped: options.filter((c) => c !== best).map((c) => idOf(c.name)),
         });
       }
-      path.push(best.name);
+      path.push(best);
       node = best;
     }
     return path;
   };
+  const evolution: Record<string, readonly EvolutionVia[]> = {};
 
   /** Starts a line at `node`, or at its children when it is a baby form (each becomes a line). */
   const start = (node: ChainNode): void => {
@@ -211,8 +249,11 @@ export function buildRoster(
       return;
     }
     const path = pathFrom(node);
-    const [base, ...rest] = path.map(idOf);
-    if (base !== undefined) lines[base] = rest;
+    const [base, ...rest] = path.map((n) => idOf(n.name));
+    if (base !== undefined) {
+      lines[base] = rest;
+      evolution[base] = path.slice(1).map((n) => n.via ?? { level: null, trigger: 'other' });
+    }
   };
   for (const root of chains) start(root);
 
@@ -220,9 +261,14 @@ export function buildRoster(
   const dexOfId = (id: string): number => dexByPokemon.get(id) ?? Number.POSITIVE_INFINITY;
   const names = Object.keys(lines).sort((a, b) => dexOfId(a) - dexOfId(b));
   const sorted: Record<string, readonly string[]> = {};
-  for (const name of names) sorted[name] = lines[name] ?? [];
+  const sortedEvolution: Record<string, readonly EvolutionVia[]> = {};
+  for (const name of names) {
+    sorted[name] = lines[name] ?? [];
+    sortedEvolution[name] = evolution[name] ?? [];
+  }
   return {
     lines: sorted,
+    evolution: sortedEvolution,
     discardedBranches: discarded.sort((a, b) => (a.from < b.from ? -1 : a.from > b.from ? 1 : 0)),
     counts: {
       lines: names.length,

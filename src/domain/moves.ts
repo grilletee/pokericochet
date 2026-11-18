@@ -64,7 +64,7 @@ export function starterSignatureOf(
 export function signatureReady(run: Run, config: GameConfig, index: number): boolean {
   const member = run.team[index];
   if (member === undefined || !member.starter) return false;
-  const stage = stageForLevel(config, member.level);
+  const stage = stageForLevel(config, member.level, member.species);
   return (
     starterSignatureOf(config, member.species, stage) !== null &&
     moveIdOf(config, member.species, stage) !== undefined &&

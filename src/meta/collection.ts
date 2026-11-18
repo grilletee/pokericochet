@@ -1,4 +1,5 @@
-import { MAX_PERMANENT_LEVEL, type Profile, startLevelFor } from './profile';
+import type { GameConfig } from '../domain';
+import { MAX_PERMANENT_LEVEL, type Profile, startLevelFor, startLevelOf } from './profile';
 
 /**
  * The collection (4G-I, Phase 5): a Pokédex of the pool (seen, owned) and the candies that raise the
@@ -42,7 +43,12 @@ export interface DexEntry {
 }
 
 /** The Pokédex: every Pokémon of the pool, in order, with what you know of it. */
-export function dex(profile: Profile, pool: readonly string[]): readonly DexEntry[] {
+export function dex(
+  profile: Profile,
+  pool: readonly string[],
+  /** 4W: with the config, the start level keeps the pace of each line (`startLevelOf`). */
+  config?: GameConfig,
+): readonly DexEntry[] {
   const seen = new Set(profile.seen);
   return pool.map((species) => {
     const owned = profile.owned[species];
@@ -53,7 +59,12 @@ export function dex(profile: Profile, pool: readonly string[]): readonly DexEntr
       level,
       candies: profile.candies[species] ?? 0,
       nextCost: owned === undefined ? Number.POSITIVE_INFINITY : levelUpCost(level),
-      startLevel: owned === undefined ? 0 : startLevelFor(level),
+      startLevel:
+        owned === undefined
+          ? 0
+          : config === undefined
+            ? startLevelFor(level)
+            : startLevelOf(config, species, level),
     };
   });
 }

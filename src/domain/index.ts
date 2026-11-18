@@ -75,6 +75,7 @@ export {
   type StageKind,
   stageForLevel,
   stageKind,
+  stageLevelsOf,
 } from './forms';
 export type { FuseError, FuseResult } from './fusion';
 export { fuse, HYBRID_MIN_LEVEL, MAX_BALL_LEVEL, SECONDARY_EFFECT_SCALE } from './fusion';

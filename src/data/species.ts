@@ -1,4 +1,5 @@
 import type { SpeciesDef } from '../domain';
+import type { EvolutionStep } from './evolutionPace';
 import generated from './generated/species.json';
 
 /**
@@ -15,6 +16,8 @@ interface GeneratedFile {
     readonly legendaries: readonly string[];
     readonly starters: readonly string[];
     readonly lines: Readonly<Record<string, readonly string[]>>;
+    /** 4W: how each form of `lines` is reached in the games (minimum level and trigger). */
+    readonly evolution?: Readonly<Record<string, readonly EvolutionStep[]>>;
   };
   readonly species: readonly (SpeciesDef & {
     readonly pokedexId: number;
@@ -64,6 +67,10 @@ export const BOSS_SPECIES: SpeciesDef = species(file.roster.boss);
 
 /** The starters offered on the title screen, in order (keys 1-4). */
 export const STARTER_SPECIES: readonly string[] = file.roster.starters;
+
+/** How each form of a line is reached in the games (4W): minimum level and trigger, in order. */
+export const EVOLUTION_STEPS: Readonly<Record<string, readonly EvolutionStep[]>> =
+  file.roster.evolution ?? {};
 
 /** Evolution forms after the base species, in order (tools/fetch-data/roster.json `lines`). */
 export const EVOLUTION_LINES: Readonly<Record<string, readonly string[]>> = file.roster.lines;

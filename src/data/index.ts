@@ -1,5 +1,7 @@
 import type { GameConfig, SpeciesDef } from '../domain';
 import { baseConfig } from './config';
+import { PSEUDO_LINES } from './config/gacha';
+import { paceOfLines } from './evolutionPace';
 import { MOVE_TYPES, MOVES_BY_BASE } from './moves';
 import {
   ALL_SPECIES,
@@ -7,6 +9,7 @@ import {
   ENEMY_SPECIES,
   EVOLUTION_FORMS,
   EVOLUTION_LINES,
+  EVOLUTION_STEPS,
 } from './species';
 
 export { baseConfig } from './config';
@@ -22,6 +25,7 @@ export {
   STARTER_LINES,
   TYPE_BANNER_NAMES,
 } from './config/gacha';
+export { gameLevel, lineStageLevels, PACE, paceOfLines } from './evolutionPace';
 export { MOVE_INFO, MOVE_NAMES, MOVE_TYPES, MOVES_BY_BASE } from './moves';
 export {
   ALL_SPECIES,
@@ -48,4 +52,6 @@ export const gameConfig: GameConfig = {
   ballSpecies: BALL_SPECIES.map((s) => s.id),
   lines: EVOLUTION_LINES,
   forms: EVOLUTION_FORMS,
+  // 4W (block 1): each line evolves at its own pace, from its real evolution levels.
+  team: { ...baseConfig.team, lineStageLevels: paceOfLines(EVOLUTION_STEPS, PSEUDO_LINES) },
 };

@@ -14,6 +14,7 @@ import {
   mapStat,
   type SpeciesDef,
   stageBoost,
+  stageLevelsOf,
   statsOf,
   teamGuard,
   tick,
@@ -286,8 +287,10 @@ describe('what the player sees of a Pokémon (statsOf, guardAfterReplace)', () =
   it('shows the damage including the stage boost of a line that does not change form', () => {
     // Pikachu evolves into Raichu at stage 2, whose stats give x1.4: more than the x1.2 minimum of
     // stage 2 but less than the x1.45 of stage 3, so the maximum power makes up the difference.
-    const peak = statsOf(gameConfig, 'pikachu', 6);
-    const evolved = statsOf(gameConfig, 'pikachu', 3);
+    // 4W: at the levels of its own line (Pikachu evolves by a stone: stage 2 at 4, stage 3 at 7).
+    const [two0, three0] = stageLevelsOf(gameConfig, 'pikachu');
+    const peak = statsOf(gameConfig, 'pikachu', three0 ?? 6);
+    const evolved = statsOf(gameConfig, 'pikachu', two0 ?? 3);
     expect(peak.form).toBe('raichu');
     expect(evolved.form).toBe('raichu');
     const power = (id: string) => formPower(gameConfig, gameConfig.species[id] as SpeciesDef);
@@ -298,8 +301,9 @@ describe('what the player sees of a Pokémon (statsOf, guardAfterReplace)', () =
     expect(peak.damage / evolved.damage).toBeCloseTo((three as number) / formGrowth, 12);
     expect(peak.damage).toBeGreaterThan(evolved.damage);
     // Exeggutor, on the other hand, already grows more than the minimum: nothing is added.
-    expect(statsOf(gameConfig, 'exeggcute', 6).damage).toBe(
-      statsOf(gameConfig, 'exeggcute', 3).damage,
+    const [eggTwo, eggThree] = stageLevelsOf(gameConfig, 'exeggcute');
+    expect(statsOf(gameConfig, 'exeggcute', eggThree ?? 6).damage).toBe(
+      statsOf(gameConfig, 'exeggcute', eggTwo ?? 3).damage,
     );
   });
 
