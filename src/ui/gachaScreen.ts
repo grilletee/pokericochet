@@ -2,11 +2,10 @@ import type { GameType } from '../domain';
 import type { SoundId } from './audio';
 import type { ArtLookup } from './cardView';
 import { confetti, installCinema, kicker, motes, shadeHex, title } from './cinema';
+import { buildSplash, type SplashView, shortCountdown } from './gachaSplash';
 import {
   anticipation,
   type BannerViewKind,
-  bannerColors,
-  bannerKindLabel,
   endsText,
   legendMeters,
   type PityNumbers,
@@ -24,7 +23,6 @@ import {
 import { pokemonName } from './names';
 import { pixelNumber } from './pixelNumber';
 import { pokeCard } from './pokeCard';
-import { typeIcons } from './typeIcons';
 
 /**
  * The gacha screen (4G-J, block 1; ADR-057; rebuilt as a banner screen of a finished gacha game in
@@ -69,6 +67,8 @@ export interface GachaBannerView {
   readonly endsInDays: number | null;
   /** 4X: the start of the next week (ms since 1970), for the countdown; null for the standard one. */
   readonly endsAtMs?: number | null;
+  /** 4X: what its rate-up promises, in one line (the splash shows it). */
+  readonly rateLine?: string;
   /** 4X: only on the legendary banner. */
   readonly legend?: LegendNumbers;
   readonly featured5: readonly FeaturedView[];
@@ -271,6 +271,23 @@ function button(text: string, css = ''): HTMLButtonElement {
   return b;
 }
 
+/** 4X: what the splash draws of a banner: its big heroes, its small ★4 and its countdown. */
+export function splashOf(banner: GachaBannerView): SplashView {
+  const heroes =
+    banner.kind === 'showcase' || banner.kind === 'standard' ? banner.showcase : banner.featured5;
+  return {
+    key: banner.key,
+    kind: banner.kind,
+    name: banner.name,
+    theme: banner.theme,
+    ...(banner.type === undefined ? {} : { type: banner.type }),
+    heroes,
+    minis: banner.kind === 'pseudo' || banner.kind === 'starter' ? banner.featured4 : [],
+    endsAtMs: banner.endsAtMs ?? null,
+    rateLine: banner.rateLine ?? banner.theme,
+  };
+}
+
 function coin(): HTMLElement {
   const c = el('span', '');
   c.className = 'gx-coin';
@@ -282,6 +299,8 @@ export class GachaScreen {
   private readonly reveal: HTMLElement;
   private panel: 'none' | 'rates' | 'history' | 'help' = 'none';
   private revealTimer: ReturnType<typeof setTimeout> | undefined;
+  /** 4X: the countdown of the splash ticks every second while the screen shows. */
+  private clockTimer: number | undefined;
 
   constructor(
     host: HTMLElement,
@@ -372,7 +391,12 @@ export class GachaScreen {
         el(
           'div',
           `font-size:10px;opacity:0.85;color:${b.endsInDays === null ? '#c8d0e8' : '#ffb0d0'};`,
-          b.endsInDays === null ? 'Permanente' : endsText(b.endsInDays),
+          // 4X: the same clock as the splash ("4 d 10 h"), not a rounded "5 días".
+          b.endsInDays === null
+            ? 'Permanente'
+            : b.endsAtMs === undefined || b.endsAtMs === null
+              ? endsText(b.endsInDays)
+              : `Quedan ${shortCountdown(b.endsAtMs - Date.now())}`,
         ),
       );
       tab.append(words);
@@ -387,7 +411,14 @@ export class GachaScreen {
       'div',
       'display:flex;flex-direction:column;gap:14px;flex:1 1 320px;min-width:0;',
     );
-    main.append(this.bannerArt(banner));
+    // 4X, block 3: the splash of the banner (its composition, the hero, the countdown, live).
+    const splash = buildSplash(splashOf(banner), this.art, Date.now());
+    main.append(splash.root);
+    if (this.clockTimer !== undefined) window.clearInterval(this.clockTimer);
+    this.clockTimer = window.setInterval(() => {
+      if (this.root.style.display === 'none') return;
+      splash.tick(Date.now());
+    }, 1000);
 
     // The control bar: the pity counters on the left, the draws on the right.
     const control = el(
@@ -467,7 +498,8 @@ export class GachaScreen {
       n.className = 'gx-draw-n';
       const cost = el('span', '');
       cost.className = 'gx-draw-c';
-      cost.append(coin(), pixelNumber(String(price), '#0b0d1a', 1.5));
+      // 4X: a whole scale (1.5 blurs the font's pixels) and a light outline on the dark digits.
+      cost.append(coin(), pixelNumber(String(price), '#0b0d1a', 2));
       b.append(n, cost);
       if (count > 1) {
         const g = el('span', '', '★4 o más seguro');
@@ -524,126 +556,6 @@ export class GachaScreen {
     body.append(tabs, main);
     this.root.replaceChildren(header, body);
     this.root.style.display = 'flex';
-  }
-
-  private bannerArt(banner: GachaBannerView): HTMLElement {
-    const [a, b] = bannerColors(banner.kind, banner.type);
-    const art = el(
-      'div',
-      `--gx-a:${a};--gx-r:${shadeHex(a, 1.35)};` +
-        `background:radial-gradient(ellipse at 72% 62%,${a}d0 0,${a}55 38%,transparent 72%),` +
-        `linear-gradient(135deg,${b} 0,#14172b 55%,${a}66 100%);`,
-    );
-    art.className = 'gx-art';
-    art.dataset.bannerArt = banner.key;
-    const rays = el('div', '');
-    rays.className = 'gx-rays';
-    const floor = el('div', '');
-    floor.className = 'gx-floor';
-    const air = el('div', 'position:absolute;inset:0;overflow:hidden;pointer-events:none;');
-    air.append(...motes([shadeHex(a, 1.6), '#ffffff', '#ffd75a'], 12));
-    const ribbon = el(
-      'div',
-      '',
-      banner.endsInDays === null ? 'PERMANENTE' : `LIMITADO · ${endsText(banner.endsInDays)}`,
-    );
-    ribbon.className = 'gx-ribbon';
-    art.append(rays, air, floor, ribbon);
-    // The heroes stand on the right 58 % of the art, the words keep the left: they never overlap.
-    const heroes = banner.featured5.length > 0 ? banner.featured5 : banner.showcase.slice(0, 3);
-    const stage = el(
-      'div',
-      'position:absolute;right:0;bottom:0;width:60%;height:100%;display:flex;' +
-        'justify-content:flex-end;align-items:flex-end;',
-    );
-    heroes.forEach((hero, i) => {
-      const img = this.picture(hero.final, 96, 'gx-hero');
-      img.style.position = 'relative';
-      img.style.height = banner.featured5.length > 0 ? '100%' : '80%';
-      img.style.width = 'auto';
-      img.style.maxWidth = `${Math.floor(100 / heroes.length)}%`;
-      img.style.objectFit = 'contain';
-      img.style.aspectRatio = '1';
-      img.style.animationDelay = `${i * 0.4}s`;
-      img.dataset.hero = hero.species;
-      stage.append(img);
-    });
-    art.append(stage);
-    // The words over a dark plate on the left, so they read over any art.
-    const plate = el('div', '');
-    plate.className = 'gx-plate';
-    const words = el(
-      'div',
-      'position:absolute;left:14px;top:12px;bottom:12px;width:42%;z-index:2;display:flex;flex-direction:column;gap:6px;text-shadow:3px 3px 0 #0b0d1a;',
-    );
-    // What the banner is about (the ribbon already says how long it lasts).
-    const label = kicker(bannerKindLabel(banner.kind), shadeHex(a, 1.4));
-    label.style.alignSelf = 'flex-start';
-    words.append(
-      label,
-      // Lighter than the colour of the banner, so the name reads over its own rays.
-      title(banner.name, shadeHex(a, 1.3), 40, 0, 25),
-      el('div', 'font-size:12px;opacity:0.9;', banner.theme),
-    );
-    const top = banner.featured5[0];
-    if (top !== undefined) {
-      const tag = el('div', 'margin-top:4px;display:flex;flex-direction:column;gap:3px;');
-      tag.append(
-        el(
-          'div',
-          `color:${RARITY_COLORS[top.stars]};font-size:15px;letter-spacing:2px;`,
-          `${stars(top.stars)} DESTACADO`,
-        ),
-        el(
-          'div',
-          'font-size:clamp(18px,3vw,28px);font-weight:800;color:#fff6d8;',
-          pokemonName(top.final),
-        ),
-        el(
-          'div',
-          'font-size:11px;opacity:0.9;',
-          `Línea de ${pokemonName(top.species)}${top.owned ? ' · ya lo tienes' : ''}`,
-        ),
-      );
-      tag.append(typeIcons(top.types, 20));
-      words.append(tag);
-    } else {
-      words.append(
-        el(
-          'div',
-          'font-size:13px;opacity:0.95;margin-top:6px;max-width:240px;',
-          'Todo el catálogo: cualquier Pokémon puede salir.',
-        ),
-      );
-    }
-    art.append(plate, words);
-    // The featured ★4, on the floor in front of the hero, on its left (on the hero's stage, so they
-    // never cover the words, however short the art is).
-    if (banner.featured4.length > 0) {
-      const fours = el(
-        'div',
-        'position:absolute;left:0;bottom:4%;display:flex;gap:8px;align-items:flex-end;z-index:1;',
-      );
-      for (const four of banner.featured4) {
-        const card = el(
-          'div',
-          'display:flex;flex-direction:column;align-items:center;font-size:11px;text-shadow:2px 2px 0 #0b0d1a;',
-        );
-        card.dataset.featured4 = four.species;
-        const pic = this.picture(four.final, 88, 'gx-four');
-        pic.style.height = 'clamp(60px,14vh,104px)';
-        pic.style.width = 'auto';
-        pic.style.aspectRatio = '1';
-        card.append(
-          pic,
-          el('div', `color:${RARITY_COLORS[4]};letter-spacing:1px;`, stars(4)),
-          el('div', 'font-weight:700;white-space:nowrap;', pokemonName(four.final)),
-        );
-        fours.append(card);
-      }
-      stage.append(fours);
-    }
-    return art;
   }
 
   private panelOf(
@@ -971,16 +883,22 @@ export class GachaScreen {
 
   /** The screen of its own of a ★5 (4W, block 6): its name, its picture big, gold and a fanfare. */
   private showFive(five: HTMLElement, card: RevealCard): void {
-    const gold = RARITY_COLORS[5];
+    // 4X: a legendary (★6) has the same screen in its own prismatic colour.
+    const legendary = card.stars >= 6;
+    const gold = RARITY_COLORS[legendary ? 6 : 5];
+    five.dataset.legendary = legendary ? '1' : '0';
+    five.style.background = legendary
+      ? 'radial-gradient(ellipse at 50% 45%,#5a1048 0,#1a0818 55%,#07091a 100%)'
+      : '';
     const lines = el('div', '');
     lines.className = 'gx-lines';
-    const rain = confetti([gold, '#fff3b0', '#ffffff', shadeHex(gold, 0.7)], 26);
-    const top = kicker('¡Rareza máxima!', gold);
+    const rain = confetti([gold, '#fff3b0', '#ffffff', shadeHex(gold, 0.7)], legendary ? 40 : 26);
+    const top = kicker(legendary ? '¡POKÉMON LEGENDARIO!' : '¡Rareza máxima!', gold);
     top.style.cssText += 'font-size:18px;position:relative;';
     const starRow = el(
       'div',
       `font-size:30px;color:${gold};text-shadow:3px 3px 0 ${INK};position:relative;`,
-      stars(5),
+      stars(legendary ? 6 : 5),
     );
     const picture = this.picture(card.species, 400, '');
     picture.style.position = 'relative';

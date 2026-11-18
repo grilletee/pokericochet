@@ -7,6 +7,21 @@ import { DIGIT_GLYPHS, DIGIT_H, DIGIT_W, digitChars } from '../domain';
  * Characters the font does not have are left out.
  */
 const INK = '#0b0d1a';
+const LIGHT = '#fff6e0';
+
+/**
+ * 4X: the outline of a number in `color`: ink, unless the number itself is dark (the price on the
+ * light draw buttons of the gacha), where an ink outline merged the glyphs into blocks ("1■■").
+ */
+export function outlineFor(color: string): string {
+  const hex = /^#([0-9a-f]{6})$/i.exec(color)?.[1];
+  if (hex === undefined) return INK;
+  const r = Number.parseInt(hex.slice(0, 2), 16);
+  const g = Number.parseInt(hex.slice(2, 4), 16);
+  const b = Number.parseInt(hex.slice(4, 6), 16);
+  // Perceived brightness (0..255): under a third it is a dark colour.
+  return 0.299 * r + 0.587 * g + 0.114 * b < 85 ? LIGHT : INK;
+}
 
 /** The width and height in font pixels of `text` (with the outline). */
 export function pixelNumberSize(text: string): { readonly w: number; readonly h: number } {
@@ -46,7 +61,7 @@ export function drawPixelNumber(
       });
     });
   };
-  paint(INK, true);
+  paint(outlineFor(color), true);
   paint(color, false);
 }
 

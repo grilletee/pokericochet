@@ -142,6 +142,7 @@ import {
   musicTension,
   Overlay,
   pauseMs,
+  percentBp,
   pokemonName,
   ReplaceScreen,
   type ReplaceView,
@@ -1262,6 +1263,13 @@ export async function startGame(host: HTMLElement): Promise<void> {
         ...(type === undefined ? {} : { type }),
         endsInDays: b.endsInDays,
         endsAtMs: b.endsInDays === null ? null : endsAtMs,
+        // 4X: what the rate-up promises, with the numbers of the rules.
+        rateLine:
+          b.kind === 'pseudo' || b.kind === 'starter'
+            ? `Cada ★5: ${percentBp(GACHA_RULES.featuredShare)} de que sea ${pokemonName(catalogOf.get(b.featured5[0] ?? '')?.final ?? '')}; si no, el siguiente ★5 lo es seguro`
+            : b.kind === 'showcase'
+              ? `Cada ★4: ${percentBp(GACHA_RULES.showcase4Share)} de que sea uno de los dos destacados`
+              : 'Todo el catálogo · tu pity se comparte con todos los banners',
         featured5: featuredOf(b.featured5),
         featured4: featuredOf(b.featured4),
         // The standard banner shows three ★5 of the catalogue, a different trio every day; the
@@ -1293,6 +1301,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
           : { type: typeOfLine(legend.featured) as GameType }),
         endsInDays: legend.endsInDays,
         endsAtMs,
+        rateLine: `Cada llave: ${percentBp(lv.nextChance)} de ${pokemonName(legend.featured)} · seguro en ${lv.toLegend} ${lv.toLegend === 1 ? 'llave' : 'llaves'} · si no, un ★5 o un ★4`,
         featured5: featuredOf([legend.featured]),
         featured4: [],
         showcase: [],
