@@ -3,6 +3,8 @@ import { type ArtLookup, spriteTile } from './cardView';
 import { title as cinemaTitle, confetti, installCinema, rays } from './cinema';
 import { CONTROL_SCHEMES, type ControlScheme } from './controlSchemes';
 import type { CreditLine } from './creditsText';
+import { DexBrowser } from './dexBrowser';
+import type { DexItem } from './dexQuery';
 import { MenuBackdrop } from './menuBackdrop';
 import { pokemonName } from './names';
 import { pokeCard } from './pokeCard';
@@ -44,6 +46,31 @@ export interface StarterOption {
   readonly final?: string;
   readonly dex?: number;
   readonly stars?: 3 | 4 | 5;
+  /** 4W, block 5: for the search and filters of the grid (the same as the Pokédex's). */
+  readonly gen?: number;
+  readonly level?: number;
+  readonly candies?: number;
+  readonly nextCost?: number;
+}
+
+/** A starter as the grid's search and filters see it, with its place in the list. */
+type StarterItem = DexItem & { readonly index: number; readonly option: StarterOption };
+
+function starterItem(option: StarterOption, index: number): StarterItem {
+  return {
+    species: option.id,
+    state: 'owned',
+    types: option.types ?? [option.type],
+    dex: option.dex ?? 0,
+    ...(option.gen === undefined ? {} : { gen: option.gen }),
+    ...(option.stars === undefined ? {} : { stars: option.stars }),
+    level: option.level ?? 1,
+    candies: option.candies ?? 0,
+    nextCost: option.nextCost ?? Number.POSITIVE_INFINITY,
+    ...(option.final === undefined ? {} : { final: option.final }),
+    index,
+    option,
+  };
 }
 
 /** What the title screen can lead to (4G-I). */
@@ -375,34 +402,50 @@ export class StarterScreen {
     head.append(el('div', 'font-size:26px;font-weight:800;letter-spacing:0.5px;', title));
     if (subtitle !== '') head.append(el('div', 'font-size:14px;opacity:0.85;', subtitle));
     const detail = this.detail(starters[this.chosen], () => onPick(this.chosen));
-    const grid = el(
-      'div',
-      'display:grid;grid-template-columns:repeat(auto-fill,minmax(86px,1fr));gap:6px;width:min(96vw,900px);',
-    );
-    starters.forEach((starter, index) => {
+    // 4W, block 5: the same grid as the Pokédex, with its search, filters and order. A card keeps
+    // its place in the list, so the pick is the same whatever is filtered.
+    for (const s of starters) {
+      if (s.gen !== undefined && s.region !== undefined) this.regions.set(s.gen, s.region);
+    }
+    this.browser.show(starters.map(starterItem), (item) => {
+      const starter = item.option;
       // 4G-J, block 6: the same card as the Pokédex (its types as colours, its number, its rarity).
       const card = pokeCard(
         {
           species: starter.id,
-          types: starter.types ?? [starter.type],
-          dex: starter.dex ?? 0,
+          types: item.types,
+          dex: item.dex,
           state: 'owned',
           ...(starter.stars === undefined ? {} : { stars: starter.stars }),
-          note: starter.region ?? '',
-          selected: index === this.chosen,
+          note:
+            starter.level !== undefined && starter.level > 1
+              ? `Nv ${starter.level} · ${starter.region ?? ''}`
+              : (starter.region ?? ''),
+          selected: item.index === this.chosen,
         },
         this.art,
         56,
       );
       card.dataset.starter = starter.id;
       card.addEventListener('click', () => {
-        this.chosen = index;
+        this.chosen = item.index;
         again();
       });
-      grid.append(card);
+      return card;
     });
-    this.root.replaceChildren(head, detail, grid, back);
+    this.root.replaceChildren(head, detail, this.browser.root, back);
   }
+
+  /** Region names by generation, from the options. */
+  private readonly regions = new Map<number, string>();
+  private readonly browser = new DexBrowser<StarterItem>({
+    regionOf: (gen) => this.regions.get(gen) ?? `Gen ${gen}`,
+    ownedOnly: true,
+    cardWidth: 86,
+    minForControls: 13,
+    gridName: 'starterGrid',
+    empty: 'Ninguno de tus Pokémon con estos filtros.',
+  });
 
   /** The chosen Pokémon bigger, with what it does, and the button that starts the run. */
   private detail(starter: StarterOption | undefined, onPick: () => void): HTMLElement {

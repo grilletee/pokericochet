@@ -69,6 +69,7 @@ import {
   drawGacha,
   gachaPool,
   levelUp,
+  levelUpCost,
   nextGoal,
   type Profile,
   permanentLadder,
@@ -877,7 +878,15 @@ export async function startGame(host: HTMLElement): Promise<void> {
           types: entry?.types ?? [type],
           ...(region === undefined ? {} : { region }),
           final: entry?.final ?? id,
-          ...(entry === undefined ? {} : { dex: entry.dex, stars: entry.stars }),
+          ...(entry === undefined ? {} : { dex: entry.dex, stars: entry.stars, gen: entry.gen }),
+          // 4W, block 5: for the filters "nivel subido" and "puede subir" of the grid.
+          ...(owned === undefined
+            ? {}
+            : {
+                level: owned.level,
+                candies: profileState.profile.candies[id] ?? 0,
+                nextCost: levelUpCost(owned.level),
+              }),
         },
       ];
     });

@@ -137,9 +137,23 @@ try {
     await page.screenshot({ path: join(outDir, `7-pokedex-${tag}.png`) });
     // The filters: a type and a generation narrow the grid; "only mine" leaves only yours.
     const all = Number(await page.getAttribute('[data-dex-grid]', 'data-dex-grid'));
-    await tap('[data-filter-type="fire"]');
+    // 4W, block 5: a search by name finds one, and keeps the focus while typing.
+    await page.fill('[data-screen="collection"] [data-dex-search]', 'froak');
+    const found = Number(await page.getAttribute('[data-dex-grid]', 'data-dex-grid'));
+    const focused = await page.evaluate(() =>
+      document.activeElement?.hasAttribute('data-dex-search'),
+    );
+    check(`${tag}: the search by name finds it`, found === 1 && focused === true, `${found}`);
+    await page.fill('[data-screen="collection"] [data-dex-search]', '');
+    // On a narrow screen the filters are folded under one button. The choice of a starter has a
+    // panel of its own (hidden here), so every control is looked for inside the collection.
+    const dexUi = (sel) => `[data-screen="collection"] ${sel}`;
+    if ((await page.$(dexUi('[data-filters-toggle="closed"]'))) !== null) {
+      await tap(dexUi('[data-filters-toggle="closed"]'));
+    }
+    await tap(dexUi('[data-filter-type="fire"]'));
     const fire = Number(await page.getAttribute('[data-dex-grid]', 'data-dex-grid'));
-    await tap('[data-filter-gen="1"]');
+    await tap(dexUi('[data-filter-gen="1"]'));
     const fireKanto = Number(await page.getAttribute('[data-dex-grid]', 'data-dex-grid'));
     check(
       `${tag}: the filters by type and generation narrow the Pokédex`,
@@ -147,15 +161,15 @@ try {
       `${all} > ${fire} > ${fireKanto}`,
     );
     await page.screenshot({ path: join(outDir, `7-pokedex-filtros-${tag}.png`) });
-    await tap('[data-filter-type="fire"]');
-    await tap('[data-filter-gen="1"]');
-    await tap('[data-filter-mine]');
+    await tap(dexUi('[data-filter-type="fire"]'));
+    await tap(dexUi('[data-filter-gen="1"]'));
+    await tap(dexUi('[data-filter-mine]'));
     const mine = Number(await page.getAttribute('[data-dex-grid]', 'data-dex-grid'));
     check(`${tag}: "only mine" shows your collection`, mine === owned2.length, `${mine}`);
     await tap('[data-dex-state="owned"]');
     await page.waitForSelector('[data-dex-card]');
     await page.screenshot({ path: join(outDir, `7-ficha-${tag}.png`) });
-    await tap('[data-filter-mine]');
+    await tap(dexUi('[data-filter-mine]'));
     // 6. A new run with another Pokémon: only the collection is offered now.
     await page.keyboard.press('KeyM');
     await tap('[data-screen="start"] [data-action="play"]');

@@ -1,4 +1,4 @@
-import { type BaseStats, GAME_TYPES, type GameType } from '../domain';
+import type { BaseStats, GameType } from '../domain';
 import { typeName } from './cardText';
 import type { ArtLookup } from './cardView';
 import {
@@ -8,13 +8,15 @@ import {
   PERMANENT_INTRO,
   startNowLine,
 } from './collectionText';
+import { DexBrowser } from './dexBrowser';
+import { type DexItem, EMPTY_QUERY, queryDex } from './dexQuery';
 import { RARITY_COLORS, type StarCount, stars } from './gachaText';
 import { pokemonName } from './names';
 import { pixelNumber } from './pixelNumber';
 import { cardBackground, dexNumber, pokeCard } from './pokeCard';
 import { barPercent, STAT_ROWS } from './statBars';
 import { TYPE_COLORS } from './typeColors';
-import { typeIcon, typeIcons } from './typeIcons';
+import { typeIcons } from './typeIcons';
 
 /**
  * The collection as a visual Pokédex (4G-I; 4G-J, block 6): a grid of cards of every Pokémon the
@@ -66,35 +68,52 @@ const BUTTON =
   'pointer-events:auto;padding:6px 12px;border:2px solid #5b6aa8;border-radius:10px;' +
   'background:#1b2540;color:inherit;font:inherit;cursor:pointer;';
 
-interface Filters {
-  type: GameType | null;
-  gen: number | null;
-  mine: boolean;
-  help: boolean;
+/** A tile of the Pokédex as the search and filters of `dexQuery` see it (4W, block 5). */
+export type DexTileItem = DexItem & { readonly tile: DexTile };
+
+export function dexItemOf(tile: DexTile): DexTileItem {
+  return {
+    species: tile.species,
+    state: tile.state,
+    types: tile.types ?? (tile.type === undefined ? [] : [tile.type]),
+    dex: tile.dex ?? 0,
+    ...(tile.gen === undefined ? {} : { gen: tile.gen }),
+    ...(tile.stars === undefined ? {} : { stars: tile.stars }),
+    level: tile.level,
+    candies: tile.candies,
+    nextCost: tile.nextCost,
+    ...(tile.final === undefined ? {} : { final: tile.final }),
+    tile,
+  };
 }
 
-/** The tiles a filter keeps, in Pokédex order. Pure. */
+/** The tiles a filter of the 4G-J Pokédex keeps, in Pokédex order (now a `queryDex`). Pure. */
 export function filterDex(
   tiles: readonly DexTile[],
   filters: { readonly type: GameType | null; readonly gen: number | null; readonly mine: boolean },
 ): DexTile[] {
-  return tiles.filter(
-    (t) =>
-      (filters.type === null ||
-        (t.types ?? (t.type === undefined ? [] : [t.type])).includes(filters.type)) &&
-      (filters.gen === null || t.gen === filters.gen) &&
-      (!filters.mine || t.state === 'owned'),
-  );
+  return queryDex(tiles.map(dexItemOf), {
+    ...EMPTY_QUERY,
+    type: filters.type,
+    gen: filters.gen,
+    state: filters.mine ? 'owned' : 'all',
+  }).map((item) => item.tile);
 }
 
 export class CollectionScreen {
   private readonly root: HTMLElement;
-  private readonly filters: Filters = { type: null, gen: null, mine: false, help: false };
+  private help = false;
+  private lastSelected: string | null = null;
+  /** The search, filters and order of the grid; kept while the screen is redrawn (4W, block 5). */
+  private readonly browser: DexBrowser<DexTileItem>;
 
   constructor(
     host: HTMLElement,
     private readonly art: ArtLookup,
   ) {
+    this.browser = new DexBrowser<DexTileItem>({
+      regionOf: (gen) => this.regions.get(gen) ?? `Gen ${gen}`,
+    });
     this.root = el(
       'div',
       'position:absolute;inset:0;display:none;flex-direction:column;align-items:center;' +
@@ -120,7 +139,10 @@ export class CollectionScreen {
   ): void {
     const again = (): void =>
       this.show(tiles, counts, selected, onSelect, onLevelUp, onBack, candyHelp);
-    const f = this.filters;
+    for (const tile of tiles) {
+      if (tile.gen !== undefined && tile.region !== undefined)
+        this.regions.set(tile.gen, tile.region);
+    }
     // The header: back, the title, the counts and the candies.
     const back = el('button', BUTTON, 'Volver (M)');
     back.dataset.action = 'back';
@@ -138,7 +160,7 @@ export class CollectionScreen {
     const helpButton = el('button', `${BUTTON}border-color:#ffd54f;`, '🍬 Caramelos');
     helpButton.dataset.action = 'candyHelp';
     helpButton.addEventListener('click', () => {
-      f.help = !f.help;
+      this.help = !this.help;
       again();
     });
     header.append(
@@ -158,7 +180,7 @@ export class CollectionScreen {
       tip.dataset.firstTip = 'collection';
       rows.push(tip);
     }
-    if (candyHelp.length > 0 && (f.help || counts.owned <= 1)) {
+    if (candyHelp.length > 0 && (this.help || counts.owned <= 1)) {
       // Open by itself while the collection is new (the 17th playtest did not find it).
       const help = el(
         'div',
@@ -173,21 +195,14 @@ export class CollectionScreen {
     // The card of the chosen one.
     const chosen = tiles.find((t) => t.species === selected && t.state !== 'unknown');
     if (chosen !== undefined) rows.push(this.card(chosen, onLevelUp));
-    // The filters: types, generations, only mine.
-    rows.push(this.filterBar(tiles, again));
-    const shown = filterDex(tiles, f);
-    const grid = el(
-      'div',
-      'display:grid;grid-template-columns:repeat(auto-fill,minmax(88px,1fr));gap:8px;width:min(98vw,980px);',
-    );
-    grid.dataset.dexGrid = String(shown.length);
-    for (const tile of shown) {
-      const types = tile.types ?? (tile.type === undefined ? [] : [tile.type]);
+    // The grid with its search, filters and order (4W, block 5).
+    this.browser.show(tiles.map(dexItemOf), (item) => {
+      const tile = item.tile;
       const card = pokeCard(
         {
           species: tile.species,
-          types,
-          dex: tile.dex ?? 0,
+          types: item.types,
+          dex: item.dex,
           state: tile.state,
           ...(tile.stars === undefined ? {} : { stars: tile.stars }),
           note: tile.state === 'owned' ? `Nv ${tile.level} · 🍬${tile.candies}` : '',
@@ -199,76 +214,17 @@ export class CollectionScreen {
       card.dataset.dex = tile.species;
       card.dataset.dexState = tile.state;
       if (tile.state !== 'unknown') card.addEventListener('click', () => onSelect(tile.species));
-      grid.append(card);
-    }
-    if (shown.length === 0) {
-      grid.append(
-        el(
-          'div',
-          'grid-column:1/-1;opacity:0.7;font-size:13px;',
-          'Ningún Pokémon con estos filtros.',
-        ),
-      );
-    }
-    this.root.replaceChildren(...rows, grid);
+      return card;
+    });
+    this.root.replaceChildren(...rows, this.browser.root);
     this.root.style.display = 'flex';
+    // A new sheet opens at the top, where it is drawn (the card tapped may be far down the grid).
+    if (selected !== this.lastSelected && selected !== null) this.root.scrollTop = 0;
+    this.lastSelected = selected;
   }
 
-  private filterBar(tiles: readonly DexTile[], again: () => void): HTMLElement {
-    const f = this.filters;
-    const bar = el(
-      'div',
-      'display:flex;flex-direction:column;gap:4px;align-items:center;width:min(98vw,980px);',
-    );
-    const chip = (label: string, on: boolean, act: () => void, css = ''): HTMLElement => {
-      const b = el(
-        'button',
-        `${BUTTON}padding:3px 8px;font-size:12px;opacity:${on ? 1 : 0.6};outline:${on ? '2px solid #ffd54f' : 'none'};${css}`,
-        label,
-      );
-      b.addEventListener('click', () => {
-        act();
-        again();
-      });
-      return b;
-    };
-    const typeRow = el('div', 'display:flex;gap:3px;flex-wrap:wrap;justify-content:center;');
-    typeRow.dataset.filterTypes = '';
-    typeRow.append(chip('Todos', f.type === null, () => (f.type = null)));
-    for (const type of GAME_TYPES) {
-      const b = chip(
-        '',
-        f.type === type,
-        () => (f.type = f.type === type ? null : type),
-        'padding:2px 3px;',
-      );
-      b.dataset.filterType = type;
-      b.title = typeName(type);
-      b.append(typeIcon(type, 18));
-      typeRow.append(b);
-    }
-    const genRow = el('div', 'display:flex;gap:3px;flex-wrap:wrap;justify-content:center;');
-    genRow.dataset.filterGens = '';
-    genRow.append(chip('Todas', f.gen === null, () => (f.gen = null)));
-    const gens = [...new Set(tiles.map((t) => t.gen ?? 0))]
-      .filter((g) => g > 0)
-      .sort((a, b) => a - b);
-    for (const gen of gens) {
-      const region = tiles.find((t) => t.gen === gen)?.region ?? `Gen ${gen}`;
-      const b = chip(region, f.gen === gen, () => (f.gen = f.gen === gen ? null : gen));
-      b.dataset.filterGen = String(gen);
-      genRow.append(b);
-    }
-    const mine = chip(
-      f.mine ? '★ Solo los míos' : 'Solo los míos',
-      f.mine,
-      () => (f.mine = !f.mine),
-    );
-    mine.dataset.filterMine = '';
-    genRow.append(mine);
-    bar.append(typeRow, genRow);
-    return bar;
-  }
+  /** Region names by generation, from the tiles. */
+  private readonly regions = new Map<number, string>();
 
   /** The card of a Pokémon of the Pokédex: everything about it, and its next permanent level. */
   private card(tile: DexTile, onLevelUp: (species: string) => void): HTMLElement {
