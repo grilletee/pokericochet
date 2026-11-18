@@ -124,8 +124,12 @@ const tally = { hits: 0, damage: 0 };
 
 /** One enemy struck by a move: its damage, its status and the tally. */
 function strike(run: Run, config: GameConfig, ball: Ball, enemy: Enemy, power: number): void {
-  // An Ultimate hurts a boss like anything else (4G-H: no exposed bonus any more).
-  const damage = hitDamage(config, ball, enemy.type, enemy.type2) * power;
+  // An Ultimate hurts a boss like anything else (4G-H: no exposed bonus any more), but one cast never
+  // takes more than `bossMoveCap` of its maximum health (4W: "en una run el primero duró ~2 s").
+  const raw = hitDamage(config, ball, enemy.type, enemy.type2) * power;
+  const cap = config.enemy.bossMoveCap;
+  const damage =
+    cap !== undefined && enemy.id === run.boss.id ? Math.min(raw, run.boss.maxHp * cap) : raw;
   damageEnemy(run, config, enemy, damage);
   applyStatus(config, ball, enemy, power);
   tally.hits += 1;

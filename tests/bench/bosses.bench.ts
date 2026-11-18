@@ -38,7 +38,8 @@ import {
  *  fury          share of bosses that reached the fury; deaths of the dodging bot by boss
  */
 const PER_STARTER = Number(process.env.BOSS_PER_STARTER ?? 25);
-const STARTERS = ['charmander', 'squirtle', 'bulbasaur', 'pikachu'];
+// 4W: BOSS_STARTERS (comma separated) measures other starters, e.g. the pseudo-legendaries.
+const STARTERS = (process.env.BOSS_STARTERS ?? 'charmander,squirtle,bulbasaur,pikachu').split(',');
 const MAX_TICKS = 160_000;
 
 function patched(): GameConfig {
@@ -68,6 +69,7 @@ interface RunLog {
   /** Coins the run pays (4G-J: the gacha's economy). */
   coins: number;
   minutes: number;
+  starter: string;
 }
 
 function playBosses(seed: number, starter: string, policy: Policy, config: GameConfig): RunLog {
@@ -135,6 +137,7 @@ function playBosses(seed: number, starter: string, policy: Policy, config: GameC
     bosses,
     coins: coinsFor(summarizeRun(run, config)),
     minutes: run.tickCount / 3600,
+    starter,
   };
 }
 
@@ -197,6 +200,49 @@ describe('boss fights: B1-B5 and DPS (ADR-053, 4G-H)', () => {
       `coins per run (dodging bot): mean ${mean(dodging.map((r) => r.coins)).toFixed(0)}, median ${median(dodging.map((r) => r.coins)).toFixed(0)}, won ${mean(dodging.filter((r) => r.won).map((r) => r.coins)).toFixed(0)}, lost ${mean(dodging.filter((r) => !r.won).map((r) => r.coins)).toFixed(0)}; minutes per run ${mean(dodging.map((r) => r.minutes)).toFixed(1)}`,
       `coins per run (careless bot): mean ${mean(careless.map((r) => r.coins)).toFixed(0)}`,
     ];
+    // 4W (block 2, 18th playtest: "en la misma run el primero dura 2 s y el tercero es imposible"):
+    // how much each boss varies from run to run. The seconds of the fights that were won, the share
+    // of runs that got past it, and the power of the team when it came (its DPS against the boss).
+    const quantile = (values: readonly number[], q: number): number => {
+      const sorted = [...values].sort((a, b) => a - b);
+      return sorted[Math.min(sorted.length - 1, Math.floor(q * sorted.length))] ?? 0;
+    };
+    const cv = (values: readonly number[]): number => {
+      const m = mean(values);
+      if (values.length < 2 || m === 0) return 0;
+      const sd = Math.sqrt(values.reduce((s, v) => s + (v - m) ** 2, 0) / values.length);
+      return sd / m;
+    };
+    console.log(lines.join('\n'));
+    lines.length = 0;
+    lines.push(
+      'SPREAD by place (dodging bot): seconds p10/p50/p90 (cv) | won | DPS p10/p50/p90 (cv)',
+    );
+    for (const n of [0, 1, 2, 3]) {
+      const met = dodging.map((r) => r.bosses[n]).filter((b): b is BossLog => b !== undefined);
+      const won = met.filter(done);
+      const secs = won.map(seconds);
+      // The power of the team when it came: the health it took per second, over the fights won.
+      const dpsOf = won.map((b) => b.dealt / Math.max(1, seconds(b)));
+      lines.push(
+        `  ${n === 3 ? 'final' : `boss ${n + 1}`}: ${[0.1, 0.5, 0.9].map((q) => quantile(secs, q).toFixed(0)).join('/')} s (${cv(secs).toFixed(2)})` +
+          ` | ${pct(won.length, met.length)} of ${met.length}` +
+          ` | ${[0.1, 0.5, 0.9].map((q) => quantile(dpsOf, q).toFixed(1)).join('/')} (${cv(dpsOf).toFixed(2)})`,
+      );
+    }
+    for (const starter of STARTERS) {
+      const runs = dodging.filter((r) => r.starter === starter);
+      const med = [0, 1, 2, 3].map((n) => {
+        const secs = runs
+          .map((r) => r.bosses[n])
+          .filter((b): b is BossLog => b !== undefined && done(b))
+          .map(seconds);
+        return secs.length === 0 ? '-' : median(secs).toFixed(0);
+      });
+      lines.push(
+        `  ${starter}: win ${pct(runs.filter((r) => r.won).length, runs.length)}, median seconds ${med.join(' / ')}, deaths ${[0, 1, 2, 3].map((n) => pct(runs.filter((r) => r.bosses[n]?.diedHere === true).length, runs.length)).join(' / ')}`,
+      );
+    }
     console.log(lines.join('\n'));
   }, 3_600_000);
 });

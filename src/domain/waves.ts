@@ -171,7 +171,8 @@ function placeBoss(
   }
   // The health stat of a boss counts between 60 and 110 (4H-B2): the champion of a biome is the
   // strongest line of its types, and a stat of 255 (Blissey) or 1 (Shedinja) must not decide the fight.
-  const bossHpStat = Math.max(60, Math.min(110, species.baseStats.hp));
+  // 4W: one health stat for every boss (its place sets its health, not its species).
+  const bossHpStat = config.enemy.bossHpStat ?? Math.max(60, Math.min(110, species.baseStats.hp));
   const hp = bossHpStat * config.enemy.hpScale * shape.hpScale;
   const boss: Enemy = {
     id: run.nextEnemyId,

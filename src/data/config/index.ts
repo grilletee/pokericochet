@@ -414,6 +414,11 @@ export const baseConfig: Omit<
   enemy: {
     radius: 16,
     threat: 1,
+    // 4W (block 2, 18th playtest: "el primero duró ~2 s; el tercero, imposible"): every boss counts
+    // with the same health stat (the middle of the old 60-110 range), so its health is fixed by its
+    // place; and one move takes at most 12 % of a boss's health per cast, so a burst never decides it.
+    bossHpStat: 85,
+    bossMoveCap: 0.12,
     // A leak hurts more with the form of the enemy: 1, 3, 5 (ADR-032).
     threatPerTier: 2,
     lanes: 7,
@@ -555,7 +560,9 @@ export const baseConfig: Omit<
       after: 6,
       byType: { fire: 'typhlosion', water: 'kingdra', grass: 'tangrowth', electric: 'luxray' },
       // 4G-H: ~200 health per second of the bot's team here: 35 s with 64, target ~95 s.
-      hpScale: 135, // 4G-H: 64 -> 135 (174 gave 81 s); 4G-E: 56 -> 64; 4G-D: 24 -> 56 (B3); 16 in the 4G-B
+      // 4W: 135 -> 115 (18th playtest: "el tercero suele ser muy difícil por su enorme vida"; the bot's
+      // median went from 59 s to ~50 s, close to the second, so it is hard by its attacks, not a wall).
+      hpScale: 115, // 4G-H: 64 -> 135 (174 gave 81 s); 4G-E: 56 -> 64; 4G-D: 24 -> 56 (B3); 16 in the 4G-B
       speed: 0.08,
       radius: 58,
       summonIntervalTicks: 900,

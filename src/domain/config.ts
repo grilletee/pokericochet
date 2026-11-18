@@ -412,6 +412,16 @@ export interface GameConfig {
   readonly enemy: {
     readonly radius: number;
     readonly threat: number;
+    /**
+     * 4W (block 2): the health stat every boss counts with, whatever its species, so the health of a
+     * boss is fixed by its place in the run (its `hpScale`). Absent: the species' own, within 60-110.
+     */
+    readonly bossHpStat?: number;
+    /**
+     * 4W (block 2): the most of a boss's maximum health one move (an Ultimate too) may take in one
+     * cast. A burst never decides a boss; the team does. Absent: no limit.
+     */
+    readonly bossMoveCap?: number;
     /** Extra damage of a leak per evolution form above the first (ADR-032). */
     readonly threatPerTier: number;
     /** Enemies spawn in one of this many vertical lanes. */

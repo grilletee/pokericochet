@@ -108,8 +108,11 @@ describe('gaps found by the mutants of the 4H-B2 and the 4G-B', () => {
     ] as const) {
       const base = config.species.gyarados;
       if (base === undefined || config.boss === undefined) throw new Error('fixture');
+      // Without the common health stat of 4W, the species' own counts within 60-110.
+      const { bossHpStat: _fixed, ...enemy } = config.enemy;
       const cfg: GameConfig = {
         ...config,
+        enemy,
         boss: { ...config.boss, species: 'gyarados' },
         species: {
           ...config.species,

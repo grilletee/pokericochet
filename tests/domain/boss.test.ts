@@ -71,7 +71,8 @@ describe('boss: appearance', () => {
     expect(b.radius).toBe(40);
     expect(b.x).toBe(bossConfig.arena.width / 2);
     expect(b.speed).toBe(0.1);
-    const expectedHp = 95 * bossConfig.enemy.hpScale * 10;
+    // 4W: the health stat every boss counts with (95, the species' own, before).
+    const expectedHp = (bossConfig.enemy.bossHpStat ?? 95) * bossConfig.enemy.hpScale * 10;
     expect(b.hp).toBeCloseTo(expectedHp, 9);
     expect(run.boss.maxHp).toBeCloseTo(expectedHp, 9);
     expect(isBossAlive(run)).toBe(true);

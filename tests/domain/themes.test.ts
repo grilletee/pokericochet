@@ -326,7 +326,8 @@ describe('bosses between waves (ADR-028)', () => {
     expect(isBossAlive(run)).toBe(true);
     const boss = run.enemies.find((e) => e.id === run.boss.id);
     expect(boss?.species).toBe('rapidash'); // wave 1 theme is "pack", fire
-    expect(boss?.hp).toBeCloseTo(65 * ladder.enemy.hpScale * 3, 6);
+    // 4W: the health stat every boss counts with (65, Rapidash's own, before).
+    expect(boss?.hp).toBeCloseTo((ladder.enemy.bossHpStat ?? 65) * ladder.enemy.hpScale * 3, 6);
     expect(run.boss).toMatchObject({ next: 1, spawned: false, type: 'fire' });
     expect(run.wave.index).toBe(1); // not a wave early
   });

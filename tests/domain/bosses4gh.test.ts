@@ -61,7 +61,8 @@ describe('4G-H: the health of the bosses, fixed and measured in seconds of fight
     // The first as it was; the second and third clearly up (the team grows ~5x and ~10x).
     expect(mids[0]).toBe(7.5);
     expect((mids[1] ?? 0) / (mids[0] ?? 1)).toBeGreaterThan(5);
-    expect((mids[2] ?? 0) / (mids[1] ?? 1)).toBeGreaterThan(2.5);
+    // 4W: the third came down 135 -> 115 (2.9x -> 2.5x the second): hard by its attacks, not a wall.
+    expect((mids[2] ?? 0) / (mids[1] ?? 1)).toBeGreaterThanOrEqual(2.4);
     expect(gameConfig.boss?.hpScale ?? 0).toBeGreaterThan(mids[2] ?? 0);
     expect(gameConfig.boss?.hpScale).toBe(200);
   });

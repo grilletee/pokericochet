@@ -139,7 +139,11 @@ describe('stat mapping', () => {
     // Block 2 (more enemies shoot) brought them a little down again: 52 / 150 / 260 -> 46 / 135 / 230.
     // 4G-I: 230 -> 200 (the final holds its arena and has a legendary move now).
     expect(baseConfig.boss?.hpScale).toBe(200);
-    expect((baseConfig.interludes ?? []).map((b) => b.hpScale)).toEqual([7.5, 46, 135]);
+    // 4W: 135 -> 115 for the third (18th playtest: "por su enorme vida"); every boss counts with the
+    // same health stat (85) and one move takes at most 12 % of a boss per cast.
+    expect((baseConfig.interludes ?? []).map((b) => b.hpScale)).toEqual([7.5, 46, 115]);
+    expect(baseConfig.enemy.bossHpStat).toBe(85);
+    expect(baseConfig.enemy.bossMoveCap).toBe(0.12);
   });
 
   it('gives every type an effect at each of the three stages, and the first stage is the old one', () => {
