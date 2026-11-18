@@ -44,7 +44,8 @@ try {
     await page.keyboard.up(key);
   };
 
-  check('canvas is on the page', (await page.locator('canvas').count()) === 1);
+  // 4W: the game's canvas is marked (the numbers and icons of the interface are canvases too).
+  check('canvas is on the page', (await page.locator('canvas[data-game-canvas]').count()) === 1);
   const s0 = await state();
   await hold('ArrowRight', 700);
   const s1 = await state();
@@ -57,7 +58,7 @@ try {
   const s2 = await state();
   check('A moves the player left', s2.playerX < s1.playerX - 20, `${s1.playerX} -> ${s2.playerX}`);
 
-  const box = await page.locator('canvas').boundingBox();
+  const box = await page.locator('canvas[data-game-canvas]').boundingBox();
   // A press on the floor strip (below the defence line) steers; anywhere above it aims (ADR-021).
   await page.mouse.move(box.x + box.width * 0.9, box.y + box.height * 0.94);
   await page.mouse.down();
@@ -363,7 +364,13 @@ try {
     (await moment.isVisible()) && momentText.includes('Charmander'),
     momentText,
   );
-  check('it draws both forms', (await moment.locator('img').count()) === 2);
+  // 4W: both forms take turns as silhouettes, then the new one shows in colour (three pictures).
+  const forms = await moment.locator('img').evaluateAll((imgs) => imgs.map((i) => i.alt));
+  check(
+    'it draws both forms',
+    forms.includes('Charmander') && forms.includes('Charmeleon'),
+    forms.join(','),
+  );
   await evo.waitForFunction(
     () => document.querySelector('[data-evolution-moment]')?.textContent?.includes('Charmeleon'),
     undefined,

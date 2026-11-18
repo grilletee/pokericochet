@@ -99,7 +99,7 @@ const mobile = await browser.newContext({
     '?debug&seed=21&starter=charmander&wave=3&loadout=charmander,squirtle,bulbasaur,pikachu&ballLevel=2',
   );
   await play.waitForFunction(() => typeof window.__debug === 'function');
-  const canvas = await play.locator('canvas').boundingBox();
+  const canvas = await play.locator('canvas[data-game-canvas]').boundingBox();
   const scale = Math.min(canvas.width / 480, canvas.height / 720);
   report.mobile.arenaScale = Number(scale.toFixed(3));
   // Art sizes in CSS pixels: ball art = 2 * 6 * 2.4 arena px, enemy art = 2 * 16 * 1.7.
@@ -155,7 +155,7 @@ const desktop = await browser.newContext({ viewport: { width: 1280, height: 800 
   );
   await page.waitForFunction(() => typeof window.__debug === 'function');
   await page.mouse.click(640, 400); // a gesture, so the audio context may start
-  const canvas = await page.locator('canvas').boundingBox();
+  const canvas = await page.locator('canvas[data-game-canvas]').boundingBox();
   const start = Date.now();
   for (let i = 0; i < 60; i++) {
     await page.mouse.move(canvas.x + canvas.width * (0.5 + 0.3 * Math.sin(i / 4)), 700);

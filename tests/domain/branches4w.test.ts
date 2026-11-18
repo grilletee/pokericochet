@@ -177,6 +177,14 @@ describe('a Pokémon of the team takes its branch once, where it evolves', () =>
     expect(moveIdOf(c, 'eevee', 2, member.branch)).toBe('water-gun');
   });
 
+  it('a branch without moves of its own attacks with the type of its form, not of its base', () => {
+    const c = branchConfig();
+    // Glaceon has no list: the move of its line (water) is not one of its types, so ice, not normal.
+    expect(attackTypeOf(c, 'eevee', 2, 'normal', 'glaceon')).toBe('ice');
+    // Without a branch, the fallback stays the base's.
+    expect(attackTypeOf(c, 'eevee', 1, 'normal')).toBe('normal');
+  });
+
   it('you capture what you beat: a Vaporeon caught in a volcano joins as Vaporeon', () => {
     const c = branchConfig();
     const run = runAt('volcano');

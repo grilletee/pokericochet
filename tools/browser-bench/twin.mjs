@@ -78,7 +78,7 @@ try {
   // The side panels: the HUD and the team bar are outside the field.
   const boxes = await page.evaluate(() => {
     const rect = (sel) => document.querySelector(sel)?.getBoundingClientRect() ?? null;
-    const canvas = document.querySelector('canvas')?.getBoundingClientRect();
+    const canvas = document.querySelector('canvas[data-game-canvas]')?.getBoundingClientRect();
     return {
       hud: rect('[data-hud]'),
       team: rect('[data-team-bar]'),

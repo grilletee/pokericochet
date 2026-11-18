@@ -589,6 +589,8 @@ export class Renderer {
       autoDensity: true,
       autoStart: false, // we drive rendering from our own loop
     });
+    // 4W: marked, since the interface draws its numbers and icons on small canvases of its own.
+    app.canvas.dataset.gameCanvas = '';
     host.appendChild(app.canvas);
     // Pixel dot and pixel ring (4G-D): every small effect, the aim guide and the markers are drawn
     // with them, so nothing in the game is a smooth circle.
