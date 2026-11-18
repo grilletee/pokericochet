@@ -130,7 +130,7 @@
 | slowpoke | 3 | slowbro | hydro-pump | Hidrobomba | 110 | default |
 | slowpoke-galar | 1 | slowpoke-galar | confusion | Confusión | 50 | auto |
 | slowpoke-galar | 2 | slowbro-galar | psychic | Psíquico | 90 | auto |
-| slowpoke-galar | 3 | slowbro-galar | future-sight | Premonición | 120 | auto |
+| slowpoke-galar | 3 | slowbro-galar | future-sight | Premonición | 120 | default |
 | magnemite | 1 | magnemite | magnet-bomb | Bomba Imán | 60 | auto |
 | magnemite | 2 | magneton | thunderbolt | Rayo | 90 | auto |
 | magnemite | 3 | magnezone | zap-cannon | Electrocañón | 120 | auto |

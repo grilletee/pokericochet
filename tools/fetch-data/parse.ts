@@ -83,16 +83,57 @@ function fail(name: string, what: string): never {
   throw new Error(`PokéAPI response for "${name}": ${what}`);
 }
 
-function readLearnset(raw: unknown): Learn[] {
-  if (!Array.isArray(raw)) return [];
+/**
+ * Which games' level-up moves count (4W-fix, ADR-059). PokéAPI grows: when a new game appears, the
+ * responses gain a version group, and a response cached before that day and one downloaded after it
+ * would give different learnsets. Counting only the groups listed in `use` makes the learnset the
+ * same whatever the day of the download; a group in neither list stops the tool, so a new game is
+ * always a decision and never a silent change.
+ */
+export interface VersionGroups {
+  readonly use: readonly string[];
+  readonly ignore: readonly string[];
+}
+
+/** Checks that the two lists are not empty where it matters, hold no repeats and do not overlap. */
+export function validateVersionGroups(groups: VersionGroups): void {
+  if (groups.use.length === 0) throw new Error('versionGroups.use is empty');
+  const seen = new Set<string>();
+  for (const group of [...groups.use, ...groups.ignore]) {
+    if (seen.has(group)) throw new Error(`version group "${group}" is listed twice`);
+    seen.add(group);
+  }
+}
+
+function readLearnset(name: string, raw: unknown, groups: VersionGroups): Learn[] {
+  if (!Array.isArray(raw)) return fail(name, 'missing moves');
   const lowest = new Map<string, number>();
-  for (const entry of raw.filter(isRecord)) {
-    const move = isRecord(entry.move) ? entry.move.name : undefined;
-    if (typeof move !== 'string' || !Array.isArray(entry.version_group_details)) continue;
-    for (const detail of entry.version_group_details.filter(isRecord)) {
-      const method = isRecord(detail.move_learn_method) ? detail.move_learn_method.name : undefined;
-      const level = detail.level_learned_at;
-      if (method !== 'level-up' || typeof level !== 'number') continue;
+  for (const entry of raw) {
+    const move = isRecord(entry) && isRecord(entry.move) ? entry.move.name : undefined;
+    if (typeof move !== 'string') return fail(name, 'a move without a name');
+    const details = isRecord(entry) ? entry.version_group_details : undefined;
+    if (!Array.isArray(details)) return fail(name, `move "${move}" has no version_group_details`);
+    for (const detail of details) {
+      const group =
+        isRecord(detail) && isRecord(detail.version_group) ? detail.version_group.name : undefined;
+      const method =
+        isRecord(detail) && isRecord(detail.move_learn_method)
+          ? detail.move_learn_method.name
+          : undefined;
+      const level = isRecord(detail) ? detail.level_learned_at : undefined;
+      if (typeof group !== 'string' || typeof method !== 'string' || typeof level !== 'number') {
+        return fail(name, `move "${move}" has a detail without version group, method or level`);
+      }
+      if (groups.ignore.includes(group)) continue;
+      if (!groups.use.includes(group)) {
+        return fail(
+          name,
+          `version group "${group}" (move "${move}") is neither used nor ignored: PokéAPI has a ` +
+            'new game. Add it to versionGroups.use or versionGroups.ignore in ' +
+            'tools/fetch-data/moves-overrides.json (see the README before choosing "use")',
+        );
+      }
+      if (method !== 'level-up') continue;
       const known = lowest.get(move);
       if (known === undefined || level < known) lowest.set(move, level);
     }
@@ -104,9 +145,10 @@ function readLearnset(raw: unknown): Learn[] {
 
 /**
  * Reads what the game needs out of a PokéAPI `/pokemon/{name}` response: its one or two types in
- * slot order (each must be one of the 18 the game has), the six base stats and the level-up moves.
+ * slot order (each must be one of the 18 the game has), the six base stats and the level-up moves
+ * of the games in `groups.use`.
  */
-export function parsePokemon(name: string, raw: unknown): ParsedPokemon {
+export function parsePokemon(name: string, raw: unknown, groups: VersionGroups): ParsedPokemon {
   if (!isRecord(raw)) return fail(name, 'not an object');
   const { id, types, stats, sprites } = raw;
   if (typeof id !== 'number') return fail(name, 'missing id');
@@ -153,7 +195,7 @@ export function parsePokemon(name: string, raw: unknown): ParsedPokemon {
         speed: stat('speed'),
       },
     },
-    learnset: readLearnset(raw.moves),
+    learnset: readLearnset(name, raw.moves, groups),
     spriteUrl,
   };
 }
@@ -212,7 +254,10 @@ export function parseMove(id: string, raw: unknown): MoveInfo {
     throw new Error(`PokéAPI response for move "${id}": missing damage_class`);
   }
   const power = typeof raw.power === 'number' ? raw.power : null;
-  return { id, name: parseName(id, raw).name, type, power, damageClass };
+  const name = parseName(id, raw);
+  // 4W-fix: the game shows the Spanish name (ADR-036); an English stand-in would be a silent hole.
+  if (name.fallback) throw new Error(`PokéAPI response for move "${id}": no Spanish name`);
+  return { id, name: name.name, type, power, damageClass };
 }
 
 /** Every species id the roster mentions, once, in a stable order. */
@@ -338,6 +383,8 @@ export interface MoveOverrides {
   readonly defaults: Readonly<Record<string, readonly [string, string, string]>>;
   /** Signature moves per base species; null keeps the automatic choice for that tier. */
   readonly signatures: Readonly<Record<string, readonly (string | null)[]>>;
+  /** The games whose level-up moves count, and the ones left out on purpose (ADR-059). */
+  readonly versionGroups: VersionGroups;
 }
 
 export interface ChosenMoves {
@@ -350,6 +397,8 @@ export interface ChosenMoves {
  * strongest damaging move of ANY of the species' types that the form of that stage learns by
  * level-up (ADR-047: a dual type brings coverage), inside the power band of the tier (ties: lower
  * id), and stronger than the move of the tier before; else the default move of its first type.
+ * The default is a rule, not a stand-in for missing data: a form without a learnset, or a move
+ * without its data, stops the tool (4W-fix).
  */
 export function chooseMoves(
   base: string,
@@ -377,11 +426,13 @@ export function chooseMoves(
     } else {
       const [low, high] = TIER_BANDS[tier] as readonly [number, number];
       let best: MoveInfo | undefined;
-      for (const { move } of learnsets[forms[tier] as string] ?? []) {
+      const form = forms[tier] as string;
+      const learnset = learnsets[form];
+      if (learnset === undefined) throw new Error(`no learnset for "${form}" (line of "${base}")`);
+      for (const { move } of learnset) {
         const info = infos[move];
-        if (info === undefined || !types.includes(info.type as GameType) || info.power === null) {
-          continue;
-        }
+        if (info === undefined) throw new Error(`no data for move "${move}" (learnt by "${form}")`);
+        if (!types.includes(info.type as GameType) || info.power === null) continue;
         if (info.power < low || info.power > high || info.power <= previousPower) continue;
         const better =
           best === undefined ||
@@ -395,9 +446,11 @@ export function chooseMoves(
       pick = fallback;
       source = 'default';
     }
+    const picked = infos[pick];
+    if (picked === undefined) throw new Error(`no data for move "${pick}" (chosen for "${base}")`);
     moves.push(pick);
     sources.push(source);
-    previousPower = infos[pick]?.power ?? previousPower;
+    previousPower = picked.power ?? previousPower;
   }
   return {
     moves: moves as unknown as ChosenMoves['moves'],
@@ -447,8 +500,10 @@ export function movesReport(
   for (const row of rows) {
     row.chosen.moves.forEach((move, index) => {
       const info = infos[move];
+      if (info === undefined)
+        throw new Error(`no data for move "${move}" (report of "${row.base}")`);
       lines.push(
-        `| ${row.base} | ${index + 1} | ${row.forms[index]} | ${move} | ${info?.name ?? '?'} | ${info?.power ?? '-'} | ${row.chosen.sources[index]} |`,
+        `| ${row.base} | ${index + 1} | ${row.forms[index]} | ${move} | ${info.name} | ${info.power ?? '-'} | ${row.chosen.sources[index]} |`,
       );
     });
   }

@@ -116,7 +116,8 @@ describe('regional lines', () => {
       sprites: { front_default: 'https://example.invalid/10103.png' },
       moves: [],
     };
-    expect(parsePokemon('vulpix-alola', raw).species.pokedexId).toBe(37);
+    const groups = { use: ['sun-moon'], ignore: [] };
+    expect(parsePokemon('vulpix-alola', raw, groups).species.pokedexId).toBe(37);
   });
 });
 

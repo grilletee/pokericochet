@@ -24,5 +24,36 @@
     "squirtle": ["water-gun", "surf", "hydro-pump"],
     "bulbasaur": ["vine-whip", "razor-leaf", "solar-beam"],
     "pikachu": ["thunder-shock", "thunderbolt", "thunder"]
+  },
+  "versionGroups": {
+    "use": [
+      "red-blue",
+      "yellow",
+      "red-green-japan",
+      "blue-japan",
+      "gold-silver",
+      "crystal",
+      "ruby-sapphire",
+      "emerald",
+      "firered-leafgreen",
+      "colosseum",
+      "xd",
+      "diamond-pearl",
+      "platinum",
+      "heartgold-soulsilver",
+      "black-white",
+      "black-2-white-2",
+      "x-y",
+      "omega-ruby-alpha-sapphire",
+      "sun-moon",
+      "ultra-sun-ultra-moon",
+      "lets-go-pikachu-lets-go-eevee",
+      "sword-shield",
+      "brilliant-diamond-shining-pearl",
+      "legends-arceus",
+      "scarlet-violet",
+      "champions"
+    ],
+    "ignore": ["legends-za"]
   }
 }

@@ -36,6 +36,7 @@ import {
   serialize,
   stageForms,
   validateRoster,
+  validateVersionGroups,
 } from './parse';
 import {
   baseStatTotal,
@@ -164,6 +165,10 @@ const overrides = JSON.parse(
   readFileSync(resolve(here, 'moves-overrides.json'), 'utf8'),
 ) as MoveOverrides;
 validateRoster(roster);
+if (overrides.versionGroups === undefined) {
+  throw new Error('moves-overrides.json has no "versionGroups" (the games whose moves count)');
+}
+validateVersionGroups(overrides.versionGroups);
 
 // Every species of the roster is fetched by the workers at once; the results keep the roster order,
 // so the files never depend on which response came first.
@@ -176,7 +181,7 @@ const loaded = await Promise.all(
       resolve(cacheDir, `${id}.json`),
     );
     const rawPokemon: unknown = JSON.parse(new TextDecoder().decode(data));
-    const parsed = parsePokemon(id, rawPokemon);
+    const parsed = parsePokemon(id, rawPokemon, overrides.versionGroups);
     const local = parseName(
       id,
       await getJson(`${API}/pokemon-species/${parsed.species.pokedexId}`, `species-${id}.json`),
@@ -210,15 +215,22 @@ for (const { id, parsed, local } of loaded) {
   species.push({ ...parsed.species, name: regionalName(id, local.name) });
   learnsets[id] = parsed.learnset;
 }
+// 4W-fix: a missing Spanish name stops the tool instead of putting the English one in the game.
 if (spanishMissing.length > 0) {
-  console.warn(`WARNING: no Spanish name for ${spanishMissing.join(', ')} (English used)`);
+  throw new Error(`no Spanish name in PokéAPI for ${spanishMissing.join(', ')}`);
 }
 
 // Moves: only the forms that can show up at some stage of a ball or enemy line matter.
 const bases = [...new Set([...roster.balls, ...roster.enemies])];
 const used: Record<string, readonly Learn[]> = {};
+/** The learnset of a form, which must have been read above: never an empty stand-in (4W-fix). */
+const learnsetOf = (form: string): readonly Learn[] => {
+  const learnset = learnsets[form];
+  if (learnset === undefined) throw new Error(`no PokéAPI data for "${form}" (not in the roster)`);
+  return learnset;
+};
 for (const base of bases) {
-  for (const form of stageForms(base, roster.lines[base])) used[form] = learnsets[form] ?? [];
+  for (const form of stageForms(base, roster.lines[base])) used[form] = learnsetOf(form);
 }
 /** 4W, block 7: the forms each branch shows at stages 1-3 (the line's before the split). */
 const branchForms = Object.entries(roster.branches ?? {}).flatMap(([base, set]) => {
@@ -232,16 +244,12 @@ const branchForms = Object.entries(roster.branches ?? {}).flatMap(([base, set]) 
     return { key: option[0] ?? base, forms };
   });
 });
-for (const { forms } of branchForms) for (const form of forms) used[form] = learnsets[form] ?? [];
-const infos: Record<string, MoveInfo> = {};
+for (const { forms } of branchForms) for (const form of forms) used[form] = learnsetOf(form);
 const moveIds = movesToFetch(used, overrides);
 const parsedMoves = await Promise.all(
   moveIds.map(async (id) => parseMove(id, await getJson(`${API}/move/${id}`, `move-${id}.json`))),
 );
-moveIds.forEach((id, i) => {
-  const parsed = parsedMoves[i];
-  if (parsed !== undefined) infos[id] = parsed;
-});
+const infos: Record<string, MoveInfo> = Object.fromEntries(parsedMoves.map((m) => [m.id, m]));
 
 // The 18x18 type chart (ADR-047): the raw values of PokéAPI, for the 4H-B2 to read.
 const typeResponses: Record<string, unknown> = {};

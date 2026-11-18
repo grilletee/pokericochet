@@ -17,8 +17,18 @@ import {
   rosterIds,
   serialize,
   stageForms,
+  type VersionGroups,
   validateRoster,
+  validateVersionGroups,
 } from '../../tools/fetch-data/parse';
+
+/** The games of the fixtures: two counted, one left out on purpose (ADR-059). */
+const GROUPS: VersionGroups = { use: ['red-blue', 'x-y'], ignore: ['legends-za'] };
+const detail = (level: number, method: string, group = 'red-blue') => ({
+  level_learned_at: level,
+  move_learn_method: { name: method },
+  version_group: { name: group },
+});
 
 /** The part of a PokéAPI /pokemon response the tool reads (hand-written fixture). */
 function apiResponse(overrides: Record<string, unknown> = {}): Record<string, unknown> {
@@ -37,21 +47,15 @@ function apiResponse(overrides: Record<string, unknown> = {}): Record<string, un
     moves: [
       {
         move: { name: 'scratch' },
-        version_group_details: [
-          { level_learned_at: 1, move_learn_method: { name: 'level-up' } },
-          { level_learned_at: 4, move_learn_method: { name: 'level-up' } },
-        ],
+        version_group_details: [detail(1, 'level-up'), detail(4, 'level-up', 'x-y')],
       },
       {
         move: { name: 'ember' },
-        version_group_details: [
-          { level_learned_at: 9, move_learn_method: { name: 'level-up' } },
-          { level_learned_at: 0, move_learn_method: { name: 'machine' } },
-        ],
+        version_group_details: [detail(9, 'level-up'), detail(0, 'machine')],
       },
       {
         move: { name: 'cut' },
-        version_group_details: [{ level_learned_at: 0, move_learn_method: { name: 'machine' } }],
+        version_group_details: [detail(0, 'machine')],
       },
     ],
     sprites: { front_default: 'https://example.test/4.png' },
@@ -61,7 +65,7 @@ function apiResponse(overrides: Record<string, unknown> = {}): Record<string, un
 
 describe('fetch-data: parsing a PokéAPI response', () => {
   it('reads the first type, the six stats, the level-up moves and the sprite URL', () => {
-    expect(parsePokemon('charmander', apiResponse())).toEqual({
+    expect(parsePokemon('charmander', apiResponse(), GROUPS)).toEqual({
       species: {
         id: 'charmander',
         pokedexId: 4,
@@ -87,11 +91,65 @@ describe('fetch-data: parsing a PokéAPI response', () => {
 
   it('sorts the learnset by move id whatever the order of the response', () => {
     const moves = [...(apiResponse().moves as unknown[])].reverse();
-    expect(parsePokemon('x', apiResponse({ moves })).learnset.map((l) => l.move)).toEqual([
+    expect(parsePokemon('x', apiResponse({ moves }), GROUPS).learnset.map((l) => l.move)).toEqual([
       'ember',
       'scratch',
     ]);
-    expect(parsePokemon('x', apiResponse({ moves: undefined })).learnset).toEqual([]);
+    expect(parsePokemon('x', apiResponse({ moves: [] }), GROUPS).learnset).toEqual([]);
+  });
+
+  // 4W-fix (ADR-059): the learnset must not depend on the day the response was downloaded.
+  it('counts only the games in use: a game left out on purpose changes nothing', () => {
+    const before = parsePokemon('x', apiResponse(), GROUPS).learnset;
+    const moves = [
+      ...(apiResponse().moves as unknown[]),
+      // What PokéAPI added later for a new game: a stronger move and a lower level.
+      {
+        move: { name: 'flare-blitz' },
+        version_group_details: [detail(1, 'level-up', 'legends-za')],
+      },
+      { move: { name: 'ember' }, version_group_details: [detail(1, 'level-up', 'legends-za')] },
+    ];
+    expect(parsePokemon('x', apiResponse({ moves }), GROUPS).learnset).toEqual(before);
+  });
+
+  it('stops on a game that is neither used nor ignored, naming the species, game and list', () => {
+    const moves = [
+      { move: { name: 'ember' }, version_group_details: [detail(9, 'level-up', 'new-game')] },
+    ];
+    expect(() => parsePokemon('leafeon', apiResponse({ moves }), GROUPS)).toThrow(
+      /"leafeon".*"new-game".*versionGroups\.use or versionGroups\.ignore/,
+    );
+  });
+
+  it('stops on moves that are missing or malformed instead of reading them as none', () => {
+    expect(() => parsePokemon('x', apiResponse({ moves: undefined }), GROUPS)).toThrow(
+      /"x": missing moves/,
+    );
+    expect(() => parsePokemon('x', apiResponse({ moves: [{ move: {} }] }), GROUPS)).toThrow(
+      /a move without a name/,
+    );
+    const noDetails = [{ move: { name: 'ember' } }];
+    expect(() => parsePokemon('x', apiResponse({ moves: noDetails }), GROUPS)).toThrow(
+      /"ember" has no version_group_details/,
+    );
+    const noGroup = [
+      {
+        move: { name: 'ember' },
+        version_group_details: [{ level_learned_at: 9, move_learn_method: { name: 'level-up' } }],
+      },
+    ];
+    expect(() => parsePokemon('x', apiResponse({ moves: noGroup }), GROUPS)).toThrow(
+      /"ember" has a detail without version group/,
+    );
+  });
+
+  it('checks the lists of games: one in use at least, no game twice', () => {
+    expect(() => validateVersionGroups(GROUPS)).not.toThrow();
+    expect(() => validateVersionGroups({ use: [], ignore: ['x-y'] })).toThrow(/use is empty/);
+    expect(() => validateVersionGroups({ use: ['x-y'], ignore: ['x-y'] })).toThrow(
+      /"x-y" is listed twice/,
+    );
   });
 
   it('uses the type in slot 1 even when the list is out of order', () => {
@@ -103,6 +161,7 @@ describe('fetch-data: parsing a PokéAPI response', () => {
           { slot: 1, type: { name: 'grass' } },
         ],
       }),
+      GROUPS,
     );
     expect(parsed.species.type).toBe('grass');
     expect(parsed.species.types).toEqual(['grass', 'poison']);
@@ -110,17 +169,17 @@ describe('fetch-data: parsing a PokéAPI response', () => {
 
   it('accepts all 18 types and refuses one the game does not have, naming the species', () => {
     const psychic = apiResponse({ types: [{ slot: 1, type: { name: 'psychic' } }] });
-    expect(parsePokemon('abra', psychic).species.types).toEqual(['psychic']);
+    expect(parsePokemon('abra', psychic, GROUPS).species.types).toEqual(['psychic']);
     const shadow = apiResponse({ types: [{ slot: 1, type: { name: 'shadow' } }] });
-    expect(() => parsePokemon('abra', shadow)).toThrow(/"abra".*"shadow"/);
+    expect(() => parsePokemon('abra', shadow, GROUPS)).toThrow(/"abra".*"shadow"/);
     const second = apiResponse({
       types: [
         { slot: 1, type: { name: 'fire' } },
         { slot: 2, type: { name: 'stellar' } },
       ],
     });
-    expect(() => parsePokemon('x', second)).toThrow(/"stellar"/);
-    expect(() => parsePokemon('x', apiResponse({ types: [] }))).toThrow(/no type/);
+    expect(() => parsePokemon('x', second, GROUPS)).toThrow(/"stellar"/);
+    expect(() => parsePokemon('x', apiResponse({ types: [] }), GROUPS)).toThrow(/no type/);
     const three = apiResponse({
       types: [
         { slot: 1, type: { name: 'fire' } },
@@ -128,19 +187,20 @@ describe('fetch-data: parsing a PokéAPI response', () => {
         { slot: 3, type: { name: 'grass' } },
       ],
     });
-    expect(parsePokemon('x', three).species.types).toEqual(['fire', 'water']); // at most two
+    expect(parsePokemon('x', three, GROUPS).species.types).toEqual(['fire', 'water']); // at most two
   });
 
   it('refuses malformed responses with a message that says what is missing', () => {
-    expect(() => parsePokemon('x', null)).toThrow(/not an object/);
-    expect(() => parsePokemon('x', apiResponse({ id: 'four' }))).toThrow(/missing id/);
-    expect(() => parsePokemon('x', apiResponse({ types: undefined }))).toThrow(/missing types/);
-    expect(() => parsePokemon('x', apiResponse({ stats: undefined }))).toThrow(/missing stats/);
-    expect(() => parsePokemon('x', apiResponse({ stats: [] }))).toThrow(/missing stat "hp"/);
-    expect(() =>
-      parsePokemon('x', apiResponse({ stats: [{ base_stat: 5, stat: { name: 'hp' } }] })),
-    ).toThrow(/missing stat "attack"/);
-    expect(() => parsePokemon('x', apiResponse({ sprites: { front_default: null } }))).toThrow(
+    const parse = (raw: unknown) => () => parsePokemon('x', raw, GROUPS);
+    expect(parse(null)).toThrow(/not an object/);
+    expect(parse(apiResponse({ id: 'four' }))).toThrow(/missing id/);
+    expect(parse(apiResponse({ types: undefined }))).toThrow(/missing types/);
+    expect(parse(apiResponse({ stats: undefined }))).toThrow(/missing stats/);
+    expect(parse(apiResponse({ stats: [] }))).toThrow(/missing stat "hp"/);
+    expect(parse(apiResponse({ stats: [{ base_stat: 5, stat: { name: 'hp' } }] }))).toThrow(
+      /missing stat "attack"/,
+    );
+    expect(parse(apiResponse({ sprites: { front_default: null } }))).toThrow(
       /no front_default sprite/,
     );
   });
@@ -253,6 +313,10 @@ describe('fetch-data: Spanish names and moves (ADR-036, ADR-039)', () => {
     expect(() => parseMove('x', null)).toThrow(/not an object/);
     expect(() => parseMove('x', { ...raw, type: undefined })).toThrow(/missing type/);
     expect(() => parseMove('x', { ...raw, damage_class: undefined })).toThrow(/damage_class/);
+    // 4W-fix: the English name is no stand-in for the Spanish one the game shows.
+    expect(() => parseMove('ember', { ...raw, ...names(['en', 'Ember']) })).toThrow(
+      /move "ember": no Spanish name/,
+    );
   });
 
   it('shows the forms of a line at stages 1, 2 and 3, repeating the last one (ADR-037)', () => {
@@ -279,6 +343,8 @@ describe('fetch-data: Spanish names and moves (ADR-036, ADR-039)', () => {
       info('overheat', 'fire', 130),
       info('growl', 'fire', null),
       info('surf', 'water', 90),
+      // The made-up default ladders below: the tool always downloads the defaults.
+      ...['w', 'g', 'e'].flatMap((t) => [40, 80, 110].map((p, i) => info(`${t}${i + 1}`, t, p))),
     ].map((m) => [m.id, m]),
   );
   const learn = (...ids: string[]): Learn[] => ids.map((move, level) => ({ move, level }));
@@ -290,6 +356,7 @@ describe('fetch-data: Spanish names and moves (ADR-036, ADR-039)', () => {
       electric: ['e1', 'e2', 'e3'],
     },
     signatures: { sig: ['ember', null, 'overheat'] },
+    versionGroups: GROUPS,
   };
 
   it('a dual type chooses among the moves of either of its types (ADR-047), the strongest in the band', () => {
@@ -411,17 +478,46 @@ describe('fetch-data: Spanish names and moves (ADR-036, ADR-039)', () => {
     expect(chosen.moves[1]).toBe('a-tie');
   });
 
-  it('falls back to the default move of the type when a band is empty or the form has none', () => {
+  it('falls back to the default move of the type when a band is empty or the form learns none', () => {
     const chosen = chooseMoves(
       'a',
       'fire',
       ['a', 'a1', 'a1'],
-      { a: learn('growl') },
+      { a: learn('growl'), a1: [] },
       infos,
       overrides,
     );
     expect(chosen.moves).toEqual(['ember', 'flamethrower', 'fire-blast']);
     expect(chosen.sources).toEqual(['default', 'default', 'default']);
+  });
+
+  // 4W-fix: "default" is a rule for complete data, never a stand-in for data that is missing.
+  it('stops when a form has no learnset or a move has no data, instead of using the default', () => {
+    expect(() =>
+      chooseMoves('a', 'fire', ['a', 'a1', 'a1'], { a: learn('growl') }, infos, overrides),
+    ).toThrow(/no learnset for "a1" \(line of "a"\)/);
+    expect(() =>
+      chooseMoves('a', 'fire', ['a', 'a', 'a'], { a: learn('leaf-storm') }, infos, overrides),
+    ).toThrow(/no data for move "leaf-storm" \(learnt by "a"\)/);
+    const unknownDefault: MoveOverrides = {
+      ...overrides,
+      defaults: { ...overrides.defaults, fire: ['ember', 'nowhere', 'fire-blast'] },
+    };
+    expect(() =>
+      chooseMoves('a', 'fire', ['a', 'a', 'a'], { a: [] }, infos, unknownDefault),
+    ).toThrow(/no data for move "nowhere" \(chosen for "a"\)/);
+    const text = () =>
+      movesReport(
+        [
+          {
+            base: 'a',
+            forms: ['a', 'a', 'a'],
+            chosen: { moves: ['x', 'x', 'x'], sources: ['auto', 'auto', 'auto'] },
+          },
+        ],
+        infos,
+      );
+    expect(text).toThrow(/no data for move "x" \(report of "a"\)/);
   });
 
   it('uses a signature where there is one and the automatic choice for a null', () => {
@@ -462,7 +558,7 @@ describe('fetch-data: Spanish names and moves (ADR-036, ADR-039)', () => {
   });
 
   it('writes the review table, one row per species and stage', () => {
-    const chosen = chooseMoves('sig', 'fire', ['sig', 'sig', 'sig'], {}, infos, overrides);
+    const chosen = chooseMoves('sig', 'fire', ['sig', 'sig', 'sig'], { sig: [] }, infos, overrides);
     const text = movesReport([{ base: 'sig', forms: ['sig', 'sig', 'sig'], chosen }], infos);
     expect(text).toContain('| sig | 1 | sig | ember | EMBER | 40 | signature |');
     expect(text.trimEnd().split('\n')).toHaveLength(4 + 3);

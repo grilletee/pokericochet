@@ -60,8 +60,28 @@ A warm run makes no request (5 s). The CI keys the cache by `roster.json`, `rost
 ## Hand-made inputs
 - `roster.rules.json`: the generations, the exclusions, the starters, the legendary bosses and the
   fallback boss.
-- `moves-overrides.json`: the default move ladder of each of the 18 types and the signature moves of
-  the starters.
+- `moves-overrides.json`: the default move ladder of each of the 18 types, the signature moves of
+  the starters and `versionGroups`, the games whose level-up moves count (ADR-059).
+
+## Same output whatever the day of the download (ADR-059)
+A cached response is never asked for again, but PokéAPI keeps growing: when a new game appears, its
+version group shows up in the responses downloaded from that day on. A cache that mixes old and new
+responses (every cache does: a new species is downloaded today, the rest came weeks ago) would then
+give a different learnset to two machines. That is what broke the CI after 4W: `legends-za` was in
+the responses the CI downloaded and not in the older ones of the local cache.
+
+So only the version groups in `versionGroups.use` count. One in `versionGroups.ignore` is skipped on
+purpose, and **any other one stops the tool** with the species and the game in the message: a new game
+is always a decision, never a silent change of the data.
+
+To make a new game count, move it to `use` **and** start from a cache without old `/pokemon/`
+responses, or the old responses would still lack it: delete `.cache/<species>.json` locally, and in
+the workflows bump `v2` to `v3` in the cache key **and** in the last restore key (today `fetch-data-`,
+which would bring the old cache back). Review `moves-report.md` afterwards: the moves will change.
+
+The tool stops, instead of filling a gap, when a form has no learnset, a move has no data, or a
+species or a move has no Spanish name. `default` in the report means "no move of the band", read
+from complete data; it never stands in for missing data.
 
 ## How a move is chosen (ADR-039, ADR-047)
 For each stage of a line, take the form shown at that stage. Among the damaging moves of ANY of the
