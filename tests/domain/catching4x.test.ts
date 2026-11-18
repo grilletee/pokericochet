@@ -121,6 +121,22 @@ describe('join encounters at a level-up (4X)', () => {
     expect(checked).toBeGreaterThan(40);
   });
 
+  it('a Pokémon the team already has never asks to join again', () => {
+    let checked = 0;
+    for (let seed = 1; seed <= 40; seed++) {
+      const run = createRun(gameConfig, seed, 'bulbasaur');
+      const first = joinCandidates(run, gameConfig, join).map((c) => c.species);
+      const taken = first[0];
+      if (taken === undefined) continue;
+      addMember(run, gameConfig, taken, 1);
+      checked += 1;
+      const after = joinCandidates(run, gameConfig, join).map((c) => c.species);
+      expect(after, `seed ${seed}`).not.toContain(taken);
+      for (const member of run.team) expect(after).not.toContain(member.species);
+    }
+    expect(checked).toBeGreaterThan(30);
+  });
+
   it('a wild Pokémon joins at the stage the enemies of the wave have', () => {
     const run = levelUpRun();
     run.wave.index = gameConfig.waves.length - 1;
@@ -290,6 +306,21 @@ describe('the capture of a boss (4X)', () => {
     state.ticks = bossRules.ringCycleTicks;
     expect(ringTightness(bossRules, state)).toBe(0);
     expect(catchRing(bossRules, state)).toBeCloseTo(40 * bossRules.ringMax, 6);
+  });
+
+  it('the chance never leaves [minChance, maxChance]: a perfect throw is never certain, a bad one never hopeless', () => {
+    const tightest = bossRules.ringCycleTicks - 1;
+    // A perfect fight on the narrowest ring would be over 1 without the bound.
+    expect(bossRules.ringHigh).toBeGreaterThan(1);
+    expect(catchChance(bossRules, { ticks: tightest, performance: 1 })).toBe(bossRules.maxChance);
+    expect(catchChance(bossRules, { ticks: 0, performance: 0 })).toBe(bossRules.minChance);
+    for (let t = 0; t < bossRules.ringCycleTicks; t += 5) {
+      for (const performance of [0, 0.01, 0.3, 0.5, 0.75, 1]) {
+        const chance = catchChance(bossRules, { ticks: t, performance });
+        expect(chance).toBeGreaterThanOrEqual(bossRules.minChance);
+        expect(chance).toBeLessThanOrEqual(bossRules.maxChance);
+      }
+    }
   });
 
   it('the sway stays within its width and starts at the centre', () => {

@@ -184,6 +184,8 @@ describe('the legendary keys (★6, decision 4X-2)', { timeout: 60_000 }, () => 
           longest = Math.max(longest, since);
         }
         expect(since).toBeLessThan(rules.legend.hardAt);
+        // The pity is the keys since the last legendary: a legendary starts it again.
+        expect(p.legend.pity).toBe(since);
       }
     }
     expect(longest).toBe(rules.legend.hardAt - 1);

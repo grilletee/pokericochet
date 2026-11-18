@@ -170,6 +170,43 @@ describe('the banners', () => {
     const next = legendBanner(catalog, input, today + BANNER_ROTATION.periodDays);
     expect(next?.featured).not.toBe(legend?.featured);
   });
+
+  it('the showcase features only ★4, whatever its hand-picked list holds', () => {
+    // A list with fan favourites of ★3 among them: those are never its featured ★4.
+    const threes = catalog.filter((e) => e.stars === 3).map((e) => e.species);
+    const mixed = { ...input, showcase: [...threes.slice(0, 12), ...SHOWCASE_LINES] };
+    let weeks = 0;
+    for (let w = 0; w < 40; w++) {
+      const showcase = activeBanners(catalog, mixed, today + w * BANNER_ROTATION.periodDays).find(
+        (b) => b.kind === 'showcase',
+      );
+      if (showcase === undefined) throw new Error('the showcase is always open');
+      weeks += 1;
+      for (const s of showcase.featured4) expect(starsOf.get(s), `week ${w}: ${s}`).toBe(4);
+    }
+    expect(weeks).toBe(40);
+  });
+
+  it("the showcase's own share of featured ★4 is the one that counts, not the general one", () => {
+    const showcase = banners.find((b) => b.kind === 'showcase');
+    if (showcase === undefined) throw new Error('the showcase is open');
+    expect(showcase.featured4Share).not.toBe(rules.featured4Share);
+    // At the two ends the share decides every ★4 alone: always featured, never featured.
+    const BP = 10_000;
+    for (const [share, expected] of [
+      [BP, true],
+      [0, false],
+    ] as const) {
+      let fours = 0;
+      drawMany(rich(11), { ...showcase, featured4Share: share }, 300, (pull) => {
+        if (pull.stars !== 4) return;
+        fours += 1;
+        expect(showcase.featured4.includes(pull.species)).toBe(expected);
+        expect(pull.featured).toBe(expected);
+      });
+      expect(fours).toBeGreaterThan(20);
+    }
+  });
 });
 
 // Thousands of draws per test: slow under the parallel suite (4X: they timed out at 5 s).
