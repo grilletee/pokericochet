@@ -20,17 +20,19 @@ export function loadProfile(
   store: KeyValueStore | null,
   known: (species: string) => boolean,
   gachaSeed: number,
+  /** 4X: the classic starters every profile owns. */
+  starters: readonly string[] = [],
 ): LoadedProfile {
+  const fresh = (): Profile => emptyProfile(gachaSeed, starters.filter(known));
   try {
     const raw = store?.getItem(PROFILE_KEY);
-    if (raw === null || raw === undefined)
-      return { profile: emptyProfile(gachaSeed), writable: true };
-    const migrated = migrateProfile(JSON.parse(raw), known, gachaSeed);
+    if (raw === null || raw === undefined) return { profile: fresh(), writable: true };
+    const migrated = migrateProfile(JSON.parse(raw), known, gachaSeed, starters);
     return migrated === null
-      ? { profile: emptyProfile(gachaSeed), writable: false }
+      ? { profile: fresh(), writable: false }
       : { profile: migrated, writable: true };
   } catch {
-    return { profile: emptyProfile(gachaSeed), writable: true };
+    return { profile: fresh(), writable: true };
   }
 }
 
@@ -61,6 +63,7 @@ export function pickProfileFile(
   known: (species: string) => boolean,
   gachaSeed: number,
   done: (result: { readonly profile: Profile } | { readonly error: string }) => void,
+  starters: readonly string[] = [],
 ): void {
   const input = document.createElement('input');
   input.type = 'file';
@@ -68,7 +71,7 @@ export function pickProfileFile(
   input.addEventListener('change', () => {
     const file = input.files?.[0];
     if (file === undefined) return;
-    void file.text().then((text) => done(importProfile(text, known, gachaSeed)));
+    void file.text().then((text) => done(importProfile(text, known, gachaSeed, starters)));
   });
   input.click();
 }

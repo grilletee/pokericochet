@@ -7,7 +7,7 @@ import {
   playerSpeedMult,
 } from './bossFight';
 import { applyCard, drawOffers } from './cards';
-import { advanceCatch, isJoinEncounter } from './catching';
+import { advanceCatch, isJoinEncounter, openPendingCards } from './catching';
 import { ballSpeed, damagePlayer, effectivenessOn, hitDamage, leakDamage } from './combat';
 import type { GameConfig } from './config';
 import {
@@ -180,6 +180,7 @@ function resolveLevelUp(run: Run, cmd: Command, config: GameConfig): void {
   if (action === undefined || action.type !== 'pick') return;
   // 4X: the wild Pokémon of a join encounter can be let go; the usual cards of the level come instead.
   if (action.index === SKIP_JOIN && isJoinEncounter(run)) {
+    run.pendingCards = false;
     run.offers = drawOffers(run, config);
     run.events.push({ type: 'joinSkip' });
     return;
@@ -190,6 +191,8 @@ function resolveLevelUp(run: Run, cmd: Command, config: GameConfig): void {
   run.phase = 'playing';
   applyCard(run, config, card); // a join with the team full opens the replace screen
   run.events.push({ type: 'pick', card });
+  // 4X: after a join encounter, the cards of the same level-up.
+  if (openPendingCards(run, config)) return;
   if (run.phase === 'playing') checkLevelUp(run, config); // enough xp for another level at once
 }
 
@@ -198,6 +201,8 @@ function resolveCapture(run: Run, cmd: Command, config: GameConfig): void {
   const action = cmd.action;
   if (action === undefined || action.type === 'pick') return;
   resolveReplace(run, config, action);
+  // 4X: a join encounter that opened the replace screen still owes the cards of its level-up.
+  if (run.phase === 'playing') openPendingCards(run, config);
 }
 
 /** Victory: the boss is dead, or, in a run without boss, the last wave is gone and nothing lives. */

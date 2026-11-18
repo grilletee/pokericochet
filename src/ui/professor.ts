@@ -78,10 +78,10 @@ export function drawProfessor(scale: number): HTMLCanvasElement {
  */
 export const FIRST_TIME_PAGES: readonly string[] = [
   '¡Hola! Soy la doctora Ámbar y estudio cómo rebotan los Pokémon.',
-  'Antes de nada vas a elegir tu primer Pokémon. Será tuyo para siempre: es el comienzo de tu colección.',
-  'En cada partida juegas con uno de los Pokémon de tu colección. Lanzas bolas, capturas compañeros para esa partida y te enfrentas a jefes.',
-  '¿Cómo consigues más Pokémon para tu colección? De dos formas. Una: si derrotas al menos a un jefe, al acabar la partida puedes registrar uno de los que hayas capturado.',
-  'Dos: las monedas que ganas jugando sirven para tirar en el Gacha, y cada tirada te da un Pokémon. Si te sale uno repetido, ganas caramelos.',
-  'Los caramelos suben el nivel permanente de tus Pokémon, y con más nivel empiezan las partidas más fuertes. También se ganan jugando: en cada partida y por cada jefe, para el Pokémon que llevas.',
-  'Elige con calma: hay uno de cada región. ¡Buena suerte!',
+  'Te regalo cuatro Pokémon: Bulbasaur, Charmander, Squirtle y Pikachu. Son tuyos para siempre: el comienzo de tu colección.',
+  'En cada partida juegas con uno de tu colección. Todos los Pokémon de tu equipo atacan a la vez: cada uno lanza sus propias bolas.',
+  'Durante la partida, al subir de nivel a veces un Pokémon salvaje querrá unirse, y a los jefes debilitados puedes capturarlos lanzando tu esfera dentro del anillo. Pero solo se quedan esa partida.',
+  'Para tenerlos para siempre, el Gacha: las monedas que ganas jugando te dan tiradas, y cada semana hay un pseudolegendario, un inicial y Pokémon con estilo destacados. Los legendarios solo se abren con llaves.',
+  'Los caramelos suben el nivel permanente de tus Pokémon, y con más nivel empiezan las partidas más fuertes. Se ganan jugando y con los repetidos del Gacha.',
+  'Elige con quién empiezas. ¡Buena suerte!',
 ];

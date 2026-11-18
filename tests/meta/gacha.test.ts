@@ -1,14 +1,18 @@
 import { describe, expect, it } from 'vitest';
 import {
+  BANNER_NAMES,
   BANNER_ROTATION,
   FIVE_STAR_LINES,
   GACHA_RULES,
   type GachaRules,
   gameConfig,
   generationOf,
+  LEGENDARY_SPECIES,
   POKEDEX_IDS,
-  REGIONS,
-  TYPE_BANNER_NAMES,
+  PSEUDO_LINES,
+  SHOWCASE_LINES,
+  STARTER_LINES,
+  STARTER_SPECIES,
 } from '../../src/data';
 import { createRun, hashRun, type RunSummary, summarizeRun } from '../../src/domain';
 import {
@@ -27,6 +31,7 @@ import {
   fiveChance,
   gachaPool,
   KILLS_PER_COIN,
+  legendBanner,
   type Profile,
   pityView,
   rateTable,
@@ -42,10 +47,19 @@ const catalog = buildCatalog(gameConfig, {
   genOf: generationOf,
 });
 const starsOf = new Map(catalog.map((e) => [e.species, e.stars]));
-const input = { regions: REGIONS, typeNames: TYPE_BANNER_NAMES, rotation: BANNER_ROTATION };
+const input = {
+  rotation: BANNER_ROTATION,
+  names: BANNER_NAMES,
+  pseudo: PSEUDO_LINES,
+  starters: STARTER_LINES.filter((id) => !STARTER_SPECIES.includes(id)),
+  showcase: SHOWCASE_LINES,
+  legends: LEGENDARY_SPECIES,
+  showcaseShare: GACHA_RULES.showcase4Share,
+};
 const today = BANNER_ROTATION.epochDay + 3;
 const banners = activeBanners(catalog, input, today);
 const standard = banners[0] as Banner;
+/** The weekly banners with a featured ★5: the pseudo-legendary and the starter of the week. */
 const limited = banners.filter((b) => b.featured5.length > 0);
 
 const rich = (seed: number, coins = 1e9): Profile => ({ ...emptyProfile(seed), coins });
@@ -94,48 +108,72 @@ describe('the banners', () => {
     expect(all).toEqual(catalog.map((e) => e.species).sort());
   });
 
-  it('a region and two types at once, each with one featured ★5 and 1-2 ★4 of its theme', () => {
-    expect(limited.map((b) => b.kind)).toEqual(['region', 'type', 'type']);
-    for (const b of limited) {
+  it('4X: a pseudo-legendary, a starter and two "con estilo" a week, each of its family', () => {
+    expect(banners.map((b) => b.kind)).toEqual(['standard', 'pseudo', 'starter', 'showcase']);
+    const [, pseudo, starter, showcase] = banners as [Banner, Banner, Banner, Banner];
+    expect(PSEUDO_LINES).toContain(pseudo.featured5[0]);
+    expect(STARTER_LINES).toContain(starter.featured5[0]);
+    // The four classics are everyone's: never the starter of the week.
+    expect(STARTER_SPECIES).not.toContain(starter.featured5[0]);
+    for (const b of [pseudo, starter]) {
+      expect(b.family).toBe(b.kind);
       expect(b.featured5).toHaveLength(1);
-      expect(b.featured4.length).toBeGreaterThanOrEqual(1);
-      expect(b.featured4.length + b.featured5.length).toBeLessThanOrEqual(3);
-      for (const s of b.featured5) expect(starsOf.get(s)).toBe(5);
+      expect(starsOf.get(b.featured5[0] ?? '')).toBe(5);
+      expect(b.featured4).toHaveLength(BANNER_ROTATION.featured4);
       for (const s of b.featured4) expect(starsOf.get(s)).toBe(4);
-      const theme = catalog.filter((e) =>
-        b.kind === 'region' ? e.gen === b.gen : e.types.includes(b.type ?? 'normal'),
-      );
-      for (const s of [...b.featured5, ...b.featured4]) {
-        expect(theme.map((e) => e.species)).toContain(s);
-      }
       expect(b.pool[5]).not.toContain(b.featured5[0]);
       expect(b.endsInDays).toBeGreaterThan(0);
       expect(b.endsInDays).toBeLessThanOrEqual(BANNER_ROTATION.periodDays);
     }
-    expect(new Set(limited.map((b) => b.key)).size).toBe(3);
+    // The showcase: two hand-picked lines of ★4, featured more often than the usual ★4.
+    expect(showcase.featured5).toEqual([]);
+    expect(showcase.featured4).toHaveLength(BANNER_ROTATION.showcase);
+    for (const s of showcase.featured4) {
+      expect(SHOWCASE_LINES).toContain(s);
+      expect(starsOf.get(s)).toBe(4);
+    }
+    expect(showcase.featured4Share).toBe(GACHA_RULES.showcase4Share);
   });
 
-  it('rotate: the same day gives the same banners; over the weeks every region comes', () => {
+  it('rotate by the week of the real date: the same week, the same banners; every pseudo comes', () => {
     expect(activeBanners(catalog, input, today)).toEqual(banners);
-    const seen = new Set<number>();
-    const featured = new Set<string>();
+    const pseudos = new Set<string>();
+    const starters = new Set<string>();
     for (let week = 0; week < 40; week++) {
       const day = BANNER_ROTATION.epochDay + week * BANNER_ROTATION.periodDays;
       const open = activeBanners(catalog, input, day);
-      for (const b of open) if (b.gen !== undefined) seen.add(b.gen);
-      for (const b of open) for (const s of b.featured5) featured.add(s);
-      // Within one period the banners do not change.
+      for (const b of open) {
+        if (b.kind === 'pseudo') pseudos.add(b.featured5[0] ?? '');
+        if (b.kind === 'starter') starters.add(b.featured5[0] ?? '');
+      }
+      // Within one week the banners do not change (only the days left do).
       expect(activeBanners(catalog, input, day + BANNER_ROTATION.periodDays - 1)).toEqual(
         open.map((b) => ({ ...b, endsInDays: b.endsInDays === null ? null : 1 })),
       );
+      // And the next week brings another pseudo-legendary.
+      const next = activeBanners(catalog, input, day + BANNER_ROTATION.periodDays);
+      expect(next[1]?.featured5).not.toEqual(open[1]?.featured5);
     }
-    const regions = new Set(catalog.map((e) => e.gen));
-    expect(seen.size).toBe(regions.size);
-    expect(featured.size).toBeGreaterThan(8);
+    expect(pseudos.size).toBe(PSEUDO_LINES.filter((id) => starsOf.get(id) === 5).length);
+    expect(starters.size).toBeGreaterThan(20);
+  });
+
+  it('the legendary banner: one legendary a week, never in the coin banners', () => {
+    const legend = legendBanner(catalog, input, today);
+    expect(legend).not.toBeNull();
+    expect(LEGENDARY_SPECIES).toContain(legend?.featured);
+    for (const b of banners) {
+      for (const list of [b.featured5, b.featured4, b.pool[3], b.pool[4], b.pool[5]]) {
+        for (const s of list) expect(LEGENDARY_SPECIES).not.toContain(s);
+      }
+    }
+    const next = legendBanner(catalog, input, today + BANNER_ROTATION.periodDays);
+    expect(next?.featured).not.toBe(legend?.featured);
   });
 });
 
-describe('the guarantees (property tests, thousands of sequences)', () => {
+// Thousands of draws per test: slow under the parallel suite (4X: they timed out at 5 s).
+describe('the guarantees (property tests, thousands of sequences)', { timeout: 60_000 }, () => {
   it('never more than `hardAt` draws without a ★5, nor `fourEvery` without a ★4 or better', () => {
     let longest5 = 0;
     let longest4 = 0;
@@ -157,27 +195,43 @@ describe('the guarantees (property tests, thousands of sequences)', () => {
     expect(longest4).toBe(rules.fourEvery - 1);
   });
 
-  it('the featured ★5 of a limited banner comes within `featuredAt` draws on it, always', () => {
+  it('4X: the featured ★5 comes within two hard pities, always, even when the weeks change', () => {
+    // The banners of the weeks the draws cross (a new week every 20 draws).
+    const weeks = Array.from({ length: Math.ceil((2 * rules.hardAt) / 20) }, (_, w) =>
+      activeBanners(catalog, input, today + w * BANNER_ROTATION.periodDays),
+    );
     for (let seed = 1; seed <= 300; seed++) {
-      const banner = limited[seed % limited.length] as Banner;
+      let p = rich(seed * 104729);
       let got = -1;
-      drawMany(rich(seed * 104729), banner, rules.featuredAt, (pull, i) => {
-        if (got < 0 && pull.stars === 5 && pull.featured) got = i;
-      });
+      for (let i = 0; i < 2 * rules.hardAt && got < 0; i++) {
+        // The banner (and its featured one) changes with the week; the debt stays.
+        const week = weeks[Math.floor(i / 20)] ?? [];
+        const banner = week.find((b) => b.kind === (seed % 2 === 0 ? 'pseudo' : 'starter'));
+        if (banner === undefined) throw new Error('weekly banner');
+        const out = drawGacha(p, banner, rules);
+        if (!out.ok) throw new Error(out.reason);
+        p = out.profile;
+        const pull = out.pulls[0];
+        if (pull?.stars === 5 && pull.featured) {
+          got = i;
+          expect(banner.featured5).toContain(pull.species);
+        }
+      }
       expect(got).toBeGreaterThanOrEqual(0);
-      expect(got).toBeLessThan(rules.featuredAt);
+      expect(got).toBeLessThan(2 * rules.hardAt);
     }
-  });
+  }, 60_000);
 
-  it('the pity is shared: draws on one banner count on another', () => {
+  it("the pity is shared: draws on one banner count on another; the progress is the family's", () => {
     const [a, b] = limited as [Banner, Banner];
     let p = drawMany(rich(5), a, 30, () => {});
     const pity = p.gacha.pity5;
     expect(pityView(p, b, rules).sinceFive).toBe(pity);
-    // ...but the featured guarantee belongs to each banner.
-    expect(pityView(p, b, rules).toFeatured).toBe(rules.featuredAt);
+    expect(pityView(p, b, rules).worstToFeatured).toBe(rules.hardAt - pity + rules.hardAt);
     p = drawMany(p, b, 1, () => {});
-    expect(p.gacha.banners[b.key]?.draws).toBe(1);
+    expect(p.gacha.banners[b.family ?? '']?.draws).toBe(1);
+    expect(p.gacha.banners[a.family ?? '']?.draws).toBe(30);
+    expect(p.gacha.banners[b.key]).toBeUndefined();
   });
 
   it('a ★5 is the featured one about half the time on a limited banner (the 50/50)', () => {
@@ -232,9 +286,9 @@ describe('the guarantees (property tests, thousands of sequences)', () => {
     }
     // The property was really put to the test: hundreds of lost 50/50.
     expect(losses).toBeGreaterThan(200);
-  });
+  }, 60_000);
 
-  it('the debt is of its banner: a ★5 on another banner does not pay it nor open it there', () => {
+  it('the debt is of its family: a ★5 on another family does not pay it nor open it there', () => {
     const [a, b] = limited as [Banner, Banner];
     // Find a seed that loses the 50/50 on `a` at its first ★5.
     for (let seed = 1; seed <= 400; seed++) {
@@ -261,15 +315,21 @@ describe('the guarantees (property tests, thousands of sequences)', () => {
         if (out.pulls[0]?.stars === 5) break;
       }
       expect(pityView(p, a, rules).featuredOwed).toBe(true);
-      // And on `a` the next ★5 is its featured one, which settles the debt.
+      // 4X: next week's banner of the same family owes it too, with its own featured one.
+      const nextWeek = activeBanners(catalog, input, today + BANNER_ROTATION.periodDays).find(
+        (x) => x.family === a.family,
+      ) as Banner;
+      expect(nextWeek.featured5).not.toEqual(a.featured5);
+      expect(pityView(p, nextWeek, rules).featuredOwed).toBe(true);
+      // And there the next ★5 is its featured one, which settles the debt.
       for (let i = 0; i < 90; i++) {
-        const out = drawGacha(p, a, rules);
+        const out = drawGacha(p, nextWeek, rules);
         if (!out.ok) throw new Error(out.reason);
         p = out.profile;
         const pull = out.pulls[0];
         if (pull?.stars === 5) {
           expect(pull.featured).toBe(true);
-          expect(a.featured5).toContain(pull.species);
+          expect(nextWeek.featured5).toContain(pull.species);
           break;
         }
       }
@@ -425,8 +485,9 @@ describe('the coins of a run (a pure function of its summary)', () => {
     expect(win).toBe(
       7 * COINS_PER_WAVE + 4 * COINS_PER_BOSS + COINS_FOR_WIN + Math.floor(300 / KILLS_PER_COIN),
     );
-    // A won run pays for about a x10.
-    expect(win).toBeGreaterThanOrEqual(rules.cost * rules.multi * 0.8);
+    // 4X (a scarce economy): a won run pays for about four draws, never for a x10.
+    expect(win).toBeGreaterThanOrEqual(rules.cost * 3);
+    expect(win).toBeLessThan(rules.cost * rules.multi * 0.6);
   });
 
   it('the profile keeps the coins and the numbers of every run', () => {

@@ -31,7 +31,23 @@ describe('the Pokédex', () => {
       nextCost: levelUpCost(4),
       startLevel: startLevelFor(4),
     });
-    expect(dexCounts(entries)).toEqual({ seen: 2, owned: 1, total: 4 });
+    expect(dexCounts(entries)).toEqual({ seen: 2, owned: 1, caught: 0, total: 4 });
+  });
+
+  it('4X: a boss captured in a run is "caught" (in colour, how many times), not owned', () => {
+    const p: Profile = {
+      ...emptyProfile(1),
+      owned: { charmander: { level: 1 } },
+      seen: ['abra', 'charmander', 'zubat'],
+      caught: { abra: 2, charmander: 1 },
+    };
+    const entries = dex(p, pool);
+    expect(entries.map((e) => e.state)).toEqual(['caught', 'unknown', 'owned', 'seen']);
+    expect(entries[0]?.caught).toBe(2);
+    expect(entries[0]?.level).toBe(0);
+    // An owned one keeps the count of its captures too.
+    expect(entries[2]?.caught).toBe(1);
+    expect(dexCounts(entries)).toEqual({ seen: 3, owned: 1, caught: 2, total: 4 });
   });
 });
 

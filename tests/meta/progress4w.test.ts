@@ -81,7 +81,10 @@ describe('the words of the permanent level', () => {
     expect(nextLevelLine(2, 9, 6)).toContain('ya los tienes');
     expect(nextLevelLine(10, 0, Number.POSITIVE_INFINITY)).toBe('Nivel permanente máximo.');
     expect(
-      candyHowLine({ perRun: 2, perBoss: 1, repeat: { 3: 1, 4: 3, 5: 10 }, register: 1 }, 'bagon'),
+      candyHowLine(
+        { perRun: 2, perBoss: 1, repeat: { 3: 1, 4: 3, 5: 10, 6: 20 }, caught: 5 },
+        'bagon',
+      ),
     ).toContain('juega con Bagon (+2 por partida, +1 por jefe)');
     expect(firstCandiesTip('bagon')).toContain('Bagon');
   });

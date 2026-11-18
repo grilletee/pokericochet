@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { GACHA_RULES, gameConfig, POKEDEX_IDS, STARTER_LINES } from '../../src/data';
-import { CANDIES_PER_BOSS, CANDIES_PER_RUN, REPEAT_CANDIES } from '../../src/meta';
+import { CANDIES_PER_BOSS, CANDIES_PER_RUN, CAUGHT_CANDIES } from '../../src/meta';
 import {
   candyLines,
   earnedCandiesLine,
@@ -19,12 +19,16 @@ describe('the first time', () => {
     }
   });
 
-  it('the tutorial says what the 17th playtest missed: yours for good, the collection, the gacha, registering, candies', () => {
+  it('the tutorial says what the 17th and 19th playtests missed: the collection, joining for a run only, the gacha, keys, candies', () => {
     const text = FIRST_TIME_PAGES.join(' ');
-    expect(text).toContain('Será tuyo para siempre');
+    expect(text).toContain('para siempre');
     expect(text).toContain('colección');
     expect(text).toContain('Gacha');
-    expect(text).toContain('registrar');
+    // 4X: what joins in a run stays in the run; the team attacks all at once (the cousin's notes).
+    expect(text).toContain('solo se quedan esa partida');
+    expect(text).toContain('atacan a la vez');
+    expect(text).toContain('llaves');
+    expect(text).not.toContain('registrar');
     expect(text).toContain('caramelos');
     expect(FIRST_TIME_PAGES.length).toBeGreaterThanOrEqual(4);
     expect(FIRST_TIME_PAGES.length).toBeLessThanOrEqual(8);
@@ -45,12 +49,13 @@ describe('candies, explained', () => {
       perRun: CANDIES_PER_RUN,
       perBoss: CANDIES_PER_BOSS,
       repeat: GACHA_RULES.repeatCandies,
-      register: REPEAT_CANDIES,
+      caught: CAUGHT_CANDIES,
     }).join(' ');
     expect(lines).toContain(`gana ${CANDIES_PER_RUN} caramelos por partida`);
     expect(lines).toContain(`${CANDIES_PER_BOSS} más por cada jefe`);
     expect(lines).toContain(`★5 +${GACHA_RULES.repeatCandies[5]}`);
-    expect(lines).toContain(`+${REPEAT_CANDIES}`);
+    expect(lines).toContain(`★6 +${GACHA_RULES.repeatCandies[6]}`);
+    expect(lines).toContain(`jefe que ya tienes: +${CAUGHT_CANDIES}`);
     expect(lines).toContain('nivel permanente');
   });
 

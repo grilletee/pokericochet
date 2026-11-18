@@ -15,7 +15,8 @@ export interface PokeCardView {
   readonly species: string;
   readonly types: readonly GameType[];
   readonly dex: number;
-  readonly state: 'owned' | 'seen' | 'unknown';
+  /** 4X: `caught` is a boss captured in a run that you do not own: in colour on a muted card. */
+  readonly state: 'owned' | 'caught' | 'seen' | 'unknown';
   readonly stars?: StarCount;
   /** A line under the name (the permanent level and candies of an owned one, a region...). */
   readonly note?: string;
@@ -46,7 +47,11 @@ export function cardBackground(types: readonly GameType[], state: PokeCardView['
   if (state === 'seen') return 'linear-gradient(160deg,#8a93b8,#4a5578)';
   const a = TYPE_COLORS[types[0] ?? 'normal'];
   const b = TYPE_COLORS[types[1] ?? types[0] ?? 'normal'];
-  return `linear-gradient(160deg,${a} 0,${a} 48%,${b} 52%,${b} 100%)`;
+  const colours = `linear-gradient(160deg,${a} 0,${a} 48%,${b} 52%,${b} 100%)`;
+  // 4X: captured in a run, not yours: its colours behind a grey veil.
+  return state === 'caught'
+    ? `linear-gradient(rgba(74,85,120,0.62),rgba(74,85,120,0.62)),${colours}`
+    : colours;
 }
 
 /** "#025". */

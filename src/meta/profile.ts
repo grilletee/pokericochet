@@ -14,7 +14,7 @@ import { type GameConfig, stageLevelsOf } from '../domain';
  * is refused (`null`) so it is never overwritten by an older game.
  */
 
-export const PROFILE_VERSION = 2;
+export const PROFILE_VERSION = 3;
 
 /** The most a Pokémon of the collection can be raised with candies (its level as a starter). */
 export const MAX_PERMANENT_LEVEL = 10;
@@ -27,7 +27,8 @@ export interface OwnedPokemon {
 /** One draw of the history (4G-J), newest first in `GachaState.history`. */
 export interface PullRecord {
   readonly species: string;
-  readonly stars: 3 | 4 | 5;
+  /** 4X: ★6 is a legendary of the key banner. */
+  readonly stars: 3 | 4 | 5 | 6;
   /** The name of the banner it came from. */
   readonly banner: string;
   /** A featured Pokémon of a limited banner. */
@@ -36,14 +37,17 @@ export interface PullRecord {
   readonly n: number;
 }
 
-/** What a limited banner remembers (4G-J): its draws, for the guaranteed featured ★5. */
+/**
+ * What a family of limited banners remembers (4G-J; 4X: by family, so it carries over the weeks):
+ * its draws and whether its 50/50 is owed.
+ */
 export interface BannerProgress {
   readonly draws: number;
-  /** Its featured ★5 has come (the guarantee is spent). */
+  /** Kept for older saves; the featured guarantee by count went in 4X (the debt carries over). */
   readonly won: boolean;
   /**
-   * The last ★5 on this banner was not the featured one (the 50/50 was lost), so the next ★5 on it
-   * is the featured one for sure (4V). Absent in older saves: nothing owed.
+   * The last ★5 on a banner of this family was not the featured one (the 50/50 was lost), so the next
+   * ★5 on one is the featured one of that week for sure (4V). Absent: nothing owed.
    */
   readonly owed?: boolean;
 }
@@ -55,9 +59,20 @@ export interface GachaState {
   /** Draws since the last ★5 and since the last ★4 or better: the pity, shared by every banner. */
   readonly pity5: number;
   readonly pity4: number;
-  /** Progress of each limited banner, by its key (banner and period). */
+  /** 4X: progress of each family of limited banners (`pseudo`, `starter`, `showcase`). */
   readonly banners: Readonly<Record<string, BannerProgress>>;
   readonly history: readonly PullRecord[];
+}
+
+/**
+ * 4X: the legendaries (★6). Fragments come from defeating the final legendary of a run; a key is
+ * `keyFragments` of them. The key banner has its own stream position and pity (keys since the last
+ * legendary).
+ */
+export interface LegendState {
+  readonly fragments: number;
+  readonly draws: number;
+  readonly pity: number;
 }
 
 /** The most banners and history entries a profile keeps (the oldest go first). */
@@ -79,21 +94,35 @@ export interface Profile {
   readonly owned: Readonly<Record<string, OwnedPokemon>>;
   /** Every species met in a run, for the Pokédex ("vistos"). */
   readonly seen: readonly string[];
-  /** The first time: the four classic starters, then only the collection (block 8). */
+  /**
+   * The first time (4G-I): the professor's tutorial. 4X: every profile has the classic starters, so
+   * it only says whether the tutorial was seen.
+   */
   readonly firstStarterChosen: boolean;
+  /**
+   * 4X: bosses captured in runs, by the first of their line, and how many times. They mark the
+   * Pokédex ("capturado en partida") but do not join the collection: only the gacha gives that.
+   */
+  readonly caught: Readonly<Record<string, number>>;
+  readonly legend: LegendState;
   readonly gacha: GachaState;
   readonly stats: ProfileStats;
 }
 
-/** A new profile: nothing owned yet (the first starter is chosen the first time you play). */
-export function emptyProfile(gachaSeed: number): Profile {
+/**
+ * A new profile (4X, decision 4 of the 4X): it owns the classic starters `starters` (the four
+ * of the game) at level 1; everything else comes from the gacha.
+ */
+export function emptyProfile(gachaSeed: number, starters: readonly string[] = []): Profile {
   return {
     version: PROFILE_VERSION,
     coins: 0,
     candies: {},
-    owned: {},
-    seen: [],
+    owned: Object.fromEntries(starters.map((id) => [id, { level: 1 }])),
+    seen: [...starters].sort(),
     firstStarterChosen: false,
+    caught: {},
+    legend: { fragments: 0, draws: 0, pity: 0 },
     gacha: { seed: gachaSeed >>> 0 || 1, draws: 0, pity5: 0, pity4: 0, banners: {}, history: [] },
     stats: { runs: 0, wins: 0, bossesDefeated: 0 },
   };
@@ -114,14 +143,20 @@ const isRecord = (value: unknown): value is Record<string, unknown> =>
  *
  * Migrations: version 0 (no `version`: an unversioned draft, e.g. written by hand, with a
  * `collection` list of species) is read into version 1; version 1 into version 2 (4G-J: the gacha's
- * pity, banners and history start empty); version 2 is validated field by field.
+ * pity, banners and history start empty); version 2 into version 3 (4X: the captured bosses and the
+ * legendary keys start empty, the debts of the old region and type banners go, the classic starters
+ * join the collection); version 3 is validated field by field. Nothing anyone owned is ever lost:
+ * the collection, its levels, the candies, the coins, the pity and the history all carry over.
  */
 export function migrateProfile(
   raw: unknown,
   known: (species: string) => boolean,
   gachaSeed: number,
+  /** 4X: the classic starters every profile owns (absent ones join at level 1). */
+  starters: readonly string[] = [],
 ): Profile | null {
-  if (!isRecord(raw)) return emptyProfile(gachaSeed);
+  const classics = starters.filter(known);
+  if (!isRecord(raw)) return emptyProfile(gachaSeed, classics);
   const version = int(raw.version, 0, Number.MAX_SAFE_INTEGER, 0);
   if (version > PROFILE_VERSION) return null;
   const base = emptyProfile(gachaSeed);
@@ -130,12 +165,23 @@ export function migrateProfile(
   if (version === 0 && Array.isArray(raw.collection)) {
     for (const id of raw.collection) if (typeof id === 'string') ownedRaw[id] ??= { level: 1 };
   }
+  // v2 -> v3 (and always): the classic starters are everyone's.
+  for (const id of classics) ownedRaw[id] ??= { level: 1 };
   const owned: Record<string, OwnedPokemon> = {};
   for (const [id, value] of Object.entries(ownedRaw)) {
     if (!known(id)) continue;
     const level = isRecord(value) ? int(value.level, 1, MAX_PERMANENT_LEVEL, 1) : 1;
     owned[id] = { level };
   }
+  const caught: Record<string, number> = {};
+  if (version >= 3 && isRecord(raw.caught)) {
+    for (const [id, value] of Object.entries(raw.caught)) {
+      if (!known(id)) continue;
+      const n = int(value, 0, 1_000_000, 0);
+      if (n > 0) caught[id] = n;
+    }
+  }
+  const legendRaw = version >= 3 && isRecord(raw.legend) ? raw.legend : {};
   const candies: Record<string, number> = {};
   if (isRecord(raw.candies)) {
     for (const [id, value] of Object.entries(raw.candies)) {
@@ -158,16 +204,26 @@ export function migrateProfile(
     owned,
     // Owned Pokémon are seen too.
     seen: [...new Set([...seen, ...Object.keys(owned)])].sort(),
-    // Someone who has a collection has chosen a first starter, whatever the flag says.
-    firstStarterChosen: raw.firstStarterChosen === true || Object.keys(owned).length > 0,
+    // Someone who had a collection before 4X has seen the tutorial, whatever the flag says (since 4X
+    // everyone owns the classics, so only an earlier collection counts).
+    firstStarterChosen:
+      raw.firstStarterChosen === true ||
+      (version < 3 && Object.keys(ownedRaw).some((id) => !classics.includes(id))),
+    caught,
+    legend: {
+      fragments: int(legendRaw.fragments, 0, 1_000_000, 0),
+      draws: int(legendRaw.draws, 0, Number.MAX_SAFE_INTEGER, 0),
+      pity: int(legendRaw.pity, 0, 1_000_000, 0),
+    },
     // v1 -> v2 (4G-J): the old "novelty" counter (`sinceNew`) has no meaning in the new rules, so
-    // the pity starts at 0; the seed and the position of the stream are kept.
+    // the pity starts at 0; the seed and the position of the stream are kept. v2 -> v3 (4X): the
+    // progress of the region and type banners is dropped (they are gone); the pity is kept.
     gacha: {
       seed: int(gachaRaw.seed, 1, 0xffffffff, base.gacha.seed),
       draws: int(gachaRaw.draws, 0, Number.MAX_SAFE_INTEGER, 0),
       pity5: version < 2 ? 0 : int(gachaRaw.pity5, 0, 1_000_000, 0),
       pity4: version < 2 ? 0 : int(gachaRaw.pity4, 0, 1_000_000, 0),
-      banners: version < 2 ? {} : readBanners(gachaRaw.banners),
+      banners: version < 3 ? {} : readBanners(gachaRaw.banners),
       history: version < 2 ? [] : readHistory(gachaRaw.history, known),
     },
     stats: {
@@ -197,7 +253,7 @@ function readHistory(raw: unknown, known: (species: string) => boolean): PullRec
   const out: PullRecord[] = [];
   for (const entry of raw.slice(0, MAX_HISTORY)) {
     if (!isRecord(entry) || typeof entry.species !== 'string' || !known(entry.species)) continue;
-    const stars = int(entry.stars, 3, 5, 3) as 3 | 4 | 5;
+    const stars = int(entry.stars, 3, 6, 3) as 3 | 4 | 5 | 6;
     out.push({
       species: entry.species,
       stars,
@@ -222,6 +278,7 @@ export function importProfile(
   text: string,
   known: (species: string) => boolean,
   gachaSeed: number,
+  starters: readonly string[] = [],
 ): { readonly profile: Profile } | { readonly error: string } {
   let raw: unknown;
   try {
@@ -232,7 +289,7 @@ export function importProfile(
   if (!isRecord(raw) || raw.game !== SAVE_MARK) {
     return { error: 'El archivo no es un guardado de este juego.' };
   }
-  const profile = migrateProfile(raw, known, gachaSeed);
+  const profile = migrateProfile(raw, known, gachaSeed, starters);
   if (profile === null) {
     return { error: 'El guardado es de una versión más nueva del juego.' };
   }

@@ -96,7 +96,8 @@ describe('join encounters at a level-up (4X)', () => {
         expect(run.pool).toContain(card.species);
       }
     }
-  });
+    // 120 runs created: slow under the parallel suite.
+  }, 60_000);
 
   it('offers the lines of the biome of the wave whenever the biome has enough of them', () => {
     let checked = 0;
@@ -130,7 +131,7 @@ describe('join encounters at a level-up (4X)', () => {
     }
   });
 
-  it('taking one: it joins with its moment (a capture of source "join"), and the run goes on', () => {
+  it('taking one: it joins with its moment (a capture of source "join"), then the cards come', () => {
     const run = levelUpRun();
     levelUp(run);
     const card = run.offers[1];
@@ -142,6 +143,13 @@ describe('join encounters at a level-up (4X)', () => {
       expect.objectContaining({ type: 'capture', species: card.species, source: 'join' }),
     );
     expect(run.captured.at(-1)).toMatchObject({ species: card.species, source: 'join' });
+    // The encounter came before the cards of the level, not instead of them (4X, measured: the team
+    // grows as fast as with the drops of before).
+    expect(run.phase).toBe('levelup');
+    expect(run.offers.length).toBeGreaterThan(0);
+    expect(run.offers.some((c) => c.kind === 'join')).toBe(false);
+    expect(run.pendingCards).toBe(false);
+    tick(run, { moveX: 0, action: { type: 'pick', index: 0 } }, gameConfig);
     expect(run.phase).toBe('playing');
   });
 
@@ -173,6 +181,10 @@ describe('join encounters at a level-up (4X)', () => {
     tick(run, { moveX: 0, action: { type: 'pick', index: 0 } }, gameConfig);
     expect(run.phase).toBe('replace');
     expect(run.pendingCapture).toMatchObject({ species: card.species, source: 'join' });
+    // Whatever the answer, the cards of the level come after it.
+    tick(run, { moveX: 0, action: { type: 'release' } }, gameConfig);
+    expect(run.phase).toBe('levelup');
+    expect(run.offers.some((c) => c.kind === 'join')).toBe(false);
   });
 
   it('later ones come by chance with bad-luck protection: never a long drought', () => {
@@ -184,6 +196,7 @@ describe('join encounters at a level-up (4X)', () => {
         levelUp(run);
         const isJoin = run.offers[0]?.kind === 'join';
         run.offers = [];
+        run.pendingCards = false;
         run.phase = 'playing';
         if (isJoin) {
           gaps.push(since);

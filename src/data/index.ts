@@ -2,7 +2,7 @@ import type { GameConfig, SpeciesDef } from '../domain';
 import { baseConfig } from './config';
 import { FIVE_STAR_LINES, GACHA_RULES, PSEUDO_LINES } from './config/gacha';
 import { paceOfLines } from './evolutionPace';
-import { MOVE_TYPES, MOVES_BY_BASE } from './moves';
+import { MOVE_DEFAULTS, MOVE_TYPES, MOVES_BY_BASE } from './moves';
 import {
   ALL_SPECIES,
   BALL_SPECIES,
@@ -11,20 +11,23 @@ import {
   EVOLUTION_FORMS,
   EVOLUTION_LINES,
   EVOLUTION_STEPS,
+  LEGENDARY_SPECIES,
 } from './species';
 
 export { baseConfig } from './config';
 export {
+  BANNER_NAMES,
   BANNER_ROTATION,
   FIVE_STAR_LINES,
   GACHA_RULES,
   type GachaRules,
   generationOf,
+  type LegendRules,
   PSEUDO_LINES,
   REGIONS,
   type Region,
+  SHOWCASE_LINES,
   STARTER_LINES,
-  TYPE_BANNER_NAMES,
 } from './config/gacha';
 export { gameLevel, lineStageLevels, PACE, paceOfLines } from './evolutionPace';
 export { MOVE_INFO, MOVE_NAMES, MOVE_TYPES, MOVES_BY_BASE } from './moves';
@@ -67,6 +70,19 @@ const JOIN_RARE: readonly string[] = Object.keys(EVOLUTION_LINES)
 
 const baseJoin = baseConfig.capture.join;
 
+/**
+ * 4X: a legendary (★6, from the key banner) can start a run. The generated table has no moves for
+ * them (they were only bosses), so each one uses the default ladder of its first type, the same
+ * moves any line falls back to (ADR-039). Their lines of one form keep the common stages.
+ */
+const LEGEND_MOVES: Readonly<Record<string, readonly string[]>> = Object.fromEntries(
+  LEGENDARY_SPECIES.flatMap((id) => {
+    const type = allSpecies.find((s) => s.id === id)?.type;
+    const ladder = type === undefined ? undefined : MOVE_DEFAULTS[type];
+    return ladder === undefined || MOVES_BY_BASE[id] !== undefined ? [] : [[id, ladder]];
+  }),
+);
+
 /** Complete configuration injected into the domain. */
 export const gameConfig: GameConfig = {
   ...baseConfig,
@@ -76,7 +92,7 @@ export const gameConfig: GameConfig = {
       ? {}
       : { join: { ...baseJoin, excluded: JOIN_EXCLUDED, rare: JOIN_RARE } }),
   },
-  moves: { ...baseConfig.moves, byBase: MOVES_BY_BASE, types: MOVE_TYPES },
+  moves: { ...baseConfig.moves, byBase: { ...MOVES_BY_BASE, ...LEGEND_MOVES }, types: MOVE_TYPES },
   species: Object.fromEntries(allSpecies.map((s) => [s.id, s])),
   enemySpecies: ENEMY_SPECIES.map((s) => s.id),
   ballSpecies: BALL_SPECIES.map((s) => s.id),

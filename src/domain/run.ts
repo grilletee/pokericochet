@@ -211,6 +211,11 @@ export interface Run {
   catch: CatchState | null;
   /** 4X: level-ups since the last join encounter (its bad-luck protection). */
   joinMisses: number;
+  /**
+   * 4X: a join encounter comes before the cards of its level-up, never instead of them: true while
+   * the cards of the level still have to be offered once the encounter (and its replace) is answered.
+   */
+  pendingCards: boolean;
   nextBallId: number;
   bodies: BallBody[];
   /** Always ordered by ascending id. */
@@ -339,6 +344,7 @@ export function createRun(config: GameConfig, seed: number, starterSpecies: stri
     captured: [],
     catch: null,
     joinMisses: 0,
+    pendingCards: false,
     nextBallId: 1,
     bodies: [],
     enemies: [],
@@ -411,6 +417,7 @@ export function cloneRun(run: Run): Run {
     captured: run.captured.map((c) => ({ ...c })),
     catch: run.catch === null ? null : { ...run.catch },
     joinMisses: run.joinMisses,
+    pendingCards: run.pendingCards,
     nextBallId: run.nextBallId,
     bodies: run.bodies.map((b) => ({ ...b })),
     enemies: run.enemies.map((e) => ({ ...e })),
@@ -639,6 +646,7 @@ export function hashRun(run: Run): string {
   }
   h.int(run.boss.hpAtSpawn);
   h.int(run.joinMisses);
+  h.int(run.pendingCards ? 1 : 0);
   const caught = run.catch;
   h.int(caught === null ? 0 : 1);
   if (caught !== null) {

@@ -1,18 +1,21 @@
 import pixelFontUrl from '../assets/fonts/PixelifySans.ttf?url';
 import {
   ART_SPECIES_IDS,
+  BANNER_NAMES,
   BANNER_ROTATION,
   FIVE_STAR_LINES,
   GACHA_RULES,
   gameConfig,
   generationOf,
+  LEGENDARY_SPECIES,
   MOVE_NAMES,
   POKEDEX_IDS,
   POKEMON_NAMES,
+  PSEUDO_LINES,
   REGIONS,
+  SHOWCASE_LINES,
   STARTER_LINES,
   STARTER_SPECIES,
-  TYPE_BANNER_NAMES,
 } from '../data';
 import {
   addMember,
@@ -66,28 +69,29 @@ import {
   buildCatalog,
   CANDIES_PER_BOSS,
   CANDIES_PER_RUN,
+  CAUGHT_CANDIES,
   type CatalogEntry,
-  candiesFor,
   canStartWith,
   chooseFirstStarter,
-  coinsFor,
   dex,
   dexCounts,
   drawGacha,
+  drawLegend,
   gachaPool,
+  legendBanner,
+  legendView,
   levelUp,
   levelUpCost,
   nextGoal,
   type Profile,
   permanentLadder,
   pityView,
-  REPEAT_CANDIES,
   rateTable,
   recordRun,
-  registerable,
-  registerCapture,
+  rewardsFor,
   starterChoices,
   startLevelOf,
+  weekEndsDay,
 } from '../meta';
 import { Renderer } from '../render';
 import {
@@ -142,8 +146,7 @@ import {
   ReplaceScreen,
   type ReplaceView,
   ResultsScreen,
-  registeredLine,
-  registerPanel,
+  rewardsPanel,
   SettingsScreen,
   SoundFx,
   SoundToggle,
@@ -252,6 +255,9 @@ declare global {
     /** ?debug only (4G-I): end the run now, and read the profile. */
     __lose?: () => void;
     __profile?: () => Profile;
+    /** ?debug only (4X): the next level-up of the run on screen, and a weakened boss to capture. */
+    __levelUp?: () => void;
+    __catch?: (species: string) => void;
     /** Read-only view of the run for browser smoke tests; only present with ?debug or ?bench. */
     __debug?: () => {
       tick: number;
@@ -504,27 +510,31 @@ function applyDebugParams(run: Run, config: GameConfig, params: URLSearchParams)
   // 4X: catch=<species> opens the capture of that boss, weakened in the middle of the field
   // (catchTicks=N: N ticks of fight, so the chance can be tried for a fast or a slow fight).
   const catchSpecies = params.get('catch');
-  const catchDef = catchSpecies === null ? undefined : config.species[catchSpecies];
-  if (catchSpecies !== null && catchDef !== undefined) {
-    run.boss.tick = number('catchTicks') ?? 1800;
-    run.boss.hpAtSpawn = run.player.hp;
-    openBossCatch(run, config, {
-      id: 999,
-      species: catchSpecies,
-      type: catchDef.type,
-      hp: 0,
-      x: config.arena.width / 2,
-      y: 220,
-      speed: 0,
-      radius: config.interludes?.[0]?.radius ?? 40,
-      threat: 1,
-      xp: 0,
-      burnTicks: 0,
-      burnDps: 0,
-      slowTicks: 0,
-      slow: 0,
-    });
-  }
+  if (catchSpecies !== null) debugCatch(run, config, catchSpecies, number('catchTicks') ?? 1800);
+}
+
+/** 4X, debug: a boss of `species`, weakened in the middle of the field, waits for the throw. */
+function debugCatch(run: Run, config: GameConfig, species: string, fightTicks: number): void {
+  const def = config.species[species];
+  if (def === undefined || run.phase !== 'playing') return;
+  run.boss.tick = fightTicks;
+  run.boss.hpAtSpawn = run.player.hp;
+  openBossCatch(run, config, {
+    id: 999,
+    species,
+    type: def.type,
+    hp: 0,
+    x: config.arena.width / 2,
+    y: 220,
+    speed: 0,
+    radius: config.interludes?.[0]?.radius ?? 40,
+    threat: 1,
+    xp: 0,
+    burnTicks: 0,
+    burnDps: 0,
+    slowTicks: 0,
+    slow: 0,
+  });
 }
 
 /**
@@ -654,8 +664,9 @@ export async function startGame(host: HTMLElement): Promise<void> {
   });
   const startScreen = new StartScreen(host);
   const starterScreen = new StarterScreen(host, art);
-  // 4G-J (block 3): the first Pokémon is one of the starters of the nine regions or Pikachu.
-  const firstChoices = STARTER_LINES.filter((id) => gameConfig.species[id] !== undefined);
+  // 4X (decision 4): every profile owns the four classic starters; the starters of the other regions
+  // come from the weekly starter banner.
+  const firstChoices = STARTER_SPECIES.filter((id) => gameConfig.species[id] !== undefined);
   const collectionScreen = new CollectionScreen(host, art);
   const gachaScreen = new GachaScreen(host, art);
   const pool = gachaPool(gameConfig);
@@ -666,12 +677,40 @@ export async function startGame(host: HTMLElement): Promise<void> {
     dexOf: (id) => POKEDEX_IDS[id] ?? 0,
     genOf: generationOf,
   });
-  const catalogOf = new Map(catalog.map((entry) => [entry.species, entry]));
+  // 4X: the legendaries (★6, from keys) are not in the coin catalogue, but the Pokédex and the choice
+  // of a starter show them like the rest.
+  const legendEntries: CatalogEntry[] = LEGENDARY_SPECIES.flatMap((id) => {
+    const def = gameConfig.species[id];
+    if (def === undefined) return [];
+    const dexNo = POKEDEX_IDS[id] ?? 0;
+    return [
+      {
+        species: id,
+        stars: 6,
+        types: typesOfSpecies(def),
+        final: id,
+        dex: dexNo,
+        gen: generationOf(dexNo, id),
+      },
+    ];
+  });
+  const catalogOf = new Map([...catalog, ...legendEntries].map((entry) => [entry.species, entry]));
+  const dexPool = [...pool, ...legendEntries.map((e) => e.species)];
   // 4V: the balls of the rare Pokémon wear a halo on the field (violet for a ★4, gold for a ★5).
   renderer.setRarity(Uint8Array.from(speciesIds, (id) => catalogOf.get(id)?.stars ?? 0));
   // ?nofeel: no sparks, numbers or deaths of the hits (to measure what they cost).
   if (params.has('nofeel')) renderer.setFeel(false);
-  const bannerInput = { regions: REGIONS, typeNames: TYPE_BANNER_NAMES, rotation: BANNER_ROTATION };
+  // 4X: the weekly banners by the real date: a pseudo-legendary, a starter (not the four classics,
+  // which everyone has), two "Pokémon con estilo", and the legendary banner of keys.
+  const bannerInput = {
+    rotation: BANNER_ROTATION,
+    names: BANNER_NAMES,
+    pseudo: PSEUDO_LINES,
+    starters: STARTER_LINES.filter((id) => !STARTER_SPECIES.includes(id)),
+    showcase: SHOWCASE_LINES,
+    legends: LEGENDARY_SPECIES,
+    showcaseShare: GACHA_RULES.showcase4Share,
+  };
   // ?debug&day=N shows the banners of another day (days since 1970-01-01), to try the rotation.
   const debugDay = Number(params.get('day'));
   const today = (): number =>
@@ -715,13 +754,28 @@ export async function startGame(host: HTMLElement): Promise<void> {
   // The persistent profile (ADR-025, 4G-I): collection, coins, candies. The run never reads it.
   const knownSpecies = (id: string): boolean => gameConfig.species[id] !== undefined;
   const freshSeed = (): number => Date.now() >>> 0;
-  let profileState: LoadedProfile = loadProfile(store, knownSpecies, freshSeed());
+  let profileState: LoadedProfile = loadProfile(store, knownSpecies, freshSeed(), firstChoices);
   // ?debug&coins=N adds coins to the profile (to try the gacha in the smoke and by hand).
   const debugCoins = Number(params.get('coins'));
   if (showDebug && debugCoins > 0) {
     profileState = {
       ...profileState,
       profile: { ...profileState.profile, coins: profileState.profile.coins + debugCoins },
+    };
+  }
+  // 4X: ?debug&keys=N adds N legendary keys (their fragments), to try the legendary banner.
+  const debugKeys = Number(params.get('keys'));
+  if (showDebug && debugKeys > 0) {
+    const legend = profileState.profile.legend;
+    profileState = {
+      ...profileState,
+      profile: {
+        ...profileState.profile,
+        legend: {
+          ...legend,
+          fragments: legend.fragments + Math.floor(debugKeys) * GACHA_RULES.legend.keyFragments,
+        },
+      },
     };
   }
   let saveStatus = '';
@@ -838,6 +892,12 @@ export async function startGame(host: HTMLElement): Promise<void> {
     window.__lose = () => {
       run.player.hp = 0;
     };
+    // 4X, for the smoke of the whole flow: exactly the experience of the next level-up (a join
+    // encounter at the first one), and a weakened boss to capture in the run on screen.
+    window.__levelUp = () => {
+      run.player.xp = Math.max(run.player.xp, run.player.xpNext);
+    };
+    window.__catch = (species: string) => debugCatch(run, config, species, 1200);
     window.__profile = () => profileState.profile;
     window.__debug = () => ({
       tick: run.tickCount,
@@ -1082,8 +1142,8 @@ export async function startGame(host: HTMLElement): Promise<void> {
       // The first time (4G-J): the professor's tutorial, then one starter of each region.
       first ? FIRST_TIME_PAGES : [],
       first
-        ? 'Uno de cada región. Será tuyo para siempre.'
-        : `Tu colección: ${starters.length} Pokémon. Más en el Gacha o registrando capturas.`,
+        ? 'Los cuatro son tuyos. Elige con quién empiezas.'
+        : `Tu colección: ${starters.length} Pokémon. Para siempre, solo con el Gacha.`,
     );
   }
   /** A run starts: the first time, the chosen starter joins the collection (4G-I, 4G-J). */
@@ -1096,7 +1156,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
   function showCollection(selected: string | null = null): void {
     screen = 'collection';
     hideMenus();
-    const entries = dex(profileState.profile, pool, gameConfig);
+    const entries = dex(profileState.profile, dexPool, gameConfig);
     // 4W, block 4: the first visit says what the collection is for, once.
     const notice = markTip(store, 'collection') ? FIRST_COLLECTION_TIP : null;
     collectionScreen.show(
@@ -1151,7 +1211,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
     perRun: CANDIES_PER_RUN,
     perBoss: CANDIES_PER_BOSS,
     repeat: GACHA_RULES.repeatCandies,
-    register: REPEAT_CANDIES,
+    caught: CAUGHT_CANDIES,
   };
   const candyHelp = candyLines(candyRules);
   /** A Pokémon of the catalogue as the gacha screen shows it. */
@@ -1175,34 +1235,71 @@ export async function startGame(host: HTMLElement): Promise<void> {
     screen = 'gacha';
     hideMenus();
     const p = profileState.profile;
-    const banners = activeBanners(catalog, bannerInput, today());
-    gachaSelected = Math.min(gachaSelected, banners.length - 1);
-    const views: GachaBannerView[] = banners.map((b) => ({
-      key: b.key,
-      kind: b.kind,
-      name: b.name,
-      theme:
-        b.kind === 'region'
-          ? `Región · ${b.gen}.ª generación`
-          : b.kind === 'type' && b.type !== undefined
-            ? `Tipo ${typeName(b.type)}`
-            : 'Todo el catálogo',
-      ...(b.gen === undefined ? {} : { gen: b.gen }),
-      ...(b.type === undefined ? {} : { type: b.type }),
-      endsInDays: b.endsInDays,
-      featured5: featuredOf(b.featured5),
-      featured4: featuredOf(b.featured4),
-      // The standard banner shows three ★5 of the catalogue, a different trio every day.
-      showcase:
-        b.featured5.length > 0
-          ? []
-          : featuredOf(
-              [0, 1, 2].map(
-                (k) => b.pool[5][(today() * 3 + k) % Math.max(1, b.pool[5].length)] ?? '',
-              ),
-            ),
-      pity: pityView(p, b, GACHA_RULES),
-    }));
+    const day = today();
+    const banners = activeBanners(catalog, bannerInput, day);
+    const legend = legendBanner(catalog, bannerInput, day);
+    // 4X: the countdown runs to 00:00 UTC of the first day of the next week.
+    const endsAtMs = weekEndsDay(bannerInput, day) * 86_400_000;
+    const total = banners.length + (legend === null ? 0 : 1);
+    gachaSelected = Math.min(gachaSelected, total - 1);
+    const typeOfLine = (id: string | undefined): GameType | undefined =>
+      id === undefined ? undefined : catalogOf.get(id)?.types[0];
+    const views: GachaBannerView[] = banners.map((b) => {
+      const face = b.featured5[0] ?? b.featured4[0];
+      const type = typeOfLine(face);
+      return {
+        key: b.key,
+        kind: b.kind,
+        name: b.name,
+        theme:
+          b.kind === 'pseudo'
+            ? 'Un pseudolegendario distinto cada semana'
+            : b.kind === 'starter'
+              ? 'Un inicial de otra región cada semana'
+              : b.kind === 'showcase'
+                ? 'Dos Pokémon ★4 con estilo cada semana'
+                : 'Todo el catálogo, siempre',
+        ...(type === undefined ? {} : { type }),
+        endsInDays: b.endsInDays,
+        endsAtMs: b.endsInDays === null ? null : endsAtMs,
+        featured5: featuredOf(b.featured5),
+        featured4: featuredOf(b.featured4),
+        // The standard banner shows three ★5 of the catalogue, a different trio every day; the
+        // showcase one its two featured ★4.
+        showcase:
+          b.kind === 'showcase'
+            ? featuredOf(b.featured4)
+            : b.featured5.length > 0
+              ? []
+              : featuredOf(
+                  [0, 1, 2].map(
+                    (k) => b.pool[5][(day * 3 + k) % Math.max(1, b.pool[5].length)] ?? '',
+                  ),
+                ),
+        pity: pityView(p, b, GACHA_RULES),
+      };
+    });
+    // The legendary banner shows its own counters (keys); the coin pity goes along unused.
+    const coinPity = views[0]?.pity;
+    if (legend !== null && coinPity !== undefined) {
+      const lv = legendView(p, GACHA_RULES);
+      views.push({
+        key: legend.key,
+        kind: 'legend',
+        name: legend.name,
+        theme: 'Solo con llaves: derrota al legendario final para conseguirlas',
+        ...(typeOfLine(legend.featured) === undefined
+          ? {}
+          : { type: typeOfLine(legend.featured) as GameType }),
+        endsInDays: legend.endsInDays,
+        endsAtMs,
+        featured5: featuredOf([legend.featured]),
+        featured4: [],
+        showcase: [],
+        pity: coinPity,
+        legend: { ...lv, hardAt: GACHA_RULES.legend.hardAt },
+      });
+    }
     gachaScreen.show(
       {
         coins: p.coins,
@@ -1223,6 +1320,31 @@ export async function startGame(host: HTMLElement): Promise<void> {
           showGacha();
         },
         onDraw: (count) => {
+          // 4X: the last tab is the legendary banner: one key, one draw.
+          if (legend !== null && gachaSelected === banners.length) {
+            const opened = drawLegend(profileState.profile, legend, GACHA_RULES);
+            if (!opened.ok) return;
+            setProfile(opened.profile);
+            showGacha();
+            const pull = opened.pull;
+            gachaScreen.showReveal(
+              [
+                {
+                  species: pull.species,
+                  final: catalogOf.get(pull.species)?.final ?? pull.species,
+                  type: config.species[pull.species]?.type,
+                  types: catalogOf.get(pull.species)?.types ?? [],
+                  dex: catalogOf.get(pull.species)?.dex ?? 0,
+                  stars: pull.stars,
+                  isNew: pull.isNew,
+                  candies: pull.candies,
+                  featured: pull.legendary,
+                },
+              ],
+              showGacha,
+            );
+            return;
+          }
           const banner = banners[gachaSelected];
           if (banner === undefined) return;
           const result = drawGacha(profileState.profile, banner, GACHA_RULES, count);
@@ -1278,16 +1400,21 @@ export async function startGame(host: HTMLElement): Promise<void> {
       {
         onExport: () => downloadProfile(profileState.profile),
         onImport: () =>
-          pickProfileFile(knownSpecies, freshSeed(), (result) => {
-            if ('error' in result) {
-              saveStatus = result.error;
-            } else {
-              profileState = { profile: result.profile, writable: true };
-              saveProfile(store, profileState);
-              saveStatus = `Guardado importado: ${Object.keys(result.profile.owned).length} Pokémon, ${result.profile.coins} monedas.`;
-            }
-            showSettings();
-          }),
+          pickProfileFile(
+            knownSpecies,
+            freshSeed(),
+            (result) => {
+              if ('error' in result) {
+                saveStatus = result.error;
+              } else {
+                profileState = { profile: result.profile, writable: true };
+                saveProfile(store, profileState);
+                saveStatus = `Guardado importado: ${Object.keys(result.profile.owned).length} Pokémon, ${result.profile.coins} monedas.`;
+              }
+              showSettings();
+            },
+            firstChoices,
+          ),
         status: profileState.writable
           ? saveStatus
           : 'Tu guardado es de una versión más nueva del juego: no se modifica.',
@@ -1317,14 +1444,13 @@ export async function startGame(host: HTMLElement): Promise<void> {
     best = saved.best;
     // The Pokédex sees every species met in the run (4G-I).
     const met = [...seenThisRun].map((code) => speciesIds[code] ?? '').filter(knownSpecies);
-    // The coins of the run (4G-I): a pure function of its summary.
-    const earned = coinsFor(summary);
-    // 4G-J: the starter earns candies by playing (only if it is in the collection).
-    const candies = profileState.profile.owned[starter] === undefined ? 0 : candiesFor(summary);
+    // What the run leaves for good (4X): coins, the starter's candies, key fragments and the marks of
+    // the captured bosses. Nothing of the run joins the collection (only the gacha does that).
+    const rewards = rewardsFor(profileState.profile, summary, starter);
+    const earned = rewards.coins;
+    const candies = rewards.starterCandies;
     setProfile(recordRun(addSeen(profileState.profile, met), summary, starter));
     screen = 'results';
-    // Beat a boss: keep ONE of the captures of the run for good (4G-I).
-    const offered = registerable(summary);
     const candyText = earnedCandiesLine(starter, candies);
     // 4W, block 4: the first candies ever come with a word on what they are for, once.
     const candyTip = candies > 0 && markTip(store, 'candies') ? firstCandiesTip(starter) : null;
@@ -1348,32 +1474,18 @@ export async function startGame(host: HTMLElement): Promise<void> {
         `+${earned} monedas (tienes ${profileState.profile.coins})${candyText === '' ? '' : ` · ${candyText}`}`,
         [...tipLine(), ...extra],
       );
-    // 4G-J (decision 24 of the 4G-I): without a boss defeated, say why there is nothing to register.
-    const why = document.createElement('div');
-    why.dataset.registerHint = '';
-    why.style.cssText = 'font-size:13px;opacity:0.85;max-width:420px;';
-    why.textContent =
-      summary.captured.length > 0
-        ? 'Derrota al menos a un jefe para poder registrar una de tus capturas en la colección.'
-        : 'Captura Pokémon y derrota a un jefe: al final podrás registrar uno en tu colección.';
-    const panel =
-      offered.length === 0
-        ? [why]
-        : [
-            registerPanel(
-              offered,
-              art,
-              (id) => config.species[id]?.type,
-              (id) => profileState.profile.owned[id] !== undefined,
-              (species) => {
-                const result = registerCapture(profileState.profile, offered, species);
-                setProfile(result.profile);
-                sound.play('capture', performance.now());
-                show([registeredLine(species, result.isNew)]);
-              },
-            ),
-          ];
-    show(panel);
+    show([
+      rewardsPanel(
+        {
+          fragments: rewards.fragments,
+          fragmentsNow: profileState.profile.legend.fragments,
+          perKey: GACHA_RULES.legend.keyFragments,
+          caught: rewards.caught,
+        },
+        art,
+        (id) => config.species[id]?.type,
+      ),
+    ]);
   };
 
   /** Arena point to host pixels, for the DOM effects that start on the field. */

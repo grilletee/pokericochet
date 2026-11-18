@@ -56,8 +56,11 @@ export {
 export {
   type Anticipation,
   anticipation,
+  type BannerViewKind,
   bannerColors,
+  bannerKindLabel,
   endsText,
+  legendMeters,
   percentBp,
   pityLines,
   pityMeters,
@@ -100,9 +103,10 @@ export {
   PROFESSOR_NAME,
   PROFESSOR_PORTRAIT,
 } from './professor';
-export { registeredLine, registerPanel } from './registerPanel';
 export type { ReplaceMember, ReplaceView } from './replaceScreen';
 export { guardChange, percent, ReplaceScreen } from './replaceScreen';
+export type { RunRewardsView } from './runRewards';
+export { rewardLines, rewardsPanel } from './runRewards';
 export type { StarterOption } from './screens';
 export {
   CreditsScreen,

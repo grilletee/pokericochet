@@ -29,11 +29,17 @@ export function levelUp(profile: Profile, species: string): Profile {
   };
 }
 
-export type DexState = 'owned' | 'seen' | 'unknown';
+/**
+ * 4X: `caught` is a boss you captured in a run but do not own (only the gacha gives Pokémon for good):
+ * the Pokédex shows it in colour with how many times.
+ */
+export type DexState = 'owned' | 'caught' | 'seen' | 'unknown';
 
 export interface DexEntry {
   readonly species: string;
   readonly state: DexState;
+  /** 4X: how many times it was captured as a boss in a run. */
+  readonly caught: number;
   readonly level: number;
   readonly candies: number;
   /** Candies the next level costs (Infinity at the top). */
@@ -53,9 +59,18 @@ export function dex(
   return pool.map((species) => {
     const owned = profile.owned[species];
     const level = owned?.level ?? 0;
+    const caught = profile.caught[species] ?? 0;
     return {
       species,
-      state: owned !== undefined ? 'owned' : seen.has(species) ? 'seen' : 'unknown',
+      state:
+        owned !== undefined
+          ? 'owned'
+          : caught > 0
+            ? 'caught'
+            : seen.has(species)
+              ? 'seen'
+              : 'unknown',
+      caught,
       level,
       candies: profile.candies[species] ?? 0,
       nextCost: owned === undefined ? Number.POSITIVE_INFINITY : levelUpCost(level),
@@ -137,11 +152,14 @@ export function nextGoal(
 export function dexCounts(entries: readonly DexEntry[]): {
   readonly seen: number;
   readonly owned: number;
+  /** 4X: captured in a run at least once (owned or not). */
+  readonly caught: number;
   readonly total: number;
 } {
   return {
     seen: entries.filter((e) => e.state !== 'unknown').length,
     owned: entries.filter((e) => e.state === 'owned').length,
+    caught: entries.filter((e) => e.caught > 0).length,
     total: entries.length,
   };
 }

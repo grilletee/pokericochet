@@ -6,13 +6,18 @@ import { TYPE_COLORS } from './typeColors';
  * numbers come from the meta (rules, pity, rate table); this only says them.
  */
 
-export type StarCount = 3 | 4 | 5;
+/** 4X: ★6 is a legendary of the key banner. */
+export type StarCount = 3 | 4 | 5 | 6;
 
-/** The colour of each rarity: blue ★3, violet ★4, gold ★5 (the reveal and the cards wear it). */
+/**
+ * The colour of each rarity: blue ★3, violet ★4, gold ★5 and, 4X, a prismatic magenta for the ★6 of
+ * the legendaries (the reveal and the cards wear it).
+ */
 export const RARITY_COLORS: Readonly<Record<StarCount, string>> = {
   3: '#5fb0ff',
   4: '#c07bff',
   5: '#ffd75a',
+  6: '#ff5fd2',
 };
 
 export function stars(n: StarCount): string {
@@ -33,27 +38,38 @@ export function percent(fraction: number): string {
   return `${text.replace('.', ',')} %`;
 }
 
-/** The two colours of a region banner (by generation), for its art. */
-const REGION_COLORS: Readonly<Record<number, readonly [string, string]>> = {
-  1: ['#e04a4a', '#3f66d0'],
-  2: ['#d8b040', '#9aa6c0'],
-  3: ['#3fae5a', '#e04a4a'],
-  4: ['#5fb0ff', '#c07bff'],
-  5: ['#4a4a5a', '#f6f3e8'],
-  6: ['#3f66d0', '#e04a4a'],
-  7: ['#ff9a4a', '#8a5acb'],
-  8: ['#c04a8a', '#5fb0ff'],
-  9: ['#e04a4a', '#8a5acb'],
-};
+/** 4X: the kinds of banner the screen shows. */
+export type BannerViewKind = 'standard' | 'pseudo' | 'starter' | 'showcase' | 'legend';
 
-/** The colours of a banner's art: its type, its region, or gold for the standard one. */
+/** 4X: what each banner is, in a few words (its kicker). */
+export function bannerKindLabel(kind: BannerViewKind): string {
+  switch (kind) {
+    case 'pseudo':
+      return 'Pseudolegendario de la semana';
+    case 'starter':
+      return 'Inicial de la semana';
+    case 'showcase':
+      return 'Pokémon con estilo de la semana';
+    case 'legend':
+      return 'Legendario de la semana · ★6';
+    default:
+      return 'Banner permanente';
+  }
+}
+
+/**
+ * The colours of a banner's art (4X): the type of its featured Pokémon for a weekly banner, pink for
+ * the "Pokémon con estilo", magenta on black for the legendary one, gold for the standard one.
+ */
 export function bannerColors(
-  kind: 'standard' | 'region' | 'type',
-  gen: number | undefined,
+  kind: BannerViewKind,
   type: GameType | undefined,
 ): readonly [string, string] {
-  if (kind === 'type' && type !== undefined) return [TYPE_COLORS[type], '#14172b'];
-  if (kind === 'region' && gen !== undefined) return REGION_COLORS[gen] ?? ['#3f66d0', '#14172b'];
+  if (kind === 'legend') return [RARITY_COLORS[6], '#0b0d1a'];
+  if (kind === 'showcase') return ['#ff7fb0', '#2b3a73'];
+  if ((kind === 'pseudo' || kind === 'starter') && type !== undefined) {
+    return [TYPE_COLORS[type], '#14172b'];
+  }
   return ['#ffd75a', '#3f66d0'];
 }
 
@@ -62,17 +78,17 @@ export interface PityNumbers {
   readonly toFour: number;
   readonly soft: boolean;
   readonly nextFiveChance: number;
-  readonly toFeatured: number | null;
   readonly sinceFive: number;
-  /** The 50/50 was lost on this banner: its next ★5 is the featured one (4V). */
+  /** The 50/50 was lost on a banner of this family: its next ★5 is the featured one (4V, 4X). */
   readonly featuredOwed?: boolean;
+  /** 4X: draws left to the featured ★5 at the very worst (null without a featured ★5). */
+  readonly worstToFeatured?: number | null;
 }
 
 export interface PityRules {
   readonly softFrom: number;
   readonly hardAt: number;
   readonly fourEvery: number;
-  readonly featuredAt: number;
   readonly featuredShare: number;
   readonly rate5: number;
   readonly lostHalfPaysBack?: boolean;
@@ -90,10 +106,10 @@ export function pityLines(pity: PityNumbers, limited: boolean): string[] {
   if (limited) {
     lines.push(
       pity.featuredOwed === true
-        ? 'Perdiste el 50/50: tu próximo ★5 aquí es el destacado'
-        : pity.toFeatured === null
-          ? 'Destacado ★5 de este banner: ya conseguido'
-          : `Destacado ★5 seguro en ${draws(pity.toFeatured)} en este banner`,
+        ? 'Perdiste el 50/50: tu próximo ★5 en un banner así es el destacado'
+        : pity.worstToFeatured === null || pity.worstToFeatured === undefined
+          ? 'Cada ★5 tiene un 50 % de ser el destacado'
+          : `Destacado ★5 seguro en ${draws(pity.worstToFeatured)} como muy tarde`,
     );
   }
   return lines;
@@ -102,21 +118,24 @@ export function pityLines(pity: PityNumbers, limited: boolean): string[] {
 /** How the gacha works, for the help panel: the same numbers the draw uses. */
 export function rulesText(rules: PityRules, limited: boolean): string[] {
   const lines = [
-    `Cada tirada da un Pokémon: ★3 común, ★4 (evoluciones finales fuertes) o ★5 (iniciales y pseudolegendarios). Los legendarios no salen aquí: solo se ven como jefes.`,
+    `Cada tirada da un Pokémon para siempre: ★3 común, ★4 (evoluciones finales fuertes) o ★5 (iniciales y pseudolegendarios). Es la única forma de quedarte un Pokémon: lo que se une en una partida solo dura esa partida.`,
     `★5: ${percentBp(rules.rate5)} por tirada. Desde la tirada ${rules.softFrom} sin ★5 la probabilidad sube un 5 % en cada una, y la ${rules.hardAt} es un ★5 seguro.`,
     `Cada ${rules.fourEvery} tiradas, como muy tarde, sale un ★4 o mejor.`,
     `El contador de pity es tuyo: se conserva al cambiar de banner y entre semanas.`,
   ];
   if (limited) {
     lines.push(
-      `En un banner limitado, cada ★5 tiene un ${percentBp(rules.featuredShare)} de ser el destacado; si en ${rules.featuredAt} tiradas en ese banner no ha salido, esa tirada te lo da.`,
+      `En el banner del pseudolegendario y en el de iniciales de la semana, cada ★5 tiene un ${percentBp(rules.featuredShare)} de ser el destacado.`,
     );
     if (rules.lostHalfPaysBack === true) {
       lines.push(
-        'Si pierdes el 50/50 (te sale otro ★5), el siguiente ★5 en ese banner es seguro el destacado.',
+        'Si pierdes el 50/50 (te sale otro ★5), el siguiente ★5 en un banner de esa familia es seguro el destacado, aunque ya sea otra semana.',
       );
     }
   }
+  lines.push(
+    'Los legendarios (★6) no salen con monedas: derrotar al legendario final de una partida da un fragmento de llave, y cada llave abre una tirada del Santuario Legendario.',
+  );
   lines.push(
     'Si te sale uno que ya tienes, ganas caramelos de ese Pokémon (más cuanto más raro). Los caramelos suben su nivel permanente en la Colección.',
     'Las monedas solo se ganan jugando: oleadas, jefes y victorias. Sin dinero real.',
@@ -177,19 +196,56 @@ export function pityMeters(pity: PityNumbers, rules: PityRules, limited: boolean
   ];
   if (limited) {
     const owed = pity.featuredOwed === true;
-    const got = pity.toFeatured === null && !owed;
+    const worst = pity.worstToFeatured ?? 2 * rules.hardAt;
     meters.push({
       id: 'featured',
       label: 'Destacado ★5',
-      value: owed ? 'Seguro' : got ? '¡Ya!' : String(pity.toFeatured ?? 0),
-      fill: owed || got ? 1 : clamp(1 - (pity.toFeatured ?? 0) / rules.featuredAt),
+      value: owed ? 'Seguro' : String(worst),
+      fill: owed ? 1 : clamp(1 - worst / (2 * rules.hardAt)),
       segments: 12,
       color: '#ff7fb0',
       hot: owed,
-      note: owed ? 'tu próximo ★5 aquí' : got ? 'ya conseguido' : `tiradas en este banner`,
+      note: owed ? 'tu próximo ★5' : 'tiradas, como muy tarde',
     });
   }
   return meters;
+}
+
+/**
+ * 4X: the counters of the legendary banner: the fragments towards the next key, and the keys left to
+ * the certain legendary (its own pity).
+ */
+export function legendMeters(legend: {
+  readonly keys: number;
+  readonly fragments: number;
+  readonly perKey: number;
+  readonly nextChance: number;
+  readonly toLegend: number;
+  readonly hardAt: number;
+}): PityMeter[] {
+  const clamp = (v: number): number => Math.max(0, Math.min(1, v));
+  return [
+    {
+      id: 'four',
+      label: 'Fragmentos de llave',
+      value: `${legend.fragments}`,
+      fill: clamp(legend.fragments / legend.perKey),
+      segments: legend.perKey,
+      color: RARITY_COLORS[6],
+      hot: legend.keys > 0,
+      note: `de ${legend.perKey} · ${legend.keys} ${legend.keys === 1 ? 'llave' : 'llaves'}`,
+    },
+    {
+      id: 'five',
+      label: '★6 seguro en',
+      value: String(legend.toLegend),
+      fill: clamp(1 - legend.toLegend / legend.hardAt),
+      segments: legend.hardAt,
+      color: RARITY_COLORS[6],
+      hot: legend.toLegend === 1,
+      note: `llaves · ${percentBp(legend.nextChance)} con la próxima`,
+    },
+  ];
 }
 
 /** When the reveal turns each card, in milliseconds after the cards are dealt. */
@@ -222,8 +278,10 @@ export function anticipation(best: StarCount): Anticipation {
   const shifts: { at: number; stars: StarCount }[] = [];
   if (best >= 4) shifts.push({ at: 1000, stars: 4 });
   if (best >= 5) shifts.push({ at: 1450, stars: 5 });
+  // 4X: a legendary climbs one step further, after a longer charge.
+  if (best >= 6) shifts.push({ at: 2050, stars: 6 });
   // A rare draw keeps the sphere a moment longer, so the last colour is seen before it opens.
-  const openMs = best === 5 ? 1950 : best === 4 ? 1500 : 1150;
+  const openMs = best === 6 ? 2700 : best === 5 ? 1950 : best === 4 ? 1500 : 1150;
   return { landMs, shifts, openMs };
 }
 
@@ -251,11 +309,12 @@ export function revealTiming(stars: readonly StarCount[]): RevealTiming {
   let lastFive = false;
   for (const { s, i } of order) {
     if (s === 4) at += FOUR_BEAT;
-    if (s === 5) at += FIVE_BEAT;
+    // A ★6 (4X) is a ★5 moment and more: the same beat and screen of its own.
+    if (s >= 5) at += FIVE_BEAT;
     flips[i] = at;
     last = at;
-    lastFive = s === 5;
-    at += s === 5 ? FIVE_SCREEN : step;
+    lastFive = s >= 5;
+    at += s >= 5 ? FIVE_SCREEN : step;
     step = Math.max(MIN_STEP, step - ACCEL);
   }
   return {

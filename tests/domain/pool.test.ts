@@ -240,7 +240,9 @@ describe('the champion of a biome, the boss between waves (ADR-049)', () => {
       const biome = strong.themes?.[run.waveThemes[1] ?? ''];
       if (biome === undefined) throw new Error('no biome');
       const expected = championOf(strong, run.pool, biome);
-      for (let t = 0; t < 2 * 2700 + 5 && run.boss.next === 0; t++) {
+      // Until two waves have passed (a pick does not take a tick; 4X: a join encounter is one more
+      // pick before the cards of its level, so the loop counts ticks, not iterations).
+      for (let t = 0; run.tickCount < 2 * 2700 + 5 && t < 8 * 2700 && run.boss.next === 0; t++) {
         tick(
           run,
           {
@@ -255,7 +257,8 @@ describe('the champion of a biome, the boss between waves (ADR-049)', () => {
       const boss = run.enemies.find((e) => e.id === run.boss.id);
       expect(boss?.species, `seed ${seed}`).toBe(expected);
     }
-  });
+    // Two whole waves of five runs: slow under the parallel suite.
+  }, 60_000);
 });
 
 describe('the legendaries stay available as final bosses (ADR-048)', () => {

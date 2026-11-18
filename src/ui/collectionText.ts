@@ -7,18 +7,18 @@ import { pokemonName } from './names';
 export interface CandyRules {
   readonly perRun: number;
   readonly perBoss: number;
-  /** Candies of a repeat in the gacha, by its stars. */
-  readonly repeat: Readonly<Record<3 | 4 | 5, number>>;
-  /** Candies of registering a Pokémon you already have. */
-  readonly register: number;
+  /** Candies of a repeat in the gacha, by its stars (★6: a legendary of the key banner). */
+  readonly repeat: Readonly<Record<3 | 4 | 5 | 6, number>>;
+  /** 4X: candies of capturing in a run a boss you already have. */
+  readonly caught: number;
 }
 
 /** How candies are earned and what they are for, one line each. */
 export function candyLines(rules: CandyRules): string[] {
   return [
     `Jugando: el Pokémon con el que juegas gana ${rules.perRun} caramelos por partida (si superas una oleada) y ${rules.perBoss} más por cada jefe que derrotes.`,
-    `En el Gacha: un repetido da caramelos de ese Pokémon (★3 +${rules.repeat[3]}, ★4 +${rules.repeat[4]}, ★5 +${rules.repeat[5]}).`,
-    `Al registrar una captura que ya tienes: +${rules.register}.`,
+    `En el Gacha: un repetido da caramelos de ese Pokémon (★3 +${rules.repeat[3]}, ★4 +${rules.repeat[4]}, ★5 +${rules.repeat[5]}, ★6 +${rules.repeat[6]}).`,
+    `Capturando en una partida a un jefe que ya tienes: +${rules.caught}.`,
     'Para qué sirven: suben su nivel permanente, y con más nivel empieza las partidas más fuerte.',
   ];
 }

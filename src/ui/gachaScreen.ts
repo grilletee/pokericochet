@@ -4,8 +4,11 @@ import type { ArtLookup } from './cardView';
 import { confetti, installCinema, kicker, motes, shadeHex, title } from './cinema';
 import {
   anticipation,
+  type BannerViewKind,
   bannerColors,
+  bannerKindLabel,
   endsText,
+  legendMeters,
   type PityNumbers,
   type PityRules,
   percent,
@@ -43,15 +46,31 @@ export interface FeaturedView {
   readonly owned: boolean;
 }
 
+/** 4X: what the legendary banner shows of the keys of the profile. */
+export interface LegendNumbers {
+  readonly keys: number;
+  /** Fragments towards the next key and how many make one. */
+  readonly fragments: number;
+  readonly perKey: number;
+  /** The ★6 chance of the next key (basis points) and keys left to the certain one. */
+  readonly nextChance: number;
+  readonly toLegend: number;
+  readonly hardAt: number;
+}
+
 export interface GachaBannerView {
   readonly key: string;
-  readonly kind: 'standard' | 'region' | 'type';
+  readonly kind: BannerViewKind;
   readonly name: string;
-  /** "Región de Kanto · 1.ª generación", "Tipo Fuego", "Todo el catálogo". */
+  /** What it is about: "Pseudolegendario de la semana", "Todo el catálogo"... */
   readonly theme: string;
-  readonly gen?: number;
+  /** The type of its featured Pokémon (its colours). */
   readonly type?: GameType;
   readonly endsInDays: number | null;
+  /** 4X: the start of the next week (ms since 1970), for the countdown; null for the standard one. */
+  readonly endsAtMs?: number | null;
+  /** 4X: only on the legendary banner. */
+  readonly legend?: LegendNumbers;
   readonly featured5: readonly FeaturedView[];
   readonly featured4: readonly FeaturedView[];
   /** The standard banner shows some ★5 of the catalogue instead of featured ones. */
@@ -76,8 +95,8 @@ export interface GachaView {
   readonly rules: PityRules;
   /** Base and long-run shares of each rarity (fractions), and draws per ★5 on average. */
   readonly rates: {
-    readonly base: Readonly<Record<StarCount, number>>;
-    readonly overall: Readonly<Record<StarCount, number>>;
+    readonly base: Readonly<Record<3 | 4 | 5, number>>;
+    readonly overall: Readonly<Record<3 | 4 | 5, number>>;
     readonly drawsPerFive: number;
   };
   readonly repeatCandies: Readonly<Record<StarCount, number>>;
@@ -381,10 +400,14 @@ export class GachaScreen {
       'display:flex;flex-direction:column;gap:8px;flex:1 1 300px;min-width:0;',
     );
     pity.className = 'gx-panel';
-    pity.dataset.pity = `${banner.pity.toFive}/${banner.pity.toFour}/${banner.pity.toFeatured ?? '-'}`;
+    pity.dataset.pity = `${banner.pity.toFive}/${banner.pity.toFour}/${banner.pity.worstToFeatured ?? '-'}`;
     // The same lines as before, for screen readers and the checks.
     pity.title = pityLines(banner.pity, limited).join('\n');
-    for (const meter of pityMeters(banner.pity, view.rules, limited)) {
+    const meters =
+      banner.legend === undefined
+        ? pityMeters(banner.pity, view.rules, limited)
+        : legendMeters(banner.legend);
+    for (const meter of meters) {
       const row = el('div', '');
       row.className = meter.hot ? 'gx-meter gx-hot' : 'gx-meter';
       row.dataset.meter = meter.id;
@@ -414,7 +437,28 @@ export class GachaScreen {
       'display:flex;flex-direction:column;gap:10px;align-items:center;justify-content:center;flex:0 1 auto;',
     );
     const draws = el('div', 'display:flex;gap:12px;flex-wrap:wrap;justify-content:center;');
-    for (const count of [1, view.multi]) {
+    // 4X: the legendary banner opens with a key, one at a time.
+    if (banner.legend !== undefined) {
+      const legend = banner.legend;
+      const b = button('');
+      b.dataset.draw = 'key';
+      b.disabled = legend.keys < 1;
+      const n = el('span', '', 'Usar una llave');
+      n.className = 'gx-draw-n';
+      const have = el(
+        'span',
+        '',
+        `Tienes ${legend.keys} ${legend.keys === 1 ? 'llave' : 'llaves'}`,
+      );
+      have.className = 'gx-draw-c';
+      b.append(n, have);
+      b.addEventListener('click', () => {
+        this.panel = 'none';
+        actions.onDraw(1);
+      });
+      draws.append(b);
+    }
+    for (const count of banner.legend === undefined ? [1, view.multi] : []) {
       const price = view.cost * count;
       const b = button('');
       b.dataset.draw = String(count);
@@ -438,7 +482,15 @@ export class GachaScreen {
       draws.append(b);
     }
     drawCol.append(draws);
-    if (view.coins < view.cost) {
+    if (banner.legend !== undefined) {
+      drawCol.append(
+        el(
+          'div',
+          'font-size:12px;opacity:0.85;text-align:center;max-width:300px;',
+          `Derrota al legendario final de una partida para ganar un fragmento. ${banner.legend.perKey} fragmentos forman una llave.`,
+        ),
+      );
+    } else if (view.coins < view.cost) {
       drawCol.append(
         el(
           'div',
@@ -475,7 +527,7 @@ export class GachaScreen {
   }
 
   private bannerArt(banner: GachaBannerView): HTMLElement {
-    const [a, b] = bannerColors(banner.kind, banner.gen, banner.type);
+    const [a, b] = bannerColors(banner.kind, banner.type);
     const art = el(
       'div',
       `--gx-a:${a};--gx-r:${shadeHex(a, 1.35)};` +
@@ -525,14 +577,7 @@ export class GachaScreen {
       'position:absolute;left:14px;top:12px;bottom:12px;width:42%;z-index:2;display:flex;flex-direction:column;gap:6px;text-shadow:3px 3px 0 #0b0d1a;',
     );
     // What the banner is about (the ribbon already says how long it lasts).
-    const label = kicker(
-      banner.kind === 'region'
-        ? 'Banner de región'
-        : banner.kind === 'type'
-          ? 'Banner de tipo'
-          : 'Banner estándar',
-      shadeHex(a, 1.4),
-    );
+    const label = kicker(bannerKindLabel(banner.kind), shadeHex(a, 1.4));
     label.style.alignSelf = 'flex-start';
     words.append(
       label,
@@ -546,8 +591,8 @@ export class GachaScreen {
       tag.append(
         el(
           'div',
-          `color:${RARITY_COLORS[5]};font-size:15px;letter-spacing:2px;`,
-          `${stars(5)} DESTACADO`,
+          `color:${RARITY_COLORS[top.stars]};font-size:15px;letter-spacing:2px;`,
+          `${stars(top.stars)} DESTACADO`,
         ),
         el(
           'div',
@@ -672,7 +717,7 @@ export class GachaScreen {
         const line = el(
           'div',
           `display:grid;grid-template-columns:48px 52px 1fr auto;gap:6px;padding:2px 4px;color:${row.stars === 3 ? '#c8d0e8' : RARITY_COLORS[row.stars]};` +
-            (row.stars === 5 ? 'background:#ffd75a22;' : ''),
+            (row.stars >= 5 ? `background:${RARITY_COLORS[row.stars]}22;` : ''),
         );
         line.dataset.historyRow = row.species;
         line.append(
@@ -758,7 +803,7 @@ export class GachaScreen {
       at(shift.at, () => {
         stage.style.setProperty('--orb', RARITY_COLORS[shift.stars]);
         stage.dataset.orbStars = String(shift.stars);
-        if (shift.stars === 5) sphere.classList.add('gx-hard');
+        if (shift.stars >= 5) sphere.classList.add('gx-hard');
         sphere.animate?.([{ scale: '1.3' }, { scale: '1' }], { duration: 220, easing: 'steps(4)' });
         this.sound('gachaShift');
       });
@@ -789,7 +834,7 @@ export class GachaScreen {
 
   private revealCards(cards: readonly RevealCard[], best: StarCount, done: () => void): void {
     const timing = revealTiming(cards.map((c) => c.stars));
-    const firstFive = cards.findIndex((c) => c.stars === 5);
+    const firstFive = cards.findIndex((c) => c.stars >= 5);
     const fiveAt = firstFive < 0 ? -1 : (timing.flips[firstFive] ?? 0);
     const nodes: HTMLElement[] = [];
     // Behind: rays in the colour of the best rarity and motes; a white flash when a ★5 turns.
@@ -797,7 +842,7 @@ export class GachaScreen {
     bg.className = 'gx-bg';
     const light = el(
       'div',
-      `position:absolute;left:50%;top:50%;width:160vmax;height:160vmax;margin:-80vmax 0 0 -80vmax;opacity:${best === 5 ? 0.5 : 0.28};` +
+      `position:absolute;left:50%;top:50%;width:160vmax;height:160vmax;margin:-80vmax 0 0 -80vmax;opacity:${best >= 5 ? 0.5 : 0.28};` +
         `background:repeating-conic-gradient(from 0deg,${RARITY_COLORS[best]} 0deg 7deg,transparent 7deg 22deg);` +
         'animation:mx-turn 14s steps(64) infinite;-webkit-mask:radial-gradient(circle,#000 0,#000 18%,transparent 62%);mask:radial-gradient(circle,#000 0,#000 18%,transparent 62%);',
     );
@@ -805,7 +850,7 @@ export class GachaScreen {
     nodes.push(bg);
     // The timeline: each cue puts a class on at its moment (a tap plays all that are left at once).
     const cues: [number, () => void][] = [];
-    if (best === 5) {
+    if (best >= 5) {
       const flash = el('div', '');
       flash.className = 'gx-flash';
       nodes.push(flash);
@@ -838,11 +883,11 @@ export class GachaScreen {
         flip,
         () => {
           node.classList.add('gx-up');
-          this.sound(card.stars === 5 ? 'flip5' : card.stars === 4 ? 'flip4' : 'flip3');
+          this.sound(card.stars >= 5 ? 'flip5' : card.stars === 4 ? 'flip4' : 'flip3');
         },
       ]);
       // 4W: a ★5 has a screen of its own, right after it turns; the next card waits for it.
-      if (card.stars === 5) {
+      if (card.stars >= 5) {
         fiveCues.push(
           [flip + 150, () => this.showFive(five, card)],
           [flip + timing.fiveScreenMs - 100, () => five.classList.remove('gx-on')],
@@ -915,7 +960,7 @@ export class GachaScreen {
       for (const timer of pending) window.clearTimeout(timer);
       pending.clear();
       for (const [, cue] of cues) cue();
-      const last = [...cards].reverse().find((c) => c.stars === 5);
+      const last = [...cards].reverse().find((c) => c.stars >= 5);
       if (last !== undefined) {
         this.showFive(five, last);
         const timer = window.setTimeout(() => five.classList.remove('gx-on'), timing.fiveScreenMs);

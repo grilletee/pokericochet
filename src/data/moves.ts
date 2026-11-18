@@ -17,6 +17,9 @@ const file = generated as GeneratedMoves;
 /** Move id of stage 1, 2 and 3 for every ball and enemy line. */
 export const MOVES_BY_BASE: Readonly<Record<string, readonly string[]>> = file.byBase;
 
+/** 4X: the default ladder of each type (stage 1, 2, 3), the fallback of any line (ADR-039). */
+export const MOVE_DEFAULTS: Readonly<Record<string, readonly string[]>> = file.defaults;
+
 /** The name of every move in Spanish (ADR-036, ADR-039). */
 export const MOVE_NAMES: Readonly<Record<string, string>> = Object.fromEntries(
   Object.entries(file.moves).map(([id, move]) => [id, move.name]),

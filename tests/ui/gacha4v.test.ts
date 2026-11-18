@@ -4,12 +4,13 @@ import { pityMeters, RARITY_COLORS, revealTiming, shadeHex } from '../../src/ui'
 
 /** 4V, block 3: the pity panel and the rhythm of the reveal, as pure functions. */
 describe('the pity panel', () => {
+  const worst = 2 * GACHA_RULES.hardAt;
   const calm = {
     toFive: 80,
     toFour: 10,
     soft: false,
     nextFiveChance: 80,
-    toFeatured: 120,
+    worstToFeatured: worst,
     sinceFive: 0,
   };
 
@@ -18,36 +19,40 @@ describe('the pity panel', () => {
     expect(limited.map((m) => m.id)).toEqual(['five', 'four', 'featured']);
     expect(pityMeters(calm, GACHA_RULES, false).map((m) => m.id)).toEqual(['five', 'four']);
     for (const m of limited) expect(m.fill).toBe(0);
-    expect(limited.map((m) => m.value)).toEqual(['80', '10', '120']);
+    expect(limited.map((m) => m.value)).toEqual(['80', '10', String(worst)]);
     expect(limited[0]?.color).toBe(RARITY_COLORS[5]);
     expect(limited[1]?.segments).toBe(GACHA_RULES.fourEvery);
   });
 
   it('the bars fill as the draws go, and are full on the draw that is sure', () => {
     const near = pityMeters(
-      { ...calm, toFive: 1, toFour: 1, toFeatured: 1, soft: true, nextFiveChance: 10_000 },
+      { ...calm, toFive: 1, toFour: 1, worstToFeatured: 1, soft: true, nextFiveChance: 10_000 },
       GACHA_RULES,
       true,
     );
     const [five, four, featured] = near;
     expect(five?.fill).toBeCloseTo(1 - 1 / GACHA_RULES.hardAt, 9);
     expect(four?.fill).toBeCloseTo(1 - 1 / GACHA_RULES.fourEvery, 9);
-    expect(featured?.fill).toBeCloseTo(1 - 1 / GACHA_RULES.featuredAt, 9);
+    // 4X: the featured one counts the worst case, two hard pities.
+    expect(featured?.fill).toBeCloseTo(1 - 1 / worst, 9);
     // The soft pity and the next ★4 sure are "hot" (they blink).
     expect(five?.hot).toBe(true);
     expect(five?.note).toContain('100 %');
     expect(four?.hot).toBe(true);
   });
 
-  it('a lost 50/50 shows as "sure" and full; a featured already got, as done', () => {
-    const owed = pityMeters({ ...calm, toFeatured: 70, featuredOwed: true }, GACHA_RULES, true)[2];
+  it('a lost 50/50 shows as "sure" and full (4X: it carries over the weeks)', () => {
+    const owed = pityMeters(
+      { ...calm, worstToFeatured: 70, featuredOwed: true },
+      GACHA_RULES,
+      true,
+    )[2];
     expect(owed?.value).toBe('Seguro');
     expect(owed?.fill).toBe(1);
     expect(owed?.hot).toBe(true);
-    const got = pityMeters({ ...calm, toFeatured: null }, GACHA_RULES, true)[2];
-    expect(got?.value).toBe('¡Ya!');
-    expect(got?.fill).toBe(1);
-    expect(got?.hot).toBe(false);
+    const fresh = pityMeters(calm, GACHA_RULES, true)[2];
+    expect(fresh?.hot).toBe(false);
+    expect(fresh?.note).toContain('como muy tarde');
   });
 });
 

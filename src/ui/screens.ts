@@ -46,7 +46,8 @@ export interface StarterOption {
   readonly region?: string;
   readonly final?: string;
   readonly dex?: number;
-  readonly stars?: 3 | 4 | 5;
+  /** 4X: ★6 for a legendary (from the key banner). */
+  readonly stars?: 3 | 4 | 5 | 6;
   /**
    * 4W, block 7: a line that splits: the forms it can become and the type of place of each, e.g.
    * "Flareon" by "fire" (the line of always first, with no type).

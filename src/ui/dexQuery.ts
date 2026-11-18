@@ -8,11 +8,12 @@ import { pokemonName } from './names';
  */
 export interface DexItem {
   readonly species: string;
-  readonly state: 'owned' | 'seen' | 'unknown';
+  /** 4X: `caught` is a boss captured in a run that you do not own. */
+  readonly state: 'owned' | 'caught' | 'seen' | 'unknown';
   readonly types: readonly GameType[];
   readonly dex: number;
   readonly gen?: number;
-  readonly stars?: 3 | 4 | 5;
+  readonly stars?: 3 | 4 | 5 | 6;
   /** Permanent level (0 when not owned). */
   readonly level: number;
   readonly candies: number;
@@ -29,7 +30,7 @@ export interface DexQuery {
   readonly text: string;
   readonly type: GameType | null;
   readonly gen: number | null;
-  readonly stars: 3 | 4 | 5 | null;
+  readonly stars: 3 | 4 | 5 | 6 | null;
   readonly state: DexStateFilter;
   /** Only the ones whose permanent level is above 1. */
   readonly raised: boolean;
@@ -83,16 +84,17 @@ export function queryDex<T extends DexItem>(items: readonly T[], query: DexQuery
       (query.stars === null || item.stars === query.stars) &&
       (query.state === 'all' ||
         (query.state === 'owned' && item.state === 'owned') ||
-        (query.state === 'seen' && item.state === 'seen') ||
+        // 4X: a boss captured in a run counts as seen (you met it, you do not have it).
+        (query.state === 'seen' && (item.state === 'seen' || item.state === 'caught')) ||
         (query.state === 'missing' && item.state !== 'owned')) &&
       (!query.raised || (item.state === 'owned' && item.level > 1)) &&
       (!query.canLevel || (item.state === 'owned' && item.candies >= item.nextCost)),
   );
 }
 
-/** How far the player got with it: owned first, then seen, then unknown. */
+/** How far the player got with it: owned first, then captured in a run, seen, then unknown. */
 const knownRank = (item: DexItem): number =>
-  item.state === 'owned' ? 0 : item.state === 'seen' ? 1 : 2;
+  item.state === 'owned' ? 0 : item.state === 'caught' ? 1 : item.state === 'seen' ? 2 : 3;
 
 /**
  * The items in the order asked; ties keep the Pokédex number. By level and by rarity the highest

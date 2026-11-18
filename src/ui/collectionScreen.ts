@@ -28,7 +28,10 @@ import { typeIcons } from './typeIcons';
  */
 export interface DexTile {
   readonly species: string;
-  readonly state: 'owned' | 'seen' | 'unknown';
+  /** 4X: `caught` is a boss captured in a run that you do not own (only the gacha gives it). */
+  readonly state: 'owned' | 'caught' | 'seen' | 'unknown';
+  /** 4X: how many times it was captured as a boss in a run. */
+  readonly caught?: number;
   readonly type: GameType | undefined;
   readonly level: number;
   readonly candies: number;
@@ -205,7 +208,12 @@ export class CollectionScreen {
           dex: item.dex,
           state: tile.state,
           ...(tile.stars === undefined ? {} : { stars: tile.stars }),
-          note: tile.state === 'owned' ? `Nv ${tile.level} · 🍬${tile.candies}` : '',
+          note:
+            tile.state === 'owned'
+              ? `Nv ${tile.level} · 🍬${tile.candies}`
+              : tile.state === 'caught'
+                ? `Capturado ×${tile.caught ?? 1}`
+                : '',
           selected: tile.species === selected,
         },
         this.art,
@@ -248,7 +256,8 @@ export class CollectionScreen {
       const img = document.createElement('img');
       img.src = url;
       img.alt = pokemonName(tile.species);
-      img.style.cssText = `width:120px;height:120px;image-rendering:pixelated;${owned ? '' : 'filter:brightness(0) opacity(0.6);'}`;
+      // 4X: one captured in a run shows in colour; one only seen is a silhouette.
+      img.style.cssText = `width:120px;height:120px;image-rendering:pixelated;${owned || tile.state === 'caught' ? '' : 'filter:brightness(0) opacity(0.6);'}`;
       big.append(img);
     }
     pics.append(big);
@@ -319,6 +328,18 @@ export class CollectionScreen {
         );
       }
       info.append(table);
+    }
+    if (tile.state === 'caught' || (owned && (tile.caught ?? 0) > 0)) {
+      // 4X: the mark of the captured bosses; for good it only comes from the gacha.
+      const mark = el(
+        'div',
+        'font-weight:700;padding:4px 6px;background:#3f66d0;color:#f6f3e8;',
+        owned
+          ? `Capturado ${tile.caught ?? 1} ${tile.caught === 1 ? 'vez' : 'veces'} en partida`
+          : `Capturado ${tile.caught ?? 1} ${tile.caught === 1 ? 'vez' : 'veces'} en partida · para tenerlo siempre, consíguelo en el Gacha`,
+      );
+      mark.dataset.dexCaught = String(tile.caught ?? 1);
+      info.append(mark);
     }
     if (owned) {
       info.append(this.progress(tile));

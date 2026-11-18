@@ -17,8 +17,19 @@ export {
   permanentLadder,
 } from './collection';
 export {
+  type EconomyPlan,
+  economyPlan,
+  featuredDrawDistribution,
+  featuredDrawsMean,
+  featuredDrawsQuantile,
+  featuredDrawsWorst,
+  RUNS_PER_DAY,
+} from './economy';
+export {
+  type AnyStars,
   activeBanners,
   type Banner,
+  type BannerFamily,
   type BannerInput,
   type BannerKind,
   bannerPeriod,
@@ -26,9 +37,18 @@ export {
   type CatalogEntry,
   type CatalogInput,
   type DrawResult,
+  daysLeft,
   drawGacha,
+  drawLegend,
   fiveChance,
   gachaPool,
+  type LegendBanner,
+  type LegendPull,
+  type LegendResult,
+  type LegendView,
+  legendBanner,
+  legendChance,
+  legendView,
   lineFinal,
   type PityView,
   type Pull,
@@ -37,6 +57,7 @@ export {
   type RateTable,
   rateTable,
   type Stars,
+  weekEndsDay,
 } from './gacha';
 export {
   addSeen,
@@ -46,6 +67,7 @@ export {
   exportProfile,
   type GachaState,
   importProfile,
+  type LegendState,
   MAX_BANNER_KEYS,
   MAX_HISTORY,
   MAX_PERMANENT_LEVEL,
@@ -60,20 +82,19 @@ export {
   startLevelOf,
 } from './profile';
 export {
-  REGISTER_MIN_BOSSES,
-  REPEAT_CANDIES,
-  registerable,
-  registerCapture,
-} from './register';
-export {
   CANDIES_PER_BOSS,
   CANDIES_PER_RUN,
+  CAUGHT_CANDIES,
   COINS_FOR_WIN,
   COINS_PER_BOSS,
   COINS_PER_WAVE,
   candiesFor,
   coinsFor,
+  FRAGMENTS_PER_LEGEND,
+  fragmentsFor,
   KILLS_PER_COIN,
+  type RunRewards,
   recordRun,
+  rewardsFor,
 } from './rewards';
 export { canStartWith, chooseFirstStarter, starterChoices } from './starters';

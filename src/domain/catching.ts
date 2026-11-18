@@ -1,3 +1,4 @@
+import { drawOffers } from './cards';
 import type { BossCatchRules, GameConfig, JoinRules } from './config';
 import { baseOf } from './forms';
 import { biomeLines } from './pool';
@@ -107,6 +108,8 @@ export function openJoinEncounter(run: Run, config: GameConfig): boolean {
     if (offers.length > 0) {
       run.joinMisses = 0;
       run.offers = offers;
+      // The cards of this level-up come after the encounter, whatever the answer.
+      run.pendingCards = true;
       run.events.push({
         type: 'joinOffer',
         forms: offers.map((card) =>
@@ -123,6 +126,18 @@ export function openJoinEncounter(run: Run, config: GameConfig): boolean {
 /** True while the offers of the level-up are wild Pokémon asking to join. */
 export function isJoinEncounter(run: Run): boolean {
   return run.phase === 'levelup' && run.offers[0]?.kind === 'join';
+}
+
+/**
+ * Once a join encounter is answered (a Pokémon taken, its replace screen answered, or all let go),
+ * the cards of its level-up are offered. Returns true when it opened them.
+ */
+export function openPendingCards(run: Run, config: GameConfig): boolean {
+  if (!run.pendingCards || run.phase !== 'playing') return false;
+  run.pendingCards = false;
+  run.offers = drawOffers(run, config);
+  run.phase = 'levelup';
+  return true;
 }
 
 // ---------------------------------------------------------------------------- capture of a boss
