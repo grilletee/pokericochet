@@ -4,6 +4,8 @@
  * corners made of shadows (no border radius anywhere). It is a single stylesheet over the elements
  * the game already marks with `data-*`, so every screen, card, bar and notice wears it at once.
  */
+import { digitFontFace } from './digitWebFont';
+
 export const PALETTE = {
   ink: '#14172b',
   deep: '#1f2547',
@@ -115,6 +117,7 @@ export function installPixelStyle(host: HTMLElement, fontUrl: string): void {
   const style = document.createElement('style');
   style.dataset.pixelStyle = '';
   // The font file (OFL, see assets/fonts) is imported by the app layer and handed in as a URL.
-  style.textContent = `@font-face{font-family:'Pixelify';src:url(${fontUrl}) format('truetype');font-weight:400 700;font-display:block}${STYLE}`;
+  // 4W, block 3: the digits come from the game's own font (declared after, so it wins for them).
+  style.textContent = `@font-face{font-family:'Pixelify';src:url(${fontUrl}) format('truetype');font-weight:400 700;font-display:block}${digitFontFace('Pixelify') ?? ''}${STYLE}`;
   document.head.append(style);
 }
