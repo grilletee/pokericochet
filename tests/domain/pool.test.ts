@@ -39,7 +39,8 @@ describe('the pool of a run (ADR-048)', () => {
     expect(newer / lines).toBeGreaterThan(share * 0.8);
     // A hundred runs meet most of the roster.
     expect(seen.size).toBeGreaterThan(gameConfig.enemySpecies.length * 0.7);
-  });
+    // 4W: a sweep of a hundred runs (~1 s alone); under the whole suite in parallel it passed 5 s.
+  }, 20_000);
 
   it('is drawn with its own stream and is the same for the same seed', () => {
     const a = createRun(gameConfig, 42, 'charmander');
@@ -135,7 +136,8 @@ describe('the biomes of a run (ADR-049)', () => {
     }
     expect(seen.size).toBe(14);
     for (const ids of wave) expect(ids.size).toBeGreaterThanOrEqual(10);
-  });
+    // 4W: a sweep of many seeds (~2 s alone); under the whole suite in parallel it passed 5 s.
+  }, 20_000);
 
   it('wave 1 never resists the starter: at least four fair lines, and only those spawn (ADR-033)', () => {
     for (const starter of STARTERS) {
