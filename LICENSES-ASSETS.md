@@ -1,6 +1,6 @@
 # Third-party resources (licences)
 
-PokéRicochet is a free, non-profit fan game. Every third-party resource it ships is listed here and in
+PokéBounce is a free, non-profit fan game. Every third-party resource it ships is listed here and in
 the credits screen of the game.
 
 | Resource | Used for | Author | Licence | Where |

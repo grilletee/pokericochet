@@ -1,17 +1,17 @@
-# PokéRicochet
+# PokéBounce
 
-Juego web de brick-breaker, supervivientes y fusión de bolas con temática Pokémon, inspirado en *Ball x Pit*.
+Juego web de brick-breaker, supervivientes y fusión de bolas con temática Pokémon, inspirado en *Ball x Pit*. *Bounce*: rebote, lo que hacen sus bolas. Hasta el 2026-11-18 se llamó PokéRicochet.
 
 > **Aviso:** proyecto de fans sin ánimo de lucro, no afiliado ni respaldado por Nintendo, Game Freak ni The Pokémon Company. Pokémon y los nombres de los Pokémon son marcas de sus respectivos propietarios.
 > *Unofficial, non-profit fan project. Not affiliated with or endorsed by Nintendo, Game Freak or The Pokémon Company.*
 
-Este proyecto no tiene ninguna relación con el repositorio homónimo de [papimatcoding](https://github.com/papimatcoding/pokericochet), que es otro juego con otro concepto; no comparte código con él.
+Este proyecto no tiene ninguna relación con el repositorio [papimatcoding/pokericochet](https://github.com/papimatcoding/pokericochet), que es otro juego con otro concepto (con el que compartía nombre hasta el cambio a PokéBounce); no comparte código con él.
 
 ## Estado
 
 Vertical slice jugable: una run completa de unos 8 minutos (7 oleadas, jefe, fusión de bolas). Gratis, sin anuncios ni donaciones.
 
-Se publica en GitHub Pages con cada push a `main` (`.github/workflows/pages.yml`; en el repositorio hay que activar Settings → Pages → Source: *GitHub Actions*): <https://grilletee.github.io/pokericochet/>.
+Se publica en GitHub Pages con cada push a `main` (`.github/workflows/pages.yml`; en el repositorio hay que activar Settings → Pages → Source: *GitHub Actions*): <https://grilletee.github.io/pokebounce/> una vez renombrado el repositorio a `pokebounce` (hasta entonces sigue en `/pokericochet/`). El build usa rutas relativas (`base: './'`), así que funciona en cualquiera de las dos sin cambiar nada.
 
 ## Desarrollo
 

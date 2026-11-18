@@ -7,7 +7,7 @@
 
 /**
  * The sphere of the logo, 12 x 12: the glass sphere of the balls of THIS game (no band, no button:
- * nothing of a franchise ball), with a streak of light that says it ricochets. o outline, b body,
+ * nothing of a franchise ball), with a streak of light that says it bounces. o outline, b body,
  * d deep, l light, w glint, y streak.
  */
 export const LOGO_SPHERE: readonly string[] = [

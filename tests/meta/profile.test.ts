@@ -144,6 +144,28 @@ describe('the profile and its migrations (property tests)', () => {
     });
   });
 
+  it('4X: a save exported before the rename (its old mark) is still read', () => {
+    const old = JSON.stringify({
+      game: 'ricochet-save',
+      version: 2,
+      coins: 77,
+      owned: { zubat: { level: 3 } },
+    });
+    const read = importProfile(old, known, 1, CLASSICS);
+    expect(read).toHaveProperty('profile');
+    if (!('profile' in read)) return;
+    expect(read.profile.coins).toBe(77);
+    expect(read.profile.owned.zubat).toEqual({ level: 3 });
+    // A new export carries the new mark, and reads back the same.
+    expect(JSON.parse(exportProfile(read.profile)).game).toBe(SAVE_MARK);
+    expect(importProfile(exportProfile(read.profile), known, 9, CLASSICS)).toEqual({
+      profile: read.profile,
+    });
+    expect(
+      importProfile(JSON.stringify({ game: 'otro-juego', version: 2 }), known, 1),
+    ).toHaveProperty('error');
+  });
+
   it('version 0 (no version, a plain list of species) migrates to version 1', () => {
     const p = migrateProfile(
       { coins: 120, collection: ['charmander', 'pikachu', 'missingno'] },

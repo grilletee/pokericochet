@@ -22,7 +22,8 @@ await build({ logLevel: 'warn' });
 const dist = resolve('dist');
 const out = resolve('playtest-out');
 mkdirSync(out, { recursive: true });
-const BASE = '/pokericochet/';
+// 4X: the repository becomes "pokebounce" (the build uses relative paths, so any sub-path works).
+const BASE = '/pokebounce/';
 const types = {
   '.html': 'text/html',
   '.js': 'text/javascript',

@@ -45,7 +45,7 @@ def fingerprint():
 
 
 def make_sandbox():
-    box = tempfile.mkdtemp(prefix="pokericochet-mutation-")
+    box = tempfile.mkdtemp(prefix="pokebounce-mutation-")
     for item in COPY:
         src = os.path.join(ROOT, item)
         dst = os.path.join(box, item)

@@ -266,7 +266,12 @@ function readHistory(raw: unknown, known: (species: string) => boolean): PullRec
 }
 
 /** The mark an exported save carries, to recognise it (the name of the game lives in one place only). */
-export const SAVE_MARK = 'ricochet-save';
+export const SAVE_MARK = 'bounce-save';
+/**
+ * 4X: the mark of the saves exported before the game was renamed; they are still read (nobody loses
+ * a save they kept as a file).
+ */
+export const OLD_SAVE_MARKS: readonly string[] = ['ricochet-save'];
 
 /** The profile as the JSON of an export (it carries `SAVE_MARK`, to recognise it). */
 export function exportProfile(profile: Profile): string {
@@ -286,7 +291,11 @@ export function importProfile(
   } catch {
     return { error: 'El archivo no es un guardado válido (no es JSON).' };
   }
-  if (!isRecord(raw) || raw.game !== SAVE_MARK) {
+  const mark = isRecord(raw) ? raw.game : undefined;
+  if (
+    !isRecord(raw) ||
+    (mark !== SAVE_MARK && !(typeof mark === 'string' && OLD_SAVE_MARKS.includes(mark)))
+  ) {
     return { error: 'El archivo no es un guardado de este juego.' };
   }
   const profile = migrateProfile(raw, known, gachaSeed, starters);

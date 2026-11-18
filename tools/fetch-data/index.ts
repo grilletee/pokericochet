@@ -54,7 +54,7 @@ const cacheDir = resolve(here, '.cache');
 const spriteDir = resolve(root, 'src/assets/sprites');
 const generatedDir = resolve(root, 'src/data/generated');
 const API = 'https://pokeapi.co/api/v2';
-const USER_AGENT = 'pokericochet-fetch-data (non-profit fan project; caches every response)';
+const USER_AGENT = 'pokebounce-fetch-data (non-profit fan project; caches every response)';
 
 const args = process.argv.slice(2);
 const withSprites = !args.includes('--no-sprites');
