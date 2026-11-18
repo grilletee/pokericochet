@@ -671,6 +671,8 @@ export async function startGame(host: HTMLElement): Promise<void> {
   scheme = isControlScheme(forced) ? forced : loadScheme(store, coarse);
   // Sound: starts muted only if the player chose so; the audio context wakes on the first gesture.
   const sound = new SoundFx(loadMuted(store));
+  // 4W, block 6: the reveal of the gacha plays its sounds at its own moments.
+  gachaScreen.setSound((id) => sound.play(id, performance.now()));
   // The original music of the game (4G-I), on the same audio context as the effects.
   const music = new MusicPlayer(() => sound.audioContext);
   music.muted = sound.muted;
@@ -1132,8 +1134,8 @@ export async function startGame(host: HTMLElement): Promise<void> {
           const result = drawGacha(profileState.profile, banner, GACHA_RULES, count);
           if (!result.ok) return;
           setProfile(result.profile);
-          const best = Math.max(...result.pulls.map((pull) => pull.stars));
-          sound.play(best >= 5 ? 'evolve' : best >= 4 ? 'capture' : 'collect', performance.now());
+          // 4W, block 6: no sound here (it told the best rarity before the sphere did); the reveal
+          // plays its own, each at its moment.
           // The banner behind updates first (coins, pity); the reveal goes over it.
           showGacha();
           gachaScreen.showReveal(

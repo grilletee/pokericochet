@@ -20,6 +20,18 @@ export type SoundId =
   | 'alarm'
   | 'legend'
   | 'tension'
+  /**
+   * 4W, block 6: the gacha. The sphere falls and lands, charges, its colour goes up a rarity (the
+   * hint), it opens; each card turns with the pitch of its rarity; a ★5 has a fanfare.
+   */
+  | 'gachaDrop'
+  | 'gachaCharge'
+  | 'gachaShift'
+  | 'gachaOpen'
+  | 'flip3'
+  | 'flip4'
+  | 'flip5'
+  | 'fanfare5'
   /** 4V (block 4): the interface: the pointer moves onto a button, a button is pressed, back. */
   | 'uiMove'
   | 'uiOk'
@@ -101,6 +113,15 @@ const MIN_GAP_MS: Record<SoundId, number> = {
   uiMove: 70,
   uiOk: 60,
   uiBack: 60,
+  gachaDrop: 0,
+  gachaCharge: 0,
+  gachaShift: 0,
+  gachaOpen: 0,
+  // The cards of a x10 turn 140 ms apart: each one is heard.
+  flip3: 40,
+  flip4: 40,
+  flip5: 0,
+  fanfare5: 0,
 };
 
 /** Decides whether a sound may play now, per kind. Pure: time is given, never read. */
@@ -223,6 +244,44 @@ const RECIPES: Record<SoundId, readonly Note[]> = {
   uiBack: [
     { from: 880, to: 880, seconds: 0.04, wave: 'square', gain: 0.04 },
     { from: 587, to: 587, seconds: 0.06, wave: 'square', gain: 0.04, at: 0.04 },
+  ],
+  // The gacha (4W): a falling whistle and a glassy thud; a hum that rises for the charge; a bright
+  // step up when the colour changes; a burst to open.
+  gachaDrop: [
+    { from: 1400, to: 500, seconds: 0.35, wave: 'sine', gain: 0.05 },
+    { from: 140, to: 70, seconds: 0.16, wave: 'triangle', gain: 0.14, at: 0.36 },
+    { from: 1760, to: 1760, seconds: 0.08, wave: 'sine', gain: 0.04, at: 0.37 },
+  ],
+  gachaCharge: [
+    { from: 110, to: 330, seconds: 1.1, wave: 'sawtooth', gain: 0.04 },
+    { from: 220, to: 660, seconds: 1.1, wave: 'triangle', gain: 0.04 },
+  ],
+  gachaShift: [
+    { from: 784, to: 784, seconds: 0.08, wave: 'square', gain: 0.05 },
+    { from: 1175, to: 1175, seconds: 0.16, wave: 'square', gain: 0.05, at: 0.08 },
+  ],
+  gachaOpen: [
+    { from: 200, to: 60, seconds: 0.3, wave: 'sawtooth', gain: 0.1 },
+    { from: 2000, to: 800, seconds: 0.25, wave: 'triangle', gain: 0.05 },
+  ],
+  // A card turns: higher and fuller the rarer it is.
+  flip3: [{ from: 660, to: 990, seconds: 0.06, wave: 'triangle', gain: 0.05 }],
+  flip4: [
+    { from: 784, to: 1175, seconds: 0.08, wave: 'square', gain: 0.045 },
+    { from: 1175, to: 1175, seconds: 0.18, wave: 'triangle', gain: 0.05, at: 0.08 },
+  ],
+  flip5: [
+    { from: 523, to: 1047, seconds: 0.12, wave: 'square', gain: 0.06 },
+    { from: 1568, to: 1568, seconds: 0.3, wave: 'triangle', gain: 0.05, at: 0.12 },
+  ],
+  // The ★5 has its own screen and a fanfare: a rising arpeggio and a long chord.
+  fanfare5: [
+    { from: 523, to: 523, seconds: 0.12, wave: 'square', gain: 0.07 },
+    { from: 659, to: 659, seconds: 0.12, wave: 'square', gain: 0.07, at: 0.12 },
+    { from: 784, to: 784, seconds: 0.12, wave: 'square', gain: 0.07, at: 0.24 },
+    { from: 1047, to: 1047, seconds: 0.9, wave: 'square', gain: 0.07, at: 0.36 },
+    { from: 1319, to: 1319, seconds: 0.9, wave: 'triangle', gain: 0.05, at: 0.36 },
+    { from: 1568, to: 1568, seconds: 0.9, wave: 'triangle', gain: 0.04, at: 0.36 },
   ],
 };
 

@@ -52,6 +52,8 @@ export {
   type RevealCard,
 } from './gachaScreen';
 export {
+  type Anticipation,
+  anticipation,
   bannerColors,
   endsText,
   percentBp,

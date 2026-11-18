@@ -200,6 +200,31 @@ export interface RevealTiming {
   readonly hintMs: number;
   /** When the last card is up and the button to go on shows. */
   readonly doneMs: number;
+  /** 4W: how long the screen of its own of a ★5 stays (the next card waits for it). */
+  readonly fiveScreenMs: number;
+}
+
+/**
+ * The anticipation before the cards (4W, block 6; 18th playtest: "el gacha mucho más espectacular"):
+ * a glass sphere falls and lands, charges with rings that close on it, and its colour climbs from
+ * ★3 up to the best rarity of the draw, one step at a time (the hint: violet promises a ★4, gold a
+ * ★5); then it opens. Times in ms from the start. Pure.
+ */
+export interface Anticipation {
+  readonly landMs: number;
+  /** Each change of colour: when, and to which rarity. */
+  readonly shifts: readonly { readonly at: number; readonly stars: StarCount }[];
+  readonly openMs: number;
+}
+
+export function anticipation(best: StarCount): Anticipation {
+  const landMs = 420;
+  const shifts: { at: number; stars: StarCount }[] = [];
+  if (best >= 4) shifts.push({ at: 1000, stars: 4 });
+  if (best >= 5) shifts.push({ at: 1450, stars: 5 });
+  // A rare draw keeps the sphere a moment longer, so the last colour is seen before it opens.
+  const openMs = best === 5 ? 1950 : best === 4 ? 1500 : 1150;
+  return { landMs, shifts, openMs };
 }
 
 /**
@@ -209,18 +234,34 @@ export interface RevealTiming {
  * beat longer, so the best comes as a moment of its own.
  */
 export function revealTiming(stars: readonly StarCount[]): RevealTiming {
-  const STEP = 140;
+  // 4W, block 6 (a x10 "con más ritmo"): the commons turn faster and faster (a roll), every ★4
+  // waits a short beat, every ★5 a long one and then has a screen of its own.
+  const FIRST_STEP = 150;
+  const ACCEL = 12;
+  const MIN_STEP = 85;
+  const FOUR_BEAT = 200;
   const FIVE_BEAT = 420;
+  const FIVE_SCREEN = 2400;
   const first = 380;
   const order = stars.map((s, i) => ({ s, i })).sort((a, b) => a.s - b.s || a.i - b.i);
   const flips: number[] = new Array(stars.length).fill(first);
   let at = first;
   let last = first;
+  let step = FIRST_STEP;
+  let lastFive = false;
   for (const { s, i } of order) {
+    if (s === 4) at += FOUR_BEAT;
     if (s === 5) at += FIVE_BEAT;
     flips[i] = at;
     last = at;
-    at += STEP;
+    lastFive = s === 5;
+    at += s === 5 ? FIVE_SCREEN : step;
+    step = Math.max(MIN_STEP, step - ACCEL);
   }
-  return { flips, hintMs: 300, doneMs: last + 260 };
+  return {
+    flips,
+    hintMs: 300,
+    doneMs: last + 260 + (lastFive ? FIVE_SCREEN : 0),
+    fiveScreenMs: FIVE_SCREEN,
+  };
 }

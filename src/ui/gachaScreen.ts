@@ -1,7 +1,9 @@
 import type { GameType } from '../domain';
+import type { SoundId } from './audio';
 import type { ArtLookup } from './cardView';
-import { installCinema, kicker, motes, shadeHex, title } from './cinema';
+import { confetti, installCinema, kicker, motes, shadeHex, title } from './cinema';
 import {
+  anticipation,
   bannerColors,
   endsText,
   type PityNumbers,
@@ -148,6 +150,29 @@ const CSS = `
   background:radial-gradient(ellipse at 50% 45%,#1f2547 0,#07091a 70%);color:#f6f3e8;text-align:center;padding:12px;box-sizing:border-box;overflow:hidden auto;isolation:isolate}
 [data-gacha-reveal] .gx-bg{position:absolute;inset:0;z-index:-1;overflow:hidden;pointer-events:none}
 [data-gacha-reveal] .gx-orb{width:132px;height:132px;border-radius:50% !important;animation:gx-shake 0.16s steps(2) infinite,gx-grow 1.1s steps(11) forwards}
+/* 4W, block 6: the anticipation. The colour of everything is --orb, which climbs with the rarity. */
+[data-gacha-reveal] .gx-stage{position:relative;width:220px;height:220px;display:flex;align-items:center;justify-content:center}
+[data-gacha-reveal] .gx-sphere{position:relative;z-index:2;width:132px;height:132px;border-radius:50% !important;
+  background:radial-gradient(circle at 35% 30%,#ffffff 0,var(--orb) 40%,#14172b 100%);
+  box-shadow:0 0 0 4px ${INK},0 0 50px 14px var(--orb);animation:gx-fall 420ms steps(7) both}
+[data-gacha-reveal] .gx-sphere.gx-landed{animation:gx-shake 0.16s steps(2) infinite}
+[data-gacha-reveal] .gx-sphere.gx-hard{animation:gx-shake 0.07s steps(2) infinite}
+[data-gacha-reveal] .gx-pad{position:absolute;bottom:4px;left:50%;width:200px;height:34px;margin-left:-100px;border-radius:50% !important;
+  background:radial-gradient(ellipse,var(--orb) 0,transparent 70%);opacity:0.55}
+[data-gacha-reveal] .gx-ring{position:absolute;left:50%;top:50%;width:132px;height:132px;margin:-66px 0 0 -66px;border-radius:50% !important;
+  box-shadow:0 0 0 3px var(--orb),0 0 12px 2px var(--orb);opacity:0}
+[data-gacha-reveal] .gx-charging .gx-ring{animation:gx-converge 520ms steps(6) infinite}
+@keyframes gx-fall{from{translate:0 -70vh}to{translate:0 0}}
+@keyframes gx-converge{0%{scale:2.4;opacity:0}30%{opacity:0.9}100%{scale:0.95;opacity:0}}
+/* The screen of its own of a ★5 (4W): gold light, speed lines, the Pokémon big. */
+[data-gacha-reveal] .gx-five{position:absolute;inset:0;z-index:6;display:none;flex-direction:column;align-items:center;justify-content:center;gap:10px;
+  background:radial-gradient(ellipse at 50% 45%,#5a4210 0,#1a1408 55%,#07091a 100%);overflow:hidden}
+[data-gacha-reveal] .gx-five.gx-on{display:flex;animation:mx-in 0.2s steps(4) both}
+[data-gacha-reveal] .gx-five .gx-lines{position:absolute;inset:-20%;opacity:0.35;
+  background:repeating-linear-gradient(115deg,#ffd75a33 0 6px,transparent 6px 46px);animation:gx-lines 0.6s steps(6) infinite}
+[data-gacha-reveal] .gx-five img{width:min(400px,52vh,80vw);height:min(400px,52vh,80vw);margin:-6vh 0;image-rendering:pixelated;
+  filter:drop-shadow(0 0 0 #0b0d1a) drop-shadow(0 0 18px #ffd75a);animation:mx-bob 1.6s steps(8) infinite}
+@keyframes gx-lines{to{background-position:46px 0}}
 [data-gacha-reveal] .gx-flash{position:absolute;inset:0;pointer-events:none;background:#fff;opacity:0}
 [data-gacha-reveal] .gx-flash.gx-on{animation:gx-flash 0.7s steps(7) both}
 /* The states of a card are classes put on by the timers of the reveal (gx-hint, gx-up): the
@@ -670,33 +695,96 @@ export class GachaScreen {
     return box;
   }
 
-  /** The reveal of one draw or a x10; `done` goes back to the banner. */
+  /** 4W: who plays the sounds of the reveal (the app's `SoundFx`); silent until it is set. */
+  private sound: (id: SoundId) => void = () => {};
+
+  setSound(play: (id: SoundId) => void): void {
+    this.sound = play;
+  }
+
+  /**
+   * The reveal of one draw or a x10; `done` goes back to the banner. 4W, block 6: first the
+   * anticipation (`anticipation`): a glass sphere falls and lands on a pad of light, rings close on
+   * it while it charges, and its colour climbs one rarity at a time up to the best of the draw (the
+   * hint), each step with a pop and a sound; then it bursts open into the cards. A tap skips to them.
+   */
   showReveal(cards: readonly RevealCard[], done: () => void): void {
     if (this.revealTimer !== undefined) clearTimeout(this.revealTimer);
-    const best = Math.max(3, ...cards.map((c) => c.stars)) as StarCount;
-    const color = RARITY_COLORS[best];
-    this.reveal.dataset.best = String(best);
     for (const timer of this.cueTimers) window.clearTimeout(timer);
     this.cueTimers.clear();
-    const orb = el(
-      'div',
-      `background:radial-gradient(circle at 35% 30%,#ffffff 0,${color} 40%,#14172b 100%);box-shadow:0 0 0 4px ${INK},0 0 50px 14px ${color};`,
-    );
-    orb.className = 'gx-orb';
+    const best = Math.max(3, ...cards.map((c) => c.stars)) as StarCount;
+    this.reveal.dataset.best = String(best);
+    const plan = anticipation(best);
+    const stage = el('div', `--orb:${RARITY_COLORS[3]};`);
+    stage.className = 'gx-stage';
+    stage.dataset.orbStars = '3';
+    const pad = el('div', '');
+    pad.className = 'gx-pad';
+    const rings = [0, 170, 340].map((delay) => {
+      const ring = el('div', `animation-delay:${delay}ms;`);
+      ring.className = 'gx-ring';
+      return ring;
+    });
+    const sphere = el('div', '');
+    sphere.className = 'gx-sphere';
+    stage.append(pad, ...rings, sphere);
     const bg = el('div', '');
     bg.className = 'gx-bg';
-    bg.append(...motes([color, '#ffffff'], 16));
+    bg.append(...motes(['#ffffff', RARITY_COLORS[3]], 10));
+    const flash = el('div', '');
+    flash.className = 'gx-flash';
     const hint = el('div', 'font-size:13px;opacity:0.8;', 'Toca para saltar');
-    this.reveal.replaceChildren(bg, orb, hint);
+    this.reveal.replaceChildren(bg, stage, hint, flash);
     this.reveal.style.display = 'flex';
+    this.sound('gachaDrop');
+    const timers = new Set<number>();
+    const at = (ms: number, fn: () => void): void => {
+      const timer = window.setTimeout(() => {
+        timers.delete(timer);
+        fn();
+      }, ms);
+      timers.add(timer);
+    };
+    at(plan.landMs, () => {
+      sphere.classList.add('gx-landed');
+      stage.classList.add('gx-charging');
+      sphere.animate?.([{ scale: '1.25 0.75' }, { scale: '0.9 1.1' }, { scale: '1 1' }], {
+        duration: 200,
+        easing: 'steps(3)',
+      });
+      this.sound('gachaCharge');
+    });
+    for (const shift of plan.shifts) {
+      at(shift.at, () => {
+        stage.style.setProperty('--orb', RARITY_COLORS[shift.stars]);
+        stage.dataset.orbStars = String(shift.stars);
+        if (shift.stars === 5) sphere.classList.add('gx-hard');
+        sphere.animate?.([{ scale: '1.3' }, { scale: '1' }], { duration: 220, easing: 'steps(4)' });
+        this.sound('gachaShift');
+      });
+    }
     const finish = (): void => {
+      for (const timer of timers) window.clearTimeout(timer);
+      timers.clear();
       if (this.revealTimer !== undefined) clearTimeout(this.revealTimer);
       this.revealTimer = undefined;
       this.reveal.onclick = null;
       this.revealCards(cards, best, done);
     };
+    at(plan.openMs, () => {
+      this.sound('gachaOpen');
+      flash.classList.add('gx-on');
+      sphere.animate?.(
+        [
+          { scale: '1', opacity: 1 },
+          { scale: '2.2', opacity: 0 },
+        ],
+        { duration: 200, easing: 'steps(4)', fill: 'forwards' },
+      );
+    });
     this.reveal.onclick = finish;
-    this.revealTimer = setTimeout(finish, 1100);
+    this.revealTimer = setTimeout(finish, plan.openMs + 200);
+    this.cueTimers = timers;
   }
 
   private revealCards(cards: readonly RevealCard[], best: StarCount, done: () => void): void {
@@ -721,15 +809,17 @@ export class GachaScreen {
       const flash = el('div', '');
       flash.className = 'gx-flash';
       nodes.push(flash);
-      const top = kicker('¡Rareza máxima!', RARITY_COLORS[5]);
-      top.classList.add('gx-late');
-      top.style.cssText += 'font-size:18px;';
-      nodes.push(top);
-      cues.push(
-        [fiveAt, () => flash.classList.add('gx-on')],
-        [fiveAt, () => top.classList.add('gx-on')],
-      );
+      cues.push([fiveAt, () => flash.classList.add('gx-on')]);
     }
+    const fiveCues: [number, () => void][] = [];
+    const five = el('div', '');
+    five.className = 'gx-five';
+    five.dataset.gachaFive = '';
+    // A tap on the screen of a ★5 closes it (and only it).
+    five.addEventListener('click', (e) => {
+      e.stopPropagation();
+      five.classList.remove('gx-on');
+    });
     const big = cards.length === 1;
     const grid = el(
       'div',
@@ -744,7 +834,20 @@ export class GachaScreen {
       if (card.stars >= 4) {
         cues.push([Math.max(0, flip - timing.hintMs), () => node.classList.add('gx-hint')]);
       }
-      cues.push([flip, () => node.classList.add('gx-up')]);
+      cues.push([
+        flip,
+        () => {
+          node.classList.add('gx-up');
+          this.sound(card.stars === 5 ? 'flip5' : card.stars === 4 ? 'flip4' : 'flip3');
+        },
+      ]);
+      // 4W: a ★5 has a screen of its own, right after it turns; the next card waits for it.
+      if (card.stars === 5) {
+        fiveCues.push(
+          [flip + 150, () => this.showFive(five, card)],
+          [flip + timing.fiveScreenMs - 100, () => five.classList.remove('gx-on')],
+        );
+      }
       node.className = 'gx-card';
       node.dataset.revealCard = card.species;
       node.dataset.stars = String(card.stars);
@@ -794,11 +897,11 @@ export class GachaScreen {
       this.hideReveal();
       done();
     });
-    nodes.push(ok);
+    nodes.push(ok, five);
     this.reveal.replaceChildren(...nodes);
     this.reveal.style.display = 'flex';
     const pending = new Set<number>();
-    for (const [at, cue] of cues) {
+    for (const [at, cue] of [...cues, ...fiveCues]) {
       const timer = window.setTimeout(() => {
         pending.delete(timer);
         cue();
@@ -806,13 +909,53 @@ export class GachaScreen {
       pending.add(timer);
     }
     this.cueTimers = pending;
-    // A tap turns every card at once.
+    // A tap turns every card at once; the best ★5, if any, still gets its screen (a while, or a tap).
     this.reveal.onclick = () => {
       this.reveal.onclick = null;
       for (const timer of pending) window.clearTimeout(timer);
       pending.clear();
       for (const [, cue] of cues) cue();
+      const last = [...cards].reverse().find((c) => c.stars === 5);
+      if (last !== undefined) {
+        this.showFive(five, last);
+        const timer = window.setTimeout(() => five.classList.remove('gx-on'), timing.fiveScreenMs);
+        pending.add(timer);
+      }
     };
+  }
+
+  /** The screen of its own of a ★5 (4W, block 6): its name, its picture big, gold and a fanfare. */
+  private showFive(five: HTMLElement, card: RevealCard): void {
+    const gold = RARITY_COLORS[5];
+    const lines = el('div', '');
+    lines.className = 'gx-lines';
+    const rain = confetti([gold, '#fff3b0', '#ffffff', shadeHex(gold, 0.7)], 26);
+    const top = kicker('¡Rareza máxima!', gold);
+    top.style.cssText += 'font-size:18px;position:relative;';
+    const starRow = el(
+      'div',
+      `font-size:30px;color:${gold};text-shadow:3px 3px 0 ${INK};position:relative;`,
+      stars(5),
+    );
+    const picture = this.picture(card.species, 400, '');
+    picture.style.position = 'relative';
+    const name = title(pokemonName(card.species), gold, 64);
+    name.style.position = 'relative';
+    const notes: string[] = [];
+    if (card.featured) notes.push('DESTACADO');
+    notes.push(revealNote(card.isNew, card.candies));
+    const note = el(
+      'div',
+      `font-size:16px;font-weight:700;color:${card.isNew ? '#9fe86a' : '#f6f3e8'};position:relative;`,
+      notes.join(' · '),
+    );
+    const tap = el('div', 'font-size:12px;opacity:0.7;position:relative;', 'Toca para seguir');
+    five.replaceChildren(lines, ...rain, top, starRow, picture, name, note, tap);
+    five.dataset.gachaFive = card.species;
+    five.classList.remove('gx-on');
+    void five.offsetWidth; // restart its entrance
+    five.classList.add('gx-on');
+    this.sound('fanfare5');
   }
 
   private cueTimers = new Set<number>();
