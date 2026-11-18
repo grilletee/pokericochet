@@ -4,12 +4,17 @@
  */
 
 export {
+  candiesBetween,
   type DexEntry,
   type DexState,
   dex,
   dexCounts,
+  type LadderStep,
   levelUp,
   levelUpCost,
+  type NextGoal,
+  nextGoal,
+  permanentLadder,
 } from './collection';
 export {
   activeBanners,

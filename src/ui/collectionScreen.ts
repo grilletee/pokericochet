@@ -1,8 +1,16 @@
 import { type BaseStats, GAME_TYPES, type GameType } from '../domain';
 import { typeName } from './cardText';
 import type { ArtLookup } from './cardView';
+import {
+  type GoalView,
+  goalLine,
+  nextLevelLine,
+  PERMANENT_INTRO,
+  startNowLine,
+} from './collectionText';
 import { RARITY_COLORS, type StarCount, stars } from './gachaText';
 import { pokemonName } from './names';
+import { pixelNumber } from './pixelNumber';
 import { cardBackground, dexNumber, pokeCard } from './pokeCard';
 import { barPercent, STAT_ROWS } from './statBars';
 import { TYPE_COLORS } from './typeColors';
@@ -32,6 +40,19 @@ export interface DexTile {
   readonly types?: readonly GameType[];
   readonly stars?: StarCount;
   readonly final?: string;
+  /** 4W, block 4: what each permanent level gives (the meta's `permanentLadder`). */
+  readonly ladder?: readonly LadderView[];
+  /** The next permanent level that makes it start stronger (null: none left). */
+  readonly goal?: GoalView | null;
+  /** How to get its candies, in one line. */
+  readonly how?: string;
+}
+
+export interface LadderView {
+  readonly level: number;
+  readonly startLevel: number;
+  readonly form: string;
+  readonly milestone: boolean;
 }
 
 function el(tag: string, css: string, text = ''): HTMLElement {
@@ -94,6 +115,8 @@ export class CollectionScreen {
     onBack: () => void,
     /** How candies are earned (4G-J, block 3), one line each. */
     candyHelp: readonly string[] = [],
+    /** 4W, block 4: a first-time notice, shown at the top until the screen is drawn again. */
+    notice: string | null = null,
   ): void {
     const again = (): void =>
       this.show(tiles, counts, selected, onSelect, onLevelUp, onBack, candyHelp);
@@ -125,6 +148,16 @@ export class CollectionScreen {
       helpButton,
     );
     const rows: HTMLElement[] = [header];
+    if (notice !== null) {
+      const tip = el(
+        'div',
+        'max-width:min(96vw,640px);font-size:13px;font-weight:700;padding:8px 12px;color:#14172b;' +
+          'background:#ffd75a;box-shadow:0 0 0 3px #14172b;',
+        `💡 ${notice}`,
+      );
+      tip.dataset.firstTip = 'collection';
+      rows.push(tip);
+    }
     if (candyHelp.length > 0 && (f.help || counts.owned <= 1)) {
       // Open by itself while the collection is new (the 17th playtest did not find it).
       const help = el(
@@ -332,14 +365,7 @@ export class CollectionScreen {
       info.append(table);
     }
     if (owned) {
-      info.append(
-        el(
-          'div',
-          'font-weight:700;',
-          `Nivel permanente ${tile.level} · empieza las partidas en Nv ${tile.startLevel}`,
-        ),
-        el('div', '', `🍬 Caramelos: ${tile.candies}`),
-      );
+      info.append(this.progress(tile));
       const can = tile.candies >= tile.nextCost;
       const up = el(
         'button',
@@ -363,6 +389,84 @@ export class CollectionScreen {
     }
     card.append(pics, info);
     return card;
+  }
+
+  /**
+   * The permanent level of a Pokémon, explained (4W, block 4): what it is, a ladder of the ten
+   * levels where the ones that make it start stronger show the form and level it starts at, where it
+   * starts now, the next milestone and the candies missing, and how to get them.
+   */
+  private progress(tile: DexTile): HTMLElement {
+    const box = el(
+      'div',
+      'display:flex;flex-direction:column;gap:5px;padding:6px;background:#14172b;color:#f6f3e8;' +
+        'box-shadow:inset 0 0 0 2px #ffd75a;',
+    );
+    box.dataset.permanent = String(tile.level);
+    const head = el('div', 'display:flex;align-items:center;gap:6px;font-weight:800;');
+    head.append(
+      el('span', 'color:#ffd75a;letter-spacing:1px;font-size:11px;', 'NIVEL PERMANENTE'),
+      pixelNumber(`${tile.level}/10`, '#ffd75a', 2),
+      el('span', 'margin-left:auto;font-size:12px;', '🍬'),
+      pixelNumber(String(tile.candies), '#f6f3e8', 2),
+    );
+    box.append(head, el('div', 'font-size:11px;opacity:0.85;line-height:1.35;', PERMANENT_INTRO));
+    const ladder = tile.ladder ?? [];
+    if (ladder.length > 0) {
+      const row = el(
+        'div',
+        `display:grid;grid-template-columns:repeat(${ladder.length},1fr);gap:2px;align-items:end;`,
+      );
+      row.dataset.ladder = ladder.map((s) => s.startLevel).join(',');
+      for (const step of ladder) {
+        const reached = step.level <= tile.level;
+        const current = step.level === tile.level;
+        const cell = el(
+          'div',
+          'display:flex;flex-direction:column;align-items:center;gap:1px;padding:2px 0;' +
+            `background:${reached ? '#ffd75a33' : '#ffffff0d'};` +
+            `box-shadow:${current ? 'inset 0 0 0 2px #ffd75a' : 'none'};`,
+        );
+        cell.dataset.ladderStep = String(step.level);
+        if (step.milestone || step.level === 1) {
+          const url = this.art.spriteUrl(step.form);
+          if (url !== undefined) {
+            const img = document.createElement('img');
+            img.src = url;
+            img.alt = pokemonName(step.form);
+            img.title = `Nivel permanente ${step.level}: empieza en Nv ${step.startLevel} como ${pokemonName(step.form)}`;
+            img.style.cssText = `width:30px;height:30px;image-rendering:pixelated;${reached ? '' : 'filter:brightness(0) opacity(0.45);'}`;
+            cell.append(img);
+          }
+          const lv = el('div', 'display:flex;align-items:center;font-size:9px;gap:1px;', 'Nv');
+          lv.append(pixelNumber(String(step.startLevel), reached ? '#ffd75a' : '#9aa6c0', 1));
+          cell.append(lv);
+        }
+        cell.append(pixelNumber(String(step.level), reached ? '#f6f3e8' : '#5b6aa8', 1.5));
+        row.append(cell);
+      }
+      box.append(row);
+      const now = ladder.find((s) => s.level === tile.level);
+      if (now !== undefined) {
+        box.append(
+          el('div', 'font-weight:700;font-size:12px;', startNowLine(now.startLevel, now.form)),
+        );
+      }
+    }
+    if (tile.goal !== undefined) {
+      const goal = el('div', 'font-size:12px;color:#ffd75a;', goalLine(tile.goal));
+      goal.dataset.goal = tile.goal === null ? 'none' : `${tile.goal.level}/${tile.goal.missing}`;
+      box.append(goal);
+    }
+    box.append(
+      el(
+        'div',
+        'font-size:11px;opacity:0.9;',
+        nextLevelLine(tile.level, tile.candies, tile.nextCost),
+      ),
+    );
+    if (tile.how !== undefined) box.append(el('div', 'font-size:11px;opacity:0.75;', tile.how));
+    return box;
   }
 
   hide(): void {

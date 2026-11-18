@@ -18,7 +18,19 @@ export type { ArtLookup } from './cardView';
 export { buildCardArt, STEP_COLOR, spriteTile } from './cardView';
 export { shadeHex } from './cinema';
 export { CollectionScreen, type DexTile, filterDex } from './collectionScreen';
-export { type CandyRules, candyLines, earnedCandiesLine } from './collectionText';
+export {
+  type CandyRules,
+  candyHowLine,
+  candyLines,
+  earnedCandiesLine,
+  FIRST_COLLECTION_TIP,
+  firstCandiesTip,
+  type GoalView,
+  goalLine,
+  nextLevelLine,
+  PERMANENT_INTRO,
+  startNowLine,
+} from './collectionText';
 export {
   CONTROL_SCHEMES,
   type ControlScheme,

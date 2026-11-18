@@ -21,6 +21,31 @@ export function saveMuted(store: KeyValueStore | null, muted: boolean): void {
   }
 }
 
+/** localStorage key of the first-time notices already shown (4W, block 4). */
+export const TIPS_KEY = 'tips.v1';
+
+/** The first-time notices this player has seen. */
+export function loadTips(store: KeyValueStore | null): ReadonlySet<string> {
+  try {
+    const raw = store?.getItem(TIPS_KEY) ?? '';
+    return new Set(raw.split(',').filter((t) => /^[a-z0-9-]{1,32}$/.test(t)));
+  } catch {
+    return new Set();
+  }
+}
+
+/** Marks a notice as seen; true when it had not been (so it is shown now, once). */
+export function markTip(store: KeyValueStore | null, tip: string): boolean {
+  const seen = loadTips(store);
+  if (seen.has(tip)) return false;
+  try {
+    store?.setItem(TIPS_KEY, [...seen, tip].sort().join(','));
+  } catch {
+    // ignore: a blocked storage shows the notice again next time, which is harmless
+  }
+  return true;
+}
+
 /** localStorage key of the assisted-aim switch. */
 export const AUTO_AIM_KEY = 'autoAim.v1';
 

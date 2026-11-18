@@ -69,7 +69,9 @@ import {
   drawGacha,
   gachaPool,
   levelUp,
+  nextGoal,
   type Profile,
+  permanentLadder,
   pityView,
   REPEAT_CANDIES,
   rateTable,
@@ -94,6 +96,7 @@ import {
   CollectionScreen,
   type ControlScheme,
   CreditsScreen,
+  candyHowLine,
   candyLines,
   creditLines,
   describeEvent,
@@ -101,7 +104,9 @@ import {
   EvolutionBanner,
   EvolutionMoment,
   earnedCandiesLine,
+  FIRST_COLLECTION_TIP,
   FIRST_TIME_PAGES,
+  firstCandiesTip,
   type GachaBannerView,
   GachaScreen,
   GamePause,
@@ -179,6 +184,7 @@ import {
   loadMuted,
   loadScheme,
   loadVolumes,
+  markTip,
   saveAutoAim,
   saveMuted,
   saveScheme,
@@ -986,6 +992,8 @@ export async function startGame(host: HTMLElement): Promise<void> {
     screen = 'collection';
     hideMenus();
     const entries = dex(profileState.profile, pool, gameConfig);
+    // 4W, block 4: the first visit says what the collection is for, once.
+    const notice = markTip(store, 'collection') ? FIRST_COLLECTION_TIP : null;
     collectionScreen.show(
       // 4G-J: in Pokédex order, with the number, region, types, rarity and last form of the catalogue.
       entries
@@ -1006,6 +1014,14 @@ export async function startGame(host: HTMLElement): Promise<void> {
                   final: known.final,
                 }),
             ...(region === undefined ? {} : { region }),
+            // 4W, block 4: what its permanent level gives, only for the one whose sheet is open.
+            ...(entry.state === 'owned' && entry.species === selected
+              ? {
+                  ladder: permanentLadder(gameConfig, entry.species),
+                  goal: nextGoal(gameConfig, entry.species, entry.level, entry.candies),
+                  how: candyHowLine(candyRules, entry.species),
+                }
+              : {}),
           };
         })
         .sort((a, b) => (a.dex ?? 0) - (b.dex ?? 0)),
@@ -1022,15 +1038,17 @@ export async function startGame(host: HTMLElement): Promise<void> {
       },
       showMenu,
       candyHelp,
+      notice,
     );
   }
   /** How candies are earned (4G-J): the same numbers the meta pays. */
-  const candyHelp = candyLines({
+  const candyRules = {
     perRun: CANDIES_PER_RUN,
     perBoss: CANDIES_PER_BOSS,
     repeat: GACHA_RULES.repeatCandies,
     register: REPEAT_CANDIES,
-  });
+  };
+  const candyHelp = candyLines(candyRules);
   /** A Pokémon of the catalogue as the gacha screen shows it. */
   const featuredView = (entry: CatalogEntry) => ({
     species: entry.species,
@@ -1203,6 +1221,18 @@ export async function startGame(host: HTMLElement): Promise<void> {
     // Beat a boss: keep ONE of the captures of the run for good (4G-I).
     const offered = registerable(summary);
     const candyText = earnedCandiesLine(starter, candies);
+    // 4W, block 4: the first candies ever come with a word on what they are for, once.
+    const candyTip = candies > 0 && markTip(store, 'candies') ? firstCandiesTip(starter) : null;
+    const tipLine = (): HTMLElement[] => {
+      if (candyTip === null) return [];
+      const tip = document.createElement('div');
+      tip.dataset.firstTip = 'candies';
+      tip.style.cssText =
+        'max-width:420px;font-size:13px;font-weight:700;padding:8px 12px;color:#14172b;' +
+        'background:#ffd75a;box-shadow:0 0 0 3px #14172b;';
+      tip.textContent = `💡 ${candyTip}`;
+      return [tip];
+    };
     const show = (extra: HTMLElement[]): void =>
       resultsScreen.show(
         summary,
@@ -1211,7 +1241,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
         () => input.requestRestart(),
         () => input.requestMenu(),
         `+${earned} monedas (tienes ${profileState.profile.coins})${candyText === '' ? '' : ` · ${candyText}`}`,
-        extra,
+        [...tipLine(), ...extra],
       );
     // 4G-J (decision 24 of the 4G-I): without a boss defeated, say why there is nothing to register.
     const why = document.createElement('div');
