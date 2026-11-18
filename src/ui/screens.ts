@@ -123,13 +123,13 @@ export class StartScreen {
     }
     // A low screen (a phone held sideways): the entries in a row, so they all fit.
     const low = typeof window !== 'undefined' && window.innerHeight < 520;
-    // 4G-J, block 6: the menu in a box of the classic handheld RPGs (cream, a dark frame, a ▶ that
-    // follows the pointer), drawn with our own palette.
+    // 4W, block 6: no box (it was cream, the 18th playtest disliked it): a column of plates over the
+    // night, each with its icon; "Jugar" bigger, on top.
     const menu = el(
       'div',
       low
-        ? 'display:flex;flex-direction:row;flex-wrap:wrap;gap:2px 10px;justify-content:center;max-width:94vw;padding:6px 10px;'
-        : 'display:flex;flex-direction:column;gap:2px;align-items:stretch;padding:10px 14px;min-width:230px;',
+        ? 'display:flex;flex-direction:row;flex-wrap:wrap;gap:2px 8px;justify-content:center;align-items:center;max-width:94vw;padding:4px 8px;'
+        : 'display:flex;flex-direction:column;gap:8px;align-items:stretch;padding:6px 10px;min-width:250px;',
     );
     menu.dataset.menuBox = '';
     const entries: readonly [string, string, string, () => void][] = [
@@ -139,24 +139,27 @@ export class StartScreen {
       ['settings', 'Ajustes', 'Controles, pantalla y sonido', actions.onSettings],
       ['credits', 'Créditos', 'Quién hizo qué', actions.onCredits],
     ];
-    const hint = el('div', 'font-size:12px;min-height:16px;opacity:0.9;', entries[0]?.[2] ?? '');
-    for (const [id, label, tip, action] of entries) {
+    const hint = el('div', 'font-size:12px;min-height:16px;', entries[0]?.[2] ?? '');
+    hint.dataset.menuHint = '';
+    entries.forEach(([id, label, tip, action], index) => {
       const big = id === 'play';
       const button = el(
         'button',
-        `pointer-events:auto;cursor:pointer;font:inherit;text-align:left;font-size:${big ? (low ? 18 : 22) : low ? 14 : 17}px;padding:${low ? '3px 6px' : '5px 8px'};`,
-        label,
+        `pointer-events:auto;cursor:pointer;font:inherit;text-align:left;font-size:${big ? (low ? 18 : 24) : low ? 14 : 17}px;` +
+          `padding:${big ? (low ? '5px 12px' : '10px 16px') : low ? '4px 10px' : '6px 14px'};` +
+          `margin:${low ? '4px' : big ? '0 0 8px' : '0 0 2px'};animation-delay:${index * 30}ms;`,
       );
       button.type = 'button';
       button.dataset.action = id;
       button.dataset.menuRow = '';
+      button.append(menuIcon(id, big ? (low ? 2 : 3) : 2), document.createTextNode(label));
       button.addEventListener('pointerenter', () => {
         hint.textContent = tip;
       });
       // Not "pointerdown": that would also reach the canvas input underneath.
       button.addEventListener('click', action);
       menu.append(button);
-    }
+    });
     const parts: HTMLElement[] = [logo, menu, hint];
     if (trainer !== null) parts.push(trainerCard(trainer, low));
     parts.push(
@@ -204,18 +207,44 @@ export interface TrainerView {
   readonly parade: readonly string[];
 }
 
+/*
+ * 4W, block 6 (18th playtest: "botones del menú con un fondo blanco feo"): no box. Each entry is a
+ * plate of its own over the animated night (art bible §7): a two-tone frame, a hard 4 px shadow, its
+ * pixel icon; with the pointer over it rises 2 px, lightens and a shine runs across it; pressed, it
+ * goes down 4 px and loses the shadow. "Jugar" is the main one (blue and gold, bigger, a beating ▶).
+ * The plates are almost opaque: the stars barely show, the big floating gems do not muddy the text.
+ */
+const PLATE = '#2b3a73f7';
 const MENU_CSS = `
-[data-px-root] [data-menu-box]{background:#f6f3e8 !important;box-shadow:0 0 0 3px #14172b,0 0 0 6px #5fb0ff,0 0 0 9px #14172b,6px 9px 0 6px #05060f88}
-[data-px-root] [data-menu-box] button[data-menu-row]{background:transparent !important;color:#14172b !important;text-shadow:none !important;box-shadow:none !important;padding-left:22px !important;position:relative}
-[data-px-root] [data-menu-box] button[data-menu-row]::before{content:'▶';position:absolute;left:4px;opacity:0;color:#e04a4a}
-[data-px-root] [data-menu-box] button[data-menu-row]:hover::before,[data-px-root] [data-menu-box] button[data-menu-row]:focus-visible::before{opacity:1}
-[data-px-root] [data-menu-box] button[data-menu-row]:hover{background:#ffd75a55 !important}
-[data-px-root] [data-menu-box] button[data-action="play"]{color:#c0302a !important}
-[data-px-root] [data-trainer-card]{background:linear-gradient(90deg,#e04a4a 0 10px,#f6f3e8 10px) !important;color:#14172b;box-shadow:0 0 0 3px #14172b}
+[data-px-root] [data-menu-box]{background:transparent !important;box-shadow:none !important}
+[data-px-root] [data-menu-box] button[data-menu-row]{position:relative;overflow:hidden;display:flex;align-items:center;gap:10px;
+  background:${PLATE} !important;color:#f6f3e8 !important;text-shadow:2px 2px 0 #0b0d1a !important;
+  box-shadow:inset 0 3px 0 #5fb0ff55,inset 0 -3px 0 #14172b,0 0 0 3px #0b0d1a,4px 4px 0 3px #05060fcc !important;
+  transition:transform 60ms steps(2),filter 120ms steps(2) !important}
+[data-px-root] [data-menu-box] button[data-menu-row] canvas{flex:none;image-rendering:pixelated;filter:drop-shadow(2px 2px 0 #0b0d1a)}
+[data-px-root] [data-menu-box] button[data-menu-row]::before{content:'';position:absolute;top:0;bottom:0;left:-40%;width:30%;
+  background:linear-gradient(90deg,transparent,#ffffff55,transparent);transform:skewX(-20deg);opacity:0;pointer-events:none}
+[data-px-root] [data-menu-box] button[data-menu-row]:hover,[data-px-root] [data-menu-box] button[data-menu-row]:focus-visible{
+  transform:translateY(-2px);filter:brightness(1.18);color:#ffffff !important;background:${PLATE} !important}
+[data-px-root] [data-menu-box] button[data-menu-row]:hover::before,[data-px-root] [data-menu-box] button[data-menu-row]:focus-visible::before{animation:menu-sweep 360ms steps(6) 1 both}
+[data-px-root] [data-menu-box] button[data-menu-row]:active{transform:translateY(4px);
+  box-shadow:inset 0 3px 0 #5fb0ff55,inset 0 -3px 0 #14172b,0 0 0 3px #0b0d1a !important}
+[data-px-root] [data-menu-box] button[data-action="play"]{background:#3f66d0f0 !important;color:#ffd75a !important;
+  box-shadow:inset 0 3px 0 #8ef0ff77,inset 0 -4px 0 #2b3a73,0 0 0 3px #0b0d1a,0 0 0 5px #ffd75a,5px 6px 0 5px #05060fcc !important}
+[data-px-root] [data-menu-box] button[data-action="play"]:hover{background:#3f66d0 !important;color:#fff4c4 !important}
+[data-px-root] [data-menu-box] button[data-action="play"]:active{box-shadow:inset 0 3px 0 #8ef0ff77,inset 0 -4px 0 #2b3a73,0 0 0 3px #0b0d1a,0 0 0 5px #ffd75a !important}
+[data-px-root] [data-menu-box] button[data-action="play"]::after{content:'▶';margin-left:auto;color:#ffd75a;animation:menu-nudge 0.8s steps(2) infinite}
+[data-px-root] [data-menu-hint]{background:#0b0d1acc;padding:3px 10px;box-shadow:0 0 0 2px #2b3a73}
+[data-px-root] [data-trainer-card]{background:#14172bd9 !important;color:#f6f3e8;box-shadow:inset 6px 0 0 #ffd75a,0 0 0 3px #0b0d1a,0 0 0 5px #2b3a73}
 [data-parade] img{position:absolute;bottom:4%;width:64px;height:64px;image-rendering:pixelated;animation:menu-walk linear infinite,menu-hop 0.5s ease-in-out infinite alternate}
-/* 4V (block 4): the logo floats in steps and a shine runs across it now and then; the play row beats. */
+/* 4V (block 4): the logo floats in steps and a shine runs across it now and then. */
 [data-px-root] [data-logo]{animation:menu-float 3.6s steps(12) infinite,menu-shine 5s steps(1) infinite}
-[data-px-root] [data-menu-box] button[data-action="play"]::after{content:'';position:absolute;right:8px;top:50%;width:6px;height:6px;margin-top:-3px;background:#c0302a;animation:menu-beat 0.8s steps(2) infinite}
+/* The plates come in one after another when the menu opens (art bible §7, 20-30 ms apart). */
+[data-px-root] [data-menu-box] button[data-menu-row]{animation:menu-in 200ms steps(4) both}
+@keyframes menu-in{from{opacity:0;translate:0 8px}to{opacity:1;translate:0 0}}
+@keyframes menu-sweep{0%{left:-40%;opacity:1}100%{left:110%;opacity:1}}
+@keyframes menu-nudge{50%{translate:4px 0}}
+@media (prefers-reduced-motion:reduce){[data-px-root] [data-menu-box] button[data-menu-row]{animation:none}}
 @keyframes menu-float{0%,100%{translate:0 0}50%{translate:0 -6px}}
 @keyframes menu-shine{0%,92%{filter:drop-shadow(0 4px 0 #05060f)}93%,95%{filter:brightness(1.6) drop-shadow(0 4px 0 #05060f)}96%,100%{filter:drop-shadow(0 4px 0 #05060f)}}
 @keyframes menu-beat{50%{opacity:0}}
@@ -231,6 +260,117 @@ function installMenuCss(): void {
   style.dataset.menuStyle = '';
   style.textContent = MENU_CSS;
   document.head.append(style);
+}
+
+/**
+ * The pixel icons of the menu (4W, block 6), 9 x 9, drawn by code: the glass sphere of the balls
+ * (play), a card (Pokédex), a star (gacha), a gear (settings) and a heart (credits). 'a' is the
+ * main colour, 'b' its light and 'c' its shade.
+ */
+const MENU_ICONS: Readonly<Record<string, readonly [string, string, string, readonly string[]]>> = {
+  play: [
+    '#5fb0ff',
+    '#e8f6ff',
+    '#2b3a73',
+    [
+      '...ccc...',
+      '.caaaaac.',
+      '.abbaaaa.',
+      'cabaaaaac',
+      'caaaaaaac',
+      'caaaaaaac',
+      '.aaaaaac.',
+      '.caaaacc.',
+      '...ccc...',
+    ],
+  ],
+  collection: [
+    '#e04a4a',
+    '#ffb0a8',
+    '#7a1f2a',
+    [
+      'ccccccc..',
+      'caaaaaac.',
+      'cabbbbac.',
+      'cab..bac.',
+      'cabbbbac.',
+      'caaaaaac.',
+      'cabbbbac.',
+      'caaaaaac.',
+      'ccccccc..',
+    ],
+  ],
+  gacha: [
+    '#ffd75a',
+    '#fff4c4',
+    '#c8922e',
+    [
+      '....a....',
+      '....a....',
+      '...aba...',
+      'aaaabaaaa',
+      '.aabbbaa.',
+      '..aaaaa..',
+      '..aa.aa..',
+      '.ac...ca.',
+      '.c.....c.',
+    ],
+  ],
+  settings: [
+    '#9aa6c0',
+    '#e8ecf8',
+    '#4a5578',
+    [
+      '...a.a...',
+      '.aaaaaaa.',
+      '.abbbbca.',
+      'aab...caa',
+      '.ab...ca.',
+      'aab...caa',
+      '.accccca.',
+      '.aaaaaaa.',
+      '...a.a...',
+    ],
+  ],
+  credits: [
+    '#ff7fb0',
+    '#ffd0e4',
+    '#a8366a',
+    [
+      '.........',
+      '.aa...aa.',
+      'abba.aaac',
+      'abaaaaaac',
+      'aaaaaaaac',
+      '.aaaaaac.',
+      '..aaaac..',
+      '...aac...',
+      '....c....',
+    ],
+  ],
+};
+
+function menuIcon(id: string, scale: number): HTMLCanvasElement {
+  const canvas = document.createElement('canvas');
+  canvas.width = 9;
+  canvas.height = 9;
+  canvas.style.width = `${9 * scale}px`;
+  canvas.style.height = `${9 * scale}px`;
+  canvas.setAttribute('aria-hidden', 'true');
+  const icon = MENU_ICONS[id];
+  const g = canvas.getContext('2d');
+  if (icon === undefined || g === null) return canvas;
+  const [main, light, shade, rows] = icon;
+  const colors: Record<string, string> = { a: main, b: light, c: shade };
+  rows.forEach((row, y) => {
+    for (let x = 0; x < row.length; x++) {
+      const color = colors[row[x] ?? '.'];
+      if (color === undefined) continue;
+      g.fillStyle = color;
+      g.fillRect(x, y, 1, 1);
+    }
+  });
+  return canvas;
 }
 
 function trainerCard(view: TrainerView, low: boolean): HTMLElement {

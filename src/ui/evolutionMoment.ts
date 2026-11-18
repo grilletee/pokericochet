@@ -1,6 +1,6 @@
 import type { GameType, StageKind } from '../domain';
 import { STEP_COLOR } from './cardView';
-import { installCinema, motes, rays, shadeHex, flash as whiteFlash } from './cinema';
+import { installCinema, motes, shadeHex, flash as whiteFlash } from './cinema';
 import { pokemonName } from './names';
 import { TYPE_COLORS } from './typeColors';
 
@@ -86,6 +86,24 @@ function animate(
   return typeof element.animate === 'function' ? element.animate(keyframes, options) : null;
 }
 
+/**
+ * When the two silhouettes swap during the build-up of an evolution (4W, block 6; 18th playtest: the
+ * turning rays were disliked, "más limpio"): the old and the new form take turns, slowly at first
+ * and faster and faster, until the change. Times in ms from the start, all before `changeMs`; the
+ * gaps shrink by `rate` and never go under `minGap`. Pure.
+ */
+export function swapTimes(changeMs: number, firstGap = 220, rate = 0.78, minGap = 55): number[] {
+  const times: number[] = [];
+  let gap = firstGap;
+  let at = gap;
+  while (at < changeMs - 40) {
+    times.push(Math.round(at));
+    gap = Math.max(minGap, gap * rate);
+    at += gap;
+  }
+  return times;
+}
+
 /** What the moment needs to draw one step: both forms, their art and what kind of step it is. */
 export interface MomentView {
   readonly kind: StageKind;
@@ -154,15 +172,23 @@ export class EvolutionMoment {
       return img;
     };
     const stage = box(`position:relative;width:${size}px;height:${size}px;`);
+    // 4W, block 6: both forms as white silhouettes with the glow of the type, taking turns (the old
+    // one shows first); then the new one in its colours.
+    const silhouette = `brightness(0) invert(1) drop-shadow(0 0 10px ${color})`;
     const before = picture(view.fromUrl, view.from);
-    // The old form as a white silhouette with the glow of its type.
-    before.style.filter = `brightness(0) invert(1) drop-shadow(0 0 12px ${color})`;
+    before.style.filter = silhouette;
+    const ghost = picture(view.toUrl, view.to);
+    ghost.style.cssText += `position:absolute;left:0;top:0;opacity:0;filter:${silhouette};`;
     const after = picture(view.toUrl, view.to);
     after.style.cssText += 'position:absolute;left:0;top:0;opacity:0;';
-    const flash = box(
-      `position:absolute;inset:-30px;border-radius:50%;background:radial-gradient(#fff,${color}00 70%);opacity:0;`,
+    // A soft halo of the type behind, that breathes in steps (no rays).
+    const halo = box(
+      `position:absolute;inset:-40%;border-radius:50%;background:radial-gradient(${color}55 0,${color}22 40%,${color}00 70%);`,
     );
-    stage.append(before, after, flash);
+    const flash = box(
+      `position:absolute;inset:-30px;border-radius:50%;background:radial-gradient(#ffffffcc,${color}00 70%);opacity:0;`,
+    );
+    stage.append(halo, before, ghost, after, flash);
     // 4V (block 2): a cartridge title in two bands of the colour of its type.
     const title = box(
       `font-size:${view.stage >= 3 ? 44 : 38}px;position:relative;z-index:1;max-width:90%;` +
@@ -183,39 +209,92 @@ export class EvolutionMoment {
     skip.addEventListener('click', () => this.onSkip());
     skip.style.position = 'relative';
     skip.style.zIndex = '1';
-    const half = ms * 0.45;
-    // Behind: rays of its colour that turn and motes that rise; over everything, the white flash of
-    // the change.
+    const half = ms * 0.5;
+    // Behind: a few faint motes; over everything, a soft white flash at the change (a third of the
+    // full flash of the other moments: it marks the change without blinding).
+    const softFlash = box('position:absolute;inset:0;opacity:0.3;pointer-events:none;');
+    softFlash.append(whiteFlash(half - 40, 360));
     this.root.replaceChildren(
-      rays(color, 0.3),
-      ...motes([color, shadeHex(color, 1.6), '#ffffff'], 14),
+      ...motes([shadeHex(color, 1.6), '#ffffff'], 6).map((m) => {
+        m.style.opacity = '0.45';
+        return m;
+      }),
       stage,
       title,
       skip,
-      whiteFlash(half - 60, 480),
+      softFlash,
     );
     this.root.style.display = 'flex';
 
     animate(
       this.root,
-      [{ opacity: 0 }, { opacity: 1, offset: 0.12 }, { opacity: 1, offset: 0.85 }, { opacity: 0 }],
+      [{ opacity: 0 }, { opacity: 1, offset: 0.1 }, { opacity: 1, offset: 0.88 }, { opacity: 0 }],
       { duration: ms, easing: 'ease-out' },
     );
-    animate(before, [{ opacity: 0.55 }, { opacity: 1 }, { opacity: 0.55 }, { opacity: 1 }], {
-      duration: half,
-      iterations: 1,
+    animate(
+      halo,
+      [
+        { scale: '0.9', opacity: 0.6 },
+        { scale: '1.08', opacity: 1 },
+      ],
+      {
+        duration: 500,
+        iterations: Number.POSITIVE_INFINITY,
+        direction: 'alternate',
+        easing: 'steps(4)',
+      },
+    );
+    // The silhouettes take turns, faster and faster; each swap is a small pulse.
+    swapTimes(half).forEach((at, i) => {
+      this.later(at, () => {
+        const showNew = i % 2 === 0;
+        before.style.opacity = showNew ? '0' : '1';
+        ghost.style.opacity = showNew ? '1' : '0';
+        animate(stage, [{ scale: '1.06' }, { scale: '1' }], { duration: 90, easing: 'steps(2)' });
+      });
     });
     this.later(half, () => {
       before.style.display = 'none';
+      ghost.style.display = 'none';
       after.style.opacity = '1';
       title.textContent = this.headline(view, true);
-      animate(flash, [{ opacity: 1 }, { opacity: 0 }], { duration: 600, easing: 'ease-out' });
-      animate(after, [{ transform: 'scale(1.5)' }, { transform: 'scale(1)' }], {
-        duration: 450,
-        easing: 'ease-out',
-      });
+      animate(flash, [{ opacity: 1 }, { opacity: 0 }], { duration: 500, easing: 'ease-out' });
+      // From white to its colours in four steps, with a small bounce.
+      animate(
+        after,
+        [
+          { filter: silhouette, scale: '1.12' },
+          { filter: 'none', scale: '1' },
+        ],
+        { duration: 320, easing: 'steps(4)' },
+      );
+      this.burst(stage, [color, shadeHex(color, 1.6), '#ffffff'], size);
     });
     this.later(ms, () => this.finish());
+  }
+
+  /** A few square sparks that leave the centre once, at the change (discreet: 10, small). */
+  private burst(stage: HTMLElement, colors: readonly string[], size: number): void {
+    for (let k = 0; k < 10; k++) {
+      const angle = (k / 10) * Math.PI * 2 + 0.3;
+      const reach = size * (0.55 + (k % 3) * 0.12);
+      const spark = box(
+        `position:absolute;left:50%;top:50%;width:6px;height:6px;margin:-3px 0 0 -3px;` +
+          `background:${colors[k % colors.length] ?? '#fff'};box-shadow:0 0 0 2px #0b0d1a55;`,
+      );
+      stage.append(spark);
+      animate(
+        spark,
+        [
+          { translate: '0 0', opacity: 1 },
+          {
+            translate: `${Math.round(Math.cos(angle) * reach)}px ${Math.round(Math.sin(angle) * reach)}px`,
+            opacity: 0,
+          },
+        ],
+        { duration: 520 + (k % 4) * 60, easing: 'steps(6)', fill: 'forwards' },
+      );
+    }
   }
 
   /** The step that was playing is over: the next one of the chain, or nothing. */
