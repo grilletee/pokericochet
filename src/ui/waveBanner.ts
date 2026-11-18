@@ -71,7 +71,9 @@ export class WaveBanner {
       'position:absolute;left:50%;top:150px;transform:translateX(-50%);display:none;' +
       'flex-direction:column;align-items:center;gap:6px;padding:10px 18px;max-width:86%;' +
       'border-radius:14px;background:rgba(5,8,16,0.82);border:2px solid #7ec8ff;' +
-      'pointer-events:none;text-align:center;font-family:system-ui,sans-serif;color:#fff;z-index:5;';
+      // 4X, block 5: over the ULTI button of the two thumbs (z 6), which drew its letters across the
+      // sign; it takes no pointer events, so the button under it still answers.
+      'pointer-events:none;text-align:center;font-family:system-ui,sans-serif;color:#fff;z-index:7;';
     host.append(this.root);
   }
 

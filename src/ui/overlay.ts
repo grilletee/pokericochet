@@ -101,6 +101,24 @@ export class Overlay {
 
   private panel: HudPanel | null = null;
 
+  /**
+   * 4X, block 5 (19th playtest: "PS, Nv y el número al lado se ven encimados"): where the HUD ends
+   * (host pixels from the top), so the team bar can stand under it whatever its height. `onChange` is
+   * called whenever the HUD changes its size (and once now).
+   */
+  hudBottom(): number {
+    return this.hud.offsetTop + this.hud.offsetHeight;
+  }
+
+  watchHud(onChange: (bottom: number) => void): void {
+    this.hudWatch = onChange;
+    onChange(this.hudBottom());
+    if (typeof ResizeObserver === 'undefined') return;
+    new ResizeObserver(() => onChange(this.hudBottom())).observe(this.hud);
+  }
+
+  private hudWatch: ((bottom: number) => void) | null = null;
+
   /** The framed HUD of a run (4V): health, level, waves; null clears it (the menus). */
   setHudView(view: HudView | null): void {
     if (view === null) {
@@ -291,6 +309,8 @@ export class Overlay {
       );
       dock(this.debug, `right:auto;left:${left.x + 8}px;top:auto;bottom:8px;font-size:10px;`);
     }
+    // 4X: the HUD moved; what stands under it follows.
+    this.hudWatch?.(this.hudBottom());
     // The bar is drawn again on the next frame, with its dynamic colours.
     this.lastBossKey = '';
   }

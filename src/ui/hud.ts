@@ -74,6 +74,8 @@ export function healthSegments(
 }
 
 const INK = '#0b0d1a';
+/** 4X: every number of the HUD at one whole scale (each font pixel two screen pixels). */
+export const HUD_DIGIT_SCALE = 2;
 const CSS = `
 [data-hud-panel]{display:flex;flex-direction:column;gap:5px;padding:6px 8px;background:rgba(11,13,26,0.72);
   box-shadow:0 0 0 2px ${INK},0 0 0 4px #2b3a73,inset 0 2px 0 0 rgba(255,255,255,0.08);font-family:'Pixelify',monospace;
@@ -117,9 +119,11 @@ export class HudPanel {
   private readonly waves = div('hd-waves');
   private readonly stage = div('hd-stage');
   private readonly seed = div('hd-seed');
-  private readonly hpNumber = pixelNumber('', '#f6f3e8', 1.5);
-  private readonly levelNumber = pixelNumber('', '#ffd75a', 1.5);
-  private readonly stageNumber = pixelNumber('', '#f6f3e8', 1.5);
+  // 4X, block 5: whole scales (1.5 drew some font pixels one screen pixel wider than others: the
+  // digits looked "raros").
+  private readonly hpNumber = pixelNumber('', '#f6f3e8', HUD_DIGIT_SCALE);
+  private readonly levelNumber = pixelNumber('', '#ffd75a', HUD_DIGIT_SCALE);
+  private readonly stageNumber = pixelNumber('', '#f6f3e8', HUD_DIGIT_SCALE);
   private key = '';
 
   constructor(private readonly host: HTMLElement) {
@@ -158,8 +162,8 @@ export class HudPanel {
     this.host.dataset.low = view.hp > 0 && view.hp / view.maxHp <= 0.3 ? '1' : '0';
     this.host.dataset.boss = view.boss ? '1' : '0';
     // 4W (block 3): the numbers in the game's own digits.
-    drawPixelNumber(this.hpNumber, `${view.hp}/${view.maxHp}`, '#f6f3e8', 1.5);
-    drawPixelNumber(this.levelNumber, String(view.level), '#ffd75a', 1.5);
+    drawPixelNumber(this.hpNumber, `${view.hp}/${view.maxHp}`, '#f6f3e8', HUD_DIGIT_SCALE);
+    drawPixelNumber(this.levelNumber, String(view.level), '#ffd75a', HUD_DIGIT_SCALE);
     this.xpFill.style.width = `${Math.round(Math.min(1, view.xp / view.xpNext) * 100)}%`;
     if (this.waves.childElementCount !== view.waves.length) {
       this.waves.replaceChildren(...view.waves.map(() => document.createElement('i')));
@@ -173,7 +177,12 @@ export class HudPanel {
       this.stage.textContent = view.stage;
     } else {
       this.stage.textContent = `${split[1] ?? ''} `;
-      drawPixelNumber(this.stageNumber, split[2] ?? '', view.boss ? '#ff9a8a' : '#f6f3e8', 1.5);
+      drawPixelNumber(
+        this.stageNumber,
+        split[2] ?? '',
+        view.boss ? '#ff9a8a' : '#f6f3e8',
+        HUD_DIGIT_SCALE,
+      );
       this.stage.append(this.stageNumber);
     }
     this.seed.textContent = `Semilla ${view.seed}`;

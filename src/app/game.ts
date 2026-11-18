@@ -729,8 +729,26 @@ export async function startGame(host: HTMLElement): Promise<void> {
       : Math.floor(Date.now() / 86_400_000);
   const rates = rateTable(GACHA_RULES);
   let gachaSelected = 0;
+  /**
+   * 4X, block 5 (19th playtest: "al pulsar cualquier botón del menú se ve un frame de la partida
+   * anterior al abrir la pantalla y al volver"): an opaque backdrop right over the canvas of the game,
+   * on while a menu is up. The menus come in with a short rise from transparent (4V); without it, the
+   * last frame of the run showed through during that rise.
+   */
+  const menuBackdrop = document.createElement('div');
+  menuBackdrop.dataset.menuBackdrop = '';
+  menuBackdrop.style.cssText =
+    'position:absolute;inset:0;display:none;pointer-events:none;' +
+    'background:linear-gradient(180deg,#2b3a73,#1f2547 60%,#14172b);';
+  const gameCanvas = host.querySelector('canvas[data-game-canvas]');
+  if (gameCanvas !== null) gameCanvas.after(menuBackdrop);
+  else host.prepend(menuBackdrop);
+  const setMenuBackdrop = (on: boolean): void => {
+    menuBackdrop.style.display = on ? 'block' : 'none';
+  };
   /** Every menu screen off (each `show*` then turns its own on). */
   const hideMenus = (): void => {
+    setMenuBackdrop(true);
     startScreen.hide();
     starterScreen.hide();
     collectionScreen.hide();
@@ -769,6 +787,9 @@ export async function startGame(host: HTMLElement): Promise<void> {
   teamBar.setUltimateKey(ultimateLabel());
   teamBar.setBallsOf((member) => ballsFor(config, member.level));
   const ultimateCue = new UltimateCue(host);
+  // 4X, block 5: the team bar stands under the HUD, whatever its height (it covered "Nv" and the
+  // wave on a phone).
+  overlay.watchHud((bottom) => teamBar.setTop(bottom));
   // The persistent profile (ADR-025, 4G-I): collection, coins, candies. The run never reads it.
   const knownSpecies = (id: string): boolean => gameConfig.species[id] !== undefined;
   const freshSeed = (): number => Date.now() >>> 0;
@@ -1091,6 +1112,8 @@ export async function startGame(host: HTMLElement): Promise<void> {
     stepper.reset();
     pending.length = 0;
     hideMenus();
+    // 4X: the run is on screen again.
+    setMenuBackdrop(false);
     creditsScreen.hide();
     resultsScreen.hide();
     banner.hide();
@@ -2090,7 +2113,10 @@ export async function startGame(host: HTMLElement): Promise<void> {
     showEventFeedback(pending, now);
     moveLabels.update(screen === 'playing' ? labelPolicy.visible(now) : [], toScreen);
     const r0 = performance.now();
-    if (!skipRender) renderer.render(prev, curr, stepper.alpha, pending, elapsed);
+    // 4X: under a menu the field is covered (the backdrop): nothing to draw.
+    if (!skipRender && !isMenuScreen(screen)) {
+      renderer.render(prev, curr, stepper.alpha, pending, elapsed);
+    }
     const renderMs = performance.now() - r0;
     pending.length = 0;
 

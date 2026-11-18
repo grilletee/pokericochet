@@ -9,6 +9,14 @@ const FLY_MS = 700;
 /** The shortest time between two flashes of the same portrait for its hits (4G-H). */
 export const HIT_BLINK_GAP_MS = 180;
 
+/** 4X: the gap between the bottom of the HUD and the team bar (host pixels). */
+export const TEAM_GAP = 10;
+
+/** Where the team bar stands for a HUD that ends at `hudBottom`: never over it. Pure. */
+export function teamTop(hudBottom: number): number {
+  return Math.max(0, Math.ceil(hudBottom)) + TEAM_GAP;
+}
+
 /** Whether a portrait that last flashed at `last` (ms, or never) may flash again at `now`. Pure. */
 export function hitBlinkDue(last: number | undefined, now: number): boolean {
   return last === undefined || now - last >= HIT_BLINK_GAP_MS;
@@ -91,6 +99,23 @@ export class TeamBar {
         ? null
         : `left:${panels.left.x + 8}px;top:58px;max-width:${panels.left.w - 16}px;`,
     );
+    this.applyTop();
+  }
+
+  /**
+   * 4X, block 5 (19th playtest: "PS, Nv y el número al lado se ven encimados"): the bar stands
+   * `TEAM_GAP` pixels under the bottom of the HUD, whatever the HUD's height, instead of at a fixed
+   * top that the HUD outgrew on a phone.
+   */
+  setTop(hudBottom: number): void {
+    this.top = teamTop(hudBottom);
+    this.applyTop();
+  }
+
+  private top: number | null = null;
+
+  private applyTop(): void {
+    if (this.top !== null) this.root.style.top = `${this.top}px`;
   }
 
   /** 4X: the key the tag of a ready Ultimate names ("Q", or "ULTI" on a touch screen). */

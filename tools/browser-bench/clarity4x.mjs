@@ -92,6 +92,73 @@ try {
     check('no page errors (Ultimate)', errors.length === 0, errors.slice(0, 2).join(' | '));
     await context.close();
   }
+
+  // ---- Block 5: the menus cover the run at once; the HUD and the team never overlap.
+  const DEVICES = [
+    ['escritorio', { viewport: { width: 1280, height: 800 } }],
+    [
+      'movil-a',
+      {
+        viewport: { width: 844, height: 390 },
+        deviceScaleFactor: 2,
+        hasTouch: true,
+        isMobile: true,
+      },
+    ],
+    ['tablet', { viewport: { width: 1024, height: 768 }, hasTouch: true }],
+  ];
+  for (const [tag, options] of DEVICES) {
+    const context = await browser.newContext(options);
+    const page = await context.newPage();
+    const errors = [];
+    page.on('pageerror', (e) => errors.push(e.message));
+    await page.goto(
+      `${URL}?debug&seed=9&starter=charmander&team=charmander,squirtle,bulbasaur,pikachu,machop,geodude&ballLevel=6&hp=99`,
+    );
+    await page.waitForFunction(() => typeof window.__debug === 'function');
+    await page.waitForTimeout(1500);
+    const boxes = await page.evaluate(() => {
+      const r = (sel) => document.querySelector(sel)?.getBoundingClientRect();
+      const hud = r('[data-hud]');
+      const team = r('[data-team-bar]');
+      return { hudBottom: hud?.bottom ?? 0, teamTop: team?.top ?? 0, hudH: hud?.height ?? 0 };
+    });
+    check(
+      `${tag}: the team bar stands under the HUD, never over it`,
+      boxes.teamTop >= boxes.hudBottom,
+      `HUD ends at ${Math.round(boxes.hudBottom)}, team starts at ${Math.round(boxes.teamTop)}`,
+    );
+    await shot(page, `${tag}-hud-y-equipo.png`);
+    // From the run to the menu and through its screens: the backdrop is up in the same instant.
+    const covered = () =>
+      page.evaluate(() => {
+        const b = document.querySelector('[data-menu-backdrop]');
+        return b instanceof HTMLElement && b.style.display === 'block';
+      });
+    await page.keyboard.press('KeyM');
+    await page.evaluate(() => window.__lose());
+    await page.waitForSelector('[data-screen="results"]', { state: 'visible', timeout: 15000 });
+    await page.keyboard.press('KeyM');
+    await page.waitForSelector('[data-screen="start"] [data-action="gacha"]', { state: 'visible' });
+    check(`${tag}: the menu covers the run`, await covered());
+    const tap = (selector) => (options.hasTouch ? page.tap(selector) : page.click(selector));
+    let always = true;
+    for (const action of ['gacha', 'collection', 'settings']) {
+      await tap(`[data-screen="start"] [data-action="${action}"]`);
+      // The very next moment of the click, while the new screen rises from transparent.
+      if (!(await covered())) always = false;
+      await page.waitForTimeout(60);
+      if (action === 'gacha') await shot(page, `${tag}-abriendo-gacha.png`);
+      await page.keyboard.press('Escape');
+      if (!(await covered())) always = false;
+      await page.waitForSelector('[data-screen="start"] [data-action="gacha"]', {
+        state: 'visible',
+      });
+    }
+    check(`${tag}: opening and closing every menu never shows the run`, always);
+    check(`${tag}: no page errors`, errors.length === 0, errors.slice(0, 2).join(' | '));
+    await context.close();
+  }
 } finally {
   await browser.close();
   await new Promise((resolve) => server.httpServer.close(resolve));
