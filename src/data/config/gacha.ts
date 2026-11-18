@@ -131,8 +131,14 @@ export const REGIONS: readonly Region[] = [
   { gen: 9, name: 'Paldea', firstDex: 906, lastDex: 1025 },
 ];
 
-/** The generation of a national Pokédex number (0 when it is out of every region). */
-export function generationOf(dex: number): number {
+/**
+ * The generation of a national Pokédex number (0 when it is out of every region). 4W, block 7: a
+ * regional form (`vulpix-alola`, `ponyta-galar`, `growlithe-hisui`, `wooper-paldea`) counts in the
+ * region of its form, not in the one of its number; Hisui is with Galar (both the 8th generation).
+ */
+export function generationOf(dex: number, species = ''): number {
+  const regional = /-(alola|galar|hisui|paldea)(-|$)/.exec(species)?.[1];
+  if (regional !== undefined) return regional === 'alola' ? 7 : regional === 'paldea' ? 9 : 8;
   return REGIONS.find((r) => dex >= r.firstDex && dex <= r.lastDex)?.gen ?? 0;
 }
 

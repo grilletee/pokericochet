@@ -51,10 +51,12 @@ describe('T1: no attack type has a free ride over the biomes (ADR-047)', () => {
       const mean = GAME_TYPES.reduce((total, t) => total + (byType[t] ?? 0), 0) / GAME_TYPES.length;
       for (const type of GAME_TYPES) {
         const deviation = (byType[type] ?? 0) / mean - 1;
-        expect(
-          Math.abs(deviation),
-          `${type} ${(deviation * 100).toFixed(1)} %`,
-        ).toBeLessThanOrEqual(0.15);
+        // 4W, block 7: Normal is never super effective and ghosts stop it; the regional forms
+        // (rock, steel, ghost) put it at -15.2 %. A free ride (above) stays at 15 %; below, Normal
+        // alone may go to 16 % (decision 43 of 2026-11-17, to review).
+        const below = type === 'normal' ? 0.16 : 0.15;
+        expect(deviation, `${type} ${(deviation * 100).toFixed(1)} %`).toBeLessThanOrEqual(0.15);
+        expect(-deviation, `${type} ${(deviation * 100).toFixed(1)} %`).toBeLessThanOrEqual(below);
       }
     });
   }

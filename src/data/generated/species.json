@@ -9,43 +9,56 @@
       "weedle",
       "pidgey",
       "rattata",
+      "rattata-alola",
       "spearow",
       "ekans",
       "pikachu",
       "sandshrew",
+      "sandshrew-alola",
       "nidoran-f",
       "nidoran-m",
       "clefairy",
       "vulpix",
+      "vulpix-alola",
       "jigglypuff",
       "zubat",
       "oddish",
       "paras",
       "venonat",
       "diglett",
+      "diglett-alola",
       "meowth",
+      "meowth-alola",
+      "meowth-galar",
       "psyduck",
       "mankey",
       "growlithe",
+      "growlithe-hisui",
       "poliwag",
       "abra",
       "machop",
       "bellsprout",
       "tentacool",
       "geodude",
+      "geodude-alola",
       "ponyta",
+      "ponyta-galar",
       "slowpoke",
+      "slowpoke-galar",
       "magnemite",
       "farfetchd",
+      "farfetchd-galar",
       "doduo",
       "seel",
       "grimer",
+      "grimer-alola",
       "shellder",
       "gastly",
       "onix",
       "drowzee",
       "krabby",
       "voltorb",
+      "voltorb-hisui",
       "exeggcute",
       "cubone",
       "hitmonlee",
@@ -60,6 +73,7 @@
       "goldeen",
       "staryu",
       "mr-mime",
+      "mr-mime-galar",
       "scyther",
       "jynx",
       "electabuzz",
@@ -94,6 +108,7 @@
       "sunkern",
       "yanma",
       "wooper",
+      "wooper-paldea",
       "murkrow",
       "misdreavus",
       "unown",
@@ -104,13 +119,16 @@
       "gligar",
       "snubbull",
       "qwilfish",
+      "qwilfish-hisui",
       "shuckle",
       "heracross",
       "sneasel",
+      "sneasel-hisui",
       "teddiursa",
       "slugma",
       "swinub",
       "corsola",
+      "corsola-galar",
       "remoraid",
       "delibird",
       "mantine",
@@ -127,6 +145,7 @@
       "mudkip",
       "poochyena",
       "zigzagoon",
+      "zigzagoon-galar",
       "wurmple",
       "lotad",
       "seedot",
@@ -243,11 +262,13 @@
       "basculin-red-striped",
       "sandile",
       "darumaka",
+      "darumaka-galar",
       "maractus",
       "dwebble",
       "scraggy",
       "sigilyph",
       "yamask",
+      "yamask-galar",
       "tirtouga",
       "archen",
       "trubbish",
@@ -436,43 +457,56 @@
       "weedle",
       "pidgey",
       "rattata",
+      "rattata-alola",
       "spearow",
       "ekans",
       "pikachu",
       "sandshrew",
+      "sandshrew-alola",
       "nidoran-f",
       "nidoran-m",
       "clefairy",
       "vulpix",
+      "vulpix-alola",
       "jigglypuff",
       "zubat",
       "oddish",
       "paras",
       "venonat",
       "diglett",
+      "diglett-alola",
       "meowth",
+      "meowth-alola",
+      "meowth-galar",
       "psyduck",
       "mankey",
       "growlithe",
+      "growlithe-hisui",
       "poliwag",
       "abra",
       "machop",
       "bellsprout",
       "tentacool",
       "geodude",
+      "geodude-alola",
       "ponyta",
+      "ponyta-galar",
       "slowpoke",
+      "slowpoke-galar",
       "magnemite",
       "farfetchd",
+      "farfetchd-galar",
       "doduo",
       "seel",
       "grimer",
+      "grimer-alola",
       "shellder",
       "gastly",
       "onix",
       "drowzee",
       "krabby",
       "voltorb",
+      "voltorb-hisui",
       "exeggcute",
       "cubone",
       "hitmonlee",
@@ -487,6 +521,7 @@
       "goldeen",
       "staryu",
       "mr-mime",
+      "mr-mime-galar",
       "scyther",
       "jynx",
       "electabuzz",
@@ -521,6 +556,7 @@
       "sunkern",
       "yanma",
       "wooper",
+      "wooper-paldea",
       "murkrow",
       "misdreavus",
       "unown",
@@ -531,13 +567,16 @@
       "gligar",
       "snubbull",
       "qwilfish",
+      "qwilfish-hisui",
       "shuckle",
       "heracross",
       "sneasel",
+      "sneasel-hisui",
       "teddiursa",
       "slugma",
       "swinub",
       "corsola",
+      "corsola-galar",
       "remoraid",
       "delibird",
       "mantine",
@@ -554,6 +593,7 @@
       "mudkip",
       "poochyena",
       "zigzagoon",
+      "zigzagoon-galar",
       "wurmple",
       "lotad",
       "seedot",
@@ -670,11 +710,13 @@
       "basculin-red-striped",
       "sandile",
       "darumaka",
+      "darumaka-galar",
       "maractus",
       "dwebble",
       "scraggy",
       "sigilyph",
       "yamask",
+      "yamask-galar",
       "tirtouga",
       "archen",
       "trubbish",
@@ -929,6 +971,9 @@
       "rattata": [
         "raticate"
       ],
+      "rattata-alola": [
+        "raticate-alola"
+      ],
       "spearow": [
         "fearow"
       ],
@@ -940,6 +985,9 @@
       ],
       "sandshrew": [
         "sandslash"
+      ],
+      "sandshrew-alola": [
+        "sandslash-alola"
       ],
       "nidoran-f": [
         "nidorina",
@@ -954,6 +1002,9 @@
       ],
       "vulpix": [
         "ninetales"
+      ],
+      "vulpix-alola": [
+        "ninetales-alola"
       ],
       "jigglypuff": [
         "wigglytuff"
@@ -975,8 +1026,17 @@
       "diglett": [
         "dugtrio"
       ],
+      "diglett-alola": [
+        "dugtrio-alola"
+      ],
       "meowth": [
         "persian"
+      ],
+      "meowth-alola": [
+        "persian-alola"
+      ],
+      "meowth-galar": [
+        "perrserker"
       ],
       "psyduck": [
         "golduck"
@@ -987,6 +1047,9 @@
       ],
       "growlithe": [
         "arcanine"
+      ],
+      "growlithe-hisui": [
+        "arcanine-hisui"
       ],
       "poliwag": [
         "poliwhirl",
@@ -1011,17 +1074,30 @@
         "graveler",
         "golem"
       ],
+      "geodude-alola": [
+        "graveler-alola",
+        "golem-alola"
+      ],
       "ponyta": [
         "rapidash"
       ],
+      "ponyta-galar": [
+        "rapidash-galar"
+      ],
       "slowpoke": [
         "slowbro"
+      ],
+      "slowpoke-galar": [
+        "slowbro-galar"
       ],
       "magnemite": [
         "magneton",
         "magnezone"
       ],
       "farfetchd": [],
+      "farfetchd-galar": [
+        "sirfetchd"
+      ],
       "doduo": [
         "dodrio"
       ],
@@ -1030,6 +1106,9 @@
       ],
       "grimer": [
         "muk"
+      ],
+      "grimer-alola": [
+        "muk-alola"
       ],
       "shellder": [
         "cloyster"
@@ -1049,6 +1128,9 @@
       ],
       "voltorb": [
         "electrode"
+      ],
+      "voltorb-hisui": [
+        "electrode-hisui"
       ],
       "exeggcute": [
         "exeggutor"
@@ -1086,6 +1168,9 @@
         "starmie"
       ],
       "mr-mime": [],
+      "mr-mime-galar": [
+        "mr-rime"
+      ],
       "scyther": [
         "scizor"
       ],
@@ -1179,6 +1264,9 @@
       "wooper": [
         "quagsire"
       ],
+      "wooper-paldea": [
+        "clodsire"
+      ],
       "murkrow": [
         "honchkrow"
       ],
@@ -1203,10 +1291,16 @@
         "granbull"
       ],
       "qwilfish": [],
+      "qwilfish-hisui": [
+        "overqwil"
+      ],
       "shuckle": [],
       "heracross": [],
       "sneasel": [
         "weavile"
+      ],
+      "sneasel-hisui": [
+        "sneasler"
       ],
       "teddiursa": [
         "ursaring",
@@ -1220,6 +1314,9 @@
         "mamoswine"
       ],
       "corsola": [],
+      "corsola-galar": [
+        "cursola"
+      ],
       "remoraid": [
         "octillery"
       ],
@@ -1259,6 +1356,10 @@
       ],
       "zigzagoon": [
         "linoone"
+      ],
+      "zigzagoon-galar": [
+        "linoone-galar",
+        "obstagoon"
       ],
       "wurmple": [
         "silcoon",
@@ -1579,6 +1680,9 @@
       "darumaka": [
         "darmanitan-standard"
       ],
+      "darumaka-galar": [
+        "darmanitan-galar-standard"
+      ],
       "maractus": [],
       "dwebble": [
         "crustle"
@@ -1589,6 +1693,9 @@
       "sigilyph": [],
       "yamask": [
         "cofagrigus"
+      ],
+      "yamask-galar": [
+        "runerigus"
       ],
       "tirtouga": [
         "carracosta"
@@ -2140,6 +2247,12 @@
           "trigger": "level-up"
         }
       ],
+      "rattata-alola": [
+        {
+          "level": 20,
+          "trigger": "level-up"
+        }
+      ],
       "spearow": [
         {
           "level": 20,
@@ -2159,6 +2272,12 @@
         }
       ],
       "sandshrew": [
+        {
+          "level": 22,
+          "trigger": "level-up"
+        }
+      ],
+      "sandshrew-alola": [
         {
           "level": 22,
           "trigger": "level-up"
@@ -2191,6 +2310,12 @@
         }
       ],
       "vulpix": [
+        {
+          "level": null,
+          "trigger": "use-item"
+        }
+      ],
+      "vulpix-alola": [
         {
           "level": null,
           "trigger": "use-item"
@@ -2240,7 +2365,25 @@
           "trigger": "level-up"
         }
       ],
+      "diglett-alola": [
+        {
+          "level": 26,
+          "trigger": "level-up"
+        }
+      ],
       "meowth": [
+        {
+          "level": 28,
+          "trigger": "level-up"
+        }
+      ],
+      "meowth-alola": [
+        {
+          "level": 28,
+          "trigger": "level-up"
+        }
+      ],
+      "meowth-galar": [
         {
           "level": 28,
           "trigger": "level-up"
@@ -2263,6 +2406,12 @@
         }
       ],
       "growlithe": [
+        {
+          "level": null,
+          "trigger": "use-item"
+        }
+      ],
+      "growlithe-hisui": [
         {
           "level": null,
           "trigger": "use-item"
@@ -2324,13 +2473,35 @@
           "trigger": "trade"
         }
       ],
+      "geodude-alola": [
+        {
+          "level": 25,
+          "trigger": "level-up"
+        },
+        {
+          "level": null,
+          "trigger": "trade"
+        }
+      ],
       "ponyta": [
         {
           "level": 40,
           "trigger": "level-up"
         }
       ],
+      "ponyta-galar": [
+        {
+          "level": 40,
+          "trigger": "level-up"
+        }
+      ],
       "slowpoke": [
+        {
+          "level": 37,
+          "trigger": "level-up"
+        }
+      ],
+      "slowpoke-galar": [
         {
           "level": 37,
           "trigger": "level-up"
@@ -2347,6 +2518,12 @@
         }
       ],
       "farfetchd": [],
+      "farfetchd-galar": [
+        {
+          "level": null,
+          "trigger": "three-critical-hits"
+        }
+      ],
       "doduo": [
         {
           "level": 31,
@@ -2360,6 +2537,12 @@
         }
       ],
       "grimer": [
+        {
+          "level": 38,
+          "trigger": "level-up"
+        }
+      ],
+      "grimer-alola": [
         {
           "level": 38,
           "trigger": "level-up"
@@ -2400,6 +2583,12 @@
         }
       ],
       "voltorb": [
+        {
+          "level": 30,
+          "trigger": "level-up"
+        }
+      ],
+      "voltorb-hisui": [
         {
           "level": 30,
           "trigger": "level-up"
@@ -2477,6 +2666,12 @@
         }
       ],
       "mr-mime": [],
+      "mr-mime-galar": [
+        {
+          "level": 42,
+          "trigger": "level-up"
+        }
+      ],
       "scyther": [
         {
           "level": null,
@@ -2669,6 +2864,12 @@
           "trigger": "level-up"
         }
       ],
+      "wooper-paldea": [
+        {
+          "level": 20,
+          "trigger": "level-up"
+        }
+      ],
       "murkrow": [
         {
           "level": null,
@@ -2714,9 +2915,21 @@
         }
       ],
       "qwilfish": [],
+      "qwilfish-hisui": [
+        {
+          "level": null,
+          "trigger": "strong-style-move"
+        }
+      ],
       "shuckle": [],
       "heracross": [],
       "sneasel": [
+        {
+          "level": null,
+          "trigger": "level-up"
+        }
+      ],
+      "sneasel-hisui": [
         {
           "level": null,
           "trigger": "level-up"
@@ -2749,6 +2962,12 @@
         }
       ],
       "corsola": [],
+      "corsola-galar": [
+        {
+          "level": 38,
+          "trigger": "level-up"
+        }
+      ],
       "remoraid": [
         {
           "level": 25,
@@ -2828,6 +3047,16 @@
       "zigzagoon": [
         {
           "level": 20,
+          "trigger": "level-up"
+        }
+      ],
+      "zigzagoon-galar": [
+        {
+          "level": 20,
+          "trigger": "level-up"
+        },
+        {
+          "level": 35,
           "trigger": "level-up"
         }
       ],
@@ -3498,6 +3727,12 @@
           "trigger": "level-up"
         }
       ],
+      "darumaka-galar": [
+        {
+          "level": 35,
+          "trigger": "level-up"
+        }
+      ],
       "maractus": [],
       "dwebble": [
         {
@@ -3516,6 +3751,12 @@
         {
           "level": 34,
           "trigger": "level-up"
+        }
+      ],
+      "yamask-galar": [
+        {
+          "level": null,
+          "trigger": "take-damage"
         }
       ],
       "tirtouga": [
@@ -4516,6 +4757,135 @@
           "trigger": "use-item"
         }
       ]
+    },
+    "branches": {
+      "oddish": {
+        "at": 3,
+        "options": [
+          [
+            "bellossom"
+          ]
+        ]
+      },
+      "poliwag": {
+        "at": 3,
+        "options": [
+          [
+            "politoed"
+          ]
+        ]
+      },
+      "slowpoke": {
+        "at": 2,
+        "options": [
+          [
+            "slowking"
+          ]
+        ]
+      },
+      "scyther": {
+        "at": 2,
+        "options": [
+          [
+            "kleavor"
+          ]
+        ]
+      },
+      "eevee": {
+        "at": 2,
+        "options": [
+          [
+            "jolteon"
+          ],
+          [
+            "flareon"
+          ],
+          [
+            "espeon"
+          ],
+          [
+            "umbreon"
+          ],
+          [
+            "leafeon"
+          ],
+          [
+            "glaceon"
+          ],
+          [
+            "sylveon"
+          ]
+        ]
+      },
+      "wurmple": {
+        "at": 2,
+        "options": [
+          [
+            "cascoon",
+            "dustox"
+          ]
+        ]
+      },
+      "ralts": {
+        "at": 3,
+        "options": [
+          [
+            "gallade"
+          ]
+        ]
+      },
+      "nincada": {
+        "at": 2,
+        "options": [
+          [
+            "shedinja"
+          ]
+        ]
+      },
+      "snorunt": {
+        "at": 2,
+        "options": [
+          [
+            "froslass"
+          ]
+        ]
+      },
+      "clamperl": {
+        "at": 2,
+        "options": [
+          [
+            "gorebyss"
+          ]
+        ]
+      },
+      "burmy": {
+        "at": 2,
+        "options": [
+          [
+            "mothim"
+          ]
+        ]
+      },
+      "applin": {
+        "at": 2,
+        "options": [
+          [
+            "appletun"
+          ],
+          [
+            "dipplin",
+            "hydrapple"
+          ]
+        ]
+      },
+      "charcadet": {
+        "at": 2,
+        "options": [
+          [
+            "ceruledge"
+          ]
+        ]
+      }
     }
   },
   "species": [
@@ -4642,6 +5012,24 @@
       "name": "Rattata"
     },
     {
+      "id": "rattata-alola",
+      "pokedexId": 19,
+      "type": "dark",
+      "types": [
+        "dark",
+        "normal"
+      ],
+      "baseStats": {
+        "hp": 30,
+        "attack": 56,
+        "defense": 35,
+        "specialAttack": 25,
+        "specialDefense": 35,
+        "speed": 72
+      },
+      "name": "Rattata de Alola"
+    },
+    {
       "id": "spearow",
       "pokedexId": 21,
       "type": "normal",
@@ -4711,6 +5099,24 @@
       "name": "Sandshrew"
     },
     {
+      "id": "sandshrew-alola",
+      "pokedexId": 27,
+      "type": "ice",
+      "types": [
+        "ice",
+        "steel"
+      ],
+      "baseStats": {
+        "hp": 50,
+        "attack": 75,
+        "defense": 90,
+        "specialAttack": 10,
+        "specialDefense": 35,
+        "speed": 40
+      },
+      "name": "Sandshrew de Alola"
+    },
+    {
       "id": "nidoran-f",
       "pokedexId": 29,
       "type": "poison",
@@ -4777,6 +5183,23 @@
         "speed": 65
       },
       "name": "Vulpix"
+    },
+    {
+      "id": "vulpix-alola",
+      "pokedexId": 37,
+      "type": "ice",
+      "types": [
+        "ice"
+      ],
+      "baseStats": {
+        "hp": 38,
+        "attack": 41,
+        "defense": 40,
+        "specialAttack": 50,
+        "specialDefense": 65,
+        "speed": 65
+      },
+      "name": "Vulpix de Alola"
     },
     {
       "id": "jigglypuff",
@@ -4886,6 +5309,24 @@
       "name": "Diglett"
     },
     {
+      "id": "diglett-alola",
+      "pokedexId": 50,
+      "type": "ground",
+      "types": [
+        "ground",
+        "steel"
+      ],
+      "baseStats": {
+        "hp": 10,
+        "attack": 55,
+        "defense": 30,
+        "specialAttack": 35,
+        "specialDefense": 45,
+        "speed": 90
+      },
+      "name": "Diglett de Alola"
+    },
+    {
       "id": "meowth",
       "pokedexId": 52,
       "type": "normal",
@@ -4901,6 +5342,40 @@
         "speed": 90
       },
       "name": "Meowth"
+    },
+    {
+      "id": "meowth-alola",
+      "pokedexId": 52,
+      "type": "dark",
+      "types": [
+        "dark"
+      ],
+      "baseStats": {
+        "hp": 40,
+        "attack": 35,
+        "defense": 35,
+        "specialAttack": 50,
+        "specialDefense": 40,
+        "speed": 90
+      },
+      "name": "Meowth de Alola"
+    },
+    {
+      "id": "meowth-galar",
+      "pokedexId": 52,
+      "type": "steel",
+      "types": [
+        "steel"
+      ],
+      "baseStats": {
+        "hp": 50,
+        "attack": 65,
+        "defense": 55,
+        "specialAttack": 40,
+        "specialDefense": 40,
+        "speed": 40
+      },
+      "name": "Meowth de Galar"
     },
     {
       "id": "psyduck",
@@ -4952,6 +5427,24 @@
         "speed": 60
       },
       "name": "Growlithe"
+    },
+    {
+      "id": "growlithe-hisui",
+      "pokedexId": 58,
+      "type": "fire",
+      "types": [
+        "fire",
+        "rock"
+      ],
+      "baseStats": {
+        "hp": 60,
+        "attack": 75,
+        "defense": 45,
+        "specialAttack": 65,
+        "specialDefense": 50,
+        "speed": 55
+      },
+      "name": "Growlithe de Hisui"
     },
     {
       "id": "poliwag",
@@ -5059,6 +5552,24 @@
       "name": "Geodude"
     },
     {
+      "id": "geodude-alola",
+      "pokedexId": 74,
+      "type": "rock",
+      "types": [
+        "rock",
+        "electric"
+      ],
+      "baseStats": {
+        "hp": 40,
+        "attack": 80,
+        "defense": 100,
+        "specialAttack": 30,
+        "specialDefense": 30,
+        "speed": 20
+      },
+      "name": "Geodude de Alola"
+    },
+    {
       "id": "ponyta",
       "pokedexId": 77,
       "type": "fire",
@@ -5074,6 +5585,23 @@
         "speed": 90
       },
       "name": "Ponyta"
+    },
+    {
+      "id": "ponyta-galar",
+      "pokedexId": 77,
+      "type": "psychic",
+      "types": [
+        "psychic"
+      ],
+      "baseStats": {
+        "hp": 50,
+        "attack": 85,
+        "defense": 55,
+        "specialAttack": 65,
+        "specialDefense": 65,
+        "speed": 90
+      },
+      "name": "Ponyta de Galar"
     },
     {
       "id": "slowpoke",
@@ -5092,6 +5620,23 @@
         "speed": 15
       },
       "name": "Slowpoke"
+    },
+    {
+      "id": "slowpoke-galar",
+      "pokedexId": 79,
+      "type": "psychic",
+      "types": [
+        "psychic"
+      ],
+      "baseStats": {
+        "hp": 90,
+        "attack": 65,
+        "defense": 65,
+        "specialAttack": 40,
+        "specialDefense": 40,
+        "speed": 15
+      },
+      "name": "Slowpoke de Galar"
     },
     {
       "id": "magnemite",
@@ -5128,6 +5673,23 @@
         "speed": 60
       },
       "name": "Farfetch’d"
+    },
+    {
+      "id": "farfetchd-galar",
+      "pokedexId": 83,
+      "type": "fighting",
+      "types": [
+        "fighting"
+      ],
+      "baseStats": {
+        "hp": 52,
+        "attack": 95,
+        "defense": 55,
+        "specialAttack": 58,
+        "specialDefense": 62,
+        "speed": 55
+      },
+      "name": "Farfetch’d de Galar"
     },
     {
       "id": "doduo",
@@ -5180,6 +5742,24 @@
         "speed": 25
       },
       "name": "Grimer"
+    },
+    {
+      "id": "grimer-alola",
+      "pokedexId": 88,
+      "type": "poison",
+      "types": [
+        "poison",
+        "dark"
+      ],
+      "baseStats": {
+        "hp": 80,
+        "attack": 80,
+        "defense": 50,
+        "specialAttack": 40,
+        "specialDefense": 50,
+        "speed": 25
+      },
+      "name": "Grimer de Alola"
     },
     {
       "id": "shellder",
@@ -5284,6 +5864,24 @@
         "speed": 100
       },
       "name": "Voltorb"
+    },
+    {
+      "id": "voltorb-hisui",
+      "pokedexId": 100,
+      "type": "electric",
+      "types": [
+        "electric",
+        "grass"
+      ],
+      "baseStats": {
+        "hp": 40,
+        "attack": 30,
+        "defense": 50,
+        "specialAttack": 55,
+        "specialDefense": 55,
+        "speed": 100
+      },
+      "name": "Voltorb de Hisui"
     },
     {
       "id": "exeggcute",
@@ -5525,6 +6123,24 @@
         "speed": 90
       },
       "name": "Mr. Mime"
+    },
+    {
+      "id": "mr-mime-galar",
+      "pokedexId": 122,
+      "type": "ice",
+      "types": [
+        "ice",
+        "psychic"
+      ],
+      "baseStats": {
+        "hp": 50,
+        "attack": 65,
+        "defense": 65,
+        "specialAttack": 90,
+        "specialDefense": 90,
+        "speed": 100
+      },
+      "name": "Mr. Mime de Galar"
     },
     {
       "id": "scyther",
@@ -6121,6 +6737,24 @@
       "name": "Wooper"
     },
     {
+      "id": "wooper-paldea",
+      "pokedexId": 194,
+      "type": "poison",
+      "types": [
+        "poison",
+        "ground"
+      ],
+      "baseStats": {
+        "hp": 55,
+        "attack": 45,
+        "defense": 45,
+        "specialAttack": 25,
+        "specialDefense": 25,
+        "speed": 15
+      },
+      "name": "Wooper de Paldea"
+    },
+    {
       "id": "murkrow",
       "pokedexId": 198,
       "type": "dark",
@@ -6295,6 +6929,24 @@
       "name": "Qwilfish"
     },
     {
+      "id": "qwilfish-hisui",
+      "pokedexId": 211,
+      "type": "dark",
+      "types": [
+        "dark",
+        "poison"
+      ],
+      "baseStats": {
+        "hp": 65,
+        "attack": 95,
+        "defense": 85,
+        "specialAttack": 55,
+        "specialDefense": 55,
+        "speed": 85
+      },
+      "name": "Qwilfish de Hisui"
+    },
+    {
       "id": "shuckle",
       "pokedexId": 213,
       "type": "bug",
@@ -6347,6 +6999,24 @@
         "speed": 115
       },
       "name": "Sneasel"
+    },
+    {
+      "id": "sneasel-hisui",
+      "pokedexId": 215,
+      "type": "fighting",
+      "types": [
+        "fighting",
+        "poison"
+      ],
+      "baseStats": {
+        "hp": 55,
+        "attack": 95,
+        "defense": 55,
+        "specialAttack": 35,
+        "specialDefense": 75,
+        "speed": 115
+      },
+      "name": "Sneasel de Hisui"
     },
     {
       "id": "teddiursa",
@@ -6417,6 +7087,23 @@
         "speed": 35
       },
       "name": "Corsola"
+    },
+    {
+      "id": "corsola-galar",
+      "pokedexId": 222,
+      "type": "ghost",
+      "types": [
+        "ghost"
+      ],
+      "baseStats": {
+        "hp": 60,
+        "attack": 55,
+        "defense": 100,
+        "specialAttack": 65,
+        "specialDefense": 100,
+        "speed": 30
+      },
+      "name": "Corsola de Galar"
     },
     {
       "id": "remoraid",
@@ -6694,6 +7381,24 @@
         "speed": 60
       },
       "name": "Zigzagoon"
+    },
+    {
+      "id": "zigzagoon-galar",
+      "pokedexId": 263,
+      "type": "dark",
+      "types": [
+        "dark",
+        "normal"
+      ],
+      "baseStats": {
+        "hp": 38,
+        "attack": 30,
+        "defense": 41,
+        "specialAttack": 30,
+        "specialDefense": 41,
+        "speed": 60
+      },
+      "name": "Zigzagoon de Galar"
     },
     {
       "id": "wurmple",
@@ -8712,6 +9417,23 @@
       "name": "Darumaka"
     },
     {
+      "id": "darumaka-galar",
+      "pokedexId": 554,
+      "type": "ice",
+      "types": [
+        "ice"
+      ],
+      "baseStats": {
+        "hp": 70,
+        "attack": 90,
+        "defense": 45,
+        "specialAttack": 15,
+        "specialDefense": 45,
+        "speed": 50
+      },
+      "name": "Darumaka de Galar"
+    },
+    {
       "id": "maractus",
       "pokedexId": 556,
       "type": "grass",
@@ -8798,6 +9520,24 @@
         "speed": 30
       },
       "name": "Yamask"
+    },
+    {
+      "id": "yamask-galar",
+      "pokedexId": 562,
+      "type": "ground",
+      "types": [
+        "ground",
+        "ghost"
+      ],
+      "baseStats": {
+        "hp": 38,
+        "attack": 55,
+        "defense": 85,
+        "specialAttack": 30,
+        "specialDefense": 65,
+        "speed": 30
+      },
+      "name": "Yamask de Galar"
     },
     {
       "id": "tirtouga",
@@ -12800,6 +13540,24 @@
       "name": "Raticate"
     },
     {
+      "id": "raticate-alola",
+      "pokedexId": 20,
+      "type": "dark",
+      "types": [
+        "dark",
+        "normal"
+      ],
+      "baseStats": {
+        "hp": 75,
+        "attack": 71,
+        "defense": 70,
+        "specialAttack": 40,
+        "specialDefense": 80,
+        "speed": 77
+      },
+      "name": "Raticate de Alola"
+    },
+    {
       "id": "fearow",
       "pokedexId": 22,
       "type": "normal",
@@ -12867,6 +13625,24 @@
         "speed": 65
       },
       "name": "Sandslash"
+    },
+    {
+      "id": "sandslash-alola",
+      "pokedexId": 28,
+      "type": "ice",
+      "types": [
+        "ice",
+        "steel"
+      ],
+      "baseStats": {
+        "hp": 75,
+        "attack": 100,
+        "defense": 120,
+        "specialAttack": 25,
+        "specialDefense": 65,
+        "speed": 65
+      },
+      "name": "Sandslash de Alola"
     },
     {
       "id": "nidorina",
@@ -12971,6 +13747,24 @@
         "speed": 100
       },
       "name": "Ninetales"
+    },
+    {
+      "id": "ninetales-alola",
+      "pokedexId": 38,
+      "type": "ice",
+      "types": [
+        "ice",
+        "fairy"
+      ],
+      "baseStats": {
+        "hp": 73,
+        "attack": 67,
+        "defense": 75,
+        "specialAttack": 81,
+        "specialDefense": 100,
+        "speed": 109
+      },
+      "name": "Ninetales de Alola"
     },
     {
       "id": "wigglytuff",
@@ -13116,6 +13910,24 @@
       "name": "Dugtrio"
     },
     {
+      "id": "dugtrio-alola",
+      "pokedexId": 51,
+      "type": "ground",
+      "types": [
+        "ground",
+        "steel"
+      ],
+      "baseStats": {
+        "hp": 35,
+        "attack": 100,
+        "defense": 60,
+        "specialAttack": 50,
+        "specialDefense": 70,
+        "speed": 110
+      },
+      "name": "Dugtrio de Alola"
+    },
+    {
       "id": "persian",
       "pokedexId": 53,
       "type": "normal",
@@ -13131,6 +13943,40 @@
         "speed": 115
       },
       "name": "Persian"
+    },
+    {
+      "id": "persian-alola",
+      "pokedexId": 53,
+      "type": "dark",
+      "types": [
+        "dark"
+      ],
+      "baseStats": {
+        "hp": 65,
+        "attack": 60,
+        "defense": 60,
+        "specialAttack": 75,
+        "specialDefense": 65,
+        "speed": 115
+      },
+      "name": "Persian de Alola"
+    },
+    {
+      "id": "perrserker",
+      "pokedexId": 863,
+      "type": "steel",
+      "types": [
+        "steel"
+      ],
+      "baseStats": {
+        "hp": 70,
+        "attack": 110,
+        "defense": 100,
+        "specialAttack": 50,
+        "specialDefense": 60,
+        "speed": 50
+      },
+      "name": "Perrserker"
     },
     {
       "id": "golduck",
@@ -13200,6 +14046,24 @@
         "speed": 95
       },
       "name": "Arcanine"
+    },
+    {
+      "id": "arcanine-hisui",
+      "pokedexId": 59,
+      "type": "fire",
+      "types": [
+        "fire",
+        "rock"
+      ],
+      "baseStats": {
+        "hp": 95,
+        "attack": 115,
+        "defense": 80,
+        "specialAttack": 95,
+        "specialDefense": 80,
+        "speed": 90
+      },
+      "name": "Arcanine de Hisui"
     },
     {
       "id": "poliwhirl",
@@ -13395,6 +14259,42 @@
       "name": "Golem"
     },
     {
+      "id": "graveler-alola",
+      "pokedexId": 75,
+      "type": "rock",
+      "types": [
+        "rock",
+        "electric"
+      ],
+      "baseStats": {
+        "hp": 55,
+        "attack": 95,
+        "defense": 115,
+        "specialAttack": 45,
+        "specialDefense": 45,
+        "speed": 35
+      },
+      "name": "Graveler de Alola"
+    },
+    {
+      "id": "golem-alola",
+      "pokedexId": 76,
+      "type": "rock",
+      "types": [
+        "rock",
+        "electric"
+      ],
+      "baseStats": {
+        "hp": 80,
+        "attack": 120,
+        "defense": 130,
+        "specialAttack": 55,
+        "specialDefense": 65,
+        "speed": 45
+      },
+      "name": "Golem de Alola"
+    },
+    {
       "id": "rapidash",
       "pokedexId": 78,
       "type": "fire",
@@ -13410,6 +14310,24 @@
         "speed": 105
       },
       "name": "Rapidash"
+    },
+    {
+      "id": "rapidash-galar",
+      "pokedexId": 78,
+      "type": "psychic",
+      "types": [
+        "psychic",
+        "fairy"
+      ],
+      "baseStats": {
+        "hp": 65,
+        "attack": 100,
+        "defense": 70,
+        "specialAttack": 80,
+        "specialDefense": 80,
+        "speed": 105
+      },
+      "name": "Rapidash de Galar"
     },
     {
       "id": "slowbro",
@@ -13428,6 +14346,24 @@
         "speed": 30
       },
       "name": "Slowbro"
+    },
+    {
+      "id": "slowbro-galar",
+      "pokedexId": 80,
+      "type": "poison",
+      "types": [
+        "poison",
+        "psychic"
+      ],
+      "baseStats": {
+        "hp": 95,
+        "attack": 100,
+        "defense": 95,
+        "specialAttack": 100,
+        "specialDefense": 70,
+        "speed": 30
+      },
+      "name": "Slowbro de Galar"
     },
     {
       "id": "magneton",
@@ -13464,6 +14400,23 @@
         "speed": 60
       },
       "name": "Magnezone"
+    },
+    {
+      "id": "sirfetchd",
+      "pokedexId": 865,
+      "type": "fighting",
+      "types": [
+        "fighting"
+      ],
+      "baseStats": {
+        "hp": 62,
+        "attack": 135,
+        "defense": 95,
+        "specialAttack": 68,
+        "specialDefense": 82,
+        "speed": 65
+      },
+      "name": "Sirfetch’d"
     },
     {
       "id": "dodrio",
@@ -13517,6 +14470,24 @@
         "speed": 50
       },
       "name": "Muk"
+    },
+    {
+      "id": "muk-alola",
+      "pokedexId": 89,
+      "type": "poison",
+      "types": [
+        "poison",
+        "dark"
+      ],
+      "baseStats": {
+        "hp": 105,
+        "attack": 105,
+        "defense": 75,
+        "specialAttack": 65,
+        "specialDefense": 100,
+        "speed": 50
+      },
+      "name": "Muk de Alola"
     },
     {
       "id": "cloyster",
@@ -13640,6 +14611,24 @@
         "speed": 150
       },
       "name": "Electrode"
+    },
+    {
+      "id": "electrode-hisui",
+      "pokedexId": 101,
+      "type": "electric",
+      "types": [
+        "electric",
+        "grass"
+      ],
+      "baseStats": {
+        "hp": 60,
+        "attack": 50,
+        "defense": 70,
+        "specialAttack": 80,
+        "specialDefense": 80,
+        "speed": 150
+      },
+      "name": "Electrode de Hisui"
     },
     {
       "id": "exeggutor",
@@ -13849,6 +14838,24 @@
         "speed": 115
       },
       "name": "Starmie"
+    },
+    {
+      "id": "mr-rime",
+      "pokedexId": 866,
+      "type": "ice",
+      "types": [
+        "ice",
+        "psychic"
+      ],
+      "baseStats": {
+        "hp": 80,
+        "attack": 85,
+        "defense": 75,
+        "specialAttack": 110,
+        "specialDefense": 100,
+        "speed": 70
+      },
+      "name": "Mr. Rime"
     },
     {
       "id": "scizor",
@@ -14428,6 +15435,24 @@
       "name": "Quagsire"
     },
     {
+      "id": "clodsire",
+      "pokedexId": 980,
+      "type": "poison",
+      "types": [
+        "poison",
+        "ground"
+      ],
+      "baseStats": {
+        "hp": 130,
+        "attack": 75,
+        "defense": 60,
+        "specialAttack": 45,
+        "specialDefense": 100,
+        "speed": 20
+      },
+      "name": "Clodsire"
+    },
+    {
       "id": "honchkrow",
       "pokedexId": 430,
       "type": "dark",
@@ -14551,6 +15576,24 @@
       "name": "Granbull"
     },
     {
+      "id": "overqwil",
+      "pokedexId": 904,
+      "type": "dark",
+      "types": [
+        "dark",
+        "poison"
+      ],
+      "baseStats": {
+        "hp": 85,
+        "attack": 115,
+        "defense": 95,
+        "specialAttack": 65,
+        "specialDefense": 65,
+        "speed": 85
+      },
+      "name": "Overqwil"
+    },
+    {
       "id": "weavile",
       "pokedexId": 461,
       "type": "dark",
@@ -14567,6 +15610,24 @@
         "speed": 125
       },
       "name": "Weavile"
+    },
+    {
+      "id": "sneasler",
+      "pokedexId": 903,
+      "type": "fighting",
+      "types": [
+        "fighting",
+        "poison"
+      ],
+      "baseStats": {
+        "hp": 80,
+        "attack": 130,
+        "defense": 60,
+        "specialAttack": 40,
+        "specialDefense": 80,
+        "speed": 120
+      },
+      "name": "Sneasler"
     },
     {
       "id": "ursaring",
@@ -14656,6 +15717,23 @@
         "speed": 80
       },
       "name": "Mamoswine"
+    },
+    {
+      "id": "cursola",
+      "pokedexId": 864,
+      "type": "ghost",
+      "types": [
+        "ghost"
+      ],
+      "baseStats": {
+        "hp": 60,
+        "attack": 95,
+        "defense": 50,
+        "specialAttack": 145,
+        "specialDefense": 130,
+        "speed": 30
+      },
+      "name": "Cursola"
     },
     {
       "id": "octillery",
@@ -14902,6 +15980,42 @@
         "speed": 100
       },
       "name": "Linoone"
+    },
+    {
+      "id": "linoone-galar",
+      "pokedexId": 264,
+      "type": "dark",
+      "types": [
+        "dark",
+        "normal"
+      ],
+      "baseStats": {
+        "hp": 78,
+        "attack": 70,
+        "defense": 61,
+        "specialAttack": 50,
+        "specialDefense": 61,
+        "speed": 100
+      },
+      "name": "Linoone de Galar"
+    },
+    {
+      "id": "obstagoon",
+      "pokedexId": 862,
+      "type": "dark",
+      "types": [
+        "dark",
+        "normal"
+      ],
+      "baseStats": {
+        "hp": 93,
+        "attack": 90,
+        "defense": 101,
+        "specialAttack": 60,
+        "specialDefense": 81,
+        "speed": 95
+      },
+      "name": "Obstagoon"
     },
     {
       "id": "silcoon",
@@ -16943,6 +18057,23 @@
       "name": "Darmanitan"
     },
     {
+      "id": "darmanitan-galar-standard",
+      "pokedexId": 555,
+      "type": "ice",
+      "types": [
+        "ice"
+      ],
+      "baseStats": {
+        "hp": 105,
+        "attack": 140,
+        "defense": 55,
+        "specialAttack": 30,
+        "specialDefense": 55,
+        "speed": 95
+      },
+      "name": "Darmanitan de Galar"
+    },
+    {
       "id": "crustle",
       "pokedexId": 558,
       "type": "bug",
@@ -16994,6 +18125,24 @@
         "speed": 30
       },
       "name": "Cofagrigus"
+    },
+    {
+      "id": "runerigus",
+      "pokedexId": 867,
+      "type": "ground",
+      "types": [
+        "ground",
+        "ghost"
+      ],
+      "baseStats": {
+        "hp": 58,
+        "attack": 95,
+        "defense": 145,
+        "specialAttack": 50,
+        "specialDefense": 105,
+        "speed": 30
+      },
+      "name": "Runerigus"
     },
     {
       "id": "carracosta",
@@ -20014,6 +21163,391 @@
         "speed": 70
       },
       "name": "Sinistcha"
+    },
+    {
+      "id": "bellossom",
+      "pokedexId": 182,
+      "type": "grass",
+      "types": [
+        "grass"
+      ],
+      "baseStats": {
+        "hp": 75,
+        "attack": 80,
+        "defense": 95,
+        "specialAttack": 90,
+        "specialDefense": 100,
+        "speed": 50
+      },
+      "name": "Bellossom"
+    },
+    {
+      "id": "politoed",
+      "pokedexId": 186,
+      "type": "water",
+      "types": [
+        "water"
+      ],
+      "baseStats": {
+        "hp": 90,
+        "attack": 75,
+        "defense": 75,
+        "specialAttack": 90,
+        "specialDefense": 100,
+        "speed": 70
+      },
+      "name": "Politoed"
+    },
+    {
+      "id": "slowking",
+      "pokedexId": 199,
+      "type": "water",
+      "types": [
+        "water",
+        "psychic"
+      ],
+      "baseStats": {
+        "hp": 95,
+        "attack": 75,
+        "defense": 80,
+        "specialAttack": 100,
+        "specialDefense": 110,
+        "speed": 30
+      },
+      "name": "Slowking"
+    },
+    {
+      "id": "kleavor",
+      "pokedexId": 900,
+      "type": "bug",
+      "types": [
+        "bug",
+        "rock"
+      ],
+      "baseStats": {
+        "hp": 70,
+        "attack": 135,
+        "defense": 95,
+        "specialAttack": 45,
+        "specialDefense": 70,
+        "speed": 85
+      },
+      "name": "Kleavor"
+    },
+    {
+      "id": "jolteon",
+      "pokedexId": 135,
+      "type": "electric",
+      "types": [
+        "electric"
+      ],
+      "baseStats": {
+        "hp": 65,
+        "attack": 65,
+        "defense": 60,
+        "specialAttack": 110,
+        "specialDefense": 95,
+        "speed": 130
+      },
+      "name": "Jolteon"
+    },
+    {
+      "id": "flareon",
+      "pokedexId": 136,
+      "type": "fire",
+      "types": [
+        "fire"
+      ],
+      "baseStats": {
+        "hp": 65,
+        "attack": 130,
+        "defense": 60,
+        "specialAttack": 95,
+        "specialDefense": 110,
+        "speed": 65
+      },
+      "name": "Flareon"
+    },
+    {
+      "id": "espeon",
+      "pokedexId": 196,
+      "type": "psychic",
+      "types": [
+        "psychic"
+      ],
+      "baseStats": {
+        "hp": 65,
+        "attack": 65,
+        "defense": 60,
+        "specialAttack": 130,
+        "specialDefense": 95,
+        "speed": 110
+      },
+      "name": "Espeon"
+    },
+    {
+      "id": "umbreon",
+      "pokedexId": 197,
+      "type": "dark",
+      "types": [
+        "dark"
+      ],
+      "baseStats": {
+        "hp": 95,
+        "attack": 65,
+        "defense": 110,
+        "specialAttack": 60,
+        "specialDefense": 130,
+        "speed": 65
+      },
+      "name": "Umbreon"
+    },
+    {
+      "id": "leafeon",
+      "pokedexId": 470,
+      "type": "grass",
+      "types": [
+        "grass"
+      ],
+      "baseStats": {
+        "hp": 65,
+        "attack": 110,
+        "defense": 130,
+        "specialAttack": 60,
+        "specialDefense": 65,
+        "speed": 95
+      },
+      "name": "Leafeon"
+    },
+    {
+      "id": "glaceon",
+      "pokedexId": 471,
+      "type": "ice",
+      "types": [
+        "ice"
+      ],
+      "baseStats": {
+        "hp": 65,
+        "attack": 60,
+        "defense": 110,
+        "specialAttack": 130,
+        "specialDefense": 95,
+        "speed": 65
+      },
+      "name": "Glaceon"
+    },
+    {
+      "id": "sylveon",
+      "pokedexId": 700,
+      "type": "fairy",
+      "types": [
+        "fairy"
+      ],
+      "baseStats": {
+        "hp": 95,
+        "attack": 65,
+        "defense": 65,
+        "specialAttack": 110,
+        "specialDefense": 130,
+        "speed": 60
+      },
+      "name": "Sylveon"
+    },
+    {
+      "id": "cascoon",
+      "pokedexId": 268,
+      "type": "bug",
+      "types": [
+        "bug"
+      ],
+      "baseStats": {
+        "hp": 50,
+        "attack": 35,
+        "defense": 55,
+        "specialAttack": 25,
+        "specialDefense": 25,
+        "speed": 15
+      },
+      "name": "Cascoon"
+    },
+    {
+      "id": "dustox",
+      "pokedexId": 269,
+      "type": "bug",
+      "types": [
+        "bug",
+        "poison"
+      ],
+      "baseStats": {
+        "hp": 60,
+        "attack": 50,
+        "defense": 70,
+        "specialAttack": 50,
+        "specialDefense": 90,
+        "speed": 65
+      },
+      "name": "Dustox"
+    },
+    {
+      "id": "gallade",
+      "pokedexId": 475,
+      "type": "psychic",
+      "types": [
+        "psychic",
+        "fighting"
+      ],
+      "baseStats": {
+        "hp": 68,
+        "attack": 125,
+        "defense": 65,
+        "specialAttack": 65,
+        "specialDefense": 115,
+        "speed": 80
+      },
+      "name": "Gallade"
+    },
+    {
+      "id": "shedinja",
+      "pokedexId": 292,
+      "type": "bug",
+      "types": [
+        "bug",
+        "ghost"
+      ],
+      "baseStats": {
+        "hp": 1,
+        "attack": 90,
+        "defense": 45,
+        "specialAttack": 30,
+        "specialDefense": 30,
+        "speed": 40
+      },
+      "name": "Shedinja"
+    },
+    {
+      "id": "froslass",
+      "pokedexId": 478,
+      "type": "ice",
+      "types": [
+        "ice",
+        "ghost"
+      ],
+      "baseStats": {
+        "hp": 70,
+        "attack": 80,
+        "defense": 70,
+        "specialAttack": 80,
+        "specialDefense": 70,
+        "speed": 110
+      },
+      "name": "Froslass"
+    },
+    {
+      "id": "gorebyss",
+      "pokedexId": 368,
+      "type": "water",
+      "types": [
+        "water"
+      ],
+      "baseStats": {
+        "hp": 55,
+        "attack": 84,
+        "defense": 105,
+        "specialAttack": 114,
+        "specialDefense": 75,
+        "speed": 52
+      },
+      "name": "Gorebyss"
+    },
+    {
+      "id": "mothim",
+      "pokedexId": 414,
+      "type": "bug",
+      "types": [
+        "bug",
+        "flying"
+      ],
+      "baseStats": {
+        "hp": 70,
+        "attack": 94,
+        "defense": 50,
+        "specialAttack": 94,
+        "specialDefense": 50,
+        "speed": 66
+      },
+      "name": "Mothim"
+    },
+    {
+      "id": "appletun",
+      "pokedexId": 842,
+      "type": "grass",
+      "types": [
+        "grass",
+        "dragon"
+      ],
+      "baseStats": {
+        "hp": 110,
+        "attack": 85,
+        "defense": 80,
+        "specialAttack": 100,
+        "specialDefense": 80,
+        "speed": 30
+      },
+      "name": "Appletun"
+    },
+    {
+      "id": "dipplin",
+      "pokedexId": 1011,
+      "type": "grass",
+      "types": [
+        "grass",
+        "dragon"
+      ],
+      "baseStats": {
+        "hp": 80,
+        "attack": 80,
+        "defense": 110,
+        "specialAttack": 95,
+        "specialDefense": 80,
+        "speed": 40
+      },
+      "name": "Dipplin"
+    },
+    {
+      "id": "hydrapple",
+      "pokedexId": 1019,
+      "type": "grass",
+      "types": [
+        "grass",
+        "dragon"
+      ],
+      "baseStats": {
+        "hp": 106,
+        "attack": 80,
+        "defense": 110,
+        "specialAttack": 120,
+        "specialDefense": 80,
+        "speed": 44
+      },
+      "name": "Hydrapple"
+    },
+    {
+      "id": "ceruledge",
+      "pokedexId": 937,
+      "type": "fire",
+      "types": [
+        "fire",
+        "ghost"
+      ],
+      "baseStats": {
+        "hp": 75,
+        "attack": 125,
+        "defense": 80,
+        "specialAttack": 60,
+        "specialDefense": 100,
+        "speed": 85
+      },
+      "name": "Ceruledge"
     }
   ]
 }

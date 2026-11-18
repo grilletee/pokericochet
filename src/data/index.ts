@@ -7,6 +7,7 @@ import {
   ALL_SPECIES,
   BALL_SPECIES,
   ENEMY_SPECIES,
+  EVOLUTION_BRANCHES,
   EVOLUTION_FORMS,
   EVOLUTION_LINES,
   EVOLUTION_STEPS,
@@ -51,6 +52,8 @@ export const gameConfig: GameConfig = {
   enemySpecies: ENEMY_SPECIES.map((s) => s.id),
   ballSpecies: BALL_SPECIES.map((s) => s.id),
   lines: EVOLUTION_LINES,
+  // 4W (block 7): the split lines (Eevee, Ralts...) take a branch by the place where they evolve.
+  branches: EVOLUTION_BRANCHES,
   forms: EVOLUTION_FORMS,
   // 4W (block 1): each line evolves at its own pace, from its real evolution levels.
   team: { ...baseConfig.team, lineStageLevels: paceOfLines(EVOLUTION_STEPS, PSEUDO_LINES) },

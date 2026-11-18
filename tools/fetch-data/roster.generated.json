@@ -50,6 +50,73 @@
       "genesect"
     ],
     "boss": "lugia",
+    "regional": {
+      "rattata-alola": [
+        "raticate-alola"
+      ],
+      "sandshrew-alola": [
+        "sandslash-alola"
+      ],
+      "vulpix-alola": [
+        "ninetales-alola"
+      ],
+      "diglett-alola": [
+        "dugtrio-alola"
+      ],
+      "meowth-alola": [
+        "persian-alola"
+      ],
+      "meowth-galar": [
+        "perrserker"
+      ],
+      "geodude-alola": [
+        "graveler-alola",
+        "golem-alola"
+      ],
+      "grimer-alola": [
+        "muk-alola"
+      ],
+      "ponyta-galar": [
+        "rapidash-galar"
+      ],
+      "slowpoke-galar": [
+        "slowbro-galar"
+      ],
+      "farfetchd-galar": [
+        "sirfetchd"
+      ],
+      "growlithe-hisui": [
+        "arcanine-hisui"
+      ],
+      "voltorb-hisui": [
+        "electrode-hisui"
+      ],
+      "qwilfish-hisui": [
+        "overqwil"
+      ],
+      "sneasel-hisui": [
+        "sneasler"
+      ],
+      "corsola-galar": [
+        "cursola"
+      ],
+      "zigzagoon-galar": [
+        "linoone-galar",
+        "obstagoon"
+      ],
+      "darumaka-galar": [
+        "darmanitan-galar-standard"
+      ],
+      "yamask-galar": [
+        "runerigus"
+      ],
+      "mr-mime-galar": [
+        "mr-rime"
+      ],
+      "wooper-paldea": [
+        "clodsire"
+      ]
+    },
     "exclude": [
       "nihilego",
       "buzzwole",
@@ -122,6 +189,9 @@
     "rattata": [
       "raticate"
     ],
+    "rattata-alola": [
+      "raticate-alola"
+    ],
     "spearow": [
       "fearow"
     ],
@@ -133,6 +203,9 @@
     ],
     "sandshrew": [
       "sandslash"
+    ],
+    "sandshrew-alola": [
+      "sandslash-alola"
     ],
     "nidoran-f": [
       "nidorina",
@@ -147,6 +220,9 @@
     ],
     "vulpix": [
       "ninetales"
+    ],
+    "vulpix-alola": [
+      "ninetales-alola"
     ],
     "jigglypuff": [
       "wigglytuff"
@@ -168,8 +244,17 @@
     "diglett": [
       "dugtrio"
     ],
+    "diglett-alola": [
+      "dugtrio-alola"
+    ],
     "meowth": [
       "persian"
+    ],
+    "meowth-alola": [
+      "persian-alola"
+    ],
+    "meowth-galar": [
+      "perrserker"
     ],
     "psyduck": [
       "golduck"
@@ -180,6 +265,9 @@
     ],
     "growlithe": [
       "arcanine"
+    ],
+    "growlithe-hisui": [
+      "arcanine-hisui"
     ],
     "poliwag": [
       "poliwhirl",
@@ -204,17 +292,30 @@
       "graveler",
       "golem"
     ],
+    "geodude-alola": [
+      "graveler-alola",
+      "golem-alola"
+    ],
     "ponyta": [
       "rapidash"
     ],
+    "ponyta-galar": [
+      "rapidash-galar"
+    ],
     "slowpoke": [
       "slowbro"
+    ],
+    "slowpoke-galar": [
+      "slowbro-galar"
     ],
     "magnemite": [
       "magneton",
       "magnezone"
     ],
     "farfetchd": [],
+    "farfetchd-galar": [
+      "sirfetchd"
+    ],
     "doduo": [
       "dodrio"
     ],
@@ -223,6 +324,9 @@
     ],
     "grimer": [
       "muk"
+    ],
+    "grimer-alola": [
+      "muk-alola"
     ],
     "shellder": [
       "cloyster"
@@ -242,6 +346,9 @@
     ],
     "voltorb": [
       "electrode"
+    ],
+    "voltorb-hisui": [
+      "electrode-hisui"
     ],
     "exeggcute": [
       "exeggutor"
@@ -279,6 +386,9 @@
       "starmie"
     ],
     "mr-mime": [],
+    "mr-mime-galar": [
+      "mr-rime"
+    ],
     "scyther": [
       "scizor"
     ],
@@ -372,6 +482,9 @@
     "wooper": [
       "quagsire"
     ],
+    "wooper-paldea": [
+      "clodsire"
+    ],
     "murkrow": [
       "honchkrow"
     ],
@@ -396,10 +509,16 @@
       "granbull"
     ],
     "qwilfish": [],
+    "qwilfish-hisui": [
+      "overqwil"
+    ],
     "shuckle": [],
     "heracross": [],
     "sneasel": [
       "weavile"
+    ],
+    "sneasel-hisui": [
+      "sneasler"
     ],
     "teddiursa": [
       "ursaring",
@@ -413,6 +532,9 @@
       "mamoswine"
     ],
     "corsola": [],
+    "corsola-galar": [
+      "cursola"
+    ],
     "remoraid": [
       "octillery"
     ],
@@ -452,6 +574,10 @@
     ],
     "zigzagoon": [
       "linoone"
+    ],
+    "zigzagoon-galar": [
+      "linoone-galar",
+      "obstagoon"
     ],
     "wurmple": [
       "silcoon",
@@ -772,6 +898,9 @@
     "darumaka": [
       "darmanitan-standard"
     ],
+    "darumaka-galar": [
+      "darmanitan-galar-standard"
+    ],
     "maractus": [],
     "dwebble": [
       "crustle"
@@ -782,6 +911,9 @@
     "sigilyph": [],
     "yamask": [
       "cofagrigus"
+    ],
+    "yamask-galar": [
+      "runerigus"
     ],
     "tirtouga": [
       "carracosta"
@@ -1333,6 +1465,12 @@
         "trigger": "level-up"
       }
     ],
+    "rattata-alola": [
+      {
+        "level": 20,
+        "trigger": "level-up"
+      }
+    ],
     "spearow": [
       {
         "level": 20,
@@ -1352,6 +1490,12 @@
       }
     ],
     "sandshrew": [
+      {
+        "level": 22,
+        "trigger": "level-up"
+      }
+    ],
+    "sandshrew-alola": [
       {
         "level": 22,
         "trigger": "level-up"
@@ -1384,6 +1528,12 @@
       }
     ],
     "vulpix": [
+      {
+        "level": null,
+        "trigger": "use-item"
+      }
+    ],
+    "vulpix-alola": [
       {
         "level": null,
         "trigger": "use-item"
@@ -1433,7 +1583,25 @@
         "trigger": "level-up"
       }
     ],
+    "diglett-alola": [
+      {
+        "level": 26,
+        "trigger": "level-up"
+      }
+    ],
     "meowth": [
+      {
+        "level": 28,
+        "trigger": "level-up"
+      }
+    ],
+    "meowth-alola": [
+      {
+        "level": 28,
+        "trigger": "level-up"
+      }
+    ],
+    "meowth-galar": [
       {
         "level": 28,
         "trigger": "level-up"
@@ -1456,6 +1624,12 @@
       }
     ],
     "growlithe": [
+      {
+        "level": null,
+        "trigger": "use-item"
+      }
+    ],
+    "growlithe-hisui": [
       {
         "level": null,
         "trigger": "use-item"
@@ -1517,13 +1691,35 @@
         "trigger": "trade"
       }
     ],
+    "geodude-alola": [
+      {
+        "level": 25,
+        "trigger": "level-up"
+      },
+      {
+        "level": null,
+        "trigger": "trade"
+      }
+    ],
     "ponyta": [
       {
         "level": 40,
         "trigger": "level-up"
       }
     ],
+    "ponyta-galar": [
+      {
+        "level": 40,
+        "trigger": "level-up"
+      }
+    ],
     "slowpoke": [
+      {
+        "level": 37,
+        "trigger": "level-up"
+      }
+    ],
+    "slowpoke-galar": [
       {
         "level": 37,
         "trigger": "level-up"
@@ -1540,6 +1736,12 @@
       }
     ],
     "farfetchd": [],
+    "farfetchd-galar": [
+      {
+        "level": null,
+        "trigger": "three-critical-hits"
+      }
+    ],
     "doduo": [
       {
         "level": 31,
@@ -1553,6 +1755,12 @@
       }
     ],
     "grimer": [
+      {
+        "level": 38,
+        "trigger": "level-up"
+      }
+    ],
+    "grimer-alola": [
       {
         "level": 38,
         "trigger": "level-up"
@@ -1593,6 +1801,12 @@
       }
     ],
     "voltorb": [
+      {
+        "level": 30,
+        "trigger": "level-up"
+      }
+    ],
+    "voltorb-hisui": [
       {
         "level": 30,
         "trigger": "level-up"
@@ -1670,6 +1884,12 @@
       }
     ],
     "mr-mime": [],
+    "mr-mime-galar": [
+      {
+        "level": 42,
+        "trigger": "level-up"
+      }
+    ],
     "scyther": [
       {
         "level": null,
@@ -1862,6 +2082,12 @@
         "trigger": "level-up"
       }
     ],
+    "wooper-paldea": [
+      {
+        "level": 20,
+        "trigger": "level-up"
+      }
+    ],
     "murkrow": [
       {
         "level": null,
@@ -1907,9 +2133,21 @@
       }
     ],
     "qwilfish": [],
+    "qwilfish-hisui": [
+      {
+        "level": null,
+        "trigger": "strong-style-move"
+      }
+    ],
     "shuckle": [],
     "heracross": [],
     "sneasel": [
+      {
+        "level": null,
+        "trigger": "level-up"
+      }
+    ],
+    "sneasel-hisui": [
       {
         "level": null,
         "trigger": "level-up"
@@ -1942,6 +2180,12 @@
       }
     ],
     "corsola": [],
+    "corsola-galar": [
+      {
+        "level": 38,
+        "trigger": "level-up"
+      }
+    ],
     "remoraid": [
       {
         "level": 25,
@@ -2021,6 +2265,16 @@
     "zigzagoon": [
       {
         "level": 20,
+        "trigger": "level-up"
+      }
+    ],
+    "zigzagoon-galar": [
+      {
+        "level": 20,
+        "trigger": "level-up"
+      },
+      {
+        "level": 35,
         "trigger": "level-up"
       }
     ],
@@ -2691,6 +2945,12 @@
         "trigger": "level-up"
       }
     ],
+    "darumaka-galar": [
+      {
+        "level": 35,
+        "trigger": "level-up"
+      }
+    ],
     "maractus": [],
     "dwebble": [
       {
@@ -2709,6 +2969,12 @@
       {
         "level": 34,
         "trigger": "level-up"
+      }
+    ],
+    "yamask-galar": [
+      {
+        "level": null,
+        "trigger": "take-damage"
       }
     ],
     "tirtouga": [
@@ -3710,6 +3976,135 @@
       }
     ]
   },
+  "branches": {
+    "oddish": {
+      "at": 3,
+      "options": [
+        [
+          "bellossom"
+        ]
+      ]
+    },
+    "poliwag": {
+      "at": 3,
+      "options": [
+        [
+          "politoed"
+        ]
+      ]
+    },
+    "slowpoke": {
+      "at": 2,
+      "options": [
+        [
+          "slowking"
+        ]
+      ]
+    },
+    "scyther": {
+      "at": 2,
+      "options": [
+        [
+          "kleavor"
+        ]
+      ]
+    },
+    "eevee": {
+      "at": 2,
+      "options": [
+        [
+          "jolteon"
+        ],
+        [
+          "flareon"
+        ],
+        [
+          "espeon"
+        ],
+        [
+          "umbreon"
+        ],
+        [
+          "leafeon"
+        ],
+        [
+          "glaceon"
+        ],
+        [
+          "sylveon"
+        ]
+      ]
+    },
+    "wurmple": {
+      "at": 2,
+      "options": [
+        [
+          "cascoon",
+          "dustox"
+        ]
+      ]
+    },
+    "ralts": {
+      "at": 3,
+      "options": [
+        [
+          "gallade"
+        ]
+      ]
+    },
+    "nincada": {
+      "at": 2,
+      "options": [
+        [
+          "shedinja"
+        ]
+      ]
+    },
+    "snorunt": {
+      "at": 2,
+      "options": [
+        [
+          "froslass"
+        ]
+      ]
+    },
+    "clamperl": {
+      "at": 2,
+      "options": [
+        [
+          "gorebyss"
+        ]
+      ]
+    },
+    "burmy": {
+      "at": 2,
+      "options": [
+        [
+          "mothim"
+        ]
+      ]
+    },
+    "applin": {
+      "at": 2,
+      "options": [
+        [
+          "appletun"
+        ],
+        [
+          "dipplin",
+          "hydrapple"
+        ]
+      ]
+    },
+    "charcadet": {
+      "at": 2,
+      "options": [
+        [
+          "ceruledge"
+        ]
+      ]
+    }
+  },
   "discardedBranches": [
     {
       "from": "applin",
@@ -3811,8 +4206,8 @@
     }
   ],
   "counts": {
-    "lines": 425,
-    "forms": 849,
+    "lines": 446,
+    "forms": 893,
     "legendary": 87,
     "babies": 19,
     "outOfRange": 0,

@@ -23,6 +23,18 @@ export interface RosterRules {
    * only evolve from a regional form (regional forms are out for now).
    */
   readonly exclude?: readonly string[];
+  /**
+   * Curated (4W, block 7): regional lines, each a line of its own (base pokemon id -> its forms):
+   * `vulpix-alola` -> `ninetales-alola`, `zigzagoon-galar` -> `linoone-galar` -> `obstagoon`... Their
+   * pace comes from the species they are a form of. The forms that only evolve from a regional form
+   * stay in `exclude` for the normal chains and come in here.
+   */
+  readonly regional?: Readonly<Record<string, readonly string[]>>;
+}
+
+/** The species a pokemon id is a form of: `ninetales-alola` -> `ninetales` (4W). */
+export function speciesNameOf(pokemon: string): string {
+  return pokemon.replace(/-(alola|galar|hisui|paldea)(-.*)?$/, '');
 }
 
 /** What one `/pokemon-species/{id}` response says that the rule needs. */
@@ -74,11 +86,22 @@ export function parseVia(raw: unknown): EvolutionVia | undefined {
   };
 }
 
+/** 4W: where a line splits and the forms of each other way, from that stage on. */
+export interface RosterBranches {
+  readonly at: number;
+  readonly options: readonly (readonly string[])[];
+}
+
 export interface BuiltRoster {
   /** Line of each base: the forms after the base, in order (as `roster.json` writes them). */
   readonly lines: Readonly<Record<string, readonly string[]>>;
   /** 4W: how each form of `lines` is reached, in the same order (one entry per form after the base). */
   readonly evolution: Readonly<Record<string, readonly EvolutionVia[]>>;
+  /**
+   * 4W, block 7: the other ways each split line can go, so the game can take them (by place). For
+   * a base, `at` is the stage of the split (2 or 3) and each option is its forms from that stage on.
+   */
+  readonly branches: Readonly<Record<string, RosterBranches>>;
   /** Branches that were not taken: where the evolution split, what was kept and what was left. */
   readonly discardedBranches: readonly {
     readonly from: string;
@@ -203,33 +226,56 @@ export function buildRoster(
   const idOf = (name: string): string => species.get(name)?.pokemon ?? name;
   const dexOf = (name: string): number => species.get(name)?.id ?? Number.POSITIVE_INFINITY;
 
+  /** At a split, the child with the higher total (then the lower number): the line of always. */
+  const bestOf = (options: readonly ChainNode[]): ChainNode =>
+    options.reduce((a, b) => {
+      const ta = statTotal(a.name);
+      const tb = statTotal(b.name);
+      return tb > ta || (tb === ta && dexOf(b.name) < dexOf(a.name)) ? b : a;
+    });
+  /** 4W: the forms of a branch not taken, from its first form on, at most `room` of them. */
+  const tailFrom = (first: ChainNode, room: number): string[] => {
+    const tail = [idOf(first.name)];
+    let node = first;
+    while (tail.length < room && node.children.length > 0) {
+      const options = node.children.filter((c) => inRange(c.name) && !isExcluded(c.name));
+      if (options.length === 0) break;
+      node = bestOf(options);
+      tail.push(idOf(node.name));
+    }
+    return tail;
+  };
+  /** The first split of the line being walked (4W): kept as its branches. */
+  let split: RosterBranches | null = null;
+
   /** The linear path from a node: at a split the child with the higher total (then the lower number). */
   const pathFrom = (start: ChainNode): ChainNode[] => {
     const path = [start];
     let node = start;
+    split = null;
     while (path.length < 3 && node.children.length > 0) {
       const reachable = node.children.filter((c) => inRange(c.name));
       outOfRange += node.children.length - reachable.length;
       const options = reachable.filter((c) => !isExcluded(c.name));
       excluded += reachable.length - options.length;
       if (options.length === 0) break;
-      const best = options.reduce((a, b) => {
-        const ta = statTotal(a.name);
-        const tb = statTotal(b.name);
-        return tb > ta || (tb === ta && dexOf(b.name) < dexOf(a.name)) ? b : a;
-      });
+      const best = bestOf(options);
       if (options.length > 1) {
+        const others = options.filter((c) => c !== best);
         discarded.push({
           from: idOf(node.name),
           kept: idOf(best.name),
-          dropped: options.filter((c) => c !== best).map((c) => idOf(c.name)),
+          dropped: others.map((c) => idOf(c.name)),
         });
+        // 4W: the first split of a line is kept as its branches (the stage of the new form).
+        split ??= { at: path.length + 1, options: others.map((c) => tailFrom(c, 3 - path.length)) };
       }
       path.push(best);
       node = best;
     }
     return path;
   };
+  const branches: Record<string, RosterBranches> = {};
   const evolution: Record<string, readonly EvolutionVia[]> = {};
 
   /** Starts a line at `node`, or at its children when it is a baby form (each becomes a line). */
@@ -253,22 +299,47 @@ export function buildRoster(
     if (base !== undefined) {
       lines[base] = rest;
       evolution[base] = path.slice(1).map((n) => n.via ?? { level: null, trigger: 'other' });
+      const found = split as RosterBranches | null;
+      if (found !== null) branches[base] = found;
     }
   };
   for (const root of chains) start(root);
 
+  // 4W, block 7: the regional lines, after the rule; each form is reached the way the species it is
+  // a form of is reached in its chain.
+  const viaOf = new Map<string, EvolutionVia>();
+  const walk = (node: ChainNode): void => {
+    if (node.via !== undefined) viaOf.set(node.name, node.via);
+    for (const child of node.children) walk(child);
+  };
+  for (const root of chains) walk(root);
+  for (const [base, forms] of Object.entries(rules.regional ?? {})) {
+    if (lines[base] !== undefined) continue;
+    lines[base] = forms;
+    evolution[base] = forms.map(
+      (form) => viaOf.get(speciesNameOf(form)) ?? { level: null, trigger: 'other' },
+    );
+  }
+
   const dexByPokemon = new Map([...species.values()].map((info) => [info.pokemon, info.id]));
-  const dexOfId = (id: string): number => dexByPokemon.get(id) ?? Number.POSITIVE_INFINITY;
+  // A regional line goes right after the line of its species (4W): the number plus a half.
+  const dexOfId = (id: string): number =>
+    dexByPokemon.get(id) ??
+    (species.get(speciesNameOf(id))?.id ?? Number.MAX_SAFE_INTEGER - 1) + 0.5;
   const names = Object.keys(lines).sort((a, b) => dexOfId(a) - dexOfId(b));
   const sorted: Record<string, readonly string[]> = {};
   const sortedEvolution: Record<string, readonly EvolutionVia[]> = {};
+  const sortedBranches: Record<string, RosterBranches> = {};
   for (const name of names) {
     sorted[name] = lines[name] ?? [];
     sortedEvolution[name] = evolution[name] ?? [];
+    const found = branches[name];
+    if (found !== undefined) sortedBranches[name] = found;
   }
   return {
     lines: sorted,
     evolution: sortedEvolution,
+    branches: sortedBranches,
     discardedBranches: discarded.sort((a, b) => (a.from < b.from ? -1 : a.from > b.from ? 1 : 0)),
     counts: {
       lines: names.length,

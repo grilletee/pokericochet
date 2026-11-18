@@ -35,6 +35,11 @@
       "take-down",
       "double-edge"
     ],
+    "rattata-alola": [
+      "assurance",
+      "crunch",
+      "double-edge"
+    ],
     "spearow": [
       "aerial-ace",
       "take-down",
@@ -55,6 +60,11 @@
       "dig",
       "earthquake"
     ],
+    "sandshrew-alola": [
+      "metal-claw",
+      "icicle-crash",
+      "blizzard"
+    ],
     "nidoran-f": [
       "poison-fang",
       "sludge-bomb",
@@ -74,6 +84,11 @@
       "flame-wheel",
       "flamethrower",
       "fire-blast"
+    ],
+    "vulpix-alola": [
+      "icy-wind",
+      "ice-beam",
+      "blizzard"
     ],
     "jigglypuff": [
       "covet",
@@ -105,10 +120,25 @@
       "earth-power",
       "earthquake"
     ],
+    "diglett-alola": [
+      "bulldoze",
+      "earth-power",
+      "earthquake"
+    ],
     "meowth": [
       "fake-out",
       "slash",
       "hyper-beam"
+    ],
+    "meowth-alola": [
+      "assurance",
+      "dark-pulse",
+      "dark-pulse"
+    ],
+    "meowth-galar": [
+      "metal-claw",
+      "iron-head",
+      "iron-tail"
     ],
     "psyduck": [
       "water-pulse",
@@ -124,6 +154,11 @@
       "flame-wheel",
       "flamethrower",
       "burn-up"
+    ],
+    "growlithe-hisui": [
+      "flame-wheel",
+      "flamethrower",
+      "flare-blitz"
     ],
     "poliwag": [
       "bubble",
@@ -155,15 +190,30 @@
       "rock-slide",
       "earthquake"
     ],
+    "geodude-alola": [
+      "rock-throw",
+      "discharge",
+      "stone-edge"
+    ],
     "ponyta": [
       "flame-wheel",
       "flamethrower",
       "flare-blitz"
     ],
+    "ponyta-galar": [
+      "confusion",
+      "psychic",
+      "future-sight"
+    ],
     "slowpoke": [
       "water-pulse",
       "psychic",
       "hydro-pump"
+    ],
+    "slowpoke-galar": [
+      "confusion",
+      "psychic",
+      "future-sight"
     ],
     "magnemite": [
       "magnet-bomb",
@@ -174,6 +224,11 @@
       "aerial-ace",
       "air-slash",
       "sky-attack"
+    ],
+    "farfetchd-galar": [
+      "rock-smash",
+      "brick-break",
+      "meteor-assault"
     ],
     "doduo": [
       "pluck",
@@ -188,6 +243,11 @@
     "grimer": [
       "smog",
       "sludge-wave",
+      "belch"
+    ],
+    "grimer-alola": [
+      "bite",
+      "sludge-bomb",
       "belch"
     ],
     "shellder": [
@@ -219,6 +279,11 @@
       "charge-beam",
       "thunderbolt",
       "thunder"
+    ],
+    "voltorb-hisui": [
+      "charge-beam",
+      "energy-ball",
+      "chloroblast"
     ],
     "exeggcute": [
       "confusion",
@@ -289,6 +354,11 @@
       "confusion",
       "psychic",
       "future-sight"
+    ],
+    "mr-mime-galar": [
+      "icy-wind",
+      "psychic",
+      "blizzard"
     ],
     "scyther": [
       "aerial-ace",
@@ -460,6 +530,11 @@
       "aqua-tail",
       "earthquake"
     ],
+    "wooper-paldea": [
+      "mud-shot",
+      "sludge-wave",
+      "earthquake"
+    ],
     "murkrow": [
       "aerial-ace",
       "foul-play",
@@ -510,6 +585,11 @@
       "aqua-tail",
       "hydro-pump"
     ],
+    "qwilfish-hisui": [
+      "barb-barrage",
+      "crunch",
+      "dark-pulse"
+    ],
     "shuckle": [
       "bug-bite",
       "rock-slide",
@@ -524,6 +604,11 @@
       "feint-attack",
       "dark-pulse",
       "blizzard"
+    ],
+    "sneasel-hisui": [
+      "rock-smash",
+      "dire-claw",
+      "close-combat"
     ],
     "teddiursa": [
       "covet",
@@ -544,6 +629,11 @@
       "ancient-power",
       "power-gem",
       "hydro-pump"
+    ],
+    "corsola-galar": [
+      "astonish",
+      "hex",
+      "shadow-force"
     ],
     "remoraid": [
       "water-pulse",
@@ -622,6 +712,11 @@
     ],
     "zigzagoon": [
       "covet",
+      "take-down",
+      "double-edge"
+    ],
+    "zigzagoon-galar": [
+      "snarl",
       "take-down",
       "double-edge"
     ],
@@ -1205,6 +1300,11 @@
       "fire-punch",
       "overheat"
     ],
+    "darumaka-galar": [
+      "avalanche",
+      "icicle-crash",
+      "blizzard"
+    ],
     "maractus": [
       "needle-arm",
       "petal-blizzard",
@@ -1229,6 +1329,11 @@
       "ominous-wind",
       "shadow-ball",
       "shadow-force"
+    ],
+    "yamask-galar": [
+      "astonish",
+      "shadow-ball",
+      "earthquake"
     ],
     "tirtouga": [
       "ancient-power",
@@ -2124,6 +2229,106 @@
       "mega-drain",
       "matcha-gotcha",
       "leaf-storm"
+    ],
+    "bellossom": [
+      "razor-leaf",
+      "petal-blizzard",
+      "leaf-storm"
+    ],
+    "politoed": [
+      "bubble",
+      "bubble-beam",
+      "hydro-pump"
+    ],
+    "slowking": [
+      "water-pulse",
+      "psychic",
+      "hydro-pump"
+    ],
+    "kleavor": [
+      "silver-wind",
+      "x-scissor",
+      "megahorn"
+    ],
+    "jolteon": [
+      "thunder-shock",
+      "thunderbolt",
+      "thunder"
+    ],
+    "flareon": [
+      "ember",
+      "flamethrower",
+      "flare-blitz"
+    ],
+    "espeon": [
+      "confusion",
+      "psychic",
+      "future-sight"
+    ],
+    "umbreon": [
+      "bite",
+      "foul-play",
+      "dark-pulse"
+    ],
+    "leafeon": [
+      "vine-whip",
+      "leaf-blade",
+      "solar-beam"
+    ],
+    "glaceon": [
+      "ice-shard",
+      "ice-beam",
+      "blizzard"
+    ],
+    "sylveon": [
+      "fairy-wind",
+      "moonblast",
+      "moonblast"
+    ],
+    "cascoon": [
+      "bug-bite",
+      "x-scissor",
+      "megahorn"
+    ],
+    "gallade": [
+      "confusion",
+      "psychic",
+      "close-combat"
+    ],
+    "shedinja": [
+      "bug-bite",
+      "phantom-force",
+      "megahorn"
+    ],
+    "froslass": [
+      "frost-breath",
+      "icicle-crash",
+      "blizzard"
+    ],
+    "gorebyss": [
+      "water-gun",
+      "aqua-tail",
+      "hydro-pump"
+    ],
+    "mothim": [
+      "bug-bite",
+      "bug-buzz",
+      "megahorn"
+    ],
+    "appletun": [
+      "vine-whip",
+      "energy-ball",
+      "solar-beam"
+    ],
+    "dipplin": [
+      "vine-whip",
+      "energy-ball",
+      "power-whip"
+    ],
+    "ceruledge": [
+      "incinerate",
+      "bitter-blade",
+      "flare-blitz"
     ]
   },
   "defaults": {
@@ -2299,6 +2504,11 @@
       "type": "ice",
       "power": 60
     },
+    "barb-barrage": {
+      "name": "Mil Púas Tóxicas",
+      "type": "poison",
+      "power": 60
+    },
     "beak-blast": {
       "name": "Pico Cañón",
       "type": "flying",
@@ -2313,6 +2523,11 @@
       "name": "Mordisco",
       "type": "dark",
       "power": 60
+    },
+    "bitter-blade": {
+      "name": "Espada Lamento",
+      "type": "fire",
+      "power": 90
     },
     "blizzard": {
       "name": "Ventisca",
@@ -2404,6 +2619,11 @@
       "type": "electric",
       "power": 50
     },
+    "chloroblast": {
+      "name": "Clorofiláser",
+      "type": "grass",
+      "power": 150
+    },
     "circle-throw": {
       "name": "Llave Giro",
       "type": "fighting",
@@ -2457,6 +2677,11 @@
     "dig": {
       "name": "Excavar",
       "type": "ground",
+      "power": 80
+    },
+    "dire-claw": {
+      "name": "Garra Nociva",
+      "type": "poison",
       "power": 80
     },
     "discharge": {
@@ -2724,6 +2949,11 @@
       "type": "fire",
       "power": 95
     },
+    "hex": {
+      "name": "Infortunio",
+      "type": "ghost",
+      "power": 65
+    },
     "high-horsepower": {
       "name": "Fuerza Equina",
       "type": "ground",
@@ -2898,6 +3128,11 @@
       "name": "Garra Metal",
       "type": "steel",
       "power": 50
+    },
+    "meteor-assault": {
+      "name": "Asalto Estelar",
+      "type": "fighting",
+      "power": 150
     },
     "meteor-mash": {
       "name": "Puño Meteoro",
@@ -3188,6 +3423,11 @@
       "name": "Polución",
       "type": "poison",
       "power": 30
+    },
+    "snarl": {
+      "name": "Alarido",
+      "type": "dark",
+      "power": 55
     },
     "solar-beam": {
       "name": "Rayo Solar",

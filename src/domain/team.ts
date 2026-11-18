@@ -2,12 +2,14 @@ import { abilitiesFor } from './abilities';
 import type { GameConfig } from './config';
 import {
   attackTypeOf,
+  chooseBranch,
   formAt,
   formOfMember,
   stageForLevel,
   stageKind,
   stageLevelsOf,
 } from './forms';
+import { placeTypes } from './place';
 import type { Run } from './run';
 import type { Ball, Member, ReplaceAction, SpeciesDef } from './types';
 
@@ -110,16 +112,24 @@ export function syncMember(run: Run, config: GameConfig, index: number): void {
   const member = run.team[index];
   if (member === undefined) return;
   const stage = stageOf(config, member.level, member.species);
+  // 4W, block 7: a line that splits takes its branch the first time it reaches the stage of the
+  // split, from the place where that happens; then it keeps it.
+  const split = config.branches?.[member.species];
+  if (split !== undefined && member.branch === undefined && stage >= split.at) {
+    const branch = chooseBranch(config, member.species, placeTypes(run, config));
+    if (branch !== undefined) member.branch = branch;
+  }
+  const branched = member.branch === undefined ? {} : { branch: member.branch };
   // The balls attack with the type of the move shown at this stage (ADR-047).
-  const type = attackTypeOf(config, member.species, stage, member.type);
+  const type = attackTypeOf(config, member.species, stage, member.type, member.branch);
   const effects = abilitiesFor(config, member.species, type, stage);
   let have = 0;
   for (let slot = 0; slot < run.loadout.length; slot++) {
     const ball = run.loadout[slot];
     if (ball === undefined || ball.owner !== index) continue;
     have += 1;
-    if (ball.level !== member.level || ball.stage !== stage) {
-      run.loadout[slot] = { ...ball, level: member.level, stage, type, effects };
+    if (ball.level !== member.level || ball.stage !== stage || ball.branch !== member.branch) {
+      run.loadout[slot] = { ...ball, level: member.level, stage, type, effects, ...branched };
     }
   }
   for (const want = ballsFor(config, member.level); have < want; have++) {
@@ -132,6 +142,7 @@ export function syncMember(run: Run, config: GameConfig, index: number): void {
       level: member.level,
       hybrid: false,
       effects,
+      ...branched,
     });
     run.nextBallId += 1;
     run.cooldowns.push(0);
@@ -142,6 +153,22 @@ function firstBallId(run: Run, index: number): number {
   return run.loadout.find((ball) => ball.owner === index)?.id ?? 0;
 }
 
+/**
+ * The branch a capture brings (4W, block 7): the line of always when it was caught at or past the
+ * stage of the split of its line (the enemies and bosses only ever show the line of always), else
+ * none (it will take one by place when it evolves).
+ */
+export function capturedBranch(
+  config: GameConfig,
+  base: string,
+  stage: number,
+): string | undefined {
+  const set = config.branches?.[base];
+  if (set === undefined) return undefined;
+  const joinsAt = stageOf(config, captureLevel(config, stage, base), base);
+  return joinsAt >= set.at ? formAt(config, base, set.at) : undefined;
+}
+
 /** Puts a new Pokémon at the end of the team (the caller checked there is room) with its balls. */
 export function addMember(
   run: Run,
@@ -149,6 +176,8 @@ export function addMember(
   species: string,
   level: number,
   starter = false,
+  /** 4W: the branch it already has (a captured Vaporeon is a Vaporeon, wherever it joins). */
+  branch?: string,
 ): number {
   const def = speciesOf(config, species);
   run.team.push({
@@ -159,6 +188,7 @@ export function addMember(
     damageUps: 0,
     cadenceUps: 0,
     charge: 0,
+    ...(branch === undefined ? {} : { branch }),
   });
   syncMember(run, config, run.team.length - 1);
   return run.team.length - 1;
@@ -187,13 +217,13 @@ export function trainMember(
     member: index,
     species: member.species,
     level: member.level,
-    form: formAt(config, member.species, after),
+    form: formAt(config, member.species, after, member.branch),
     source,
   });
   // One event per stage crossed, in order (Bagon -> Shelgon -> Salamence): a jump of several stages
   // at once (a duplicate capture worth the level of a late stage) must never skip a form (4G-E).
   for (let stage = before + 1; stage <= after; stage++) {
-    const kind = stageKind(config, member.species, stage);
+    const kind = stageKind(config, member.species, stage, member.branch);
     if (kind === null) continue;
     run.events.push({
       type: 'stage',
@@ -202,8 +232,8 @@ export function trainMember(
       species: member.species,
       kind,
       stage,
-      from: formAt(config, member.species, stage - 1),
-      to: formAt(config, member.species, stage),
+      from: formAt(config, member.species, stage - 1, member.branch),
+      to: formAt(config, member.species, stage, member.branch),
     });
   }
   return true;
@@ -223,14 +253,28 @@ export function joinTeam(
   late: boolean,
 ): void {
   const owned = memberIndexOf(run, species);
+  // 4W, block 7: a capture of a form past the split of its line (a Vaporeon) is that form: it
+  // fixes the line of always, whatever the place ("you capture what you beat", 4F-D).
+  const caught = capturedBranch(config, species, stage);
   if (owned >= 0) {
     run.captured.push({ species, level: stage });
+    const member = run.team[owned];
+    if (member !== undefined && member.branch === undefined && caught !== undefined) {
+      member.branch = caught;
+    }
     trainMember(run, config, owned, 'capture', captureLevel(config, stage, species));
     return;
   }
   if (!teamIsFull(run, config)) {
     run.captured.push({ species, level: stage });
-    const index = addMember(run, config, species, captureLevel(config, stage, species));
+    const index = addMember(
+      run,
+      config,
+      species,
+      captureLevel(config, stage, species),
+      false,
+      caught,
+    );
     // A capture that came on its own after waiting too long starts with an extra reload.
     if (late) {
       run.loadout.forEach((ball, slot) => {
@@ -266,12 +310,12 @@ export function joinTeam(
  */
 export function ballView(
   config: GameConfig,
-  ball: Pick<Ball, 'species' | 'stage'>,
+  ball: Pick<Ball, 'species' | 'stage' | 'branch'>,
 ): {
   readonly form: string;
   readonly stage: number;
 } {
-  return { form: formAt(config, ball.species, ball.stage), stage: ball.stage };
+  return { form: formAt(config, ball.species, ball.stage, ball.branch), stage: ball.stage };
 }
 
 /** What a capture on the floor looks like: the form and stage it will have when it joins. */
@@ -310,6 +354,7 @@ export function resolveReplace(run: Run, config: GameConfig, action: ReplaceActi
     });
     removeSlots(run, slots);
     const def = speciesOf(config, pending.species);
+    const caught = capturedBranch(config, def.id, pending.stage);
     run.team[action.slot] = {
       species: def.id,
       type: def.type,
@@ -318,6 +363,7 @@ export function resolveReplace(run: Run, config: GameConfig, action: ReplaceActi
       damageUps: 0,
       cadenceUps: 0,
       charge: 0,
+      ...(caught === undefined ? {} : { branch: caught }),
     };
     syncMember(run, config, action.slot);
     run.captured.push({ species: def.id, level: pending.stage });

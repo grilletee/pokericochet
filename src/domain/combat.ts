@@ -59,7 +59,7 @@ export function effectivenessOn(
 
 /** The species a ball shows now: the form of its line at its stage, whose stats it uses (ADR-038). */
 export function ballForm(config: GameConfig, ball: Ball): SpeciesDef {
-  return getSpecies(config, formAt(config, ball.species, ball.stage));
+  return getSpecies(config, formAt(config, ball.species, ball.stage, ball.branch));
 }
 
 /** Damage multiplier of a form from its best attacking stat (ADR-038). */

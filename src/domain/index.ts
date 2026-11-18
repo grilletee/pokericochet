@@ -47,6 +47,8 @@ export type {
   BossMechanicDef,
   BossPatternDef,
   BossPhaseDef,
+  BranchOption,
+  BranchSet,
   EnemyFireDef,
   GameConfig,
   InterludeDef,
@@ -70,8 +72,10 @@ export { applyHybrid, evolveTeam, mergeBalls, previewHybrid } from './evolution'
 export {
   attackTypeOf,
   baseOf,
+  chooseBranch,
   formAt,
   formOfMember,
+  moveKeyOf,
   nextStep,
   type StageKind,
   stageForLevel,
@@ -101,6 +105,7 @@ export {
   reflectOffEnemy,
 } from './physics';
 export { advancePickups, dropBall, dropCapture, MAX_PICKUPS, reloadTicks } from './pickups';
+export { placeTypes } from './place';
 export {
   biomeLines,
   biomeTypes,

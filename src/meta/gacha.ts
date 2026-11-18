@@ -60,7 +60,8 @@ export interface CatalogInput {
   readonly rules: GachaRules;
   readonly fiveStar: readonly string[];
   readonly dexOf: (species: string) => number;
-  readonly genOf: (dex: number) => number;
+  /** 4W: with the species too, so a regional form counts in its own region (Vulpix de Alola). */
+  readonly genOf: (dex: number, species: string) => number;
 }
 
 /** Every Pokémon of the gacha with its stars, types and region, in Pokédex order. */
@@ -96,7 +97,7 @@ export function buildCatalog(config: GameConfig, input: CatalogInput): readonly 
           types: [...new Set([...typesOfSpecies(base), ...typesOfSpecies(last)])],
           final,
           dex,
-          gen: input.genOf(dex),
+          gen: input.genOf(dex, species),
         },
       ];
     })

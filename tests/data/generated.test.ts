@@ -156,7 +156,13 @@ describe('moves (ADR-039)', () => {
   const bases = [...new Map([...BALL_SPECIES, ...ENEMY_SPECIES].map((s) => [s.id, s])).values()];
 
   it('gives every ball and enemy line a move at each of the three stages, with a name', () => {
-    expect(Object.keys(MOVES_BY_BASE).sort()).toEqual(bases.map((s) => s.id).sort());
+    // 4W, block 7: plus one list per branch of a split line, under its first form (Flareon...).
+    const branchKeys = Object.values(gameConfig.branches ?? {}).flatMap((set) =>
+      set.options.map((o) => o.forms[0] ?? ''),
+    );
+    expect(Object.keys(MOVES_BY_BASE).sort()).toEqual(
+      [...bases.map((s) => s.id), ...branchKeys].sort(),
+    );
     for (const base of bases) {
       const moves = MOVES_BY_BASE[base.id] ?? [];
       expect(moves, base.id).toHaveLength(3);

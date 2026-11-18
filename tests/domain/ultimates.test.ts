@@ -22,7 +22,8 @@ describe('U1 the Ultimates are worth the same', () => {
       const mean = values.reduce((a, v) => a + v, 0) / values.length;
       expect(mean).toBeGreaterThan(0);
       for (const v of values) expect(Math.abs(v / mean - 1)).toBeLessThanOrEqual(0.2);
-    });
+      // 4W: it plays real fights (~2 s alone); under the whole suite in parallel it passed 5 s.
+    }, 30_000);
   }
 
   it('is a measure that notices when one is out of line (the 4F-E cross was far out)', () => {

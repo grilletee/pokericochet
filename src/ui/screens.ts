@@ -1,4 +1,5 @@
 import type { GameType, RunSummary } from '../domain';
+import { typeName } from './cardText';
 import { type ArtLookup, spriteTile } from './cardView';
 import { title as cinemaTitle, confetti, installCinema, rays } from './cinema';
 import { CONTROL_SCHEMES, type ControlScheme } from './controlSchemes';
@@ -46,11 +47,31 @@ export interface StarterOption {
   readonly final?: string;
   readonly dex?: number;
   readonly stars?: 3 | 4 | 5;
+  /**
+   * 4W, block 7: a line that splits: the forms it can become and the type of place of each, e.g.
+   * "Flareon" by "fire" (the line of always first, with no type).
+   */
+  readonly branches?: readonly { readonly form: string; readonly type?: GameType }[];
   /** 4W, block 5: for the search and filters of the grid (the same as the Pokédex's). */
   readonly gen?: number;
   readonly level?: number;
   readonly candies?: number;
   readonly nextCost?: number;
+}
+
+/**
+ * "Flareon (fuego), Glaceon (hielo)… o Vaporeon": the branches of a split line in words (4W, block
+ * 7), the line of always last, for any other place. Pure.
+ */
+export function branchText(
+  branches: readonly { readonly form: string; readonly type?: GameType }[],
+): string {
+  const typed = branches.filter((b) => b.type !== undefined);
+  const usual = branches.find((b) => b.type === undefined);
+  const parts = typed.map((b) => `${pokemonName(b.form)} (${typeName(b.type as GameType)})`);
+  return usual === undefined
+    ? parts.join(', ')
+    : `${parts.join(', ')}; en otro lugar, ${pokemonName(usual.form)}`;
 }
 
 /** A starter as the grid's search and filters see it, with its place in the list. */
@@ -603,7 +624,13 @@ export class StarterScreen {
       el('div', 'font-size:20px;font-weight:800;', pokemonName(starter.id)),
       el('div', 'font-size:13px;opacity:0.85;', starterBlurb(starter.type)),
     );
-    if (starter.final !== undefined && starter.final !== starter.id) {
+    if (starter.branches !== undefined && starter.branches.length > 1) {
+      // 4W, block 7: a line that splits evolves by the place where it does.
+      const line = el('div', 'font-size:12px;opacity:0.9;');
+      line.dataset.branches = starter.branches.map((b) => b.form).join(',');
+      line.textContent = `Evoluciona según el bioma donde lo haga: ${branchText(starter.branches)}.`;
+      info.append(line);
+    } else if (starter.final !== undefined && starter.final !== starter.id) {
       info.append(
         el('div', 'font-size:12px;opacity:0.8;', `Evoluciona hasta ${pokemonName(starter.final)}`),
       );

@@ -26,6 +26,13 @@ export interface Roster {
   readonly evolution?: Readonly<
     Record<string, readonly { readonly level: number | null; readonly trigger: string }[]>
   >;
+  /**
+   * 4W, block 7: the other ways a split line can go (Eevee, Ralts...): the stage of the split and
+   * the forms of each branch from there. The game picks one by place.
+   */
+  readonly branches?: Readonly<
+    Record<string, { readonly at: number; readonly options: readonly (readonly string[])[] }>
+  >;
 }
 
 export interface BaseStats {
@@ -126,10 +133,15 @@ export function parsePokemon(name: string, raw: unknown): ParsedPokemon {
   };
   const spriteUrl = isRecord(sprites) ? sprites.front_default : undefined;
   if (typeof spriteUrl !== 'string') return fail(name, 'no front_default sprite');
+  // 4W: a regional form has an id of its own (10103 for vulpix-alola); its number in the national
+  // Pokédex is the one of its species, at the end of `species.url`.
+  const speciesUrl = isRecord(raw.species) ? raw.species.url : undefined;
+  const fromUrl =
+    typeof speciesUrl === 'string' ? Number(/\/(\d+)\/?$/.exec(speciesUrl)?.[1]) : Number.NaN;
   return {
     species: {
       id: name,
-      pokedexId: id,
+      pokedexId: Number.isInteger(fromUrl) && fromUrl > 0 ? fromUrl : id,
       type: first,
       types: gameTypes,
       baseStats: {
@@ -163,6 +175,17 @@ export interface LocalName {
 }
 
 /** The Spanish name out of a `/pokemon-species/{id}` or `/move/{id}` response (ADR-036). */
+/**
+ * The name of a regional form (4W, block 7): the name of its species plus its region, as the
+ * Spanish games say it ("Vulpix de Alola"). Any other id keeps its name.
+ */
+export function regionalName(id: string, name: string): string {
+  const region = /-(alola|galar|hisui|paldea)(-|$)/.exec(id)?.[1];
+  return region === undefined
+    ? name
+    : `${name} de ${region.charAt(0).toUpperCase()}${region.slice(1)}`;
+}
+
 export function parseName(id: string, raw: unknown): LocalName {
   const names = isRecord(raw) ? raw.names : undefined;
   const spanish = localName(names, 'es');
@@ -194,7 +217,10 @@ export function parseMove(id: string, raw: unknown): MoveInfo {
 
 /** Every species id the roster mentions, once, in a stable order. */
 export function rosterIds(roster: Roster): string[] {
-  const forms = Object.values(roster.lines).flat();
+  const forms = [
+    ...Object.values(roster.lines).flat(),
+    ...Object.values(roster.branches ?? {}).flatMap((b) => b.options.flat()),
+  ];
   return [
     ...new Set([
       ...roster.balls,
@@ -243,6 +269,23 @@ export function validateRoster(roster: Roster): void {
   for (const id of Object.keys(roster.lines)) {
     if (!roster.balls.includes(id) && !roster.enemies.includes(id)) {
       throw new Error(`roster.lines has "${id}", which is not a ball or an enemy`);
+    }
+  }
+  // 4W: a branch belongs to a line, splits at stage 2 or 3, fits in three stages and its forms are
+  // not bases nor forms of any line.
+  const lineForms = new Set(Object.values(roster.lines).flat());
+  for (const [id, set] of Object.entries(roster.branches ?? {})) {
+    if (roster.lines[id] === undefined) throw new Error(`roster.branches has "${id}", not a line`);
+    if (set.at !== 2 && set.at !== 3) throw new Error(`roster.branches["${id}"].at must be 2 or 3`);
+    for (const forms of set.options) {
+      if (forms.length === 0 || set.at + forms.length - 1 > 3) {
+        throw new Error(`a branch of "${id}" has ${forms.length} forms from stage ${set.at}`);
+      }
+      for (const form of forms) {
+        if (base.has(form) || lineForms.has(form)) {
+          throw new Error(`branch form "${form}" of "${id}" is also a base or a line form`);
+        }
+      }
     }
   }
 }

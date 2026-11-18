@@ -24,9 +24,15 @@ export interface MemberStats {
 }
 
 /** Stats of a Pokémon of `species` at `level`. Pure: used by the replace screen and the sheet. */
-export function statsOf(config: GameConfig, species: string, level: number): MemberStats {
+export function statsOf(
+  config: GameConfig,
+  species: string,
+  level: number,
+  /** 4W: the branch its Pokémon took, if its line splits. */
+  branch?: string,
+): MemberStats {
   const stage = stageForLevel(config, level, species);
-  const form = formAt(config, species, stage);
+  const form = formAt(config, species, stage, branch);
   const def = getSpecies(config, form);
   const base = getSpecies(config, species);
   const { attack, specialAttack } = def.baseStats;
@@ -45,14 +51,15 @@ export function statsOf(config: GameConfig, species: string, level: number): Mem
       level,
       hybrid: false,
       effects: [],
+      ...(branch === undefined ? {} : { branch }),
     }),
     bulk: bulkOf(def),
-    move: moveIdOf(config, species, stage),
+    move: moveIdOf(config, species, stage, branch),
   };
 }
 
 export function statsOfMember(config: GameConfig, member: Member): MemberStats {
-  return statsOf(config, member.species, member.level);
+  return statsOf(config, member.species, member.level, member.branch);
 }
 
 /** Guard of the team now, and what it would be if the Pokémon at `slot` were replaced by a capture. */

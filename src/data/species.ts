@@ -1,4 +1,4 @@
-import type { SpeciesDef } from '../domain';
+import { type BranchSet, type SpeciesDef, typesOfSpecies } from '../domain';
 import type { EvolutionStep } from './evolutionPace';
 import generated from './generated/species.json';
 
@@ -18,6 +18,10 @@ interface GeneratedFile {
     readonly lines: Readonly<Record<string, readonly string[]>>;
     /** 4W: how each form of `lines` is reached in the games (minimum level and trigger). */
     readonly evolution?: Readonly<Record<string, readonly EvolutionStep[]>>;
+    /** 4W, block 7: the other ways a split line can go, from the stage of the split. */
+    readonly branches?: Readonly<
+      Record<string, { readonly at: number; readonly options: readonly (readonly string[])[] }>
+    >;
   };
   readonly species: readonly (SpeciesDef & {
     readonly pokedexId: number;
@@ -74,6 +78,24 @@ export const EVOLUTION_STEPS: Readonly<Record<string, readonly EvolutionStep[]>>
 
 /** Evolution forms after the base species, in order (tools/fetch-data/roster.json `lines`). */
 export const EVOLUTION_LINES: Readonly<Record<string, readonly string[]>> = file.roster.lines;
+
+/**
+ * 4W, block 7: the branches of the split lines, with the types of the first form of each (the game
+ * picks a branch by the type of the place). Forms without data are left out.
+ */
+export const EVOLUTION_BRANCHES: Readonly<Record<string, BranchSet>> = Object.fromEntries(
+  Object.entries(file.roster.branches ?? {}).map(([base, set]) => [
+    base,
+    {
+      at: set.at,
+      options: set.options.flatMap((forms) => {
+        const first = forms[0] === undefined ? undefined : byId.get(forms[0]);
+        if (first === undefined || forms.some((f) => !byId.has(f))) return [];
+        return [{ forms, types: typesOfSpecies(first) }];
+      }),
+    },
+  ]),
+);
 
 /** Every species that has art: the playable and wild ones plus all their evolution forms. */
 export const ART_SPECIES_IDS: readonly string[] = file.species.map((s) => s.id);

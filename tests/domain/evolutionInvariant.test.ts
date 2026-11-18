@@ -54,6 +54,8 @@ describe('property: form always follows level, and stage events chain without ga
     expect(bases.length).toBeGreaterThan(100);
     const rng = deriveRng(20261107, 'property');
     let checkedSteps = 0;
+    /** 4W: the branch each Pokémon took, to check it never changes. */
+    const branchOf = new WeakMap<object, string>();
     for (let game = 0; game < 120; game++) {
       const run = createRun(cfg, game + 1, 'charmander');
       for (let step = 0; step < 40; step++) {
@@ -83,17 +85,28 @@ describe('property: form always follows level, and stage events chain without ga
           lastStage.set(e.member, e.stage);
           const member = run.team[e.member];
           expect(member).toBeDefined();
-          expect(e.from).toBe(formAt(cfg, e.species, e.stage - 1));
-          expect(e.to).toBe(formAt(cfg, e.species, e.stage));
+          // 4W, block 7: a split line follows the branch its Pokémon took.
+          expect(e.from).toBe(formAt(cfg, e.species, e.stage - 1, member?.branch));
+          expect(e.to).toBe(formAt(cfg, e.species, e.stage, member?.branch));
           checkedSteps += 1;
         }
         for (const [i, m] of run.team.entries()) {
           const stageNow = stageForLevel(cfg, m.level, m.species);
           expect(formOfMember(cfg, m), `${m.species} Nv${m.level}`).toBe(
-            formAt(cfg, m.species, stageNow),
+            formAt(cfg, m.species, stageNow, m.branch),
           );
           // The form is never below the one its level earns, and never above it.
-          if (stageNow >= 2) expect(formOfMember(cfg, m)).toBe(formAt(cfg, m.species, stageNow));
+          if (stageNow >= 2) {
+            expect(formOfMember(cfg, m)).toBe(formAt(cfg, m.species, stageNow, m.branch));
+          }
+          // A branch is taken once, at the split, and kept: never before the stage of the split.
+          const split = cfg.branches?.[m.species];
+          if (split !== undefined && stageNow >= split.at) expect(m.branch).toBeDefined();
+          if (m.branch !== undefined) {
+            const seen = branchOf.get(m);
+            if (seen !== undefined) expect(m.branch, `${m.species} kept its branch`).toBe(seen);
+            branchOf.set(m, m.branch);
+          }
           expect(i).toBeLessThan(cfg.team.maxMembers);
         }
       }

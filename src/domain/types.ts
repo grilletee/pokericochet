@@ -100,6 +100,11 @@ export interface Member {
   cadenceUps: number;
   /** Hits its balls have landed since its last move (ADR-039); it casts when it reaches the need. */
   charge: number;
+  /**
+   * 4W, block 7: for a line that splits (Eevee...), the way it went: the first form of the branch,
+   * decided once, by the place where it reached the stage of the split. Absent until then.
+   */
+  branch?: string;
 }
 
 /** A ball of the loadout. Immutable value: a level or stage change produces a new one (ADR-003). */
@@ -119,6 +124,8 @@ export interface Ball {
   readonly secondSpecies?: string;
   readonly secondType?: GameType;
   readonly effects: readonly Effect[];
+  /** 4W, block 7: the branch of its Pokémon (`Member.branch`), so it shows and hits as that form. */
+  readonly branch?: string;
 }
 
 /** A ball in flight. `slot` is its index in the run's loadout. */

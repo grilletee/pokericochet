@@ -285,9 +285,10 @@ describe('wave table (GDD-v0)', () => {
     }
   });
 
-  it('the species lists are consistent: 425 lines by rule (generations 1-9), every form maps back to its line', () => {
-    expect(gameConfig.enemySpecies).toHaveLength(425);
-    expect(gameConfig.ballSpecies).toHaveLength(425);
+  it('the species lists are consistent: 425 lines by rule (generations 1-9) and 21 regional ones, every form maps back to its line', () => {
+    // 4W, block 7: the 21 curated regional lines (Vulpix de Alola, Ponyta de Galar...).
+    expect(gameConfig.enemySpecies).toHaveLength(446);
+    expect(gameConfig.ballSpecies).toHaveLength(446);
     for (const [form, info] of Object.entries(gameConfig.forms ?? {})) {
       expect(gameConfig.lines?.[info.base]?.[info.level - 2]).toBe(form);
     }

@@ -58,7 +58,8 @@ describe('a capture on the floor shows the form you get when you collect it (all
     }
     expect(checked).toBe(bases.length * 3);
     expect(bases.length).toBeGreaterThan(100);
-  }, 60_000);
+    // 4W: ~19 s alone (a run per line and stage); under the whole suite in parallel it passed 60 s.
+  }, 180_000);
 
   it('a stage beyond the last of the line is shown as the last one, as it joins', () => {
     const last = 1 + config.team.stageLevels.length;
@@ -106,5 +107,6 @@ describe('a ball of the team shows the form of its Pokémon, in flight and on th
         expect(nameOf(snap.pickupForm[0]), `${base} lv${level} on the floor`).toBe(bar);
       }
     }
-  }, 60_000);
+    // 4W: ~20 s alone; under the whole suite in parallel it passed 60 s.
+  }, 180_000);
 });

@@ -35,6 +35,7 @@ import {
   moveIdOf,
   nextStep,
   PHASE_LEVELUP,
+  placeTypes,
   previewHybrid,
   type Run,
   signatureReady,
@@ -842,7 +843,8 @@ export async function startGame(host: HTMLElement): Promise<void> {
     previewHybrid: (a, b) => previewHybrid(run, a, b),
     memberAt: (index) => run.team[index],
     formOf: (member) => formOfMember(config, member),
-    nextStep: (member) => nextStep(config, member),
+    // 4W, block 7: with the place, a split line tells the branch it will really take here.
+    nextStep: (member) => nextStep(config, member, placeTypes(run, config)),
     ballsAt: (level) => ballsFor(config, level),
     powerStep: config.cards.powerStep,
     damageStep: config.cards.damageStep,
@@ -858,6 +860,26 @@ export async function startGame(host: HTMLElement): Promise<void> {
       return signatureLine(moveName(move), shape.kind, pokemonName(formAt(config, id, stage)));
     }
     return '';
+  };
+  /**
+   * 4W, block 7: what a split line can become and the type of place that picks each branch (the
+   * type the line of always does not have: Gallade by fighting, since Gardevoir is psychic too).
+   */
+  const branchesOf = (id: string): { branches?: NonNullable<StarterOption['branches']> } => {
+    const set = gameConfig.branches?.[id];
+    if (set === undefined) return {};
+    const usual = formAt(gameConfig, id, set.at);
+    const usualDef = gameConfig.species[usual];
+    const usualTypes = usualDef === undefined ? [] : typesOfSpecies(usualDef);
+    return {
+      branches: [
+        { form: usual },
+        ...set.options.map((o) => {
+          const type = o.types.find((t) => !usualTypes.includes(t)) ?? o.types[0];
+          return type === undefined ? { form: o.forms[0] ?? id } : { form: o.forms[0] ?? id, type };
+        }),
+      ],
+    };
   };
   /** The Pokémon the starter screen offers now (4G-I: the classics the first time, then the collection). */
   const starterOptions = (ids: readonly string[]): StarterOption[] =>
@@ -881,6 +903,7 @@ export async function startGame(host: HTMLElement): Promise<void> {
           ...(region === undefined ? {} : { region }),
           final: entry?.final ?? id,
           ...(entry === undefined ? {} : { dex: entry.dex, stars: entry.stars, gen: entry.gen }),
+          ...branchesOf(id),
           // 4W, block 5: for the filters "nivel subido" and "puede subir" of the grid.
           ...(owned === undefined
             ? {}
@@ -1321,13 +1344,13 @@ export async function startGame(host: HTMLElement): Promise<void> {
         form: stats.form,
         type: member.type,
         types: formSpecies === undefined ? [member.type] : typesOfSpecies(formSpecies),
-        attackType: attackTypeOf(config, member.species, stats.stage, member.type),
+        attackType: attackTypeOf(config, member.species, stats.stage, member.type, member.branch),
         level: member.level,
         stage: stats.stage,
         stats,
         damageUps: member.damageUps,
         cadenceUps: member.cadenceUps,
-        move: moveIdOf(config, member.species, stats.stage),
+        move: moveIdOf(config, member.species, stats.stage, member.branch),
         charge: member.charge,
         chargeNeed: chargeNeed(config, stats.stage),
         signature:

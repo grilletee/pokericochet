@@ -1,7 +1,7 @@
 import { effectivenessOn, hitDamage } from './combat';
 import type { GameConfig, MoveShapeDef } from './config';
 import { ballPower, damageEnemy, nearestOther } from './effects';
-import { stageForLevel } from './forms';
+import { moveKeyOf, stageForLevel } from './forms';
 import type { Run } from './run';
 import type { Ball, Enemy } from './types';
 
@@ -67,14 +67,20 @@ export function signatureReady(run: Run, config: GameConfig, index: number): boo
   const stage = stageForLevel(config, member.level, member.species);
   return (
     starterSignatureOf(config, member.species, stage) !== null &&
-    moveIdOf(config, member.species, stage) !== undefined &&
+    moveIdOf(config, member.species, stage, member.branch) !== undefined &&
     member.charge >= chargeNeed(config, stage)
   );
 }
 
 /** The move id a species line has at a stage, if it has data for one. */
-export function moveIdOf(config: GameConfig, base: string, stage: number): string | undefined {
-  const list = config.moves.byBase[base];
+export function moveIdOf(
+  config: GameConfig,
+  base: string,
+  stage: number,
+  branch?: string,
+): string | undefined {
+  // 4W: a Pokémon that took a branch (Flareon) uses the moves of its branch.
+  const list = config.moves.byBase[moveKeyOf(config, base, branch)];
   return list?.[Math.min(stage, list.length) - 1];
 }
 
@@ -174,7 +180,7 @@ function castChain(
 export function landHit(run: Run, config: GameConfig, ball: Ball, target: Enemy): void {
   const member = run.team[ball.owner];
   if (member === undefined) return;
-  const move = moveIdOf(config, member.species, ball.stage);
+  const move = moveIdOf(config, member.species, ball.stage, member.branch);
   if (move === undefined) return;
   const need = chargeNeed(config, ball.stage);
   member.charge += 1;
@@ -214,7 +220,7 @@ export function castSignature(run: Run, config: GameConfig, index: number): bool
   const ball = run.loadout.find((candidate) => candidate.owner === index);
   const member = run.team[index];
   if (ball === undefined || member === undefined) return false;
-  const move = moveIdOf(config, member.species, ball.stage);
+  const move = moveIdOf(config, member.species, ball.stage, member.branch);
   if (move === undefined) return false;
   const at = run.autoAim
     ? enemyNear(run, run.player.x, config.player.y)

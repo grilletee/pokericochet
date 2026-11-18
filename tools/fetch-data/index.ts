@@ -31,6 +31,7 @@ import {
   parseName,
   parsePokemon,
   type Roster,
+  regionalName,
   rosterIds,
   serialize,
   stageForms,
@@ -141,6 +142,7 @@ async function buildRosterCandidate(): Promise<void> {
     starters: rules.starters ?? [],
     lines: built.lines,
     evolution: built.evolution,
+    branches: built.branches,
   };
   validateRoster(generated);
   deps.write(resolve(here, 'roster.json'), new TextEncoder().encode(serialize(generated)));
@@ -204,7 +206,8 @@ const loaded = await Promise.all(
 const species: GeneratedSpecies[] = [];
 for (const { id, parsed, local } of loaded) {
   if (local.fallback) spanishMissing.push(id);
-  species.push({ ...parsed.species, name: local.name });
+  // 4W: a regional form says its region ("Vulpix de Alola").
+  species.push({ ...parsed.species, name: regionalName(id, local.name) });
   learnsets[id] = parsed.learnset;
 }
 if (spanishMissing.length > 0) {
@@ -217,6 +220,19 @@ const used: Record<string, readonly Learn[]> = {};
 for (const base of bases) {
   for (const form of stageForms(base, roster.lines[base])) used[form] = learnsets[form] ?? [];
 }
+/** 4W, block 7: the forms each branch shows at stages 1-3 (the line's before the split). */
+const branchForms = Object.entries(roster.branches ?? {}).flatMap(([base, set]) => {
+  const line = stageForms(base, roster.lines[base]);
+  return set.options.map((option) => {
+    const forms = [1, 2, 3].map((stage) =>
+      stage < set.at
+        ? (line[stage - 1] ?? base)
+        : (option[Math.min(stage - set.at, option.length - 1)] ?? base),
+    ) as [string, string, string];
+    return { key: option[0] ?? base, forms };
+  });
+});
+for (const { forms } of branchForms) for (const form of forms) used[form] = learnsets[form] ?? [];
 const infos: Record<string, MoveInfo> = {};
 const moveIds = movesToFetch(used, overrides);
 const parsedMoves = await Promise.all(
@@ -249,6 +265,14 @@ const rows = bases.map((base) => {
   byBase[base] = chosen.moves;
   return { base, forms, chosen };
 });
+// 4W, block 7: each branch has its own moves, under the key of its first form (Flareon's are fire).
+for (const { key, forms } of branchForms) {
+  const types = speciesById.get(key)?.types;
+  if (types === undefined) throw new Error(`no data for "${key}"`);
+  const chosen = chooseMoves(key, types, forms, used, infos, overrides);
+  byBase[key] = chosen.moves;
+  rows.push({ base: key, forms, chosen });
+}
 const usedMoves = new Set([
   ...Object.values(byBase).flat(),
   ...Object.values(overrides.defaults).flat(),

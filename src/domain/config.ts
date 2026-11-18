@@ -17,6 +17,18 @@ export interface WaveDef {
   readonly tier?: number;
 }
 
+/** 4W, block 7: where a line splits (stage `at`, 2 or 3) and the other ways it can go. */
+export interface BranchSet {
+  readonly at: number;
+  readonly options: readonly BranchOption[];
+}
+
+/** One way a split line can go: its forms from stage `at` on, and the types of the first one. */
+export interface BranchOption {
+  readonly forms: readonly string[];
+  readonly types: readonly GameType[];
+}
+
 /**
  * A biome (ADR-049, which replaces the themes of ADR-027): 2 or 3 types with a weight. Its species
  * are not written down: they come from the pool of the run, filtered by these types. A theme with
@@ -440,6 +452,12 @@ export interface GameConfig {
   readonly themes?: Readonly<Record<string, ThemeDef>>;
   /** Evolution forms after the base species, in order, for every ball and enemy line. */
   readonly lines?: Readonly<Record<string, readonly string[]>>;
+  /**
+   * 4W, block 7: the lines that split (Eevee, Ralts, Poliwhirl...): at stage `at`, besides the forms
+   * of `lines`, each option is another way the line can go, with its types. Which one a Pokémon of
+   * the team takes is decided by the place where it reaches that stage (`chooseBranch`).
+   */
+  readonly branches?: Readonly<Record<string, BranchSet>>;
   /** Reverse of `lines`: which base species and level an evolved form stands for. */
   readonly forms?: Readonly<Record<string, { readonly base: string; readonly level: number }>>;
   /** Wave table. An empty table means no enemies at all and no way to win (used in tests). */
