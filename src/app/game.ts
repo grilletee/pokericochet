@@ -676,7 +676,10 @@ export async function startGame(host: HTMLElement): Promise<void> {
   const starterScreen = new StarterScreen(host, art);
   // 4X (decision 4): every profile owns the four classic starters; the starters of the other regions
   // come from the weekly starter banner.
-  const firstChoices = STARTER_SPECIES.filter((id) => gameConfig.species[id] !== undefined);
+  // In Pokédex order, the order of the grid, so the keys 1-4 pick what is shown in that place.
+  const firstChoices = STARTER_SPECIES.filter((id) => gameConfig.species[id] !== undefined).sort(
+    (a, b) => (POKEDEX_IDS[a] ?? 0) - (POKEDEX_IDS[b] ?? 0),
+  );
   const collectionScreen = new CollectionScreen(host, art);
   const gachaScreen = new GachaScreen(host, art);
   const pool = gachaPool(gameConfig);

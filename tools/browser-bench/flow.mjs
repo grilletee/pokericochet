@@ -49,7 +49,26 @@ try {
     // A fresh profile, with coins for a x1 and a x10 (?debug&coins) and two legendary keys.
     await page.goto(`http://127.0.0.1:4188/?debug&seed=6&coins=1100&keys=2${extra}`);
     await page.waitForSelector('[data-screen="start"] [data-action="play"]');
-    const tap = (selector) => (touch ? page.tap(selector) : page.click(selector));
+    const tap = async (selector) => {
+      try {
+        await (touch
+          ? page.tap(selector, { timeout: 10000 })
+          : page.click(selector, { timeout: 10000 }));
+      } catch (error) {
+        // What was over it: a screenshot and the element at its centre.
+        await page.screenshot({ path: join(outDir, `ERROR-${tag}.png`) });
+        const over = await page.evaluate((sel) => {
+          const r = document.querySelector(sel)?.getBoundingClientRect();
+          if (!r) return 'not found';
+          const top = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+          return top === null
+            ? 'nothing'
+            : `${top.tagName} ${[...top.attributes].map((a) => a.name).join(' ')}`;
+        }, selector);
+        console.log(`TAP FAILED on ${selector}; on top: ${over}`);
+        throw error;
+      }
+    };
     // 1. First time: the professor's tutorial, a page at a time.
     await tap('[data-screen="start"] [data-action="play"]');
     await page.waitForSelector('[data-professor]');
@@ -97,10 +116,16 @@ try {
     for (let i = 0; i < 30; i++) {
       const s = await page.evaluate(() => window.__debug());
       if (s.phase === 'playing') break;
-      if ((await page.$('[data-join-option="0"]')) !== null) await tap('[data-join-option="0"]');
-      else if ((await page.$('button[data-card="0"]')) !== null) await tap('button[data-card="0"]');
-      else if ((await page.$('[data-replace-release]')) !== null)
-        await tap('[data-replace-release]');
+      // Only what is on screen (a hidden card is still in the page).
+      // It may go between the look and the tap (the game answered already): then nothing to do.
+      const shown = (sel) => page.locator(sel).first().isVisible();
+      const soft = (sel) =>
+        (touch ? page.tap(sel, { timeout: 1500 }) : page.click(sel, { timeout: 1500 })).catch(
+          () => {},
+        );
+      if (await shown('[data-join-option="0"]')) await soft('[data-join-option="0"]');
+      else if (await shown('button[data-card="0"]')) await soft('button[data-card="0"]');
+      else if (await shown('[data-replace-release]')) await soft('[data-replace-release]');
       await page.waitForTimeout(1200);
     }
     const joined = await page.evaluate(() => window.__debug().team);

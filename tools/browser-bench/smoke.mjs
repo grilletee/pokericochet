@@ -121,6 +121,12 @@ try {
     await p.goto(`http://127.0.0.1:4174/?debug&starter=charmander&xp=18&${query}`);
     await p.bringToFront();
     await p.waitForFunction(() => typeof window.__debug === 'function');
+    // 4X: the first level-up is a join encounter: X lets the wild Pokémon go and the cards come.
+    await p.waitForSelector('[data-join-option="0"], button[data-card]', { timeout: 15000 });
+    if (await p.locator('[data-join-option="0"]').isVisible()) {
+      await p.keyboard.press('KeyX');
+      await p.waitForSelector('button[data-card]', { timeout: 5000 });
+    }
     return p;
   };
 
@@ -206,12 +212,18 @@ try {
   );
   await title.screenshot({ path: outFile.replace('.png', '-title.png') });
   await title.keyboard.press('Enter');
-  // 4G-J: the first time, the professor's tutorial comes first; then the 28 starters of the regions.
+  // 4G-J: the first time, the professor's tutorial comes first; 4X: then the four classics, which
+  // every profile owns (the starters of the other regions come from the weekly banner).
   await title.locator('[data-action="tutorialSkip"]').click();
   await title.waitForSelector('button[data-starter]');
+  const firstOffer = await title.$$eval('button[data-starter]', (bs) =>
+    bs.map((b) => b.dataset.starter),
+  );
   check(
-    'Jugar offers the starters of the nine regions',
-    (await title.locator('button[data-starter]').count()) === 28,
+    'Jugar offers the four classic starters',
+    firstOffer.length === 4 &&
+      ['bulbasaur', 'charmander', 'squirtle', 'pikachu'].every((s) => firstOffer.includes(s)),
+    firstOffer.join(','),
   );
   // The signature of the chosen starter is announced before choosing (4F-D; 4G-J: on its card).
   await title.locator('button[data-starter="charmander"]').click();
@@ -226,7 +238,11 @@ try {
   );
   await title.keyboard.press('Digit3');
   await title.waitForFunction(() => window.__debug().screen === 'playing');
-  check('key 3 starts the run with Squirtle', (await dbg(title)).starter === 'squirtle');
+  check(
+    'key 3 starts the run with the third of the grid',
+    (await dbg(title)).starter === firstOffer[2],
+    `${(await dbg(title)).starter} / ${firstOffer[2]}`,
+  );
   check(
     'the title screen is gone once playing',
     (await title.locator('button[data-starter]:visible').count()) === 0,
@@ -515,12 +531,33 @@ try {
   await moves.waitForFunction(() => typeof window.__debug === 'function');
   // The bigger balls (4G-F) hit more, so a level-up can open before the first cast: take a card.
   for (let i = 0; i < 300 && (await dbg(moves)).moveCasts < 1; i++) {
+    // 4X: with the team full a join opens the replace screen: let the wild one go.
+    if ((await dbg(moves)).phase === 'replace') await moves.keyboard.press('Digit0');
     if ((await dbg(moves)).phase === 'levelup') {
-      await moves.locator('button[data-card]').first().click();
+      // 4X: a level-up may be a join encounter first (a wild Pokémon), then the cards.
+      const join = moves.locator('[data-join-option="0"]');
+      if (await join.isVisible()) await join.click({ timeout: 3000 }).catch(() => {});
+      else
+        await moves
+          .locator('button[data-card]')
+          .first()
+          .click({ timeout: 3000 })
+          .catch(() => {});
     }
     await moves.waitForTimeout(100);
   }
-  check('a Pokémon casts its move once its charge is full', true);
+  const casts = (await dbg(moves)).moveCasts;
+  check('a Pokémon casts its move once its charge is full', casts >= 1, `${casts} casts`);
+  // The label lives about a second: read it right after the cast (or the next one).
+  await moves
+    .waitForFunction(
+      () => (document.querySelector('[data-move-labels]')?.textContent ?? '') !== '',
+      null,
+      {
+        timeout: 10000,
+      },
+    )
+    .catch(() => {});
   const labelText = (await moves.locator('[data-move-labels]').textContent()) ?? '';
   check(
     'the label names a real move in Spanish',
@@ -555,12 +592,12 @@ try {
       (await sig.locator('[data-team-tile="0"] [data-signature-tag]').isVisible()) &&
         (
           (await sig.locator('[data-team-tile="0"] [data-signature-tag]').textContent()) ?? ''
-        ).includes('[1]'),
+        ).includes('[Q]'), // 4X: the key the player chose (Q by default), not the place
     );
     const readyText = (await sig.locator('[data-banner]').textContent()) ?? '';
     check(
       `(${how}) the first time, a notice says the signature is ready and how to throw it`,
-      readyText.includes('Ultimate lista') && readyText.includes('Charmeleon'),
+      readyText.includes('Ultimate lista') && readyText.includes('Q'),
       readyText,
     );
     await sig.waitForTimeout(600);
