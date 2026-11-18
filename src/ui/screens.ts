@@ -853,9 +853,12 @@ export class SettingsScreen {
     save: SaveActions | null = null,
     /** The layout of a phone held sideways (4G-J): null on a tablet or a desktop (not offered). */
     layout: LayoutChoice | null = null,
+    /** 4X: the key of the Ultimate (letters to choose from, the one in force). */
+    ultimate: UltimateKeyChoice | null = null,
   ): void {
     this.saveSection = save === null ? [] : saveRows(save);
     const layoutSection = layout === null ? [] : layoutRows(layout);
+    const ultimateSection = ultimate === null ? [] : ultimateRows(ultimate);
     let auto = autoAim;
     let chosen = scheme;
     let current = volumes;
@@ -950,6 +953,7 @@ export class SettingsScreen {
       schemeTitle,
       ...schemeButtons,
       hint,
+      ...ultimateSection,
       ...layoutSection,
       ...sliders,
       ...this.saveSection,
@@ -961,6 +965,51 @@ export class SettingsScreen {
   hide(): void {
     this.root.style.display = 'none';
   }
+}
+
+/** 4X: the choice of the key of the Ultimate in the settings. */
+export interface UltimateKeyChoice {
+  /** The letters offered ("Q", "E"...) and the one in force. */
+  readonly keys: readonly string[];
+  readonly current: string;
+  readonly onChange: (label: string) => void;
+}
+
+/**
+ * 4X (the cousin: "el Ultimate con la tecla 1 es incómodo"): a row of letters next to the movement
+ * keys; the chosen one lit. The right click always throws it too.
+ */
+function ultimateRows(choice: UltimateKeyChoice): HTMLElement[] {
+  const title = el('div', 'font-size:17px;font-weight:700;margin-top:8px;', 'Tecla de la Ultimate');
+  const row = el('div', 'display:flex;gap:8px;justify-content:center;');
+  let current = choice.current;
+  const buttons: HTMLButtonElement[] = [];
+  const paint = (): void => {
+    for (const b of buttons) {
+      const on = b.dataset.ultimateKey === current;
+      b.style.outline = on ? '3px solid #ffd54f' : 'none';
+      b.style.opacity = on ? '1' : '0.7';
+    }
+  };
+  for (const key of choice.keys) {
+    const b = el('button', `${BUTTON}width:56px;text-align:center;font-size:18px;`, key);
+    b.type = 'button';
+    b.dataset.ultimateKey = key;
+    b.addEventListener('click', () => {
+      current = key;
+      paint();
+      choice.onChange(key);
+    });
+    buttons.push(b);
+    row.append(b);
+  }
+  paint();
+  const note = el(
+    'div',
+    'font-size:13px;opacity:0.8;max-width:380px;line-height:1.4;',
+    'El clic derecho también la lanza. En pantallas táctiles, el botón ULTI o el retrato que brilla.',
+  );
+  return [title, row, note];
 }
 
 /** The three volumes of the settings screen, 0..1 (the app keeps them: `app/settings.ts`). */

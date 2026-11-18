@@ -63,6 +63,8 @@ export class Input {
    */
   private catching: () => boolean = () => false;
   private throwAt: { x: number; y: number } | 'aim' | null = null;
+  /** 4X: the key code that throws the Ultimate (the player's choice); the right click always does. */
+  ultimateKey = 'KeyQ';
 
   constructor(
     private readonly host: HTMLElement,
@@ -87,7 +89,15 @@ export class Input {
     window.addEventListener('keydown', (e) => this.onKey(e, true));
     window.addEventListener('keyup', (e) => this.onKey(e, false));
     host.style.touchAction = 'none';
+    // 4X: the right click throws the Ultimate (no menu of the browser over the game).
+    host.addEventListener('contextmenu', (e) => {
+      if (e.target instanceof HTMLCanvasElement || e.target === host) e.preventDefault();
+    });
     host.addEventListener('pointerdown', (e) => {
+      if (e.pointerType === 'mouse' && e.button === 2) {
+        if (e.target instanceof HTMLCanvasElement || e.target === host) this.ultimateAsked = true;
+        return;
+      }
       if (this.catching() && (e.target instanceof HTMLCanvasElement || e.target === host)) {
         const at = this.toArena(e);
         this.throwAt = at;
@@ -321,6 +331,11 @@ export class Input {
   private onKey(e: KeyboardEvent, down: boolean): void {
     if (e.code === 'Space' && down && this.catching()) {
       this.throwAt = 'aim';
+      e.preventDefault();
+      return;
+    }
+    if (e.code === this.ultimateKey) {
+      if (down && !e.repeat) this.ultimateAsked = true;
       e.preventDefault();
       return;
     }

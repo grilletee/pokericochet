@@ -147,4 +147,5 @@ export type { TuneRow } from './tunePanel';
 export { TunePanel } from './tunePanel';
 export { TYPE_COLORS } from './typeColors';
 export { typeIcon, typeIcons } from './typeIcons';
+export { UltimateCue, ultimateHint } from './ultimateCue';
 export { BOSS_CARTEL_MS, CARTEL_MS, SignQueue, WaveBanner } from './waveBanner';

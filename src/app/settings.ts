@@ -66,6 +66,41 @@ export function saveAutoAim(store: KeyValueStore | null, auto: boolean): void {
   }
 }
 
+/**
+ * 4X (19th playtest, the author's cousin: "el Ultimate con la tecla 1 es incómodo"): the key that
+ * throws the Ultimate, next to the movement keys. The right click always throws it too.
+ */
+export const ULTIMATE_KEYS = ['KeyQ', 'KeyE', 'KeyF', 'KeyW'] as const;
+export type UltimateKey = (typeof ULTIMATE_KEYS)[number];
+export const DEFAULT_ULTIMATE_KEY: UltimateKey = 'KeyQ';
+export const ULTIMATE_KEY_KEY = 'ultimateKey.v1';
+
+export function isUltimateKey(value: unknown): value is UltimateKey {
+  return typeof value === 'string' && (ULTIMATE_KEYS as readonly string[]).includes(value);
+}
+
+/** The letter a key code shows on the screen: "KeyQ" -> "Q". */
+export function keyLabel(code: UltimateKey): string {
+  return code.slice(3);
+}
+
+export function loadUltimateKey(store: KeyValueStore | null): UltimateKey {
+  try {
+    const raw = store?.getItem(ULTIMATE_KEY_KEY);
+    return isUltimateKey(raw) ? raw : DEFAULT_ULTIMATE_KEY;
+  } catch {
+    return DEFAULT_ULTIMATE_KEY;
+  }
+}
+
+export function saveUltimateKey(store: KeyValueStore | null, key: UltimateKey): void {
+  try {
+    store?.setItem(ULTIMATE_KEY_KEY, key);
+  } catch {
+    // ignore
+  }
+}
+
 /** localStorage key of the control scheme (4G-G). */
 export const CONTROLS_KEY = 'controls.v1';
 

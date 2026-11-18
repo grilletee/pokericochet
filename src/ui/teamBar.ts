@@ -55,6 +55,12 @@ export class TeamBar {
   private onTap: (member: number) => void = () => {};
   /** When the portrait of each Pokémon last flashed for a hit (ms). */
   private readonly lastBlink = new Map<number, number>();
+  /** 4X: when each portrait last flashed for a launch of its ball (ms). */
+  private readonly lastLaunch = new Map<number, number>();
+  /** 4X: the key that throws the Ultimate, as the tag says it ("Q"). */
+  private ultimateKey = 'Q';
+  /** 4X: how many balls a Pokémon fires (the pips under its portrait). */
+  private ballsOf: (member: Member) => number = () => 1;
 
   constructor(
     host: HTMLElement,
@@ -85,6 +91,18 @@ export class TeamBar {
         ? null
         : `left:${panels.left.x + 8}px;top:58px;max-width:${panels.left.w - 16}px;`,
     );
+  }
+
+  /** 4X: the key the tag of a ready Ultimate names ("Q", or "ULTI" on a touch screen). */
+  setUltimateKey(label: string): void {
+    if (label === this.ultimateKey) return;
+    this.ultimateKey = label;
+    this.shown = []; // the tiles are rebuilt with the new tag
+  }
+
+  /** 4X: how many balls each Pokémon fires, for the pips under its portrait. */
+  setBallsOf(ballsOf: (member: Member) => number): void {
+    this.ballsOf = ballsOf;
   }
 
   /** Called with the place of the Pokémon whose "i" was pressed (the sheet of ADR-038). */
@@ -171,10 +189,26 @@ export class TeamBar {
     name.style.cssText =
       'font-size:10px;font-weight:700;max-width:60px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;';
     tile.append(name);
+    // 4X (the cousin: "no entendía si los Pokémon atacan todos a la vez"): a pip per ball it fires,
+    // in its colour. Every Pokémon of the team fires its own, all at once.
+    const balls = Math.max(1, this.ballsOf(member));
+    const pips = document.createElement('div');
+    pips.dataset.ballPips = String(balls);
+    pips.title = `Lanza ${balls} ${balls === 1 ? 'bola' : 'bolas'} por su cuenta`;
+    pips.style.cssText = 'display:flex;gap:2px;justify-content:center;height:7px;';
+    for (let k = 0; k < balls; k++) {
+      const pip = document.createElement('i');
+      pip.style.cssText =
+        `display:block;width:7px;height:7px;border-radius:50% !important;` +
+        `background:${TYPE_COLORS[member.type]};box-shadow:0 0 0 1px #0b0d1a;`;
+      pips.append(pip);
+    }
+    tile.append(pips);
     // "ULTIMATE" with the key that throws it, only while the signature is ready (4F-D).
     const tag = document.createElement('div');
     tag.dataset.signatureTag = '';
-    tag.textContent = `¡ULTIMATE! [${index + 1}]`;
+    // 4X: the key the player chose (Q by default), not the number of its place.
+    tag.textContent = `¡ULTIMATE! [${this.ultimateKey}]`;
     tag.style.cssText =
       `display:none;font-size:9px;font-weight:800;padding:0 3px;border-radius:4px;color:#10131c;` +
       `background:${TYPE_COLORS[member.type]};white-space:nowrap;`;
@@ -223,6 +257,26 @@ export class TeamBar {
         { filter: 'brightness(1)' },
       ],
       { duration: 160, easing: 'ease-out' },
+    );
+  }
+
+  /**
+   * 4X (the cousin: "no entendía si atacan todos a la vez"): the portrait of a Pokémon flashes in its
+   * colour and hops when its ball leaves the launcher, so the bar shows every one of them firing.
+   */
+  launchFlash(member: number, color: string, now: number): void {
+    if (!hitBlinkDue(this.lastLaunch.get(member), now)) return;
+    const portrait = this.tiles.get(member)?.firstElementChild;
+    if (!(portrait instanceof HTMLElement)) return;
+    this.lastLaunch.set(member, now);
+    animate(
+      portrait,
+      [
+        { transform: 'translateY(0)', boxShadow: `0 0 0 0 ${color}` },
+        { transform: 'translateY(-5px)', boxShadow: `0 0 0 4px ${color}`, offset: 0.35 },
+        { transform: 'translateY(0)', boxShadow: `0 0 0 0 ${color}` },
+      ],
+      { duration: 220, easing: 'steps(5)' },
     );
   }
 

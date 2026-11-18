@@ -168,7 +168,9 @@ import {
   TYPE_COLORS,
   trackFor,
   typeName,
+  UltimateCue,
   uiSoundFor,
+  ultimateHint,
   WaveBanner,
   waveCartel,
 } from '../ui';
@@ -198,15 +200,21 @@ import {
   saveProfile,
 } from './profileStore';
 import {
+  isUltimateKey,
+  keyLabel,
   loadAutoAim,
   loadMuted,
   loadScheme,
+  loadUltimateKey,
   loadVolumes,
   markTip,
   saveAutoAim,
   saveMuted,
   saveScheme,
+  saveUltimateKey,
   saveVolumes,
+  ULTIMATE_KEYS,
+  type UltimateKey,
 } from './settings';
 import { loadSpeciesTextures, spriteUrls } from './sprites';
 import { commandForScheme } from './touchLogic';
@@ -258,6 +266,7 @@ declare global {
     __profile?: () => Profile;
     /** ?debug only (4X): the next level-up of the run on screen, and a weakened boss to capture. */
     __levelUp?: () => void;
+    __charge?: () => void;
     __catch?: (species: string) => void;
     /** Read-only view of the run for browser smoke tests; only present with ?debug or ?bench. */
     __debug?: () => {
@@ -752,6 +761,14 @@ export async function startGame(host: HTMLElement): Promise<void> {
     () => screen === 'playing' && run.phase === 'catch' && !pause.active(performance.now()),
   );
   const store = browserStore();
+  // 4X, block 4: the key of the Ultimate (Q by default; the right click always throws it too).
+  let ultimateKey: UltimateKey = loadUltimateKey(store);
+  input.ultimateKey = ultimateKey;
+  const coarsePointer = window.matchMedia?.('(pointer: coarse)').matches === true;
+  const ultimateLabel = (): string => (coarsePointer ? 'ULTI' : keyLabel(ultimateKey));
+  teamBar.setUltimateKey(ultimateLabel());
+  teamBar.setBallsOf((member) => ballsFor(config, member.level));
+  const ultimateCue = new UltimateCue(host);
   // The persistent profile (ADR-025, 4G-I): collection, coins, candies. The run never reads it.
   const knownSpecies = (id: string): boolean => gameConfig.species[id] !== undefined;
   const freshSeed = (): number => Date.now() >>> 0;
@@ -899,6 +916,10 @@ export async function startGame(host: HTMLElement): Promise<void> {
       run.player.xp = Math.max(run.player.xp, run.player.xpNext);
     };
     window.__catch = (species: string) => debugCatch(run, config, species, 1200);
+    // 4X: the Ultimate of the team charged again (to try its key and its cue more than once).
+    window.__charge = () => {
+      for (const member of run.team) member.charge = 999;
+    };
     window.__profile = () => profileState.profile;
     window.__debug = () => ({
       tick: run.tickCount,
@@ -1092,7 +1113,16 @@ export async function startGame(host: HTMLElement): Promise<void> {
     screen = 'playing';
     // The first seconds of a touch scheme say what the thumb does (4G-G).
     const tip = schemeTip(scheme);
-    if (tip !== null) overlay.showToast(tip, performance.now());
+    // 4X (the cousin's notes): the first run says that the whole team fires and how to throw the
+    // Ultimate, once.
+    if (markTip(store, 'team')) {
+      overlay.showToast(
+        `Todo tu equipo ataca a la vez: cada Pokémon lanza sus bolas. Ultimate: ${coarsePointer ? 'botón ULTI' : `${keyLabel(ultimateKey)} o clic derecho`}`,
+        performance.now(),
+      );
+    } else if (tip !== null) {
+      overlay.showToast(tip, performance.now());
+    }
   };
   const showMenu = (): void => {
     screen = 'menu';
@@ -1440,6 +1470,19 @@ export async function startGame(host: HTMLElement): Promise<void> {
               else showSettings();
             },
           },
+      // 4X: the key of the Ultimate.
+      {
+        keys: ULTIMATE_KEYS.map(keyLabel),
+        current: keyLabel(ultimateKey),
+        onChange: (label) => {
+          const code = `Key${label}`;
+          if (!isUltimateKey(code)) return;
+          ultimateKey = code;
+          input.ultimateKey = code;
+          saveUltimateKey(store, code);
+          teamBar.setUltimateKey(ultimateLabel());
+        },
+      },
     );
   }
   function showCredits(): void {
@@ -1694,6 +1737,11 @@ export async function startGame(host: HTMLElement): Promise<void> {
             true,
           );
         }
+      } else if (event.type === 'launch') {
+        // 4X: the portrait of each Pokémon flashes as its ball leaves: they all fire at once.
+        const member = memberOfBall(event.ballId);
+        const type = run.team[member]?.type;
+        if (type !== undefined) teamBar.launchFlash(member, TYPE_COLORS[type], now);
       } else if (event.type === 'hit') {
         // The portrait of the Pokémon whose ball hit blinks (4G-H): who is doing what, at a glance.
         teamBar.hitBlink(memberOfBall(event.ballId), now);
@@ -1999,12 +2047,22 @@ export async function startGame(host: HTMLElement): Promise<void> {
           const form = member === undefined ? starter : formOfMember(config, member);
           banner.show(
             [spriteTile(art.spriteUrl(form), form, member?.type, 64)],
-            `Ultimate lista: toca a ${pokemonName(form)} o pulsa ${index + 1}`,
+            `Ultimate lista: ${coarsePointer ? `toca ULTI o a ${pokemonName(form)}` : `pulsa ${keyLabel(ultimateKey)} o clic derecho`}`,
             STEP_COLOR,
           );
         }
       }
       signatureWasReady = ready;
+      // 4X: a big cue for as long as the Ultimate waits (the cousin: "no te enteras de cuándo lo
+      // tienes"); not over a card, a capture or a moment.
+      const starterType = run.team[index]?.type;
+      ultimateCue.update(
+        ready && run.phase === 'playing' && !pause.active(now) && starterType !== undefined,
+        starterType === undefined ? '#ffd75a' : TYPE_COLORS[starterType],
+        ultimateHint(coarsePointer, keyLabel(ultimateKey)),
+      );
+    } else {
+      ultimateCue.update(false, '#ffd75a', '');
     }
     replaceScreen.update(
       // 4X: after a captured boss, the replace screen waits for its throw to play.
