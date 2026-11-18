@@ -185,6 +185,12 @@ export interface Enemy {
 export type Card =
   /** Recruits a Pokémon (only with a free place in the team). */
   | { readonly kind: 'newBall'; readonly species: string }
+  /**
+   * 4X (19th playtest, "la captura tiene que tener protagonismo"): a wild Pokémon of the biome asks
+   * to join, at the stage the enemies of this wave have. With the team full, it opens the replace
+   * screen. Only offered by a join encounter, never mixed with the other cards.
+   */
+  | { readonly kind: 'join'; readonly species: string; readonly stage: number }
   /** +1 level for the Pokémon at `member` (ADR-031). */
   | { readonly kind: 'train'; readonly member: number }
   /** More damage / faster reload for one Pokémon (ADR-032). */
@@ -203,9 +209,18 @@ export type Card =
 
 export interface PickAction {
   readonly type: 'pick';
-  /** Index into the current offers. */
+  /**
+   * Index into the current offers. 4X: in a join encounter, `SKIP_JOIN` (-1) lets the wild Pokémon
+   * go and opens the usual cards of the level instead.
+   */
   readonly index: number;
 }
+
+/** 4X: the pick that lets the wild Pokémon of a join encounter go (the usual cards come instead). */
+export const SKIP_JOIN = -1;
+
+/** 4X: how a Pokémon reached the team: a ball on the floor (the old way), a join encounter, a boss. */
+export type CaptureSource = 'drop' | 'join' | 'boss';
 
 /**
  * Answer to the replace screen (ADR-030): `slot` is the Pokémon that leaves (or, if it is of the
@@ -272,6 +287,11 @@ export interface Command {
   readonly cast?: number;
   /** `pick` only means something in the level-up phase, `replace` and `release` in the replace phase. */
   readonly action?: PickAction | ReplaceAction;
+  /**
+   * 4X: in the capture of a boss (the `catch` phase), the sphere is thrown this tick at the aim point
+   * (`aimX`, `aimY`). One throw per capture; ignored in any other phase.
+   */
+  readonly throw?: boolean;
 }
 
 export type GameEvent =
@@ -306,6 +326,8 @@ export type GameEvent =
       readonly form: string;
       readonly x: number;
       readonly late: boolean;
+      /** 4X: how it came: a ball on the floor, a join encounter or the capture of a boss. */
+      readonly source?: CaptureSource;
     }
   | {
       readonly type: 'hit';
@@ -336,6 +358,37 @@ export type GameEvent =
   | { readonly type: 'leak'; readonly enemyId: number; readonly damage: number }
   | { readonly type: 'levelup'; readonly level: number }
   | { readonly type: 'pick'; readonly card: Card }
+  /** 4X: a level-up became a join encounter: these wild Pokémon ask to join (the forms they show). */
+  | { readonly type: 'joinOffer'; readonly forms: readonly string[] }
+  /** 4X: the wild Pokémon of a join encounter were let go; the usual cards are on offer now. */
+  | { readonly type: 'joinSkip' }
+  /** 4X: a defeated boss is weakened and can be captured: the `catch` phase starts. */
+  | {
+      readonly type: 'catchOpen';
+      readonly species: string;
+      readonly form: string;
+      /** The chance the fight earned, before the ring (0..1). */
+      readonly performance: number;
+      readonly x: number;
+      readonly y: number;
+    }
+  /**
+   * 4X: the sphere was thrown. `hit`: it landed inside the ring; `chance`: what the capture was
+   * worth at that moment; `caught`: the result. A caught boss then joins (`capture`) or opens the
+   * replace screen (`replaceOpen`).
+   */
+  | {
+      readonly type: 'catchThrow';
+      readonly species: string;
+      readonly form: string;
+      readonly hit: boolean;
+      readonly chance: number;
+      readonly caught: boolean;
+      readonly x: number;
+      readonly y: number;
+    }
+  /** 4X: the weakened boss got away (a miss, a failed capture or no throw in time). */
+  | { readonly type: 'catchFled'; readonly species: string; readonly form: string }
   /** A Pokémon gained a level (`source`: a card, a duplicate capture or the replace screen). */
   | {
       readonly type: 'train';

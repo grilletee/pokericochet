@@ -247,6 +247,7 @@ describe('captured balls', () => {
       form: 'psyduck',
       x: 240,
       late: false,
+      source: 'drop',
     });
   });
 

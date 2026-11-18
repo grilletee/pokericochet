@@ -6,7 +6,8 @@ import {
   fieldMargin,
   playerSpeedMult,
 } from './bossFight';
-import { applyCard } from './cards';
+import { applyCard, drawOffers } from './cards';
+import { advanceCatch, isJoinEncounter } from './catching';
 import { ballSpeed, damagePlayer, effectivenessOn, hitDamage, leakDamage } from './combat';
 import type { GameConfig } from './config';
 import {
@@ -25,7 +26,7 @@ import { nextFloat } from './rng';
 import type { Run } from './run';
 import { motionDirection, smartTarget } from './smartAim';
 import { ballRadius, resolveReplace } from './team';
-import type { BallBody, Command, Enemy, GameEvent } from './types';
+import { type BallBody, type Command, type Enemy, type GameEvent, SKIP_JOIN } from './types';
 import { advanceBoss, advanceWave, isBossAlive } from './waves';
 
 export interface TickOutput {
@@ -177,13 +178,19 @@ function stillInside(enemies: readonly Enemy[], body: BallBody, radius: number):
 function resolveLevelUp(run: Run, cmd: Command, config: GameConfig): void {
   const action = cmd.action;
   if (action === undefined || action.type !== 'pick') return;
+  // 4X: the wild Pokémon of a join encounter can be let go; the usual cards of the level come instead.
+  if (action.index === SKIP_JOIN && isJoinEncounter(run)) {
+    run.offers = drawOffers(run, config);
+    run.events.push({ type: 'joinSkip' });
+    return;
+  }
   const card = run.offers[action.index];
   if (card === undefined) return; // not a valid choice: keep waiting
-  applyCard(run, config, card);
-  run.events.push({ type: 'pick', card });
   run.offers = [];
   run.phase = 'playing';
-  checkLevelUp(run, config); // enough xp for another level straight away
+  applyCard(run, config, card); // a join with the team full opens the replace screen
+  run.events.push({ type: 'pick', card });
+  if (run.phase === 'playing') checkLevelUp(run, config); // enough xp for another level at once
 }
 
 /** Plays the answer to the replace screen while the run waits in the replace phase (ADR-030). */
@@ -213,6 +220,11 @@ export function tick(run: Run, cmd: Command, config: GameConfig): TickOutput {
   }
   if (run.phase === 'replace') {
     resolveCapture(run, cmd, config);
+    return { events: run.events };
+  }
+  // 4X: a defeated boss waits for the throw; the field stands still meanwhile.
+  if (run.phase === 'catch') {
+    advanceCatch(run, cmd, config);
     return { events: run.events };
   }
   if (run.phase !== 'playing') return { events: run.events };

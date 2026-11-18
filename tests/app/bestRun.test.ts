@@ -27,6 +27,7 @@ function summary(overrides: Partial<RunSummary> = {}): RunSummary {
     bossesTotal: 4,
     waveReached: 4,
     captured: [],
+    bossesCaught: [],
     score: 30_000 + 4000,
     ...overrides,
   };

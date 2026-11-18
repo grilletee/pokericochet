@@ -57,6 +57,12 @@ export class Input {
   private aimAnchor = { x: 0, y: 0, screenX: 0, screenY: 0 };
   private twinAim: { x: number; y: number } | null = null;
   private ultimateAsked = false;
+  /**
+   * 4X: while a weakened boss waits to be captured, a click or a tap on the field throws the sphere
+   * there (the point is the aim), and Space throws it where the pointer aims. One throw per press.
+   */
+  private catching: () => boolean = () => false;
+  private throwAt: { x: number; y: number } | 'aim' | null = null;
 
   constructor(
     private readonly host: HTMLElement,
@@ -82,6 +88,13 @@ export class Input {
     window.addEventListener('keyup', (e) => this.onKey(e, false));
     host.style.touchAction = 'none';
     host.addEventListener('pointerdown', (e) => {
+      if (this.catching() && (e.target instanceof HTMLCanvasElement || e.target === host)) {
+        const at = this.toArena(e);
+        this.throwAt = at;
+        this.state.aimX = at.x;
+        this.state.aimY = at.y;
+        return;
+      }
       if (this.twinStarts(e)) return;
       const { x, y } = this.toArena(e);
       if (this.padStarts(e, x, y)) return;
@@ -205,6 +218,18 @@ export class Input {
     this.ultimateAsked = true;
   }
 
+  /** 4X: tells the input when a capture waits for the throw (clicks then throw, not aim or steer). */
+  setCatching(catching: () => boolean): void {
+    this.catching = catching;
+  }
+
+  /** 4X: the throw asked for since the last call: a point of the arena, 'aim' (Space) or null. */
+  takeThrow(): { x: number; y: number } | 'aim' | null {
+    const at = this.throwAt;
+    this.throwAt = null;
+    return at;
+  }
+
   /** Whether the Ultimate was asked for since the last call. */
   takeUltimate(): boolean {
     const asked = this.ultimateAsked;
@@ -294,6 +319,11 @@ export class Input {
   }
 
   private onKey(e: KeyboardEvent, down: boolean): void {
+    if (e.code === 'Space' && down && this.catching()) {
+      this.throwAt = 'aim';
+      e.preventDefault();
+      return;
+    }
     switch (e.code) {
       case 'ArrowLeft':
       case 'KeyA':

@@ -2,9 +2,11 @@ import { describe, expect, it } from 'vitest';
 import { gameConfig } from '../../src/data';
 import {
   addMember,
+  advanceCatch,
   baseOf,
   createRun,
   formOfMember,
+  type GameConfig,
   joinTeam,
   onBossDefeated,
   type Run,
@@ -15,19 +17,27 @@ import {
 import { makeEnemy } from './fixtures';
 
 /**
- * "You capture what you beat" for EVERY species of the roster (4F-E). A boss that dies drops its
- * own form; whatever way the ball reaches the team (a free place, a duplicate, the replace screen)
- * the Pokémon that joins shows that same form, at the first level of its stage. The 4F-D fix was
- * tested only with one hand-picked case; the real cause (a Kingdra joining as a Seadra) hid in the
- * capture-level table, which no test compared with the stage thresholds.
+ * "You capture what you beat" for EVERY species of the roster (4F-E). A boss that dies can be
+ * captured as its own form (4X: it is weakened and waits for the throw); whatever way it reaches the
+ * team (a free place, a duplicate, the replace screen) the Pokémon that joins shows that same form,
+ * at the first level of its stage. The 4F-D fix was tested only with one hand-picked case; the real
+ * cause (a Kingdra joining as a Seadra) hid in the capture-level table, which no test compared with
+ * the stage thresholds.
  */
 const ROSTER = Object.keys(gameConfig.species).sort();
+
+/** The shipped rules with a throw that always captures (what is tested is the form, not the luck). */
+const SURE = gameConfig.capture.boss;
+const config: GameConfig =
+  SURE === undefined
+    ? gameConfig
+    : { ...gameConfig, capture: { ...gameConfig.capture, boss: { ...SURE, minChance: 1 } } };
 
 /** A real run whose next interlude boss is the given species, defeated on the spot. */
 function defeat(species: string): Run {
   // The starter must not be of the line under test: a copy of it would be a duplicate, not a join.
   const starter = baseOf(gameConfig, species).base === 'pikachu' ? 'squirtle' : 'pikachu';
-  const run = createRun(gameConfig, 1, starter);
+  const run = createRun(config, 1, starter);
   run.boss.next = 1; // an interlude boss between waves (the next one is the first)
   run.boss.spawned = false;
   const boss = makeEnemy({
@@ -39,7 +49,7 @@ function defeat(species: string): Run {
     y: 200,
   });
   run.events.length = 0;
-  onBossDefeated(run, gameConfig, boss);
+  onBossDefeated(run, config, boss);
   return run;
 }
 
@@ -57,21 +67,31 @@ describe('capturing what you beat, for every species of the roster (4F-E)', () =
     '%s: the boss drops its own form and it joins as that form at the first level of its stage',
     (species) => {
       const { base, level: stage } = baseOf(gameConfig, species);
-      // 1. The drop on the floor.
-      const dropped = defeat(species);
-      const drop = dropped.events.find((e) => e.type === 'captureDrop');
-      expect(drop, 'a boss drops a ball').toBeDefined();
-      if (drop?.type !== 'captureDrop') return;
-      expect(drop.form).toBe(species);
-      expect(drop.species).toBe(base);
-      const pickup = dropped.pickups[0];
-      expect(pickup?.level).toBe(stage);
+      // 1. 4X: the boss stays weakened as its own form, and a throw that lands brings it in.
+      const weak = defeat(species);
+      const open = weak.events.find((e) => e.type === 'catchOpen');
+      expect(open, 'a defeated boss can be captured').toMatchObject({
+        form: species,
+        species: base,
+      });
+      expect(weak.phase).toBe('catch');
+      expect(weak.catch?.stage).toBe(stage);
+      weak.events.length = 0;
+      advanceCatch(
+        weak,
+        { moveX: 0, throw: true, aimX: weak.catch?.x ?? 0, aimY: weak.catch?.y ?? 0 },
+        config,
+      );
+      expect(weak.events.find((e) => e.type === 'capture')).toMatchObject({
+        form: species,
+        source: 'boss',
+      });
 
       // 2. A free place: it joins as that form, at the first level of the stage.
       const free = defeat(species);
       const arrive = (run: Run): number => {
         run.events.length = 0;
-        joinTeam(run, gameConfig, pickup?.species ?? base, pickup?.level ?? 1, 240, false);
+        joinTeam(run, config, base, stage, 240, false);
         return run.team.findIndex((m) => m.species === base);
       };
       const freeIndex = arrive(free);
@@ -108,7 +128,7 @@ describe('capturing what you beat, for every species of the roster (4F-E)', () =
       }
       expect(full.team).toHaveLength(gameConfig.team.maxMembers);
       full.events.length = 0;
-      joinTeam(full, gameConfig, base, pickup?.level ?? 1, 240, false);
+      joinTeam(full, config, base, stage, 240, false);
       expect(full.events.find((e) => e.type === 'replaceOpen')).toMatchObject({ form: species });
       resolveReplace(full, gameConfig, { type: 'replace', slot: 5 });
       const swapped = full.team[5];

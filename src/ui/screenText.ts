@@ -245,7 +245,12 @@ export function describeEvent(
     case 'captureDrop':
       return `¡${pokemonName(event.form)} soltó una bola! Recógela`;
     case 'capture':
-      return `¡Capturado: ${pokemonName(event.form)}!`;
+      // 4X: a join encounter and a captured boss have a moment of their own (no toast over it).
+      return event.source === 'join' || event.source === 'boss'
+        ? null
+        : `¡Capturado: ${pokemonName(event.form)}!`;
+    case 'catchFled':
+      return `¡${pokemonName(event.form)} se ha escapado!`;
     case 'train':
       return `¡${pokemonName(event.form)} sube a Nv${event.level}!`;
     case 'replaced':

@@ -41,6 +41,7 @@ const summary: RunSummary = {
   bossesTotal: 4,
   waveReached: 7,
   captured: [],
+  bossesCaught: [],
   score: 0,
 };
 

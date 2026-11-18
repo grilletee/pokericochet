@@ -1,4 +1,5 @@
 import { startFight } from './bossFight';
+import { openBossCatch } from './catching';
 import { getSpecies, mapStat } from './combat';
 import type { GameConfig, ThemeDef } from './config';
 import { baseOf, formAt } from './forms';
@@ -196,6 +197,7 @@ function placeBoss(
   run.boss.id = boss.id;
   run.boss.maxHp = hp;
   run.boss.tick = 0;
+  run.boss.hpAtSpawn = run.player.hp;
   startFight(run, config, boss);
   // The final legendary keeps its first legendary move for after its calm entrance (4G-I).
   const legendary = isFinal ? config.boss?.legendary : undefined;
@@ -332,11 +334,14 @@ export function onBossDefeated(run: Run, config: GameConfig, boss: Enemy): void 
   if (run.boss.spawned) return; // the final boss: the run is won
   const def = (config.interludes ?? [])[run.boss.next - 1];
   if (def === undefined) return;
+  // 4X: the boss stays weakened and can be captured (before the heal: the damage of the fight counts).
+  const catching = openBossCatch(run, config, boss);
   if (def.healHp > 0 && run.player.hp < run.player.maxHp) {
     const healed = Math.min(def.healHp, run.player.maxHp - run.player.hp);
     run.player.hp += healed;
     run.events.push({ type: 'heal', amount: healed });
   }
+  if (catching) return;
   const { base, level } = baseOf(config, boss.species);
   dropCapture(run, config, base, boss.type, boss.x, boss.y, level);
 }

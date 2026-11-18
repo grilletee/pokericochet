@@ -11,7 +11,7 @@ import {
 } from './forms';
 import { placeTypes } from './place';
 import type { Run } from './run';
-import type { Ball, Member, ReplaceAction, SpeciesDef } from './types';
+import type { Ball, CaptureSource, Member, ReplaceAction, SpeciesDef } from './types';
 
 function speciesOf(config: GameConfig, id: string): SpeciesDef {
   const species = config.species[id];
@@ -251,13 +251,15 @@ export function joinTeam(
   stage: number,
   x: number,
   late: boolean,
+  /** 4X: how it came (a ball on the floor, a join encounter, the capture of a boss). */
+  source: CaptureSource = 'drop',
 ): void {
   const owned = memberIndexOf(run, species);
   // 4W, block 7: a capture of a form past the split of its line (a Vaporeon) is that form: it
   // fixes the line of always, whatever the place ("you capture what you beat", 4F-D).
   const caught = capturedBranch(config, species, stage);
   if (owned >= 0) {
-    run.captured.push({ species, level: stage });
+    run.captured.push({ species, level: stage, source });
     const member = run.team[owned];
     if (member !== undefined && member.branch === undefined && caught !== undefined) {
       member.branch = caught;
@@ -266,7 +268,7 @@ export function joinTeam(
     return;
   }
   if (!teamIsFull(run, config)) {
-    run.captured.push({ species, level: stage });
+    run.captured.push({ species, level: stage, source });
     const index = addMember(
       run,
       config,
@@ -290,6 +292,7 @@ export function joinTeam(
       form: captureForm(config, species, stage),
       x,
       late,
+      source,
     });
     return;
   }
@@ -298,7 +301,7 @@ export function joinTeam(
     run.events.push({ type: 'release', species, form });
     return;
   }
-  run.pendingCapture = { species, stage };
+  run.pendingCapture = source === 'drop' ? { species, stage } : { species, stage, source };
   run.phase = 'replace';
   run.events.push({ type: 'replaceOpen', species, stage, form });
 }
@@ -366,7 +369,7 @@ export function resolveReplace(run: Run, config: GameConfig, action: ReplaceActi
       ...(caught === undefined ? {} : { branch: caught }),
     };
     syncMember(run, config, action.slot);
-    run.captured.push({ species: def.id, level: pending.stage });
+    run.captured.push({ species: def.id, level: pending.stage, source: pending.source ?? 'drop' });
     run.events.push({
       type: 'replaced',
       slot: action.slot,

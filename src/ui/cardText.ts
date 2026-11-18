@@ -38,6 +38,8 @@ export interface CardTextContext {
   nextStep(member: Member): { readonly kind: StageKind; readonly to: string } | null;
   /** Balls a Pokémon of this level fires. */
   ballsAt(level: number): number;
+  /** 4X: the form and level a wild Pokémon of a join card has when it joins. */
+  joinView(species: string, stage: number): { readonly form: string; readonly level: number };
   readonly powerStep: number;
   readonly damageStep: number;
   readonly cadenceFactor: number;
@@ -82,6 +84,15 @@ export function describeCard(
       return {
         title: `Fichar a ${pokemonName(card.species)}`,
         detail: type === undefined ? 'Un Pokémon más para el equipo' : `Tipo ${typeName(type)}`,
+      };
+    }
+    case 'join': {
+      // 4X: a wild Pokémon that asks to join, by the form and level it will have.
+      const view = context.joinView(card.species, card.stage);
+      const type = context.typeOf(view.form) ?? context.typeOf(card.species);
+      return {
+        title: pokemonName(view.form),
+        detail: `${type === undefined ? '' : `Tipo ${typeName(type)} · `}Nv ${view.level}`,
       };
     }
     case 'train': {

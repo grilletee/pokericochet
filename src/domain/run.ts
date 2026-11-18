@@ -10,6 +10,7 @@ import type {
   AimMode,
   Ball,
   BallBody,
+  CaptureSource,
   Card,
   Enemy,
   GameEvent,
@@ -20,9 +21,28 @@ import type {
 
 /**
  * `levelup` pauses the simulation until a card is picked (ADR-014); `replace` until the player
- * answers what to do with a capture that finds the team full (ADR-030).
+ * answers what to do with a capture that finds the team full (ADR-030); `catch` (4X) while a defeated
+ * boss waits to be captured: the field stands still and only the capture's clock runs.
  */
-export type Phase = 'playing' | 'levelup' | 'replace' | 'won' | 'lost';
+export type Phase = 'playing' | 'levelup' | 'replace' | 'catch' | 'won' | 'lost';
+
+/** 4X: a defeated boss between waves, weakened, waiting for the throw (`catch` phase). */
+export interface CatchState {
+  /** The first of its line, the stage of the form it had and that form. */
+  species: string;
+  stage: number;
+  form: string;
+  /** Where it fell; it sways sideways around `x0` (its centre now is `x`, `y`). */
+  x0: number;
+  x: number;
+  y: number;
+  /** Its body radius (arena pixels): the ring is a multiple of it. */
+  radius: number;
+  /** Ticks since it fell. */
+  ticks: number;
+  /** The chance the fight earned (0..1), before the ring. */
+  performance: number;
+}
 
 export interface Player {
   x: number;
@@ -81,6 +101,8 @@ export interface BossState {
   legendIn: number;
   /** Base species of the bosses between waves met so far: none comes twice in a run. */
   used: string[];
+  /** 4X: the player's health when the current boss appeared (what the fight cost, for its capture). */
+  hpAtSpawn: number;
 }
 
 /** Something a boss put on the floor or in the air (ADR-053). */
@@ -150,8 +172,11 @@ export interface Run {
   player: Player;
   /** The Pokémon of the team, at most `team.maxMembers` (ADR-030). */
   team: Member[];
-  /** Capture waiting for an answer while the phase is `replace` (`stage`: its evolution stage). */
-  pendingCapture: { species: string; stage: number } | null;
+  /**
+   * Capture waiting for an answer while the phase is `replace` (`stage`: its evolution stage; 4X:
+   * `source` when it did not come from a ball on the floor).
+   */
+  pendingCapture: { species: string; stage: number; source?: CaptureSource } | null;
   /** The balls the team fires, derived from the Pokémon (`Ball.owner`); the physics works on them. */
   loadout: Ball[];
   /** Per loadout slot: >0 cooling down, 0 ready, -1 in flight or waiting on the floor. */
@@ -177,8 +202,15 @@ export interface Run {
   pool: string[];
   /** Ticks left of the temporary guard that the fairy effect gives the team (ADR-047). */
   guardTicks: number;
-  /** Balls captured so far (species of the line and level), for the run summary (ADR-025). */
-  captured: { species: string; level: number }[];
+  /**
+   * Pokémon that joined so far (species of the line and stage), for the run summary (ADR-025); 4X:
+   * with how each one came (`boss` marks the Pokédex).
+   */
+  captured: { species: string; level: number; source?: CaptureSource }[];
+  /** 4X: a defeated boss waiting for the throw while the phase is `catch`; null otherwise. */
+  catch: CatchState | null;
+  /** 4X: level-ups since the last join encounter (its bad-luck protection). */
+  joinMisses: number;
   nextBallId: number;
   bodies: BallBody[];
   /** Always ordered by ascending id. */
@@ -305,6 +337,8 @@ export function createRun(config: GameConfig, seed: number, starterSpecies: stri
     pool,
     guardTicks: 0,
     captured: [],
+    catch: null,
+    joinMisses: 0,
     nextBallId: 1,
     bodies: [],
     enemies: [],
@@ -330,6 +364,7 @@ export function createRun(config: GameConfig, seed: number, starterSpecies: stri
       legendIn: 0,
       portalCool: 0,
       used: [],
+      hpAtSpawn: config.player.maxHp,
     },
     hazards: [],
     offers: [],
@@ -374,6 +409,8 @@ export function cloneRun(run: Run): Run {
     pool: run.pool.slice(),
     guardTicks: run.guardTicks,
     captured: run.captured.map((c) => ({ ...c })),
+    catch: run.catch === null ? null : { ...run.catch },
+    joinMisses: run.joinMisses,
     nextBallId: run.nextBallId,
     bodies: run.bodies.map((b) => ({ ...b })),
     enemies: run.enemies.map((e) => ({ ...e })),
@@ -473,6 +510,7 @@ export function hashRun(run: Run): string {
   h.int(run.pendingCapture === null ? 0 : 1);
   h.str(run.pendingCapture?.species ?? '');
   h.int(run.pendingCapture?.stage ?? 0);
+  h.str(run.pendingCapture?.source ?? '');
   h.int(run.loadout.length);
   for (const ball of run.loadout) {
     h.int(ball.id);
@@ -597,11 +635,28 @@ export function hashRun(run: Run): string {
   for (const c of run.captured) {
     h.str(c.species);
     h.int(c.level);
+    h.str(c.source ?? '');
+  }
+  h.int(run.boss.hpAtSpawn);
+  h.int(run.joinMisses);
+  const caught = run.catch;
+  h.int(caught === null ? 0 : 1);
+  if (caught !== null) {
+    h.str(caught.species);
+    h.int(caught.stage);
+    h.str(caught.form);
+    h.num(caught.x0);
+    h.num(caught.x);
+    h.num(caught.y);
+    h.num(caught.radius);
+    h.int(caught.ticks);
+    h.num(caught.performance);
   }
   h.int(run.offers.length);
   for (const card of run.offers) {
     h.str(card.kind);
-    h.str(card.kind === 'newBall' ? card.species : '');
+    h.str(card.kind === 'newBall' || card.kind === 'join' ? card.species : '');
+    h.int(card.kind === 'join' ? card.stage : -1);
     h.int(card.kind === 'hybrid' ? card.a : -1);
     h.int(card.kind === 'hybrid' ? card.b : -1);
     h.int(

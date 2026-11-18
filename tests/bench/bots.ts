@@ -12,6 +12,7 @@ import {
   PLAYER_WIDTH,
   type ReplaceAction,
   type Run,
+  ringTightness,
   signatureReady,
   statsOf,
   tick,
@@ -53,6 +54,25 @@ export interface Policy {
   readonly signatureDelay?: number;
   /** True while the bot keeps its ready Ultimate for a better moment (the stun of a boss, ADR-046). */
   holdSignature?(run: Run): boolean;
+  /** 4X: the command while a defeated boss waits for the throw; default `catchCommand`. */
+  catchCommand?(run: Run, config: GameConfig): Command;
+}
+
+/** 4X: the bots throw once the ring is this narrow (0 widest, 1 narrowest). */
+export const CATCH_THROW_TIGHTNESS = 0.7;
+
+/**
+ * 4X: how a sensible player throws at a weakened boss: aims at its centre and waits for the ring to
+ * be narrow (a better chance), but never past the end of the window. A perfect aim: the bot never
+ * misses the ring, so its captures are an upper bound of a person's.
+ */
+export function catchCommand(run: Run, config: GameConfig): Command {
+  const state = run.catch;
+  const rules = config.capture.boss;
+  if (state === null || rules === undefined) return { moveX: 0 };
+  const late = state.ticks >= rules.windowTicks - 2;
+  const narrow = ringTightness(rules, state) >= CATCH_THROW_TIGHTNESS;
+  return { moveX: 0, aimX: state.x, aimY: state.y, ...(late || narrow ? { throw: true } : {}) };
 }
 
 /** About 0.75 s: the time a player takes to see the glow and tap the portrait. */
@@ -119,6 +139,7 @@ export function commandFor(policy: Policy, run: Run, config: GameConfig): Comman
   if (run.phase === 'replace') {
     return { moveX: 0, action: (policy.replace ?? chooseReplace)(run, config) };
   }
+  if (run.phase === 'catch') return (policy.catchCommand ?? catchCommand)(run, config);
   const moveX = policy.move(run, config);
   const aim = policy.aim?.(run, config) ?? null;
   const cast = signatureToCast(policy, run, config);
@@ -188,6 +209,9 @@ export function pickByScores(scores: CardScores): Policy['pick'] {
 /** The four ways of spending a level-up that M8 compares (ADR-033). */
 export const BALANCED_SCORES: CardScores = {
   train: 5,
+  // 4X: a join encounter offers only wild Pokémon (any of them is taken); the score only matters if
+  // a config ever mixes them with the cards.
+  join: 4.5,
   newBall: 4.5,
   power: 4,
   cadence: 3.5,
@@ -202,12 +226,14 @@ export const UPGRADES_FIRST_SCORES: CardScores = {
   train: 4,
   vitality: 3,
   newBall: 2,
+  join: 2,
   hybrid: 0,
 };
 export const TRAIN_FIRST_SCORES: CardScores = {
   train: 6,
   power: 4,
   newBall: 3.5,
+  join: 3.5,
   cadence: 3,
   team: 3,
   vitality: 2,
@@ -215,6 +241,7 @@ export const TRAIN_FIRST_SCORES: CardScores = {
 };
 export const RECRUIT_FIRST_SCORES: CardScores = {
   newBall: 6,
+  join: 6,
   train: 4.5,
   power: 3.5,
   cadence: 3,

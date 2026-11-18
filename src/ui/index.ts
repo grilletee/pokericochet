@@ -11,11 +11,13 @@ export {
   lineUrgency,
 } from './bossLine';
 export type { BossMomentView } from './bossMoment';
-export { BOSS_DEFEAT_MS, BOSS_ENTRY_MS, BOSS_FINAL_MS, BossMoment } from './bossMoment';
+export { BOSS_DEFEAT_MS, BOSS_ENTRY_MS, BOSS_FINAL_MS, BossMoment, JOIN_MS } from './bossMoment';
 export type { CardTextContext } from './cardText';
 export { cardStep, describeCard, typeName } from './cardText';
 export type { ArtLookup } from './cardView';
 export { buildCardArt, STEP_COLOR, spriteTile } from './cardView';
+export type { CatchViewState } from './catchView';
+export { CatchView, chanceText, ringColor, THROW_MS } from './catchView';
 export { shadeHex } from './cinema';
 export { CollectionScreen, type DexTile, filterDex } from './collectionScreen';
 export {
@@ -66,6 +68,8 @@ export {
   stars,
 } from './gachaText';
 export { type HudView, healthSegments, hudLine, hudView } from './hud';
+export type { JoinOption, JoinView } from './joinScreen';
+export { JoinScreen, joinHint, joinTitle } from './joinScreen';
 export type { SheetView } from './memberSheet';
 export { MemberSheet } from './memberSheet';
 export { BACKDROP_H, BACKDROP_W, backdropFrame, MenuBackdrop } from './menuBackdrop';

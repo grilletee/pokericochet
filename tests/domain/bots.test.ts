@@ -216,6 +216,7 @@ describe('the bots answer the 4F decisions (replace screen, card tastes)', () =>
         (out.cards.team ?? 0) +
         (out.cards.vitality ?? 0) +
         (out.cards.newBall ?? 0) +
+        (out.cards.join ?? 0) +
         out.replacePauses,
     );
     expect(out.replacePauses).toBe(out.replaced + out.released);

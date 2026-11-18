@@ -410,7 +410,47 @@ export const baseConfig: Omit<
     captureTtlTicks: 480,
   },
   // With the team full a new species is rarer: every capture then asks for a decision (ADR-030).
-  capture: { chance: 0.0625, pityStep: 0.025, startMisses: 6, fullTeamChanceMult: 0.07 },
+  capture: {
+    chance: 0.0625,
+    pityStep: 0.025,
+    startMisses: 6,
+    fullTeamChanceMult: 0.07,
+    // 4X (19th playtest, "matar a un enemigo cualquiera te da su bola... ni te enteras"): the ordinary
+    // enemies drop nothing. Pokémon join by choice at a level-up, and the bosses are captured.
+    wildDrops: false,
+    // "Un Pokémon salvaje quiere unirse": the first level-up always, then about one in three (with
+    // bad-luck protection: never more than ~4 level-ups without one), half as often with the team
+    // full (then it is a replace). The lists are filled in `src/data/index.ts` from the gacha data.
+    join: {
+      firstAt: 2,
+      chance: 0.3,
+      pityStep: 0.15,
+      fullTeamMult: 0.5,
+      options: 3,
+      excluded: [],
+      rare: [],
+      rareWeight: 0.35,
+    },
+    // The capture of a boss: 5 s to throw; the ring narrows in 1.25 s from 2.6 to 1 times the body
+    // and starts again; the boss sways 46 px each way. A boss of the median fight (50 s, 2 health
+    // lost) is worth ~0.53 before the ring: ~37 % at the widest ring, ~74 % at the narrowest.
+    boss: {
+      windowTicks: 300,
+      ringCycleTicks: 75,
+      ringMax: 2.6,
+      ringMin: 1,
+      sway: 46,
+      swayTicks: 160,
+      baseChance: 0.3,
+      fastBonus: 0.25,
+      parTicks: 2700,
+      unhurtBonus: 0.2,
+      ringLow: 0.7,
+      ringHigh: 1.4,
+      minChance: 0.05,
+      maxChance: 0.95,
+    },
+  },
   enemy: {
     radius: 16,
     threat: 1,
@@ -798,7 +838,9 @@ export const baseConfig: Omit<
   cards: {
     offerCount: 3,
     // Relative odds; a card that cannot be played (a full team, every Pokémon at the cap) has none.
-    weights: { newBall: 3, train: 8, power: 3, cadence: 3, vitality: 2, team: 1, hybrid: 0 },
+    // 4X: `newBall` 3 -> 0. A Pokémon no longer joins through a card among others: the join
+    // encounters (capture.join) are their own moment.
+    weights: { newBall: 0, train: 8, power: 3, cadence: 3, vitality: 2, team: 1, hybrid: 0 },
     powerStep: 0.45,
     damageStep: 0.08,
     cadenceFactor: 0.85,

@@ -3,7 +3,7 @@ import type { GameConfig } from './config';
 import { applyHybrid, previewHybrid } from './evolution';
 import { nextFloat, nextInt } from './rng';
 import type { Run } from './run';
-import { addMember, memberIndexOf, trainMember } from './team';
+import { addMember, joinTeam, memberIndexOf, trainMember } from './team';
 import type { Card, GameType } from './types';
 
 const MAX_ATTEMPTS = 40;
@@ -25,6 +25,8 @@ function cardKey(card: Card): string {
   switch (card.kind) {
     case 'newBall':
       return `newBall:${card.species}`;
+    case 'join':
+      return `join:${card.species}`;
     case 'train':
     case 'power':
     case 'cadence':
@@ -177,6 +179,10 @@ export function applyCard(run: Run, config: GameConfig, card: Card): void {
   switch (card.kind) {
     case 'newBall':
       if (run.team.length < config.team.maxMembers) addMember(run, config, card.species, 1);
+      break;
+    case 'join':
+      // 4X: it joins like a capture: a free place, or the replace screen with the team full.
+      joinTeam(run, config, card.species, card.stage, run.player.x, false, 'join');
       break;
     case 'train':
       trainMember(run, config, card.member, 'card');

@@ -33,6 +33,9 @@ export function damageEnemy(run: Run, config: GameConfig, enemy: Enemy, amount: 
     onBossDefeated(run, config, enemy); // a boss has its own reward, not the capture roll
     return true;
   }
+  // 4X: in the shipped game an ordinary enemy drops nothing; Pokémon join by choice and bosses are
+  // captured (catching.ts). The roll above is drawn anyway, so the stream advances as before.
+  if (config.capture.wildDrops === false) return true;
   // A tougher form drops the ball of its line at the stage of that form (ADR-027).
   const { base, level } = baseOf(config, enemy.species);
   // A full team makes a capture a decision (ADR-030), so a new species is rarer; one the team

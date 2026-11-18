@@ -287,7 +287,7 @@ describe('a capture reaches the team (joinTeam)', () => {
       level: captureLevel(quietConfig, 2, 'psyduck'),
       starter: false,
     });
-    expect(run.captured).toEqual([{ species: 'psyduck', level: 2 }]);
+    expect(run.captured).toEqual([{ species: 'psyduck', level: 2, source: 'drop' }]);
     expect(run.events).toContainEqual({
       type: 'capture',
       ballId: run.loadout.find((b) => b.owner === 1)?.id,
@@ -296,6 +296,7 @@ describe('a capture reaches the team (joinTeam)', () => {
       form: 'psyduck',
       x: 240,
       late: false,
+      source: 'drop',
     });
   });
 
@@ -324,7 +325,7 @@ describe('a capture reaches the team (joinTeam)', () => {
     expect(run.team).toHaveLength(6);
     expect(member(run, 4).level).toBe(2);
     expect(run.phase).toBe('playing');
-    expect(run.captured).toEqual([{ species: 'vulpix', level: 1 }]);
+    expect(run.captured).toEqual([{ species: 'vulpix', level: 1, source: 'drop' }]);
     expect(run.events).toContainEqual(
       expect.objectContaining({ type: 'train', species: 'vulpix', source: 'capture' }),
     );
@@ -442,7 +443,7 @@ describe('the replace screen (ADR-030)', () => {
         form: 'gyarados',
       },
     ]);
-    expect(run.captured).toEqual([{ species: 'gyarados', level: 3 }]);
+    expect(run.captured).toEqual([{ species: 'gyarados', level: 3, source: 'drop' }]);
   });
 
   it('the balls of the Pokémon that left disappear wherever they were, and the others keep their places', () => {

@@ -104,7 +104,8 @@ export class ReplaceScreen {
       captureInfo,
     );
     this.root.append(
-      box('font-size:22px;font-weight:800;', `¡Has capturado a ${name}! Tu equipo está completo`),
+      // 4X: it may come from a join encounter or a captured boss, never from a ball on the floor.
+      box('font-size:22px;font-weight:800;', `¡${name} quiere unirse! Tu equipo está completo`),
       captured,
       box(
         'font-size:14px;opacity:0.9;',

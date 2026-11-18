@@ -2,6 +2,7 @@ import type { GameConfig } from './config';
 import { formOfMember } from './forms';
 import type { Run } from './run';
 import { stageOf } from './team';
+import type { CaptureSource } from './types';
 
 export interface RunSummary {
   readonly seed: number;
@@ -30,7 +31,13 @@ export interface RunSummary {
   /** The wave the run was in when it ended, 1-based and at most `wavesTotal`: what the HUD showed. */
   readonly waveReached: number;
   /** Balls captured during the run (line species and level): the input of the rewards (ADR-025). */
-  readonly captured: readonly { readonly species: string; readonly level: number }[];
+  readonly captured: readonly {
+    readonly species: string;
+    readonly level: number;
+    readonly source?: CaptureSource;
+  }[];
+  /** 4X: the bosses captured in the run (the first of each line): the Pokédex marks them. */
+  readonly bossesCaught: readonly string[];
   /** Orders runs: a win beats any defeat, then more waves, then more kills. */
   readonly score: number;
 }
@@ -64,6 +71,7 @@ export function summarizeRun(run: Run, config: GameConfig): RunSummary {
     bossesTotal: (config.interludes ?? []).length + (config.boss === undefined ? 0 : 1),
     waveReached: Math.min(run.wave.index + 1, Math.max(1, wavesTotal)),
     captured: run.captured.map((c) => ({ ...c })),
+    bossesCaught: run.captured.filter((c) => c.source === 'boss').map((c) => c.species),
     score: (result === 'won' ? WIN_SCORE : 0) + wavesCleared * WAVE_SCORE + run.kills * KILL_SCORE,
   };
 }

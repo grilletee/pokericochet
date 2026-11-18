@@ -3,6 +3,8 @@ import { gameConfig, MOVE_NAMES, POKEMON_NAMES } from '../../src/data';
 import type { Ball, Card, Member } from '../../src/domain';
 import {
   ballsFor,
+  captureForm,
+  captureLevel,
   formOfMember,
   fuse,
   nextStep,
@@ -55,6 +57,10 @@ const context = {
   formOf: (m: Member) => formOfMember(gameConfig, m),
   nextStep: (m: Member) => nextStep(gameConfig, m),
   ballsAt: (level: number) => ballsFor(gameConfig, level),
+  joinView: (species: string, stage: number) => ({
+    form: captureForm(gameConfig, species, stage),
+    level: captureLevel(gameConfig, stage, species),
+  }),
   powerStep: gameConfig.cards.powerStep,
   damageStep: gameConfig.cards.damageStep,
   cadenceFactor: gameConfig.cards.cadenceFactor,
@@ -62,6 +68,16 @@ const context = {
 };
 
 describe('card text', () => {
+  it('4X: names a wild Pokémon that asks to join by the form and level it joins with', () => {
+    expect(describeCard({ kind: 'join', species: 'machop', stage: 2 }, context)).toEqual({
+      title: 'Machoke',
+      detail: `Tipo Lucha · Nv ${captureLevel(gameConfig, 2, 'machop')}`,
+    });
+    expect(describeCard({ kind: 'join', species: 'oddish', stage: 1 }, context).detail).toBe(
+      'Tipo Planta · Nv 1',
+    );
+  });
+
   it('names the Pokémon to recruit and its type', () => {
     expect(describeCard({ kind: 'newBall', species: 'pikachu' }, context)).toEqual({
       title: 'Fichar a Pikachu',

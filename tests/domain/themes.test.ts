@@ -228,7 +228,7 @@ describe('capture of an evolved enemy (ADR-027)', () => {
       greedy.team.ballsByLevel[level - 1] ?? 1,
     );
     expect(run.loadout.at(-1)).toMatchObject({ species: 'growlithe', level });
-    expect(run.captured).toEqual([{ species: 'growlithe', level: 2 }]);
+    expect(run.captured).toEqual([{ species: 'growlithe', level: 2, source: 'drop' }]);
   });
 });
 

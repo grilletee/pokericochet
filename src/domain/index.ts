@@ -24,6 +24,20 @@ export {
 } from './bossFight';
 export { applyCard, drawOffers } from './cards';
 export {
+  advanceCatch,
+  catchChance,
+  catchPerformance,
+  catchRing,
+  catchSway,
+  drawJoinOffers,
+  isJoinEncounter,
+  joinCandidates,
+  joinStage,
+  openBossCatch,
+  openJoinEncounter,
+  ringTightness,
+} from './catching';
+export {
   ballForm,
   ballSpeed,
   bulkOf,
@@ -42,6 +56,7 @@ export {
 export type {
   AbilitiesDef,
   BossAttackDef,
+  BossCatchRules,
   BossDef,
   BossFightDef,
   BossMechanicDef,
@@ -52,6 +67,7 @@ export type {
   EnemyFireDef,
   GameConfig,
   InterludeDef,
+  JoinRules,
   LegendaryDef,
   MoveShapeDef,
   MovesDef,
@@ -118,7 +134,7 @@ export {
 export { awardKill, checkLevelUp, enemyXp, xpCost } from './progression';
 export type { RngState } from './rng';
 export { cloneRng, createRng, deriveRng, nextFloat, nextInt, nextU32 } from './rng';
-export type { BossState, Hazard, Phase, Player, Run, RunRng } from './run';
+export type { BossState, CatchState, Hazard, Phase, Player, Run, RunRng } from './run';
 export { cloneRun, createRun, hashRun } from './run';
 export { motionDirection, smartTarget } from './smartAim';
 export type { Snapshot } from './snapshot';
@@ -126,6 +142,7 @@ export {
   createSnapshot,
   HAZARD_KINDS,
   NO_SPECIES,
+  PHASE_CATCH,
   PHASE_LEVELUP,
   PHASE_LOST,
   PHASE_PLAYING,
@@ -170,6 +187,7 @@ export type {
   Ball,
   BallBody,
   BaseStats,
+  CaptureSource,
   Card,
   Command,
   Effect,
@@ -184,7 +202,7 @@ export type {
   ReplaceAction,
   SpeciesDef,
 } from './types';
-export { GAME_TYPES, typesOfSpecies } from './types';
+export { GAME_TYPES, SKIP_JOIN, typesOfSpecies } from './types';
 export {
   advanceBoss,
   advanceWave,

@@ -7,6 +7,11 @@ export const BOSS_ENTRY_MS = 1600;
 export const BOSS_DEFEAT_MS = 1300;
 /** The entrance of the final boss, a legendary: an event, not a cartel (4G-E). */
 export const BOSS_FINAL_MS = 4200;
+/**
+ * 4X: "¡X se une a tu equipo!" (19th playtest: "me aparece un Froakie en el equipo y ni me he
+ * enterado"): every Pokémon that joins has its moment. Short, so it does not stop the game long.
+ */
+export const JOIN_MS = 1100;
 
 /** What a boss moment shows: the small line over the name, the name and what comes with it. */
 export interface BossMomentView {
@@ -15,8 +20,11 @@ export interface BossMomentView {
   readonly note?: string;
   readonly type: GameType | undefined;
   readonly spriteUrl: string | undefined;
-  /** A defeat bursts in the colour of the type; an entry rises; a phase flashes. */
-  readonly style: 'entry' | 'phase' | 'defeat' | 'final';
+  /**
+   * A defeat bursts in the colour of the type; an entry rises; a phase flashes; 4X: a Pokémon that
+   * joins comes out of a sphere of its colour that cracks open in light.
+   */
+  readonly style: 'entry' | 'phase' | 'defeat' | 'final' | 'join';
 }
 
 function box(css: string, text = ''): HTMLDivElement {
@@ -217,6 +225,54 @@ export class BossMoment {
         );
       }
       front.push(kicker(view.kicker, '#ffd75a'), title(view.title, color, 52, ms * 0.2));
+    } else if (view.style === 'join') {
+      // A sphere of its colour drops in, shakes, cracks open in white light; the Pokémon pops out of
+      // it and lands; rays of its colour turn behind. Original art: a plain sphere with a band.
+      const open = 0.38;
+      back.push(rays(color, 0.4));
+      const sphere = box(
+        'position:absolute;left:50%;top:44%;width:64px;height:64px;margin:-32px 0 0 -32px;' +
+          `background:radial-gradient(circle at 34% 30%, #ffffff 0 10%, ${shadeHex(color, 1.35)} 11% 46%, ${color} 47% 70%, ${shadeHex(color, 0.55)} 71%);` +
+          `box-shadow:0 0 0 4px #0b0d1a, inset 0 -6px 0 ${shadeHex(color, 0.45)};border-radius:50% !important;z-index:2;`,
+      );
+      sphere.dataset.joinSphere = '';
+      animate(
+        sphere,
+        [
+          { transform: 'translateY(-60vh) scale(0.8)', opacity: 1, offset: 0 },
+          { transform: 'translateY(0) scale(1)', opacity: 1, offset: 0.16 },
+          { transform: 'translateY(0) rotate(-14deg)', opacity: 1, offset: 0.22 },
+          { transform: 'translateY(0) rotate(12deg)', opacity: 1, offset: 0.28 },
+          { transform: 'translateY(0) rotate(0deg) scale(1)', opacity: 1, offset: open - 0.02 },
+          { transform: 'scale(2.4)', opacity: 0, filter: 'brightness(6)', offset: open + 0.06 },
+          { transform: 'scale(2.4)', opacity: 0, offset: 1 },
+        ],
+        { duration: ms, easing: 'steps(20)', fill: 'forwards' },
+      );
+      over.push(sphere);
+      if (img !== null) {
+        img.style.filter = `drop-shadow(0 0 14px ${color}) drop-shadow(6px 6px 0 rgba(11,13,26,0.6))`;
+        animate(
+          img,
+          [
+            { transform: 'scale(0)', opacity: 0, offset: 0 },
+            { transform: 'scale(0)', opacity: 0, offset: open },
+            { transform: 'scale(1.25)', opacity: 1, filter: 'brightness(4)', offset: open + 0.08 },
+            { transform: 'scale(0.95)', opacity: 1, filter: 'brightness(1)', offset: open + 0.18 },
+            { transform: 'scale(1)', opacity: 1, offset: 1 },
+          ],
+          { duration: ms, easing: 'steps(18)', fill: 'forwards' },
+        );
+        front.push(img);
+      }
+      // A soft flash (4W: a full white flash was too strong): 30 % of the light.
+      const soft = box('position:absolute;inset:0;opacity:0.3;pointer-events:none;');
+      soft.append(flash(ms * open, 260));
+      over.push(soft);
+      front.push(
+        kicker(view.kicker, shadeHex(color, 1.5)),
+        title(view.title, color, 46, ms * (open + 0.05)),
+      );
     } else {
       // The fury: a flash and a shudder.
       if (img !== null) {

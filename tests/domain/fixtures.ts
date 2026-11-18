@@ -38,9 +38,14 @@ const { byType: _legendaries, ...plainBoss } = baseConfig.boss ?? { species: 'gy
 // species in the pool, as before.
 // The boss fight (ADR-046) has its own tests too: the older ones are about a plain boss.
 const { pool: _pool, bossFight: _fight, ...baseWithoutPool } = baseConfig;
+// 4X: the fixtures keep the capture rules they were written with (drops, a boss's ball, the recruit
+// card); join encounters and the capture of bosses have their own tests (catching4x.test.ts).
+const { join: _join, boss: _catch, ...legacyCapture } = baseConfig.capture;
 
 export const config: GameConfig = {
   ...baseWithoutPool,
+  capture: { ...legacyCapture, wildDrops: true },
+  cards: { ...baseConfig.cards, weights: { ...baseConfig.cards.weights, newBall: 3 } },
   // The starter bonus, the stage boost, the guard and the moves have their own tests; the rest of
   // the damage tests count on exact numbers: damage = Attack / 10 x level x type, a leak = its
   // threat, no move is cast (no species has one) and no ball is capped.

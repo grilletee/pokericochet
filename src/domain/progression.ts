@@ -1,4 +1,5 @@
 import { drawOffers } from './cards';
+import { openJoinEncounter } from './catching';
 import type { GameConfig } from './config';
 import { nextFloat } from './rng';
 import type { Run } from './run';
@@ -33,8 +34,9 @@ export function checkLevelUp(run: Run, config: GameConfig): boolean {
   run.player.xp -= run.player.xpNext;
   run.player.level += 1;
   run.player.xpNext = xpCost(config, run.player.level);
-  run.offers = drawOffers(run, config);
   run.phase = 'levelup';
   run.events.push({ type: 'levelup', level: run.player.level });
+  // 4X: some level-ups are a join encounter (wild Pokémon of the biome); the rest bring the cards.
+  if (!openJoinEncounter(run, config)) run.offers = drawOffers(run, config);
   return true;
 }

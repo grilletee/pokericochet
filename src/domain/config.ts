@@ -339,6 +339,57 @@ export interface AbilitiesDef {
  * Everything the simulation reads but never owns. It is injected (ADR-006): the domain does not
  * import JSON or game-data files. Numbers are initial values, tuned with the balance harness.
  */
+/**
+ * 4X: "Un Pokémon salvaje quiere unirse". At a level-up, instead of the cards, some wild Pokémon of
+ * the biome ask to join: the player takes one or lets them go (and gets the usual cards).
+ */
+export interface JoinRules {
+  /** The level-up to this player level is always a join encounter (the run starts with one ball). */
+  readonly firstAt: number;
+  /** Chance that any later level-up is a join encounter... */
+  readonly chance: number;
+  /** ...plus this for every level-up since the last one (bad-luck protection). */
+  readonly pityStep: number;
+  /** The chance is multiplied by this with the team full (a join then means a replace). */
+  readonly fullTeamMult: number;
+  /** How many Pokémon ask to join at once. */
+  readonly options: number;
+  /** Lines that never ask to join (the starters and pseudo-legendaries: only bosses and the gacha). */
+  readonly excluded: readonly string[];
+  /** Rare lines (strong final forms): they ask to join `rareWeight` times as often as the rest. */
+  readonly rare: readonly string[];
+  readonly rareWeight: number;
+}
+
+/**
+ * 4X: the capture of a defeated boss between waves (19th playtest: "debería abrirse la posibilidad de
+ * conseguirlo y tener que hacer algo"). The boss stays weakened for `windowTicks`, swaying; a ring
+ * around it shrinks and grows back every `ringCycleTicks`. One throw: it must land inside the ring,
+ * and the smaller the ring when it lands, the better the chance. What the fight earned sets the base.
+ */
+export interface BossCatchRules {
+  readonly windowTicks: number;
+  readonly ringCycleTicks: number;
+  /** Ring radius at its widest and narrowest, as multiples of the boss's body radius. */
+  readonly ringMax: number;
+  readonly ringMin: number;
+  /** The boss sways sideways this many pixels each way, once every `swayTicks`. */
+  readonly sway: number;
+  readonly swayTicks: number;
+  /** The base chance and what a fast fight and a fight without damage add to it. */
+  readonly baseChance: number;
+  readonly fastBonus: number;
+  /** A fight of 0 ticks earns the whole fast bonus, one of `2 x parTicks` none of it. */
+  readonly parTicks: number;
+  readonly unhurtBonus: number;
+  /** The ring multiplies the base: by `ringLow` at its widest, `ringHigh` at its narrowest. */
+  readonly ringLow: number;
+  readonly ringHigh: number;
+  /** The chance is never under or over these. */
+  readonly minChance: number;
+  readonly maxChance: number;
+}
+
 export interface GameConfig {
   readonly arena: {
     readonly width: number;
@@ -420,6 +471,16 @@ export interface GameConfig {
      * decision, so fewer of them keep the pauses of the replace screen rare (ADR-030, M10).
      */
     readonly fullTeamChanceMult: number;
+    /**
+     * 4X (19th playtest: "no me gusta que matar a un enemigo cualquiera te dé su bola"): whether an
+     * ordinary enemy may drop its ball (the rules above). Off in the shipped game; absent = on, so a
+     * config written before 4X keeps its captures.
+     */
+    readonly wildDrops?: boolean;
+    /** 4X: wild Pokémon that ask to join at a level-up. Absent: no join encounters. */
+    readonly join?: JoinRules;
+    /** 4X: a defeated boss between waves can be captured with one throw. Absent: it drops its ball. */
+    readonly boss?: BossCatchRules;
   };
   readonly enemy: {
     readonly radius: number;

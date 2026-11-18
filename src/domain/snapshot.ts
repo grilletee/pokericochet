@@ -1,5 +1,6 @@
 import { themeTypes } from './advice';
 import { bossLineTicks } from './bossFight';
+import { catchChance, catchRing } from './catching';
 import type { GameConfig } from './config';
 import type { Run } from './run';
 import { ballRadius, ballView, captureView } from './team';
@@ -63,9 +64,13 @@ export const PHASE_LOST = 1;
 export const PHASE_LEVELUP = 2;
 export const PHASE_WON = 3;
 export const PHASE_REPLACE = 4;
+/** 4X: a defeated boss waits for the throw (`catch`). */
+export const PHASE_CATCH = 5;
 
 function phaseCode(phase: Run['phase']): number {
   switch (phase) {
+    case 'catch':
+      return PHASE_CATCH;
     case 'playing':
       return PHASE_PLAYING;
     case 'lost':
@@ -196,6 +201,19 @@ export interface Snapshot {
   bossY: number;
   bossRadius: number;
 
+  /**
+   * 4X: the capture of a defeated boss (`catch` phase): where it sways, its body radius, the ring
+   * now (arena pixels), the chance a throw that lands now captures it (0..1), how much of the window
+   * is left (1..0) and the code of the form it shows. `catchRadius` 0 = no capture open.
+   */
+  catchX: number;
+  catchY: number;
+  catchRadius: number;
+  catchRing: number;
+  catchChance: number;
+  catchLeft: number;
+  catchForm: number;
+
   /** True if the run had more slots or enemies than the buffers hold (extras are dropped). */
   truncated: boolean;
 }
@@ -270,6 +288,13 @@ export function createSnapshot(maxSlots = 64, maxEnemies = 512, maxPickups = 64)
     bossX: 0,
     bossY: 0,
     bossRadius: 0,
+    catchX: 0,
+    catchY: 0,
+    catchRadius: 0,
+    catchRing: 0,
+    catchChance: 0,
+    catchLeft: 0,
+    catchForm: NO_SPECIES,
     truncated: false,
   };
 }
@@ -307,6 +332,23 @@ export function writeSnapshot(
   snap.bossTimeSlow = run.boss.timeSlow > 0;
   snap.bossPhase = 0;
   snap.bossLineTicks = config === undefined ? -1 : bossLineTicks(run, config);
+  const caught = run.catch;
+  const catchRules = config?.capture.boss;
+  if (caught !== null && catchRules !== undefined) {
+    snap.catchX = caught.x;
+    snap.catchY = caught.y;
+    snap.catchRadius = caught.radius;
+    snap.catchRing = catchRing(catchRules, caught);
+    snap.catchChance = catchChance(catchRules, caught);
+    snap.catchLeft = Math.max(0, 1 - caught.ticks / Math.max(1, catchRules.windowTicks));
+    snap.catchForm = speciesCodes?.get(caught.form) ?? NO_SPECIES;
+  } else {
+    snap.catchRadius = 0;
+    snap.catchRing = 0;
+    snap.catchChance = 0;
+    snap.catchLeft = 0;
+    snap.catchForm = NO_SPECIES;
+  }
   if (run.boss.id !== 0) {
     for (const e of run.enemies) {
       if (e.id !== run.boss.id) continue;

@@ -21,9 +21,12 @@ import {
   type Command,
   captureForm,
   captureLevel,
+  catchChance,
+  catchRing,
   chargeNeed,
   createRun,
   createSnapshot,
+  drawJoinOffers,
   dropCapture,
   formAt,
   formOfMember,
@@ -32,8 +35,10 @@ import {
   type GameEvent,
   type GameType,
   guardAfterReplace,
+  isJoinEncounter,
   moveIdOf,
   nextStep,
+  openBossCatch,
   PHASE_LEVELUP,
   placeTypes,
   previewHybrid,
@@ -46,6 +51,7 @@ import {
   summarizeRun,
   syncMember,
   teamGuard,
+  teamIsFull,
   themeTypes,
   tick,
   typeAdvice,
@@ -95,6 +101,8 @@ import {
   bossCartel,
   bossLabel,
   type CardTextContext,
+  CatchView,
+  type CatchViewState,
   CollectionScreen,
   type ControlScheme,
   CreditsScreen,
@@ -116,6 +124,9 @@ import {
   installPixelStyle,
   isControlScheme,
   isRealEvolution,
+  JOIN_MS,
+  JoinScreen,
+  type JoinView,
   LineAlarm,
   labelPriority,
   lineMessage,
@@ -146,6 +157,7 @@ import {
   spriteTile,
   strongerText,
   TeamBar,
+  THROW_MS,
   type TileGlow,
   TouchLayout,
   TunePanel,
@@ -363,6 +375,17 @@ function nextCommand(
       action: pick === RELEASE_PICK ? { type: 'release' } : { type: 'replace', slot: pick },
     };
   }
+  // 4X: a weakened boss waits for the throw: a click or a tap on the field throws there; Space
+  // throws where the pointer aims.
+  if (run.phase === 'catch') {
+    input.takePick();
+    const at = input.takeThrow();
+    const aimX = input.state.aimX ?? run.aimX;
+    const aimY = input.state.aimY ?? run.aimY;
+    if (at === null) return { moveX: 0, autoAim, aimX, aimY };
+    const point = at === 'aim' ? { x: aimX, y: aimY } : at;
+    return { moveX: 0, autoAim, throw: true, aimX: point.x, aimY: point.y };
+  }
   // Outside a card or replace choice a number key (or a tap on a Pokémon's tile) throws the
   // signature of that place of the team; the domain ignores it if it is not ready (4F-D). The ULTI
   // button of the two thumbs (4G-H) throws the first one that is ready.
@@ -470,6 +493,38 @@ function applyDebugParams(run: Run, config: GameConfig, params: URLSearchParams)
     const stage = Math.max(1, Math.min(3, number('captureStage') ?? 1));
     dropCapture(run, config, captured, def.type, run.player.x, 200, stage);
   }
+  // 4X: offers=join opens a join encounter at once (the wild Pokémon of the first biome).
+  if (params.get('offers') === 'join') {
+    const rules = config.capture.join;
+    if (rules !== undefined) {
+      run.offers = drawJoinOffers(run, config, rules);
+      run.phase = 'levelup';
+    }
+  }
+  // 4X: catch=<species> opens the capture of that boss, weakened in the middle of the field
+  // (catchTicks=N: N ticks of fight, so the chance can be tried for a fast or a slow fight).
+  const catchSpecies = params.get('catch');
+  const catchDef = catchSpecies === null ? undefined : config.species[catchSpecies];
+  if (catchSpecies !== null && catchDef !== undefined) {
+    run.boss.tick = number('catchTicks') ?? 1800;
+    run.boss.hpAtSpawn = run.player.hp;
+    openBossCatch(run, config, {
+      id: 999,
+      species: catchSpecies,
+      type: catchDef.type,
+      hp: 0,
+      x: config.arena.width / 2,
+      y: 220,
+      speed: 0,
+      radius: config.interludes?.[0]?.radius ?? 40,
+      threat: 1,
+      xp: 0,
+      burnTicks: 0,
+      burnDps: 0,
+      slowTicks: 0,
+      slow: 0,
+    });
+  }
 }
 
 /**
@@ -570,6 +625,11 @@ export async function startGame(host: HTMLElement): Promise<void> {
   const cartel = new WaveBanner(host);
   const touchLayout = new TouchLayout(host, () => input.requestUltimate());
   const replaceScreen = new ReplaceScreen(host);
+  // 4X, block 1: the join encounters of a level-up and the capture of a weakened boss.
+  const joinScreen = new JoinScreen(host);
+  const catchView = new CatchView(host);
+  /** The capture as it was when the sphere was thrown: held on screen while the throw plays. */
+  let catchHold: { view: CatchViewState; until: number } | null = null;
   const sheet = new MemberSheet(host);
   const moveLabels = new MoveLabels(host);
   // At most three move names at once; the starter's move always shows (ADR-039, M11).
@@ -646,6 +706,10 @@ export async function startGame(host: HTMLElement): Promise<void> {
       playerY: config.player.y,
       margin: config.player.margin,
     },
+  );
+  // 4X: while a weakened boss waits (and no moment plays over it), a click or a tap is the throw.
+  input.setCatching(
+    () => screen === 'playing' && run.phase === 'catch' && !pause.active(performance.now()),
   );
   const store = browserStore();
   // The persistent profile (ADR-025, 4G-I): collection, coins, candies. The run never reads it.
@@ -846,6 +910,10 @@ export async function startGame(host: HTMLElement): Promise<void> {
     // 4W, block 7: with the place, a split line tells the branch it will really take here.
     nextStep: (member) => nextStep(config, member, placeTypes(run, config)),
     ballsAt: (level) => ballsFor(config, level),
+    joinView: (species, stage) => ({
+      form: captureForm(config, species, stage),
+      level: captureLevel(config, stage, species),
+    }),
     powerStep: config.cards.powerStep,
     damageStep: config.cards.damageStep,
     cadenceFactor: config.cards.cadenceFactor,
@@ -957,6 +1025,9 @@ export async function startGame(host: HTMLElement): Promise<void> {
     signatureWasReady = false;
     readyAnnounced = false;
     sheet.hide();
+    catchHold = null;
+    lastCatch = null;
+    catchView.update(null, performance.now());
     screen = 'playing';
     // The first seconds of a touch scheme say what the thumb does (4G-G).
     const tip = schemeTip(scheme);
@@ -1333,6 +1404,68 @@ export async function startGame(host: HTMLElement): Promise<void> {
       starter: member.starter,
     })),
   });
+  /** 4X: the wild Pokémon of a join encounter, as the screen shows them. */
+  const joinViewOf = (): JoinView => ({
+    options: run.offers.flatMap((card) => {
+      if (card.kind !== 'join') return [];
+      const form = captureForm(config, card.species, card.stage);
+      const def = config.species[form] ?? config.species[card.species];
+      return [
+        {
+          form,
+          level: captureLevel(config, card.stage, card.species),
+          types: def === undefined ? [] : typesOfSpecies(def),
+          rare: config.capture.join?.rare.includes(card.species) === true,
+        },
+      ];
+    }),
+    teamFull: teamIsFull(run, config),
+    biome:
+      config.themes?.[run.waveThemes[Math.min(run.wave.index, run.waveThemes.length - 1)] ?? '']
+        ?.name ?? '',
+  });
+  /** 4X: the weakened boss, its ring and its chance, in host pixels, while the capture waits. */
+  const catchViewOf = (): CatchViewState | null => {
+    const state = run.catch;
+    const rules = config.capture.boss;
+    if (state === null || rules === undefined) return null;
+    const at = toScreen(state.x, state.y);
+    const scale = renderer.view.scale;
+    return {
+      form: state.form,
+      type: config.species[state.form]?.type,
+      spriteUrl: art.spriteUrl(state.form),
+      x: at.x,
+      y: at.y,
+      radius: state.radius * scale,
+      ring: catchRing(rules, state) * scale,
+      chance: catchChance(rules, state),
+      left: Math.max(0, 1 - state.ticks / Math.max(1, rules.windowTicks)),
+      how:
+        scheme === 'classic'
+          ? 'Haz clic dentro del anillo (o Espacio donde apuntas). Cuanto más pequeño, más fácil.'
+          : 'Toca dentro del anillo. Cuanto más pequeño, más fácil.',
+    };
+  };
+  let lastCatch: CatchViewState | null = null;
+  /** 4X: "¡X se une a tu equipo!", after `delayMs` (a captured boss: once the throw has played). */
+  const showJoinMoment = (form: string, fromBoss: boolean, delayMs: number): void => {
+    const play = (): void => {
+      bossMoment.show(
+        {
+          style: 'join',
+          kicker: fromBoss ? '¡CAPTURADO!' : '¡NUEVO COMPAÑERO!',
+          title: `¡${pokemonName(form)} se une a tu equipo!`,
+          type: config.species[form]?.type,
+          spriteUrl: art.spriteUrl(form),
+        },
+        JOIN_MS,
+      );
+      sound.play('capture', performance.now());
+    };
+    if (delayMs <= 0) play();
+    else window.setTimeout(play, delayMs);
+  };
   /** The sheet of one Pokémon of the team: its real stats and its move (ADR-038, ADR-039). */
   const openSheet = (index: number): void => {
     const member = run.team[index];
@@ -1393,8 +1526,10 @@ export async function startGame(host: HTMLElement): Promise<void> {
         ms: BOSS_DEFEAT_MS,
         view: {
           style: 'defeat',
-          kicker: '¡JEFE DERROTADO!',
+          // 4X: a boss between waves is only weakened: its capture comes next.
+          kicker: run.phase === 'catch' ? '¡JEFE DEBILITADO!' : '¡JEFE DERROTADO!',
           title: name(event.species),
+          ...(run.phase === 'catch' ? { note: '¡Prepárate para capturarlo!' } : {}),
           type: typeOf(event.species),
           spriteUrl: art.spriteUrl(event.species),
         },
@@ -1476,6 +1611,33 @@ export async function startGame(host: HTMLElement): Promise<void> {
           from.x,
           from.y,
         );
+        // 4X: every Pokémon that joins has its moment; a captured boss once its throw has played.
+        if (event.source === 'join' || event.source === 'boss') {
+          showJoinMoment(
+            event.form,
+            event.source === 'boss',
+            event.source === 'boss' ? THROW_MS : 0,
+          );
+        }
+      } else if (event.type === 'replaced') {
+        showJoinMoment(event.form, false, 0);
+      } else if (event.type === 'catchOpen') {
+        sound.play('ready', now);
+      } else if (event.type === 'catchThrow') {
+        // The sphere flies from the launcher to where it was thrown, shakes and decides (4X).
+        const from = toScreen(run.player.x, config.player.y);
+        const to = toScreen(event.x, event.y);
+        catchView.playThrow(from, to, event.hit, event.caught, config.species[event.form]?.type);
+        if (lastCatch !== null) catchHold = { view: lastCatch, until: now + THROW_MS };
+        sound.play('gachaDrop', now);
+        if (event.hit) {
+          for (let k = 0; k < 3; k++) {
+            window.setTimeout(
+              () => sound.play('collect', performance.now()),
+              THROW_MS * (0.35 + k * 0.17),
+            );
+          }
+        }
       } else if (event.type === 'train') {
         teamBar.pulse(event.member);
       } else if (event.type === 'stage') {
@@ -1665,6 +1827,18 @@ export async function startGame(host: HTMLElement): Promise<void> {
           pause.start(now, bossPause.ms);
           stopped = true;
         }
+        // 4X: the throw plays whole (and then the moment of the capture); a Pokémon that joins from
+        // an encounter or the replace screen has its moment too. The game waits meanwhile.
+        if (event.type === 'catchThrow') {
+          pause.start(now, THROW_MS + (event.caught ? JOIN_MS : 0));
+          stopped = true;
+        } else if (
+          (event.type === 'capture' && event.source === 'join') ||
+          event.type === 'replaced'
+        ) {
+          pause.start(now, JOIN_MS);
+          stopped = true;
+        }
       }
       const swap = prev;
       prev = curr;
@@ -1712,13 +1886,28 @@ export async function startGame(host: HTMLElement): Promise<void> {
       signatureWasReady = ready;
     }
     replaceScreen.update(
-      screen === 'playing' && run.phase === 'replace' && run.pendingCapture !== null
+      // 4X: after a captured boss, the replace screen waits for its throw to play.
+      screen === 'playing' &&
+        run.phase === 'replace' &&
+        run.pendingCapture !== null &&
+        catchHold === null
         ? replaceView(run.pendingCapture)
         : null,
       art,
       (slot) => input.requestPick(slot),
       () => input.requestPick(RELEASE_PICK),
     );
+    // 4X, block 1: the wild Pokémon of a join encounter, and the capture of a weakened boss.
+    joinScreen.update(
+      screen === 'playing' && isJoinEncounter(run) ? joinViewOf() : null,
+      art,
+      (index) => input.requestPick(index),
+      () => input.requestPick(RELEASE_PICK),
+    );
+    const liveCatch = screen === 'playing' && run.phase === 'catch' ? catchViewOf() : null;
+    if (liveCatch !== null) lastCatch = liveCatch;
+    if (catchHold !== null && now >= catchHold.until) catchHold = null;
+    catchView.update(liveCatch ?? catchHold?.view ?? null, now);
     showEventFeedback(pending, now);
     moveLabels.update(screen === 'playing' ? labelPolicy.visible(now) : [], toScreen);
     const r0 = performance.now();
@@ -1810,7 +1999,9 @@ export async function startGame(host: HTMLElement): Promise<void> {
       }
     }
     overlay.setCards(
-      screen === 'playing' && curr.phase === PHASE_LEVELUP ? run.offers : null,
+      screen === 'playing' && curr.phase === PHASE_LEVELUP && !isJoinEncounter(run)
+        ? run.offers
+        : null,
       cardContext,
       (index) => input.requestPick(index),
     );
