@@ -31,7 +31,7 @@ import {
 } from '../domain';
 import { Backdrop } from './backdrop';
 import { strikeLook } from './bossArt';
-import { legendArenaTexture, strikeFrames } from './bossTextures';
+import { strikeFrames } from './bossTextures';
 import { BossDeathFx } from './deathFx';
 import { FLASH_MS, mayFlash } from './feelRules';
 import { DECK_LINE_ROWS, deckTexture } from './fieldArt';
@@ -39,7 +39,7 @@ import { FieldFx } from './fieldFx';
 import { DISC, fxAtlas, RING } from './fxAtlas';
 import { HurtFx } from './hurtFx';
 import { interpolateBalls, interpolateEnemies } from './interpolate';
-import { arenaOf, LEGEND_ARENAS } from './legendArena';
+import { arenaOf, LEGEND_ARENAS, safeGlow } from './legendArena';
 import { FIELD_PIXEL, glowTexture } from './paint';
 import { liveParticles, PARTICLE_DYNAMIC, placeParticle } from './particles';
 import {
@@ -377,7 +377,8 @@ export class Renderer {
       this.hazardSprites.push(column);
       this.hazardLayer.addChild(column);
       const mark = new TilingSprite({ texture: Texture.EMPTY, width: 1, height: 1 });
-      mark.tileScale.set(ART_PIXEL);
+      // 4W: the strikes are drawn at the pixel of the bible (2 units); the rain keeps its 4.
+      mark.tileScale.set(FIELD_PIXEL);
       mark.visible = false;
       this.hazardFloor.push(mark);
       this.hazardLayer.addChild(mark);
@@ -707,22 +708,31 @@ export class Renderer {
           shape: look.motion === 'fall' ? 'flake' : look.motion === 'rise' ? 'ember' : 'mote',
           motion: look.motion === 'fall' ? 'fall' : look.motion === 'rise' ? 'rise' : 'drift',
           count: 24,
-          colors: [look.dust[0] ?? 0xffffff, look.dust[1] ?? 0xffffff],
+          // 4W: never the red of danger in the air either (art bible §5).
+          colors: [safeGlow(look.dust[0] ?? 0xffffff), safeGlow(look.dust[1] ?? 0xffffff)],
           glow: true,
           blink: true,
-          mist: { color: look.dust[0] ?? 0xffffff, alpha: fury ? 0.1 : 0.06, speed: 0.012 },
+          mist: {
+            color: safeGlow(look.dust[0] ?? 0xffffff),
+            alpha: fury ? 0.1 : 0.06,
+            speed: 0.012,
+          },
           flash: false,
-          shafts: fury ? (look.dust[1] ?? 0) : 0,
+          shafts: fury ? safeGlow(look.dust[1] ?? 0) : 0,
           vignette: 0.62,
         };
-        this.scenery.showArena(
-          key,
-          legend in LEGEND_ARENAS
-            ? legendArenaTexture(legend, fury)
-            : arenaTexture(TYPE_COLORS[curr.bossType] ?? 0xffffff),
-          ART_PIXEL,
-          air,
-        );
+        // 4W, block 6: a painted scene at the pixel of the bible (it was one coarse tile); a boss
+        // without an arena of its own still has the temple of its type.
+        if (legend in LEGEND_ARENAS) {
+          this.scenery.showLegend(key, look, air);
+        } else {
+          this.scenery.showArena(
+            key,
+            arenaTexture(TYPE_COLORS[curr.bossType] ?? 0xffffff),
+            ART_PIXEL,
+            air,
+          );
+        }
       }
     } else {
       this.arenaKey = '';
@@ -1015,6 +1025,8 @@ export class Renderer {
         sprite.texture = stream
           ? (drop[frame] ?? fx.orb[frame] ?? Texture.EMPTY)
           : (strike[frame] ?? Texture.EMPTY);
+        const px = stream ? ART_PIXEL : FIELD_PIXEL;
+        if (sprite.tileScale.x !== px) sprite.tileScale.set(px);
         sprite.width = width;
         sprite.height = height;
         sprite.x = x - width / 2;

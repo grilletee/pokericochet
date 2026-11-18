@@ -92,6 +92,41 @@ const SHARD = ['..d..', '.dld.', 'dlwld', '.dbd.', '..d..'];
 const EYES = ['w.w'];
 const STAR = ['..w..', '.wlw.', 'wlwlw', '.wlw.', '..w..'];
 
+/**
+ * Twice the resolution of a tile, by Scale2x (EPX), the classic pixel-art doubling (4W, block 6; art
+ * bible §2: the field is drawn at 2 arena units per art pixel, the strikes were at 4). Each pixel
+ * becomes four; a corner takes the colour of its two neighbours when they agree and the other two do
+ * not, so the steps of a diagonal become a finer line; no colour is invented. The tile wraps in y
+ * (it repeats along the column), not in x. Pure.
+ */
+export function scale2x(rows: readonly string[]): string[] {
+  const h = rows.length;
+  const w = rows[0]?.length ?? 0;
+  const at = (x: number, y: number): string =>
+    x < 0 || x >= w ? '.' : (rows[((y % h) + h) % h]?.[x] ?? '.');
+  const out: string[] = [];
+  for (let y = 0; y < h; y++) {
+    let top = '';
+    let bottom = '';
+    for (let x = 0; x < w; x++) {
+      const p = at(x, y);
+      const a = at(x, y - 1);
+      const b = at(x + 1, y);
+      const c = at(x - 1, y);
+      const d = at(x, y + 1);
+      top += (c === a && c !== d && a !== b ? a : p) + (a === b && a !== c && b !== d ? b : p);
+      bottom += (d === c && d !== b && c !== a ? c : p) + (b === d && b !== a && d !== c ? d : p);
+    }
+    out.push(top, bottom);
+  }
+  return out;
+}
+
+/** One frame of a look at the pixel of the bible: `strikeRows` doubled by `scale2x`. */
+export function strikeRowsFine(motif: StrikeMotif, frame: number): readonly string[] {
+  return scale2x(strikeRows(motif, frame));
+}
+
 /** The pixels of one frame of a look: STRIKE_H rows of STRIKE_W palette codes. Pure. */
 export function strikeRows(motif: StrikeMotif, frame: number): readonly string[] {
   const g = blank();

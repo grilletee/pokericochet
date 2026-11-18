@@ -1,4 +1,5 @@
 import { Container, Sprite, Texture, TilingSprite } from 'pixi.js';
+import type { ArenaSpec } from './legendArena';
 import {
   bayer,
   FIELD_PIXEL,
@@ -134,7 +135,7 @@ export class Backdrop {
   /** What is on screen or on its way: a scene id, or the key of an arena. */
   private shown = '';
   private build: SceneBuild | null = null;
-  private wanted: SceneId | null = null;
+  private wanted: string | null = null;
   private flashLife = 0;
   private nextFlash = 3000;
 
@@ -233,6 +234,24 @@ export class Backdrop {
     this.build = null;
     this.swap([texture], 0, Texture.EMPTY, pixel);
     this.setAmbient(ambient);
+  }
+
+  /**
+   * The arena of a legendary as a painted scene (4W, block 6): painted over the next frames like a
+   * biome (the scene before stays meanwhile), kept, and cross-faded in. `key` tells one arena from
+   * another (the species and its fury).
+   */
+  showLegend(key: string, spec: ArenaSpec, ambient: AmbientDef): void {
+    if (this.shown === key) return;
+    this.shown = key;
+    this.wanted = key;
+    const painted = paintedScene(key);
+    if (painted !== undefined) {
+      this.build = null;
+      this.enter(painted);
+    } else {
+      this.build = new SceneBuild(key, 0xffffff, { spec, ambient });
+    }
   }
 
   private enter(scene: Scene): void {

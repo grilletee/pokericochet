@@ -115,6 +115,34 @@ export function furyOf(spec: ArenaSpec): ArenaSpec {
   };
 }
 
+/**
+ * A glow that could be read as the red of danger (art bible §5: the background never uses it) is
+ * moved halfway to violet (4W): Giratina's red becomes a crimson magenta. Other colours are kept.
+ */
+export function safeGlow(color: number): number {
+  if (!looksLikeDanger(color)) return color;
+  const half = (a: number, v: number): number => Math.round(a + (v - a) * 0.5);
+  return (
+    (half((color >> 16) & 255, 0x8a) << 16) |
+    (half((color >> 8) & 255, 0x5a) << 8) |
+    half(color & 255, 0xcb)
+  );
+}
+
+/**
+ * Whether a colour reads as the red of danger: bright, saturated, red the strongest channel and its
+ * hue between -20° and 15° (an orange of lava, at ~23°, does not; a crimson does).
+ */
+export function looksLikeDanger(color: number): boolean {
+  const r = (color >> 16) & 255;
+  const g = (color >> 8) & 255;
+  const b = color & 255;
+  const spread = r - Math.min(g, b);
+  if (r < 150 || r < g || r < b || spread < 90) return false;
+  const hue = ((g - b) / spread) * 60;
+  return hue >= -20 && hue <= 15;
+}
+
 /** The size of an arena tile, in art pixels. */
 export const FLOOR_W = 120;
 export const FLOOR_H = 180;

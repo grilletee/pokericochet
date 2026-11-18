@@ -1,5 +1,5 @@
 import { Texture } from 'pixi.js';
-import { STRIKE_FRAMES, STRIKE_H, STRIKE_W, strikeLook, strikeRows } from './bossArt';
+import { STRIKE_FRAMES, STRIKE_H, STRIKE_W, strikeLook, strikeRowsFine } from './bossArt';
 import { arenaOf, drawFloor, FLOOR_H, FLOOR_W } from './legendArena';
 
 /**
@@ -47,8 +47,9 @@ export function strikeFrames(typeName: string, color: number): readonly Texture[
   };
   const frames: Texture[] = [];
   for (let f = 0; f < STRIKE_FRAMES; f++) {
-    const { c, g } = canvas(STRIKE_W, STRIKE_H);
-    strikeRows(motif, f).forEach((row, y) => {
+    // 4W: at the pixel of the bible (twice the tile, drawn at 2 arena units per pixel).
+    const { c, g } = canvas(STRIKE_W * 2, STRIKE_H * 2);
+    strikeRowsFine(motif, f).forEach((row, y) => {
       for (let x = 0; x < row.length; x++) {
         const fill = palette[row[x] ?? '.'];
         if (fill === undefined) continue;

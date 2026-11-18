@@ -1,10 +1,12 @@
 import type { Texture } from 'pixi.js';
+import { type ArenaSpec, safeGlow } from './legendArena';
 import {
   bayer,
   hexRgb,
   makeCanvas,
   mixRgb,
   noiseField,
+  numRgb,
   PixelWriter,
   type Rgb,
   SCENE_H,
@@ -1009,8 +1011,134 @@ const SCENES: Record<SceneId, SceneDef> = {
   },
 };
 
+/**
+ * The arena of a legendary as a painted scene (4W, block 6; 18th playtest: "la arena final a
+ * mejorar"). Until now it was one small tile of 120 x 180 art pixels (4 arena units each, twice the
+ * pixel of the bible) with no calm corridor and nothing on the edges. Now it is a scene like the
+ * biomes, at the pixel of the bible (2 units): the same painters, coloured with the palette of its
+ * legendary (`legendArena`): its dark base for the ground (dark enough in the corridor), its main
+ * colour for the big things on the edges and the colour that glows for what is lit and animated.
+ */
+function between(a: number, b: number, ts: readonly number[]): Rgb[] {
+  return ts.map((t) => mixRgb(numRgb(a), numRgb(b), t));
+}
+
+export function arenaSceneDef(spec: ArenaSpec): SceneDef {
+  const { base, main } = spec;
+  const glow = safeGlow(spec.glow);
+  const white = 0xffffff;
+  const ground = between(base, main, [0.04, 0.12, 0.22, 0.34, 0.46]);
+  const props = [
+    ...between(base, main, [0.25, 0.5, 0.75, 1]),
+    mixRgb(numRgb(main), numRgb(white), 0.35),
+  ];
+  const lit = [
+    ...between(main, glow, [0.2, 0.45, 0.7, 1]),
+    mixRgb(numRgb(glow), numRgb(white), 0.5),
+  ];
+  const glowRgb = numRgb(glow);
+  const dim = mixRgb(numRgb(base), numRgb(glow), 0.25);
+  const light = mixRgb(numRgb(glow), numRgb(white), 0.4);
+  const seam = mixRgb(numRgb(base), numRgb(0), 0.5);
+  const four = (ramp: Rgb[]): Rgb[] => ramp.slice(0, 4);
+  switch (spec.floor) {
+    case 'abyss':
+      return {
+        ground: water(ground, null, light),
+        props: both(boulders(props, 10, 5, 40), crystals(lit, glowRgb, 8, 34)),
+        frames: {
+          count: 3,
+          ms: 340,
+          paint: crests(mixRgb(numRgb(main), numRgb(white), 0.2), light, false, 0.45),
+        },
+      };
+    case 'magma':
+      return {
+        ground: plates(ground, 24, seam, null),
+        props: boulders(props, 14, 6, 16),
+        frames: {
+          count: 3,
+          ms: 360,
+          paint: lava(
+            [
+              mixRgb(numRgb(base), numRgb(main), 0.6),
+              numRgb(main),
+              mixRgb(numRgb(main), glowRgb, 0.5),
+              glowRgb,
+              light,
+            ],
+            24,
+          ),
+        },
+      };
+    case 'cosmos':
+      return {
+        ground: heavens(ground, between(main, glow, [0.1, 0.3, 0.5, 0.7, 0.9])),
+        props: crystals(lit, glowRgb, 10, 30),
+      };
+    case 'void':
+      return {
+        ground: slabs(ground, 24, 16, null),
+        props: both(columns(props, 8), crystals(lit, glowRgb, 6, 30)),
+        frames: { count: 3, ms: 520, paint: runes(24, 16, dim, glowRgb) },
+      };
+    case 'lab':
+      return {
+        ground: panels(ground, 30, glowRgb),
+        props: machines(props, glowRgb, 10),
+        frames: { count: 3, ms: 160, paint: conduits(dim, glowRgb) },
+      };
+    case 'glacier':
+      return {
+        ground: snow(ground, between(base, glow, [0.15, 0.3, 0.45, 0.65, 0.9])),
+        props: both(crystals(lit, glowRgb, 10, 30), boulders(props, 8, 5, 40)),
+      };
+    case 'ruins':
+      return {
+        ground: slabs(ground, 24, 16, between(base, main, [0.2, 0.3, 0.4, 0.5])),
+        props: columns(props, 10),
+        frames: { count: 3, ms: 520, paint: runes(24, 16, dim, glowRgb) },
+      };
+    case 'grove':
+      return {
+        ground: grass(
+          ground,
+          between(base, 0x5a4830, [0.3, 0.45, 0.6, 0.75]),
+          [glowRgb, light],
+          0.6,
+          13,
+        ),
+        props: both(trees(props, 12, 12, null), mushrooms(four(lit), light, glowRgb, 10, 44)),
+      };
+    case 'lake':
+      return {
+        ground: water(ground, null, light),
+        props: both(lilies(four(props), glowRgb, 18), reeds(four(props), glowRgb, 30)),
+        frames: {
+          count: 3,
+          ms: 420,
+          paint: crests(mixRgb(numRgb(main), numRgb(white), 0.15), light, false, 0.3),
+        },
+      };
+    case 'sky':
+      return {
+        ground: heavens(ground, between(main, white, [0.1, 0.25, 0.4, 0.6, 0.8])),
+        props: clouds(between(main, white, [0.2, 0.4, 0.6, 0.8, 0.95]), 12),
+      };
+    case 'storm':
+      return {
+        ground: both(
+          plates(ground, 34, seam, numRgb(main)),
+          puddles(four(between(base, main, [0.3, 0.45, 0.6, 0.75]))),
+        ),
+        props: both(boulders(props, 14, 7, 30), crystals(lit, glowRgb, 5, 26)),
+        frames: { count: 3, ms: 200, paint: ripples(light) },
+      };
+  }
+}
+
 export interface Scene {
-  readonly id: SceneId;
+  readonly id: string;
   /** The ground: one texture, or the frames of its animation. */
   readonly ground: readonly Texture[];
   readonly frameMs: number;
@@ -1028,13 +1156,25 @@ export class SceneBuild {
   private readonly ground: Texture[] = [];
   private props: Texture | null = null;
   private base: HTMLCanvasElement | null = null;
+  private readonly def: SceneDef;
+  private readonly air: AmbientDef;
 
+  /**
+   * A biome by its id; or, with `arena` (4W), the arena of a legendary, whose `id` is any key that
+   * tells it apart (the species and its fury).
+   */
   constructor(
-    readonly id: SceneId,
+    readonly id: string,
     accent: number,
+    arena?: { readonly spec: ArenaSpec; readonly ambient: AmbientDef },
   ) {
-    const def = SCENES[id];
-    const seed = SCENE_SEEDS.indexOf(id) * 131 + 17;
+    const def = arena === undefined ? SCENES[id as SceneId] : arenaSceneDef(arena.spec);
+    this.def = def;
+    this.air = arena === undefined ? AMBIENT[id as SceneId] : arena.ambient;
+    const seed =
+      arena === undefined
+        ? SCENE_SEEDS.indexOf(id as SceneId) * 131 + 17
+        : arena.spec.seed * 977 + 5;
     const ctx: Ctx = {
       rand: seeded(seed),
       seed,
@@ -1085,18 +1225,18 @@ export class SceneBuild {
     return {
       id: this.id,
       ground: this.ground,
-      frameMs: SCENES[this.id].frames?.ms ?? 0,
+      frameMs: this.def.frames?.ms ?? 0,
       props: this.props,
-      ambient: AMBIENT[this.id],
+      ambient: this.air,
     };
   }
 }
 
 const SCENE_SEEDS: readonly SceneId[] = Object.keys(SCENES) as SceneId[];
-const sceneCache = new Map<SceneId, Scene>();
+const sceneCache = new Map<string, Scene>();
 
-/** The scene if it is already painted. */
-export function paintedScene(id: SceneId): Scene | undefined {
+/** The scene if it is already painted (a biome by its id, an arena by its key). */
+export function paintedScene(id: string): Scene | undefined {
   return sceneCache.get(id);
 }
 
