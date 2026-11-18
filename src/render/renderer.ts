@@ -1661,8 +1661,12 @@ export class Renderer {
    * allows, so a boss under fire is not a white blob), sparks of the type of the ball fly back the
    * way it came and the damage shows as a number.
    */
+  /** The enemies a ball hit in the events of this frame (their number is already shown). */
+  private readonly hitThisFrame: number[] = [];
+
   private onHit(event: Extract<GameEvent, { type: 'hit' }>, curr: Snapshot): void {
     if (!this.feelOn) return;
+    this.hitThisFrame.push(event.enemyId);
     const slot = event.enemyId & (FLASH_SLOTS - 1);
     if (mayFlash(this.clockMs, this.flashStart[slot] ?? -1e9)) this.flashStart[slot] = this.clockMs;
     let radius = 16;
@@ -1753,6 +1757,11 @@ export class Renderer {
     const art = this.art[species];
     const outlined = this.foeArt[species];
     const white = outlined === undefined ? undefined : whiteOf(outlined);
+    // 4W (18th playtest: "que salga el número también en el golpe que mata"): the killing blow shows
+    // its number, unless a hit of a ball on this enemy in this frame already did (that is the blow).
+    if (event.damage !== undefined && !this.hitThisFrame.includes(event.enemyId)) {
+      this.feel.killNumber(event.enemyId, event.x, event.y - radius, event.damage);
+    }
     this.feel.kill(
       event.x,
       event.y,
@@ -1770,6 +1779,7 @@ export class Renderer {
     prev: Snapshot,
     curr: Snapshot,
   ): void {
+    this.hitThisFrame.length = 0;
     for (const event of events) {
       if (event.type === 'move') this.startMove(event);
       else if (event.type === 'bossDefeated') this.startDeath();

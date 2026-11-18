@@ -384,10 +384,16 @@ try {
   await evo.waitForTimeout(300);
   check('and the game goes on afterwards', (await dbg(evo)).tick > pausedAt);
   const barText = (await evo.locator('[data-team-bar]').textContent()) ?? '';
+  // 4W: the level is drawn in the game's own digits (a canvas that names its number).
+  const barLevel = await evo
+    .locator('[data-team-bar] [data-pixel-number]')
+    .first()
+    .getAttribute('data-pixel-number');
   check(
     'the team bar shows one Pokémon, still one, with its level and the name of its CURRENT form',
     (await evo.locator('[data-team-bar] img').count()) === 1 &&
-      barText.includes('Nv3') &&
+      barText.includes('Nv') &&
+      barLevel === '3' &&
       barText.includes('Charmeleon') &&
       !barText.includes('Charmander'),
     barText,

@@ -1,6 +1,7 @@
 import type { Ball, Card, GameType, Member } from '../domain';
 import { type CardTextContext, cardStep } from './cardText';
 import { pokemonName } from './names';
+import { pixelNumber } from './pixelNumber';
 import { TYPE_COLORS } from './typeColors';
 
 /** Where the art of a species form lives; undefined = no art, a coloured marker is drawn. */
@@ -62,7 +63,12 @@ export function spriteTile(
     frame.append(img);
   }
   tile.append(frame);
-  if (level !== undefined) tile.append(box('opacity:0.85;', `Nv${level}`));
+  if (level !== undefined) {
+    // 4W (block 3): the level in the game's own digits.
+    const label = box('opacity:0.9;display:flex;align-items:center;gap:1px;', 'Nv');
+    label.append(pixelNumber(String(level), '#f6f3e8', 1.25));
+    tile.append(label);
+  }
   return tile;
 }
 

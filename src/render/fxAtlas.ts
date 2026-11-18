@@ -1,4 +1,5 @@
 import { Rectangle, Texture } from 'pixi.js';
+import { DIGIT_GLYPHS, DIGIT_H, DIGIT_W } from '../domain';
 import { bayer, makeCanvas, PixelWriter, textureOf } from './paint';
 import type { ParticleShape } from './sceneIds';
 import { SHAPE_ROWS } from './shapes';
@@ -9,24 +10,16 @@ import { SHAPE_ROWS } from './shapes';
  * ONE texture source on purpose: a particle container draws a single source, and a sprite that
  * changes to a picture of the same source never makes PixiJS rebuild its draw list.
  */
-export const GLYPH_W = 7;
-export const GLYPH_H = 9;
+/** A cell of a digit: the hand-drawn glyph (4W, `domain/digitFont.ts`) with a pixel of outline round it. */
+export const GLYPH_W = DIGIT_W + 2;
+export const GLYPH_H = DIGIT_H + 2;
 /** The index of the empty glyph after the ten digits. */
 export const BLANK = 10;
 const GLOW = 24;
 
-const GLYPHS: readonly (readonly string[])[] = [
-  ['.xxx.', 'x...x', 'x..xx', 'x.x.x', 'xx..x', 'x...x', '.xxx.'],
-  ['..x..', '.xx..', '..x..', '..x..', '..x..', '..x..', '.xxx.'],
-  ['.xxx.', 'x...x', '....x', '...x.', '..x..', '.x...', 'xxxxx'],
-  ['.xxx.', 'x...x', '....x', '..xx.', '....x', 'x...x', '.xxx.'],
-  ['...x.', '..xx.', '.x.x.', 'x..x.', 'xxxxx', '...x.', '...x.'],
-  ['xxxxx', 'x....', 'xxxx.', '....x', '....x', 'x...x', '.xxx.'],
-  ['..xx.', '.x...', 'x....', 'xxxx.', 'x...x', 'x...x', '.xxx.'],
-  ['xxxxx', '....x', '...x.', '..x..', '.x...', '.x...', '.x...'],
-  ['.xxx.', 'x...x', 'x...x', '.xxx.', 'x...x', 'x...x', '.xxx.'],
-  ['.xxx.', 'x...x', 'x...x', '.xxxx', '....x', '...x.', '.xx..'],
-];
+const GLYPHS: readonly (readonly string[])[] = '0123456789'
+  .split('')
+  .map((d) => DIGIT_GLYPHS[d] ?? []);
 
 export interface FxAtlas {
   readonly shapes: Readonly<Record<ParticleShape, Texture>>;

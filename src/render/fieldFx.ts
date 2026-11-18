@@ -284,6 +284,11 @@ export class FieldFx {
     this.number(enemyId, x, y - radius, damage, effectiveness);
   }
 
+  /** The number of a blow that killed (4W): a splash, a state, a move. Plain colour, no sparks. */
+  killNumber(enemy: number, x: number, y: number, damage: number): void {
+    this.number(enemy, x, y, damage, 1);
+  }
+
   private number(enemy: number, x: number, y: number, damage: number, effectiveness: number): void {
     // Quick hits on the same enemy add up into the number that is still young.
     for (const slot of this.slots) {

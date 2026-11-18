@@ -57,6 +57,7 @@ export type {
   ThemeDef,
   WaveDef,
 } from './config';
+export { DIGIT_GLYPHS, DIGIT_H, DIGIT_W, digitChars } from './digitFont';
 export { isDodgeable, MIN_GAP, PLAYER_WIDTH, SAFE_MARGIN } from './dodge';
 export {
   applyHitEffects,

@@ -310,7 +310,14 @@ export type GameEvent =
       readonly x: number;
       readonly y: number;
     }
-  | { readonly type: 'kill'; readonly enemyId: number; readonly x: number; readonly y: number }
+  | {
+      readonly type: 'kill';
+      readonly enemyId: number;
+      readonly x: number;
+      readonly y: number;
+      /** 4W: the damage of the blow that killed it (absent in hand-written events). */
+      readonly damage?: number;
+    }
   | {
       readonly type: 'chain';
       readonly fromX: number;

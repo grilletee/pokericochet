@@ -19,10 +19,13 @@ export function damageEnemy(run: Run, config: GameConfig, enemy: Enemy, amount: 
   // A marked enemy takes more from every hit and every tick of damage (Dark, ADR-047).
   const marked = (enemy.markTicks ?? 0) > 0 ? amount * (1 + (enemy.markBonus ?? 0)) : amount;
   // A boss with a shield, a stun or a phase line to hold at takes what its fight lets through (ADR-046).
-  enemy.hp -= enemy.id === run.boss.id ? bossDamage(run, config, enemy, marked) : marked;
+  const dealt = enemy.id === run.boss.id ? bossDamage(run, config, enemy, marked) : marked;
+  enemy.hp -= dealt;
   if (enemy.hp > 0) return false;
   run.kills += 1;
-  run.events.push({ type: 'kill', enemyId: enemy.id, x: enemy.x, y: enemy.y });
+  // 4W: the damage of the blow that killed it, so its number shows whatever it came from (a ball, a
+  // splash, a burn, a move).
+  run.events.push({ type: 'kill', enemyId: enemy.id, x: enemy.x, y: enemy.y, damage: dealt });
   awardKill(run, config, enemy);
   // The `capture` stream is drawn on every kill, so it advances the same whatever the chance is.
   const roll = nextFloat(run.rng.capture);

@@ -5,6 +5,7 @@
  * letters. `hudView` is pure (what to show); `HudPanel` draws it once and then only touches what
  * changed, so it costs nothing per frame.
  */
+import { drawPixelNumber, pixelNumber } from './pixelNumber';
 
 export interface HudView {
   readonly hp: number;
@@ -84,7 +85,7 @@ const CSS = `
 [data-hud-panel] .hd-hp>i{width:7px;height:12px;background:#2b3a73;box-shadow:0 0 0 1px ${INK}}
 [data-hud-panel] .hd-hp>i.on{background:linear-gradient(180deg,#ff8a7a 0 40%,#e04a4a 40% 100%)}
 [data-hud-panel][data-low="1"] .hd-hp>i.on{animation:hd-blink 0.6s steps(2) infinite}
-[data-hud-panel] .hd-lv{font-size:12px;font-weight:700;color:${INK};background:#ffd75a;padding:2px 6px;box-shadow:2px 2px 0 ${INK}}
+[data-hud-panel] .hd-lv{font-size:12px;font-weight:700;color:#ffd75a;background:${INK};padding:1px 5px;box-shadow:0 0 0 2px #ffd75a;display:flex;align-items:center;gap:2px}
 [data-hud-panel] .hd-xp{width:110px;height:6px;background:#2b3a73;box-shadow:0 0 0 1px ${INK}}
 [data-hud-panel] .hd-xp>div{height:100%;background:#5fb0ff}
 [data-hud-panel] .hd-waves{display:flex;gap:3px;align-items:center}
@@ -116,6 +117,9 @@ export class HudPanel {
   private readonly waves = div('hd-waves');
   private readonly stage = div('hd-stage');
   private readonly seed = div('hd-seed');
+  private readonly hpNumber = pixelNumber('', '#f6f3e8', 1.5);
+  private readonly levelNumber = pixelNumber('', '#ffd75a', 1.5);
+  private readonly stageNumber = pixelNumber('', '#f6f3e8', 1.5);
   private key = '';
 
   constructor(private readonly host: HTMLElement) {
@@ -128,10 +132,12 @@ export class HudPanel {
     }
     host.dataset.hudPanel = '';
     const rowHp = div('hd-row');
+    this.hpText.append(this.hpNumber);
     rowHp.append(div('hd-k', 'PV'), this.hp, this.hpText);
     const xp = div('hd-xp');
     xp.append(this.xpFill);
     const rowLv = div('hd-row');
+    this.level.append(document.createTextNode('Nv '), this.levelNumber);
     rowLv.append(this.level, xp);
     const rowWave = div('hd-row');
     rowWave.append(this.waves, this.stage);
@@ -151,8 +157,9 @@ export class HudPanel {
     });
     this.host.dataset.low = view.hp > 0 && view.hp / view.maxHp <= 0.3 ? '1' : '0';
     this.host.dataset.boss = view.boss ? '1' : '0';
-    this.hpText.textContent = `${view.hp}/${view.maxHp}`;
-    this.level.textContent = `Nv ${view.level}`;
+    // 4W (block 3): the numbers in the game's own digits.
+    drawPixelNumber(this.hpNumber, `${view.hp}/${view.maxHp}`, '#f6f3e8', 1.5);
+    drawPixelNumber(this.levelNumber, String(view.level), '#ffd75a', 1.5);
     this.xpFill.style.width = `${Math.round(Math.min(1, view.xp / view.xpNext) * 100)}%`;
     if (this.waves.childElementCount !== view.waves.length) {
       this.waves.replaceChildren(...view.waves.map(() => document.createElement('i')));
@@ -160,7 +167,15 @@ export class HudPanel {
     Array.from(this.waves.children).forEach((pip, i) => {
       pip.className = view.waves[i] ?? 'next';
     });
-    this.stage.textContent = view.stage;
+    // "Oleada 3/7", "Jefe 1/3": the word as text, the count in the digits; "Jefe final" as text.
+    const split = /^(.*\D)\s(\d+\/\d+)$/.exec(view.stage);
+    if (split === null) {
+      this.stage.textContent = view.stage;
+    } else {
+      this.stage.textContent = `${split[1] ?? ''} `;
+      drawPixelNumber(this.stageNumber, split[2] ?? '', view.boss ? '#ff9a8a' : '#f6f3e8', 1.5);
+      this.stage.append(this.stageNumber);
+    }
     this.seed.textContent = `Semilla ${view.seed}`;
     this.host.setAttribute('aria-label', hudLine(view));
     this.host.title = `${view.xp}/${view.xpNext} XP`;

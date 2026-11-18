@@ -17,6 +17,7 @@ import {
   stars,
 } from './gachaText';
 import { pokemonName } from './names';
+import { pixelNumber } from './pixelNumber';
 import { pokeCard } from './pokeCard';
 import { typeIcons } from './typeIcons';
 
@@ -174,6 +175,7 @@ const CSS = `
   [data-gacha] .gx-art [data-mx-title]{font-size:min(28px,7vh) !important}
   [data-gacha] .gx-panel{padding:6px 8px;gap:4px !important}
   [data-gacha] .gx-meter-n{font-size:18px}
+  [data-gacha] .gx-meter-n canvas{height:18px !important;width:auto !important}
   [data-gacha] .gx-meter{grid-template-columns:auto 1fr}
   [data-gacha] .gx-meter .gx-seg{height:7px}
   [data-px-root] [data-gacha] button[data-draw]{min-width:120px !important;padding:6px 10px !important}
@@ -287,7 +289,7 @@ export class GachaScreen {
       `font-size:20px;font-weight:800;color:#ffd75a;display:flex;align-items:center;gap:8px;` +
         `background:#14172b;padding:4px 12px;box-shadow:0 0 0 3px ${INK},0 0 0 5px #c8922e;`,
     );
-    coins.append(coin(), el('span', '', `${view.coins}`));
+    coins.append(coin(), pixelNumber(String(view.coins), '#ffd75a', 2));
     coins.dataset.coins = String(view.coins);
     const back = button('Volver (M)', 'padding:6px 12px;');
     back.dataset.action = 'back';
@@ -366,7 +368,10 @@ export class GachaScreen {
         el('div', `font-size:11px;letter-spacing:1px;color:${meter.color};`, meter.label),
       );
       const big = el('div', 'display:flex;align-items:baseline;gap:6px;');
-      const n = el('span', `color:${meter.color};`, meter.value);
+      // 4W (block 3): a number in the game's own digits; a word ("Seguro") as text.
+      const numeric = /^\d+$/.test(meter.value);
+      const n = el('span', `color:${meter.color};`, numeric ? '' : meter.value);
+      if (numeric) n.append(pixelNumber(meter.value, meter.color, 2.5));
       n.className = 'gx-meter-n';
       big.append(n, el('span', 'font-size:11px;opacity:0.85;', meter.note));
       const seg = el('div', '');
@@ -393,7 +398,7 @@ export class GachaScreen {
       n.className = 'gx-draw-n';
       const cost = el('span', '');
       cost.className = 'gx-draw-c';
-      cost.append(coin(), el('span', '', String(price)));
+      cost.append(coin(), pixelNumber(String(price), '#0b0d1a', 1.5));
       b.append(n, cost);
       if (count > 1) {
         const g = el('span', '', '★4 o más seguro');
